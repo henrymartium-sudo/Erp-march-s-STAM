@@ -1,0 +1,80 @@
+// =============================================================================
+// CONFIGURATION
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+// Type de marché public
+enum TypeMarche {
+  TRAVAUX
+  FOURNITURES
+  SERVICES
+  PRESTATIONS_INTELLECTUELLES
+}
+
+// Statut du marché dans son cycle de vie (11 statuts selon PRD.md)
+enum StatutMarche {
+  OPPORTUNITE_IDENTIFIEE       // 1. Veille - opportunité identifiée
+  DOSSIER_EN_PREPARATION       // 2. Préparation de l'offre
+  OFFRE_DEPOSEE                // 3. Offre soumise
+  EN_ATTENTE_ATTRIBUTION       // 4. En attente du résultat
+  ATTRIBUE_PROVISOIREMENT      // 5. Attribution provisoire
+  ATTRIBUE_DEFINITIVEMENT      // 6. Attribution définitive
+  EN_ATTENTE_LIVRAISON_OS      // 7. En attente de livraison/ordre de service
+  EN_EXECUTION                 // 8. Marché en cours d'exécution
+  EXECUTE_ATTENTE_GARANTIES    // 9. Exécuté, en période de garantie
+  CLOTURE                      // 10. Marché clôturé
+  RESILIE_ANNULE_INFRUCTUEUX   // 11. Marché résilié, annulé ou infructueux
+}
+
+// =============================================================================
+// MODELS
+// =============================================================================
+
+model Marche {
+  // Identifiants
+  id                  String         @id @default(cuid())
+  numero              String         @unique // Numéro du marché (ex: MAR-2024-001)
+
+  // Informations générales
+  objet               String         // Description/objet du marché
+  type                TypeMarche     // Type de marché
+  montant             Decimal        @db.Decimal(15, 2) // Montant en DH
+
+  // Dates importantes
+  dateNotification    DateTime       // Date de notification
+  dateOrdreService    DateTime?      // Date d'ordre de service (optionnel)
+  delaiExecution      Int            // Délai d'exécution en jours
+  dateFinPrevue       DateTime?      // Date de fin prévue (calculée ou manuelle)
+  dateReception       DateTime?      // Date de réception définitive
+
+  // Statut
+  statut              StatutMarche   @default(OPPORTUNITE_IDENTIFIEE)
+
+  // Informations fournisseur
+  fournisseurNom      String         // Nom du fournisseur
+  fournisseurContact  String?        // Personne de contact
+  fournisseurEmail    String?        // Email du fournisseur
+  fournisseurTel      String?        // Téléphone du fournisseur
+
+  // Métadonnées
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  // Indexes pour performance
+  @@index([numero])       // Recherche rapide par numéro
+  @@index([statut])       // Filtrage fréquent par statut
+  @@index([dateFinPrevue]) // Alertes et tri chronologique
+
+  @@map("marches")
+}
