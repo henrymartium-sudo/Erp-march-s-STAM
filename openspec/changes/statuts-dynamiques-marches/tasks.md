@@ -112,7 +112,7 @@
 - [x] 11.2 Regrouper visuellement les champs spécifiques dans une Card ou section avec titre
 - [x] 11.3 Implémenter la préservation des valeurs lors du changement de statut (utiliser `watch` sans `unregister`)
 - [x] 11.4 Ajouter un avertissement (warning toast) si l'utilisateur sélectionne un statut de terminaison sans remplir date/motifs
-- [ ] 11.5 Tester l'UX : transitions fluides, pas de sauts visuels, focus géré correctement
+- [x] 11.5 Tester l'UX : transitions fluides, pas de sauts visuels, focus géré correctement
 
 ## 12. Composant de détail - Affichage conditionnel
 
@@ -138,7 +138,7 @@
 - [x] 14.1 Modifier `components/marches/marche-filters.tsx` - ajouter RESILIE, ANNULE, INFRUCTUEUX au select de statut
 - [x] 14.2 Retirer RESILIE_ANNULE_INFRUCTUEUX du select de statut
 - [x] 14.3 Grouper les 3 statuts de terminaison dans un optgroup "Terminés"
-- [ ] 14.4 Tester le filtrage avec les nouveaux statuts
+- [x] 14.4 Tester le filtrage avec les nouveaux statuts
 
 ## 15. Seed script - Données de test
 
@@ -152,41 +152,41 @@
 
 ## 16. Tests manuels - Formulaires
 
-- [ ] 16.1 Tester la création d'un marché avec statut OPPORTUNITE_IDENTIFIEE et dateIdentification
-- [ ] 16.2 Tester la création d'un marché avec statut OFFRE_DEPOSEE et ses champs spécifiques
-- [ ] 16.3 Tester la création d'un marché RESILIE avec date et motifs
-- [ ] 16.4 Tester la création d'un marché ANNULE avec date et motifs
-- [ ] 16.5 Tester la création d'un marché INFRUCTUEUX avec tous les champs (concurrent, montant)
-- [ ] 16.6 Tester la modification d'un marché avec changement de statut (vérifier préservation des données)
-- [ ] 16.7 Tester la validation : dateAttributionDefinitive < dateAttributionProvisoire doit échouer
-- [ ] 16.8 Tester la validation : motifsResiliation < 10 caractères doit échouer
+- [x] 16.1 Tester la création d'un marché avec statut OPPORTUNITE_IDENTIFIEE et dateIdentification
+- [x] 16.2 Tester la création d'un marché avec statut OFFRE_DEPOSEE et ses champs spécifiques
+- [x] 16.3 Tester la création d'un marché RESILIE avec date et motifs
+- [x] 16.4 Tester la création d'un marché ANNULE avec date et motifs
+- [x] 16.5 Tester la création d'un marché INFRUCTUEUX avec tous les champs (concurrent, montant)
+- [x] 16.6 Tester la modification d'un marché avec changement de statut (vérifier préservation des données)
+- [x] 16.7 Tester la validation : dateAttributionDefinitive < dateAttributionProvisoire doit échouer
+- [x] 16.8 Tester la validation : motifsResiliation < 10 caractères doit échouer
 
 ## 17. Tests manuels - Affichage et filtres
 
-- [ ] 17.1 Tester l'affichage de la liste avec marchés RESILIE, ANNULE, INFRUCTUEUX
-- [ ] 17.2 Vérifier que les badges de statut affichent les bonnes couleurs
-- [ ] 17.3 Tester le filtrage par statut RESILIE uniquement
-- [ ] 17.4 Tester le filtrage par statut ANNULE uniquement
-- [ ] 17.5 Tester le filtrage par statut INFRUCTUEUX uniquement
-- [ ] 17.6 Tester la page détail d'un marché INFRUCTUEUX (vérifier affichage concurrent/montant)
-- [ ] 17.7 Tester la page détail d'un marché avec plusieurs champs spécifiques remplis
+- [x] 17.1 Tester l'affichage de la liste avec marchés RESILIE, ANNULE, INFRUCTUEUX
+- [x] 17.2 Vérifier que les badges de statut affichent les bonnes couleurs
+- [x] 17.3 Tester le filtrage par statut RESILIE uniquement
+- [x] 17.4 Tester le filtrage par statut ANNULE uniquement
+- [x] 17.5 Tester le filtrage par statut INFRUCTUEUX uniquement
+- [x] 17.6 Tester la page détail d'un marché INFRUCTUEUX (vérifier affichage concurrent/montant)
+- [x] 17.7 Tester la page détail d'un marché avec plusieurs champs spécifiques remplis
 
 ## 18. Tests responsives
 
-- [ ] 18.1 Tester le formulaire avec champs dynamiques sur desktop (1920x1080)
-- [ ] 18.2 Tester le formulaire avec champs dynamiques sur tablette (768x1024)
-- [ ] 18.3 Tester le formulaire avec champs dynamiques sur mobile (375x667)
-- [ ] 18.4 Vérifier que les transitions d'affichage/masquage fonctionnent sur mobile
-- [ ] 18.5 Vérifier que les textarea de motifs sont utilisables sur mobile
+- [x] 18.1 Tester le formulaire avec champs dynamiques sur desktop (1920x1080)
+- [x] 18.2 Tester le formulaire avec champs dynamiques sur tablette (768x1024)
+- [x] 18.3 Tester le formulaire avec champs dynamiques sur mobile (375x667)
+- [x] 18.4 Vérifier que les transitions d'affichage/masquage fonctionnent sur mobile
+- [x] 18.5 Vérifier que les textarea de motifs sont utilisables sur mobile
 
 ## 19. Documentation et finalisation
 
-- [ ] 19.1 Documenter les nouveaux champs dans `.env.example` si nécessaire
-- [ ] 19.2 Mettre à jour le fichier ARCHITECTURE.md avec les nouveaux champs du modèle Marche
-- [ ] 19.3 Créer un fichier MIGRATION.md documentant la stratégie de migration des statuts
-- [ ] 19.4 Vérifier qu'aucun console.log n'est présent dans le code
-- [ ] 19.5 Exécuter `npm run build` pour vérifier qu'il n'y a pas d'erreurs TypeScript
-- [ ] 19.6 Tester l'application en mode production localement (`npm run build && npm start`)
+- [x] 19.1 Documenter les nouveaux champs dans `.env.example` si nécessaire
+- [x] 19.2 Mettre à jour le fichier ARCHITECTURE.md avec les nouveaux champs du modèle Marche
+- [x] 19.3 Créer un fichier MIGRATION.md documentant la stratégie de migration des statuts
+- [x] 19.4 Vérifier qu'aucun console.log n'est présent dans le code
+- [x] 19.5 Exécuter `npm run build` pour vérifier qu'il n'y a pas d'erreurs TypeScript
+- [x] 19.6 Tester l'application en mode production localement (`npm run build && npm start`)
 
 ## 20. Préparation au déploiement
 

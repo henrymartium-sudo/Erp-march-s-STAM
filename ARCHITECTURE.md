@@ -180,23 +180,44 @@ enum UserRole {
 // ============================================
 
 model Marche {
-  id                  String         @id @default(cuid())
-  numero              String         @unique // N° marché
-  objet               String         // Description du marché
-  type                TypeMarche
-  montant             Decimal        @db.Decimal(15, 2)
-  dateNotification    DateTime
-  dateOrdreService    DateTime?
-  delaiExecution      Int            // En jours
-  dateFinPrevue       DateTime       // Calculée à partir de dateOrdreService + delaiExecution
-  dateReception       DateTime?      // Date de réception des travaux
-  statut              StatutMarche   @default(EN_COURS)
+  id                            String       @id @default(cuid())
+  numero                        String       @unique
+  objet                         String
+  type                          TypeMarche
+  montant                       Decimal      @db.Decimal(15, 2)
+  dateNotification              DateTime
+  dateOrdreService              DateTime?
+  delaiExecution                Int
+  dateFinPrevue                 DateTime?
+  dateReception                 DateTime?
+  statut                        StatutMarche @default(OPPORTUNITE_IDENTIFIEE)
 
-  // Fournisseur
-  fournisseurNom      String
-  fournisseurContact  String?
-  fournisseurEmail    String?
-  fournisseurTel      String?
+  // Autorité contractante (corrigé de fournisseur)
+  autoriteContractanteNom       String
+  autoriteContractanteContact   String?
+  autoriteContractanteEmail     String?
+  autoriteContractanteTel       String?
+
+  // Champs spécifiques par statut
+  dateIdentification            DateTime?    // OPPORTUNITE_IDENTIFIEE
+  dateDepotPrevue               DateTime?    // DOSSIER_EN_PREPARATION
+  dateDepotOffre                DateTime?    // OFFRE_DEPOSEE
+  delaiValiditeOffre            Int?         // OFFRE_DEPOSEE
+  dateAttributionProvisoire     DateTime?    // ATTRIBUE_PROVISOIREMENT
+  dateAttributionDefinitive     DateTime?    // ATTRIBUE_DEFINITIVEMENT
+  dateLivraisonPrevue           DateTime?    // EN_ATTENTE_LIVRAISON_OS
+  dureeLivraisonPrevue          Int?         // EN_ATTENTE_LIVRAISON_OS
+  dateReceptionProvisoirePrevue DateTime?    // EN_EXECUTION
+  garantiesLiberees             Boolean?     @default(false) // EXECUTE_ATTENTE_GARANTIES
+  dateClotureAdministrative     DateTime?    // CLOTURE
+  dateResiliation               DateTime?    // RESILIE
+  motifsResiliation             String?      // RESILIE
+  dateAnnulation                DateTime?    // ANNULE
+  motifsAnnulation              String?      // ANNULE
+  dateInfructueux               DateTime?    // INFRUCTUEUX
+  motifsInfructueux             String?      // INFRUCTUEUX
+  concurrentGagnant             String?      // INFRUCTUEUX
+  montantOffreConcurrent        Decimal?     @db.Decimal(15, 2) // INFRUCTUEUX
 
   // Gestion
   userId              String
@@ -226,10 +247,19 @@ enum TypeMarche {
 }
 
 enum StatutMarche {
-  EN_COURS
-  TERMINE
+  OPPORTUNITE_IDENTIFIEE
+  DOSSIER_EN_PREPARATION
+  OFFRE_DEPOSEE
+  EN_ATTENTE_ATTRIBUTION
+  ATTRIBUE_PROVISOIREMENT
+  ATTRIBUE_DEFINITIVEMENT
+  EN_ATTENTE_LIVRAISON_OS
+  EN_EXECUTION
+  EXECUTE_ATTENTE_GARANTIES
+  CLOTURE
   RESILIE
-  SUSPENDU
+  ANNULE
+  INFRUCTUEUX
 }
 
 // ============================================
