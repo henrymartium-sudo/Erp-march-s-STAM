@@ -190,8 +190,8 @@
 
 ## 20. Préparation au déploiement
 
-- [ ] 20.1 Créer une Pull Request avec tous les changements
-- [ ] 20.2 Documenter dans la PR : nouveaux champs, breaking changes (renommage fournisseur), migration requise
-- [ ] 20.3 Créer un script de rollback en cas de problème post-déploiement
-- [ ] 20.4 Préparer un plan de déploiement étape par étape (backup → migration schema → migration données → validation)
-- [ ] 20.5 Documenter les marchés qui nécessitent révision manuelle après migration
+- [x] 20.1 Créer une Pull Request avec tous les changements
+- [x] 20.2 Documenter dans la PR : nouveaux champs, breaking changes (renommage fournisseur), migration requise
+- [x] 20.3 Créer un script de rollback en cas de problème post-déploiement
+- [x] 20.4 Préparer un plan de déploiement étape par étape (backup → migration schema → migration données → validation)
+- [x] 20.5 Documenter les marchés qui nécessitent révision manuelle après migration
