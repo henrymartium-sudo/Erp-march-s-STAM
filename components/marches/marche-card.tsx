@@ -48,9 +48,9 @@ export function MarcheCard({ marche }: MarcheCardProps) {
               <span className="font-semibold">{formatMontant(marche.montant)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Fournisseur</span>
+              <span className="text-muted-foreground">Autorité contractante</span>
               <span className="font-medium truncate max-w-[180px]">
-                {marche.fournisseurNom}
+                {marche.autoriteContractanteNom}
               </span>
             </div>
             <div className="flex justify-between text-sm">

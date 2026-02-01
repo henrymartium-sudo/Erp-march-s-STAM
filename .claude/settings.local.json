@@ -27,7 +27,32 @@
       "Bash(pip install:*)",
       "Bash(playwright install:*)",
       "Bash(curl:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(git checkout:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(npx prisma db execute:*)",
+      "Bash(npx prisma:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(npm run migrate:statuts:*)",
+      "Bash(npm run prisma:*)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "Bash(Select-Object -Last 30)",
+      "Bash(netstat:*)",
+      "mcp__plugin_playwright_playwright__browser_resize",
+      "Bash(exit 0)",
+      "Bash(taskkill:*)",
+      "Bash(node -e:*)",
+      "Bash(timeout:*)",
+      "Bash(tasklist:*)",
+      "Bash(npm run db:generate:*)",
+      "WebSearch",
+      "Bash(npm run dev:clean:*)",
+      "Bash(ping:*)",
+      "Bash(node:*)"
     ]
   }
 }

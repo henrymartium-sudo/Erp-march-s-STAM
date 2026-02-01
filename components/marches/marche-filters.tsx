@@ -88,11 +88,26 @@ export function MarcheFilters({ totalCount, filteredCount }: MarcheFiltersProps)
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="tous">Tous les statuts</SelectItem>
-              {Object.entries(STATUT_LABELS).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
+
+              {/* Statuts actifs */}
+              {Object.entries(STATUT_LABELS)
+                .filter(([value]) => !['RESILIE', 'ANNULE', 'INFRUCTUEUX'].includes(value))
+                .map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+
+              {/* Groupe Terminés */}
+              <optgroup label="Terminés">
+                {['RESILIE', 'ANNULE', 'INFRUCTUEUX']
+                  .filter(value => STATUT_LABELS[value as keyof typeof STATUT_LABELS])
+                  .map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {STATUT_LABELS[value as keyof typeof STATUT_LABELS]}
+                    </SelectItem>
+                  ))}
+              </optgroup>
             </SelectContent>
           </Select>
         </div>

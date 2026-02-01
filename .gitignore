@@ -13,6 +13,8 @@ yarn-error.log*
 dist/
 build/
 *.log
+.next/
+next-env.d.ts
 
 # Fichiers système
 .DS_Store
@@ -29,11 +31,16 @@ desktop.ini
 # Fichiers temporaires
 *.tmp
 *.temp
+nul
+test-*.js
+.playwright-mcp/
 
 # Base de données locale (si vous avez des fichiers SQLite locaux)
 *.db
 *.sqlite
 *.sqlite3
+*.sql
+backup_*.sql
 
 # Cache Python (si vous avez des scripts Python)
 __pycache__/

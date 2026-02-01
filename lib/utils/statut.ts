@@ -15,7 +15,9 @@ export const STATUT_LABELS: Record<StatutMarche, string> = {
   EN_EXECUTION: 'En exécution',
   EXECUTE_ATTENTE_GARANTIES: 'Exécuté - Attente garanties',
   CLOTURE: 'Clôturé',
-  RESILIE_ANNULE_INFRUCTUEUX: 'Résilié/Annulé/Infructueux',
+  RESILIE: 'Résilié',
+  ANNULE: 'Annulé',
+  INFRUCTUEUX: 'Infructueux',
 }
 
 // ============================================================================
@@ -33,7 +35,9 @@ export const STATUT_COLORS: Record<StatutMarche, string> = {
   EN_EXECUTION: 'bg-cyan-100 text-cyan-800 border-cyan-200',
   EXECUTE_ATTENTE_GARANTIES: 'bg-emerald-100 text-emerald-800 border-emerald-200',
   CLOTURE: 'bg-gray-100 text-gray-800 border-gray-200',
-  RESILIE_ANNULE_INFRUCTUEUX: 'bg-red-100 text-red-800 border-red-200',
+  RESILIE: 'bg-red-100 text-red-800 border-red-200',
+  ANNULE: 'bg-slate-100 text-slate-800 border-slate-200',
+  INFRUCTUEUX: 'bg-orange-100 text-orange-800 border-orange-200',
 }
 
 // ============================================================================
