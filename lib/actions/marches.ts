@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db/prisma'
 import { createMarcheSchema, updateMarcheSchema } from '@/lib/validations/marche'
+import { requireAuth, requireMarcheWrite, requireDelete } from '@/lib/utils/permissions'
 import type { ActionResult } from '@/types'
 import type { Marche, TypeMarche, StatutMarche } from '@prisma/client'
 import { Prisma } from '@prisma/client'
@@ -14,13 +15,17 @@ import { ZodError } from 'zod'
 
 export async function createMarche(data: unknown): Promise<ActionResult<Marche>> {
   try {
-    // 1. Validation avec Zod
+    // 1. Vérification d'authentification et de permissions
+    const session = await requireMarcheWrite()
+
+    // 2. Validation avec Zod
     const validatedData = createMarcheSchema.parse(data)
 
-    // 2. Création dans Prisma
+    // 3. Création dans Prisma avec userId
     const marche = await prisma.marche.create({
       data: {
         ...validatedData,
+        userId: session.user.id,
         // Calcul de dateFinPrevue si dateOrdreService est fournie
         dateFinPrevue:
           validatedData.dateOrdreService
@@ -32,12 +37,23 @@ export async function createMarche(data: unknown): Promise<ActionResult<Marche>>
       },
     })
 
-    // 3. Revalidation du cache Next.js
+    // 4. Revalidation du cache Next.js
     revalidatePath('/marches')
 
-    // 4. Retour succès
+    // 5. Retour succès
     return { success: true, data: marche }
   } catch (error) {
+    // Gestion des erreurs de permissions
+    if (error instanceof Error && error.message.includes('Non authentifié')) {
+      return { success: false, error: 'Vous devez être connecté pour créer un marché' }
+    }
+    if (error instanceof Error && error.message.includes('Non autorisé')) {
+      return {
+        success: false,
+        error: 'Vous n\'avez pas les permissions pour créer un marché',
+      }
+    }
+
     // Gestion des erreurs Zod
     if (error instanceof ZodError) {
       const errorMessages = error.issues.map((e) => `${e.path.join('.')}: ${e.message}`)
@@ -72,11 +88,14 @@ export async function createMarche(data: unknown): Promise<ActionResult<Marche>>
 
 export async function updateMarche(data: unknown): Promise<ActionResult<Marche>> {
   try {
-    // 1. Validation avec Zod
+    // 1. Vérification d'authentification et de permissions
+    await requireMarcheWrite()
+
+    // 2. Validation avec Zod
     const validatedData = updateMarcheSchema.parse(data)
     const { id, ...updateData } = validatedData
 
-    // 2. Recalcul de dateFinPrevue si nécessaire
+    // 3. Recalcul de dateFinPrevue si nécessaire
     let dateFinPrevue = updateData.dateFinPrevue
     if (updateData.dateOrdreService && updateData.delaiExecution) {
       dateFinPrevue = new Date(
@@ -85,7 +104,7 @@ export async function updateMarche(data: unknown): Promise<ActionResult<Marche>>
       )
     }
 
-    // 3. Mise à jour dans Prisma
+    // 4. Mise à jour dans Prisma
     const marche = await prisma.marche.update({
       where: { id },
       data: {
@@ -94,13 +113,24 @@ export async function updateMarche(data: unknown): Promise<ActionResult<Marche>>
       },
     })
 
-    // 4. Revalidation du cache
+    // 5. Revalidation du cache
     revalidatePath('/marches')
     revalidatePath(`/marches/${id}`)
 
-    // 5. Retour succès
+    // 6. Retour succès
     return { success: true, data: marche }
   } catch (error) {
+    // Gestion des erreurs de permissions
+    if (error instanceof Error && error.message.includes('Non authentifié')) {
+      return { success: false, error: 'Vous devez être connecté pour modifier un marché' }
+    }
+    if (error instanceof Error && error.message.includes('Non autorisé')) {
+      return {
+        success: false,
+        error: 'Vous n\'avez pas les permissions pour modifier un marché',
+      }
+    }
+
     // Gestion des erreurs Zod
     if (error instanceof ZodError) {
       const errorMessages = error.issues.map((e) => `${e.path.join('.')}: ${e.message}`)
@@ -141,16 +171,30 @@ export async function updateMarche(data: unknown): Promise<ActionResult<Marche>>
 
 export async function deleteMarche(id: string): Promise<ActionResult> {
   try {
-    // Suppression dans Prisma
+    // 1. Vérification d'authentification et de permissions (ADMIN ou AVANCE uniquement)
+    await requireDelete()
+
+    // 2. Suppression dans Prisma
     await prisma.marche.delete({
       where: { id },
     })
 
-    // Revalidation du cache
+    // 3. Revalidation du cache
     revalidatePath('/marches')
 
     return { success: true, data: undefined }
   } catch (error) {
+    // Gestion des erreurs de permissions
+    if (error instanceof Error && error.message.includes('Non authentifié')) {
+      return { success: false, error: 'Vous devez être connecté pour supprimer un marché' }
+    }
+    if (error instanceof Error && error.message.includes('Non autorisé')) {
+      return {
+        success: false,
+        error: 'Vous n\'avez pas les permissions pour supprimer un marché',
+      }
+    }
+
     // Gestion des erreurs Prisma
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === 'P2025') {
@@ -176,8 +220,21 @@ export async function deleteMarche(id: string): Promise<ActionResult> {
 
 export async function getMarcheById(id: string): Promise<Marche | null> {
   try {
+    // Vérification d'authentification (lecture accessible à tous les utilisateurs connectés)
+    await requireAuth()
+
     const marche = await prisma.marche.findUnique({
       where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
     })
     return marche
   } catch (error) {
@@ -201,12 +258,25 @@ export async function getAllMarches(
   options: GetMarchesOptions = {}
 ): Promise<Marche[]> {
   try {
+    // Vérification d'authentification (lecture accessible à tous les utilisateurs connectés)
+    await requireAuth()
+
     const { statut, type, limit, offset } = options
 
     const marches = await prisma.marche.findMany({
       where: {
         ...(statut && { statut }),
         ...(type && { type }),
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',

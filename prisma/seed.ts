@@ -1,5 +1,13 @@
-import { PrismaClient, TypeMarche, StatutMarche } from '@prisma/client'
+import {
+  PrismaClient,
+  TypeMarche,
+  StatutMarche,
+  TypeCaution,
+  StatutCaution,
+  UserRole,
+} from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
+import bcrypt from 'bcryptjs'
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,
@@ -13,11 +21,71 @@ const prisma = new PrismaClient({
 async function main() {
   console.log('🌱 Début du seeding...')
 
-  // Supprimer les données existantes
+  // Supprimer les données existantes (dans l'ordre inverse des dépendances)
+  await prisma.caution.deleteMany()
   await prisma.marche.deleteMany()
+  await prisma.user.deleteMany()
   console.log('✅ Données existantes supprimées')
 
-  // Créer 18 marchés couvrant tous les 13 statuts avec champs spécifiques
+  // ============================================================================
+  // CRÉER DES UTILISATEURS PAR DÉFAUT
+  // ============================================================================
+
+  console.log('\n👤 Création des utilisateurs...')
+
+  const adminPassword = await bcrypt.hash('Admin123!', 10)
+  const userPassword = await bcrypt.hash('User123!', 10)
+
+  const users = await Promise.all([
+    prisma.user.create({
+      data: {
+        email: 'admin@erp-marches.local',
+        name: 'Administrateur Principal',
+        password: adminPassword,
+        role: UserRole.ADMIN,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        email: 'responsable@erp-marches.local',
+        name: 'Responsable Marchés',
+        password: userPassword,
+        role: UserRole.AVANCE,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        email: 'exploitation@erp-marches.local',
+        name: 'Chef Exploitation',
+        password: userPassword,
+        role: UserRole.EXPLOITATION,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        email: 'visiteur@erp-marches.local',
+        name: 'Directeur Général',
+        password: userPassword,
+        role: UserRole.VISITEUR,
+      },
+    }),
+  ])
+
+  console.log(`✅ ${users.length} utilisateurs créés`)
+  console.log(`   - Admin: admin@erp-marches.local / Admin123!`)
+  console.log(`   - Responsable: responsable@erp-marches.local / User123!`)
+  console.log(`   - Exploitation: exploitation@erp-marches.local / User123!`)
+  console.log(`   - Visiteur: visiteur@erp-marches.local / User123!`)
+
+  const adminUser = users[0]
+  const responsableUser = users[1]
+
+  // ============================================================================
+  // CRÉER DES MARCHÉS DE TEST
+  // ============================================================================
+
+  console.log('\n📄 Création des marchés...')
+
   const marches = await Promise.all([
     // 1. OPPORTUNITE_IDENTIFIEE
     prisma.marche.create({
@@ -33,6 +101,7 @@ async function main() {
         autoriteContractanteEmail: 'marches@interieur.gov.ma',
         autoriteContractanteTel: '+212 5 37 66 00 00',
         dateIdentification: new Date('2024-01-10'),
+        userId: adminUser.id,
       },
     }),
 
@@ -50,6 +119,7 @@ async function main() {
         autoriteContractanteContact: 'M. Ahmed Benjelloun',
         autoriteContractanteEmail: 'marches@casablanca.ma',
         dateDepotPrevue: new Date('2024-03-15'),
+        userId: responsableUser.id,
       },
     }),
 
@@ -68,6 +138,7 @@ async function main() {
         autoriteContractanteTel: '+212 5 37 77 00 00',
         dateDepotOffre: new Date('2024-02-28'),
         delaiValiditeOffre: 120,
+        userId: responsableUser.id,
       },
     }),
 
@@ -84,6 +155,7 @@ async function main() {
         autoriteContractanteNom: 'Université Mohammed V',
         autoriteContractanteContact: 'Mme Fatima Zahra El Alaoui',
         autoriteContractanteTel: '+212 5 37 27 17 00',
+        userId: responsableUser.id,
       },
     }),
 
@@ -100,6 +172,7 @@ async function main() {
         autoriteContractanteNom: 'Office National de l\'Électricité',
         autoriteContractanteEmail: 'marches@onee.ma',
         dateAttributionProvisoire: new Date('2024-03-25'),
+        userId: adminUser.id,
       },
     }),
 
@@ -119,6 +192,7 @@ async function main() {
         autoriteContractanteTel: '+212 5 37 76 81 00',
         dateAttributionProvisoire: new Date('2024-04-01'),
         dateAttributionDefinitive: new Date('2024-04-15'),
+        userId: responsableUser.id,
       },
     }),
 
@@ -139,6 +213,7 @@ async function main() {
         autoriteContractanteTel: '+212 5 37 71 78 00',
         dateLivraisonPrevue: new Date('2024-04-05'),
         dureeLivraisonPrevue: 85,
+        userId: adminUser.id,
       },
     }),
 
@@ -158,6 +233,7 @@ async function main() {
         autoriteContractanteContact: 'M. Youssef Tahiri',
         autoriteContractanteEmail: 'marches@finances.gov.ma',
         dateReceptionProvisoirePrevue: new Date('2024-05-10'),
+        userId: responsableUser.id,
       },
     }),
 
@@ -178,10 +254,11 @@ async function main() {
         autoriteContractanteEmail: 'achats@ocp.ma',
         autoriteContractanteTel: '+212 5 22 23 00 25',
         garantiesLiberees: false,
+        userId: adminUser.id,
       },
     }),
 
-    // 10. CLOTURE (2 marchés)
+    // 10. CLOTURE
     prisma.marche.create({
       data: {
         numero: 'MAR-2023-005',
@@ -198,168 +275,79 @@ async function main() {
         autoriteContractanteContact: 'M. Hassan Benali',
         autoriteContractanteTel: '+212 5 37 26 17 00',
         dateClotureAdministrative: new Date('2023-12-15'),
-      },
-    }),
-
-    prisma.marche.create({
-      data: {
-        numero: 'MAR-2023-008',
-        objet: 'Fourniture équipements sécurité véhicules',
-        type: TypeMarche.FOURNITURES,
-        montant: 95000,
-        dateNotification: new Date('2023-08-15'),
-        dateOrdreService: new Date('2023-09-01'),
-        delaiExecution: 30,
-        dateFinPrevue: new Date('2023-10-01'),
-        dateReception: new Date('2023-09-28'),
-        statut: StatutMarche.CLOTURE,
-        autoriteContractanteNom: 'Protection Civile',
-        autoriteContractanteEmail: 'marches@protectioncivile.gov.ma',
-        dateClotureAdministrative: new Date('2023-10-20'),
-      },
-    }),
-
-    // 11. RESILIE
-    prisma.marche.create({
-      data: {
-        numero: 'MAR-2023-010',
-        objet: 'Contrat maintenance climatisation véhicules',
-        type: TypeMarche.SERVICES,
-        montant: 125000,
-        dateNotification: new Date('2023-11-20'),
-        dateOrdreService: new Date('2023-12-15'),
-        delaiExecution: 365,
-        dateFinPrevue: new Date('2024-12-15'),
-        statut: StatutMarche.RESILIE,
-        autoriteContractanteNom: 'Ministère de l\'Équipement',
-        autoriteContractanteEmail: 'achats@equipement.gov.ma',
-        autoriteContractanteTel: '+212 5 37 68 84 00',
-        dateResiliation: new Date('2024-03-20'),
-        motifsResiliation: 'Non-respect des délais d\'intervention par le prestataire. Plusieurs véhicules sont restés immobilisés pendant plus de 15 jours sans intervention malgré les relances répétées.',
-      },
-    }),
-
-    // 12. ANNULE
-    prisma.marche.create({
-      data: {
-        numero: 'MAR-2024-007',
-        objet: 'Services de lavage flotte véhicules',
-        type: TypeMarche.SERVICES,
-        montant: 75000,
-        dateNotification: new Date('2024-01-20'),
-        delaiExecution: 365,
-        statut: StatutMarche.ANNULE,
-        autoriteContractanteNom: 'Ministère de la Justice',
-        autoriteContractanteContact: 'M. Omar Tazi',
-        dateAnnulation: new Date('2024-02-15'),
-        motifsAnnulation: 'Révision budgétaire du ministère suite aux nouvelles orientations. Le service sera internalisé au lieu d\'être externalisé.',
-      },
-    }),
-
-    // 13. INFRUCTUEUX
-    prisma.marche.create({
-      data: {
-        numero: 'MAR-2024-009',
-        objet: 'Fourniture véhicules électriques',
-        type: TypeMarche.FOURNITURES,
-        montant: 1800000,
-        dateNotification: new Date('2024-01-05'),
-        delaiExecution: 180,
-        statut: StatutMarche.INFRUCTUEUX,
-        autoriteContractanteNom: 'Ministère de la Transition Énergétique',
-        autoriteContractanteEmail: 'marches@energie.gov.ma',
-        autoriteContractanteTel: '+212 5 37 68 00 00',
-        dateInfructueux: new Date('2024-02-10'),
-        motifsInfructueux: 'Notre offre financière était 18% au-dessus de la moyenne des offres concurrentes. Le concurrent gagnant a proposé des véhicules de même standing à un prix plus compétitif grâce à un partenariat direct avec le constructeur.',
-        concurrentGagnant: 'Eco Mobility Solutions SARL',
-        montantOffreConcurrent: 1520000,
-      },
-    }),
-
-    // Marchés supplémentaires pour tests
-    prisma.marche.create({
-      data: {
-        numero: 'MAR-2024-008',
-        objet: 'Fourniture pneus et accessoires',
-        type: TypeMarche.FOURNITURES,
-        montant: 320000,
-        dateNotification: new Date('2024-02-10'),
-        delaiExecution: 90,
-        statut: StatutMarche.OFFRE_DEPOSEE,
-        autoriteContractanteNom: 'Royal Air Maroc',
-        autoriteContractanteEmail: 'achats@royalairmaroc.com',
-        autoriteContractanteTel: '+212 5 22 48 97 00',
-        dateDepotOffre: new Date('2024-02-25'),
-        delaiValiditeOffre: 90,
-      },
-    }),
-
-    prisma.marche.create({
-      data: {
-        numero: 'MAR-2024-010',
-        objet: 'Contrat assurance flotte automobile',
-        type: TypeMarche.SERVICES,
-        montant: 650000,
-        dateNotification: new Date('2024-02-20'),
-        delaiExecution: 365,
-        statut: StatutMarche.EN_EXECUTION,
-        autoriteContractanteNom: 'Agence pour le Développement Agricole',
-        autoriteContractanteEmail: 'marches@ada.gov.ma',
-        dateOrdreService: new Date('2024-03-01'),
-        dateFinPrevue: new Date('2025-03-01'),
-        dateReceptionProvisoirePrevue: new Date('2025-02-25'),
-      },
-    }),
-
-    prisma.marche.create({
-      data: {
-        numero: 'MAR-2023-020',
-        objet: 'Fourniture équipements GPS pour véhicules',
-        type: TypeMarche.FOURNITURES,
-        montant: 215000,
-        dateNotification: new Date('2023-10-15'),
-        dateOrdreService: new Date('2023-11-01'),
-        delaiExecution: 60,
-        dateFinPrevue: new Date('2024-01-01'),
-        dateReception: new Date('2023-12-28'),
-        statut: StatutMarche.EXECUTE_ATTENTE_GARANTIES,
-        autoriteContractanteNom: 'Office National des Chemins de Fer',
-        autoriteContractanteEmail: 'achats@oncf.ma',
-        autoriteContractanteTel: '+212 5 37 77 47 47',
-        garantiesLiberees: true,
-      },
-    }),
-
-    prisma.marche.create({
-      data: {
-        numero: 'MAR-2024-011',
-        objet: 'Travaux construction garage administratif',
-        type: TypeMarche.TRAVAUX,
-        montant: 1450000,
-        dateNotification: new Date('2024-01-30'),
-        delaiExecution: 180,
-        statut: StatutMarche.ATTRIBUE_PROVISOIREMENT,
-        autoriteContractanteNom: 'Wilaya de Marrakech',
-        autoriteContractanteContact: 'Mme Laila Benkirane',
-        autoriteContractanteEmail: 'marches@wilaya-marrakech.gov.ma',
-        dateAttributionProvisoire: new Date('2024-03-05'),
+        userId: responsableUser.id,
       },
     }),
   ])
 
   console.log(`✅ ${marches.length} marchés créés avec succès`)
-  console.log('\n📊 Répartition par statut:')
 
-  const stats = await prisma.marche.groupBy({
-    by: ['statut'],
-    _count: true,
-  })
+  // ============================================================================
+  // CRÉER DES CAUTIONS DE TEST
+  // ============================================================================
 
-  stats.forEach(stat => {
-    console.log(`   ${stat.statut}: ${stat._count} marché(s)`)
-  })
+  console.log('\n🔐 Création des cautions...')
 
-  console.log('\n🎉 Seeding terminé !')
+  const now = new Date()
+  const addDays = (date: Date, days: number) => {
+    const result = new Date(date)
+    result.setDate(result.getDate() + days)
+    return result
+  }
+
+  const cautions = await Promise.all([
+    // Caution PROVISOIRE - ACTIVE - échéance dans 45 jours
+    prisma.caution.create({
+      data: {
+        reference: 'CAU-2024-001',
+        type: TypeCaution.PROVISOIRE,
+        montant: 25000,
+        dateEmission: new Date('2024-02-01'),
+        dateEcheance: addDays(now, 45),
+        statut: StatutCaution.ACTIVE,
+        banqueNom: 'Attijariwafa Bank',
+        banqueContact: 'Service Cautions - +212 5 22 29 88 88',
+        marcheId: marches[2].id,
+        userId: responsableUser.id,
+      },
+    }),
+
+    // Caution DEFINITIVE - ACTIVE - échéance dans 25 jours
+    prisma.caution.create({
+      data: {
+        reference: 'CAU-2024-002',
+        type: TypeCaution.DEFINITIVE,
+        montant: 42000,
+        dateEmission: new Date('2024-03-20'),
+        dateEcheance: addDays(now, 25),
+        statut: StatutCaution.ACTIVE,
+        banqueNom: 'Banque Populaire',
+        banqueContact: 'M. Rachid Bennani - +212 5 22 46 99 00',
+        marcheId: marches[5].id,
+        userId: responsableUser.id,
+      },
+    }),
+
+    // Caution AVANCE - ACTIVE - échéance dans 12 jours (CRITICAL)
+    prisma.caution.create({
+      data: {
+        reference: 'CAU-2023-015',
+        type: TypeCaution.AVANCE,
+        montant: 250000,
+        dateEmission: new Date('2024-01-10'),
+        dateEcheance: addDays(now, 12),
+        statut: StatutCaution.ACTIVE,
+        banqueNom: 'BMCE Bank',
+        banqueContact: 'Service Entreprises - +212 5 22 20 30 40',
+        marcheId: marches[6].id,
+        userId: adminUser.id,
+      },
+    }),
+  ])
+
+  console.log(`✅ ${cautions.length} cautions créées`)
+
+  console.log('\n🎉 Seeding terminé avec succès !')
 }
 
 main()

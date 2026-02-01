@@ -14,9 +14,10 @@ const globalForPrisma = globalThis as unknown as {
 if (!globalForPrisma.pool) {
   globalForPrisma.pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false,
-    },
+    ssl:
+      process.env.NODE_ENV === 'production'
+        ? { rejectUnauthorized: true } // Strict en production pour sécurité maximale
+        : { rejectUnauthorized: false }, // Permissif en dev local pour faciliter le développement
   })
 }
 

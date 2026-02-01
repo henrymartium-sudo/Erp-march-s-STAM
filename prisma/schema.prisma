@@ -6,6 +6,37 @@ datasource db {
   provider = "postgresql"
 }
 
+// ============================================
+// AUTHENTIFICATION & UTILISATEURS
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  password      String    // Hash bcrypt
+  role          UserRole  @default(VISITEUR)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  marches       Marche[]
+  cautions      Caution[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN          // Accès total
+  AVANCE         // Gestion complète marchés/cautions
+  EXPLOITATION   // Consultation + ajout limité
+  VISITEUR       // Lecture seule
+}
+
+// ============================================
+// MARCHÉS PUBLICS
+// ============================================
+
 model Marche {
   id                            String       @id @default(cuid())
   numero                        String       @unique
@@ -44,6 +75,12 @@ model Marche {
   concurrentGagnant             String?
   montantOffreConcurrent        Decimal?     @db.Decimal(15, 2)
 
+  // Gestion
+  userId              String
+  user                User           @relation(fields: [userId], references: [id])
+
+  cautions                      Caution[]
+
   @@map("marches")
   @@index([dateFinPrevue])
   @@index([numero])
@@ -71,4 +108,46 @@ enum TypeMarche {
   FOURNITURES
   SERVICES
   PRESTATIONS_INTELLECTUELLES
+}
+
+model Caution {
+  id                String         @id @default(cuid())
+  reference         String         @unique
+  type              TypeCaution
+  montant           Decimal        @db.Decimal(15, 2)
+  dateEmission      DateTime
+  dateEcheance      DateTime
+  statut            StatutCaution  @default(ACTIVE)
+
+  banqueNom         String
+  banqueContact     String?
+
+  marcheId          String
+  marche            Marche         @relation(fields: [marcheId], references: [id], onDelete: Cascade)
+
+  // Gestion
+  userId            String
+  user              User           @relation(fields: [userId], references: [id])
+
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@index([dateEcheance])
+  @@index([statut])
+  @@index([marcheId])
+  @@map("cautions")
+}
+
+enum TypeCaution {
+  PROVISOIRE
+  DEFINITIVE
+  AVANCE
+  RETENUE_GARANTIE
+}
+
+enum StatutCaution {
+  ACTIVE
+  EXPIREE
+  LIBEREE
+  APPELEE
 }

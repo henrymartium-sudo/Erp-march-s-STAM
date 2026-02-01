@@ -1,14 +1,14 @@
 ## 1. Préparation Base de Données
 
-- [ ] 1.1 Ajouter le modèle Caution au fichier prisma/schema.prisma avec tous les champs requis
-- [ ] 1.2 Ajouter les enums TypeCaution et StatutCaution au schéma Prisma
-- [ ] 1.3 Ajouter les index sur dateEcheance, statut, et marcheId
-- [ ] 1.4 Ajouter la directive @@map("cautions") au modèle Caution
-- [ ] 1.5 Ajouter la relation cautions: Caution[] au modèle Marche existant
-- [ ] 1.6 Créer la migration Prisma avec `prisma migrate dev --name add_caution_model`
-- [ ] 1.7 Vérifier que la migration a créé la table cautions et les enums correctement
-- [ ] 1.8 Régénérer le Prisma Client avec `prisma generate`
-- [ ] 1.9 Vérifier que les types TypeScript Caution, TypeCaution, StatutCaution sont disponibles depuis @prisma/client
+- [x] 1.1 Ajouter le modèle Caution au fichier prisma/schema.prisma avec tous les champs requis
+- [x] 1.2 Ajouter les enums TypeCaution et StatutCaution au schéma Prisma
+- [x] 1.3 Ajouter les index sur dateEcheance, statut, et marcheId
+- [x] 1.4 Ajouter la directive @@map("cautions") au modèle Caution
+- [x] 1.5 Ajouter la relation cautions: Caution[] au modèle Marche existant
+- [x] 1.6 Créer la migration Prisma avec `prisma migrate dev --name add_caution_model`
+- [x] 1.7 Vérifier que la migration a créé la table cautions et les enums correctement
+- [x] 1.8 Régénérer le Prisma Client avec `prisma generate`
+- [x] 1.9 Vérifier que les types TypeScript Caution, TypeCaution, StatutCaution sont disponibles depuis @prisma/client
 
 ## 2. Seed Data pour Tests
 
