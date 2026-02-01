@@ -22,6 +22,7 @@ model User {
   // Relations
   marches       Marche[]
   cautions      Caution[]
+  documents     Document[]
 
   @@map("users")
 }
@@ -79,7 +80,8 @@ model Marche {
   userId              String
   user                User           @relation(fields: [userId], references: [id])
 
-  cautions                      Caution[]
+  cautions            Caution[]
+  documents           Document[]
 
   @@map("marches")
   @@index([dateFinPrevue])
@@ -150,4 +152,73 @@ enum StatutCaution {
   EXPIREE
   LIBEREE
   APPELEE
+}
+
+// ============================================
+// DOCUMENTS & MÉDIAS
+// ============================================
+
+model Document {
+  id                String         @id @default(cuid())
+  nom               String
+  nomOriginal       String         // Nom fichier uploadé
+  type              TypeDocument
+  phase             PhaseMarche?   // Phase du marché (optionnel)
+  taille            Int            // En bytes
+  mimeType          String
+  storagePath       String         // Chemin dans Supabase Storage
+  storageUrl        String?        // URL publique (si applicable)
+
+  // Métadonnées
+  description       String?        @db.Text
+  dateValidite      DateTime?      // Pour cautions, certifications
+  tags              String[]       @default([])
+
+  // Versioning
+  version           Int            @default(1)
+  documentParentId  String?        // Si c'est une version d'un doc existant
+  documentParent    Document?      @relation("DocumentVersions", fields: [documentParentId], references: [id], onDelete: SetNull)
+  versions          Document[]     @relation("DocumentVersions")
+
+  // Soft delete
+  deleted           Boolean        @default(false)
+  deletedAt         DateTime?
+
+  // Relations
+  marcheId          String?
+  marche            Marche?        @relation(fields: [marcheId], references: [id], onDelete: Cascade)
+
+  userId            String
+  user              User           @relation(fields: [userId], references: [id])
+
+  // Timestamps
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  // Index pour performance
+  @@index([type])
+  @@index([marcheId])
+  @@index([deleted])
+  @@index([dateValidite])
+  @@index([createdAt])
+  @@map("documents")
+}
+
+enum TypeDocument {
+  DAO
+  DRP
+  CAUTION_BANCAIRE
+  COURRIER
+  PV_RECEPTION
+  ORDRE_SERVICE
+  DOCUMENT_VEHICULE
+  AUTRE
+}
+
+enum PhaseMarche {
+  PREPARATION
+  SOUMISSION
+  ATTRIBUTION
+  EXECUTION
+  CLOTURE
 }
