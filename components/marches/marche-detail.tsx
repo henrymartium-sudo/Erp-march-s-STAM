@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatutBadge } from './statut-badge'
 import { DeleteMarcheDialog } from './delete-marche-dialog'
+import { MarcheDocumentsSection } from './marche-documents-section'
 import { formatMontant, formatDateLong, formatDelai } from '@/lib/utils/format'
 import { ArrowLeft, Pencil } from 'lucide-react'
 
@@ -396,6 +397,9 @@ export function MarcheDetail({ marche }: MarcheDetailProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* Section Documents */}
+      <MarcheDocumentsSection marcheId={marche.id} />
 
       {/* Boutons d'action */}
       <div className="flex gap-4">

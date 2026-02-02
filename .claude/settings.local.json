@@ -52,7 +52,19 @@
       "WebSearch",
       "Bash(npm run dev:clean:*)",
       "Bash(ping:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(gh pr create:*)",
+      "Bash(set PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=yes)",
+      "Bash($env:PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"yes\")",
+      "Bash(PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=yes npx prisma migrate reset:*)",
+      "Bash(set PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=1)",
+      "Bash($env:PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"1\")",
+      "Bash(PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"1\" npx prisma migrate reset:*)",
+      "Skill(commit-commands:commit)",
+      "mcp__plugin_supabase_supabase__list_projects",
+      "mcp__plugin_supabase_supabase__get_publishable_keys",
+      "mcp__plugin_supabase_supabase__get_project_url",
+      "Bash(npx tsx:*)"
     ]
   }
 }
