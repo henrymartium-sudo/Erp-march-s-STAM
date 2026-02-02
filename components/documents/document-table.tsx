@@ -57,22 +57,22 @@ export function DocumentTable({
 
   // Tri des documents
   const sortedDocuments = [...documents].sort((a, b) => {
-    let aValue: any = a[sortField]
-    let bValue: any = b[sortField]
+    let comparison = 0
 
-    if (sortField === 'createdAt') {
-      aValue = new Date(aValue).getTime()
-      bValue = new Date(bValue).getTime()
-    } else if (sortField === 'nom' || sortField === 'type') {
-      aValue = aValue.toLowerCase()
-      bValue = bValue.toLowerCase()
+    switch (sortField) {
+      case 'createdAt':
+        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        break
+      case 'taille':
+        comparison = a.taille - b.taille
+        break
+      case 'nom':
+      case 'type':
+        comparison = a[sortField].toLowerCase().localeCompare(b[sortField].toLowerCase())
+        break
     }
 
-    if (sortDirection === 'asc') {
-      return aValue > bValue ? 1 : -1
-    } else {
-      return aValue < bValue ? 1 : -1
-    }
+    return sortDirection === 'asc' ? comparison : -comparison
   })
 
   // Gérer le tri

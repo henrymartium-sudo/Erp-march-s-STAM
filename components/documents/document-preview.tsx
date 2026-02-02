@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Download, Loader2, AlertCircle } from 'lucide-react'
-import { formatTaille } from '@/lib/utils/document'
+import { formatTaille, isPdfFile, isImageFile, isPreviewable } from '@/lib/utils/document'
 import { DocumentBadge } from './document-badge'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -33,9 +33,9 @@ export function DocumentPreview({
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const isPdf = document?.mimeType === 'application/pdf'
-  const isImage = document?.mimeType.startsWith('image/')
-  const isPreviewable = isPdf || isImage
+  const isPdf = document ? isPdfFile(document.mimeType) : false
+  const isImage = document ? isImageFile(document.mimeType) : false
+  const canPreview = document ? isPreviewable(document.mimeType) : false
 
   // Charger l'URL signée
   useEffect(() => {
@@ -45,7 +45,7 @@ export function DocumentPreview({
       return
     }
 
-    if (!isPreviewable) {
+    if (!canPreview) {
       setError('Ce type de fichier ne peut pas être prévisualisé')
       return
     }
@@ -57,12 +57,12 @@ export function DocumentPreview({
       try {
         const result = await getSignedUrlForDocument(document.id)
 
-        if (result.success && result.data) {
+        if (result.success) {
           setPreviewUrl(result.data)
         } else {
-          setError(result.error || 'Erreur lors du chargement de la prévisualisation')
+          setError(result.error)
         }
-      } catch (err) {
+      } catch {
         setError('Erreur lors du chargement de la prévisualisation')
       } finally {
         setIsLoading(false)
@@ -70,7 +70,7 @@ export function DocumentPreview({
     }
 
     loadPreviewUrl()
-  }, [document, open, isPreviewable])
+  }, [document, open, canPreview])
 
   if (!document) return null
 
@@ -172,7 +172,7 @@ export function DocumentPreview({
               </>
             )}
 
-            {!isLoading && !error && !isPreviewable && (
+            {!isLoading && !error && !canPreview && (
               <div className="text-center p-8">
                 <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground mb-4">
@@ -193,7 +193,7 @@ export function DocumentPreview({
         </div>
 
         {/* Actions */}
-        {onDownload && isPreviewable && (
+        {onDownload && canPreview && (
           <div className="pt-4 border-t">
             <Button onClick={() => onDownload(document)} className="w-full">
               <Download className="mr-2 h-4 w-4" />

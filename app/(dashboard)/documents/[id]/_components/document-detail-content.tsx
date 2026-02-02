@@ -48,13 +48,13 @@ export function DocumentDetailContent({ document }: DocumentDetailContentProps) 
   const handleDownload = async () => {
     try {
       const result = await getSignedUrlForDocument(document.id)
-      if (result.success && result.data) {
+      if (result.success) {
         window.open(result.data, '_blank')
         toast.success('Téléchargement lancé')
       } else {
-        toast.error(result.error || 'Erreur lors du téléchargement')
+        toast.error(result.error)
       }
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors du téléchargement')
     }
   }
@@ -68,9 +68,9 @@ export function DocumentDetailContent({ document }: DocumentDetailContentProps) 
         toast.success('Document supprimé avec succès')
         router.push('/documents')
       } else {
-        toast.error(result.error || 'Erreur lors de la suppression')
+        toast.error(result.error)
       }
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors de la suppression')
     } finally {
       setIsDeleting(false)

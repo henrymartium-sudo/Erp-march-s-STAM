@@ -42,7 +42,7 @@ export const documentBaseSchema = z.object({
     .max(255, 'Le nom ne peut pas dépasser 255 caractères'),
 
   type: z.nativeEnum(TypeDocument, {
-    required_error: 'Le type de document est requis',
+    error: 'Le type de document est requis',
   }),
 
   phase: z.nativeEnum(PhaseMarche).optional().nullable(),
@@ -197,3 +197,8 @@ export type DocumentBase = z.infer<typeof documentBaseSchema>
 export type CreateDocumentInput = z.infer<typeof createDocumentSchema>
 export type UpdateDocumentInput = z.infer<typeof updateDocumentSchema>
 export type DocumentFilters = z.infer<typeof documentFiltersSchema>
+
+/**
+ * Type d'entrée pour les filtres UI (page/pageSize optionnels grâce aux defaults)
+ */
+export type DocumentFiltersInput = z.input<typeof documentFiltersSchema>

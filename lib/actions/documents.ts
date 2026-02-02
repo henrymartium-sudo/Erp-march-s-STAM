@@ -79,7 +79,7 @@ export async function uploadDocument(
         nom: nom || file.name,
         nomOriginal: file.name,
         type,
-        phase: phase || null,
+        phase: (phase as import('@prisma/client').PhaseMarche) || null,
         taille: file.size,
         mimeType: file.type,
         storagePath: uploadData.path,

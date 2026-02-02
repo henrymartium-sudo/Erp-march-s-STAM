@@ -49,14 +49,13 @@ export function DocumentVersionHistory({
       try {
         const result = await getDocumentVersions(document.id)
 
-        if (result.success && result.data) {
-          // Trier par version décroissante (la plus récente en premier)
-          const sorted = result.data.sort((a, b) => b.version - a.version)
+        if (result.success) {
+          const sorted = [...result.data].sort((a, b) => b.version - a.version)
           setVersions(sorted)
         } else {
-          setError(result.error || 'Erreur lors du chargement des versions')
+          setError(result.error)
         }
-      } catch (err) {
+      } catch {
         setError('Erreur lors du chargement des versions')
       } finally {
         setIsLoading(false)
@@ -191,19 +190,21 @@ export function DocumentVersionHistory({
                   </div>
 
                   {/* Indicateur de changements */}
-                  {index > 0 && versions[index - 1] && (
-                    <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
-                      {version.taille !== versions[index - 1].taille && (
+                  {(() => {
+                    const newerVersion = index > 0 ? versions[index - 1] : null
+                    if (!newerVersion) return null
+                    if (version.taille === newerVersion.taille) return null
+
+                    const sizeDiff = version.taille - newerVersion.taille
+                    return (
+                      <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
                         <span>
-                          Taille modifiée:{' '}
-                          {version.taille > versions[index - 1].taille ? '+' : ''}
-                          {formatTaille(
-                            Math.abs(version.taille - versions[index - 1].taille)
-                          )}
+                          Taille modifiée: {sizeDiff > 0 ? '+' : ''}
+                          {formatTaille(Math.abs(sizeDiff))}
                         </span>
-                      )}
-                    </div>
-                  )}
+                      </div>
+                    )
+                  })()}
                 </div>
               ))}
             </div>

@@ -15,14 +15,12 @@ import {
 } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { TypeDocument, PhaseMarche } from '@prisma/client'
-import { TYPE_DOCUMENT_LABELS, PHASE_MARCHE_LABELS } from '@/lib/utils/document'
+import { TYPE_DOCUMENT_LABELS, PHASE_MARCHE_LABELS, formatTaille } from '@/lib/utils/document'
 import { ALLOWED_FILE_EXTENSIONS, MAX_FILE_SIZE } from '@/lib/validations/document'
-import { formatTaille } from '@/lib/utils/document'
-import { Upload, FileText, X, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Upload, FileText, X, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { uploadDocument } from '@/lib/actions/documents'
 import { toast } from 'sonner'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface DocumentUploadProps {
   marcheId?: string
@@ -99,9 +97,9 @@ export function DocumentUpload({ marcheId, onSuccess, onCancel }: DocumentUpload
       e.preventDefault()
       setIsDragging(false)
 
-      const files = Array.from(e.dataTransfer.files)
-      if (files.length > 0) {
-        handleFileSelect(files[0])
+      const firstFile = e.dataTransfer.files[0]
+      if (firstFile) {
+        handleFileSelect(firstFile)
       }
     },
     [handleFileSelect]
@@ -110,18 +108,18 @@ export function DocumentUpload({ marcheId, onSuccess, onCancel }: DocumentUpload
   // Input file handler
   const handleFileInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = e.target.files
-      if (files && files.length > 0) {
-        handleFileSelect(files[0])
+      const firstFile = e.target.files?.[0]
+      if (firstFile) {
+        handleFileSelect(firstFile)
       }
     },
     [handleFileSelect]
   )
 
   // Supprimer le fichier sélectionné
-  const handleRemoveFile = useCallback(() => {
+  const handleRemoveFile = () => {
     setFile(null)
-  }, [])
+  }
 
   // Soumettre le formulaire
   const handleSubmit = async (e: React.FormEvent) => {

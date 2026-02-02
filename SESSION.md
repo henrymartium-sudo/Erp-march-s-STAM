@@ -3,17 +3,17 @@
 **Date de création** : 2026-02-01
 **Dernière mise à jour** : 2026-02-02 (session complète)
 **Branche actuelle** : `feat/statuts-dynamiques-marches`
-**Statut global** : MVP en cours (75% complété)
+**Statut global** : MVP en cours (78% complété)
 
 ---
 
 ## 📊 Vue d'ensemble de l'avancement
 
-### Progression globale : 75% ███████████░░░░
+### Progression globale : 78% ████████████░░░
 
 | Phase | Statut | Progrès |
 |-------|--------|---------|
-| **MVP** | 🟡 En cours | 75% |
+| **MVP** | 🟡 En cours | 78% |
 | **V1** | ⚪ Non démarré | 0% |
 | **V2** | ⚪ Non démarré | 0% |
 
@@ -30,11 +30,11 @@
 | ⚠️ Dossier administratif | **En cours** | 30% | Schema défini, UI manquante |
 | ⚠️ Cautions & garanties | **En cours** | 50% | Schema + spec complète, UI à implémenter |
 | ❌ Exécution véhicules | **Non démarré** | 0% | Schema défini, pas d'UI |
-| ⚠️ Documents & médias | **Quasi-terminé** | 90% | Backend + Frontend complets, Bug à résoudre |
+| ✅ Documents & médias | **Quasi-terminé** | 95% | Backend + Frontend complets, Bug résolu, Tests E2E restants |
 | ✅ Tableaux de bord simples | **Terminé** | 80% | Dashboard basique, peut être enrichi |
 | ✅ Gestion utilisateurs basique | **Terminé** | 70% | Auth + RBAC ok, UI admin manquante |
 
-**Progression MVP : 75%** ███████████░░░░
+**Progression MVP : 78%** ████████████░░░
 
 ---
 
@@ -178,9 +178,9 @@
 
 ## 🚧 Fonctionnalités en cours
 
-### 1. Documents & Médias (90%) ⭐ QUASI-TERMINÉ
+### 1. Documents & Médias (95%) ✅ TERMINÉ (sauf tests)
 
-**Statut** : Backend + Frontend complets, Bug à résoudre, Tests manquants
+**Statut** : Backend + Frontend complets, Bug RÉSOLU, Tests E2E restants
 
 **Terminé** :
 - ✅ Schema Prisma complet (modèle Document + enums TypeDocument + PhaseMarche)
@@ -198,20 +198,19 @@
 - ✅ Utilitaires (`lib/utils/document.ts`)
 - ✅ Server Actions CRUD (`lib/actions/documents.ts`)
 - ✅ Guide configuration Supabase (`SUPABASE_STORAGE_SETUP.md`)
-- ✅ **8 Composants UI** (document-badge, icon, card, filters, upload, table, preview, version-history)
+- ✅ **8 Composants UI optimisés** (document-badge, icon, card, filters, upload, table, preview, version-history)
 - ✅ **3 Pages complètes** (liste, upload, détail)
 - ✅ **Intégration dans page marché** (marche-documents-section)
-
-**Blocages** :
-- ⚠️ **Bug chargement page** : `/documents` ne charge pas
-  - Cause probable : Composants shadcn/ui manquants ou erreur compilation
-  - À investiguer en priorité
+- ✅ **5 Composants shadcn/ui installés** (alert-dialog, popover, alert, dropdown-menu, skeleton)
+- ✅ **Toast notifications configurées** (sonner + Toaster)
+- ✅ **Navigation dashboard** (lien Documents ajouté)
+- ✅ **0 erreurs TypeScript** - Build compile avec succès
+- ✅ **Code nettoyé et optimisé** (13 fichiers raffinés, 30+ imports nettoyés)
 
 **À faire** :
-- 🔴 **URGENT** : Résoudre bug chargement page (1-2h)
-- ❌ Tests Playwright (100 scénarios) - 4-5h
+- ❌ Tests Playwright E2E (100 scénarios) - 4-5h
 
-**Estimation restante** : 5-7h (1 jour)
+**Estimation restante** : 4-5h (tests uniquement)
 
 **Fichiers créés aujourd'hui** :
 - `lib/supabase/client.ts`
@@ -724,17 +723,71 @@ CRON_SECRET=xxx
   - À investiguer : Vérifier logs dev server et console navigateur
   - Solution proposée : Installer les composants manquants avec `npx shadcn-ui@latest add`
 
+**Phase 5 : Résolution Bug & Optimisation (2026-02-02 après-midi)** :
+
+**Étape 1 : Investigation & Diagnostic (30 min)** :
+- ✅ Lecture des fichiers pages et composants documents
+- ✅ Identification des composants shadcn/ui manquants :
+  - alert-dialog (utilisé dans documents-content.tsx)
+  - popover (utilisé dans document-filters.tsx pour sélecteurs date)
+  - alert (utilisé dans document-preview.tsx et document-version-history.tsx)
+  - dropdown-menu (utilisé dans document-table.tsx pour menu actions)
+  - skeleton (utilisé dans documents/page.tsx)
+- ✅ Identification package npm manquant : sonner (toast notifications)
+- ✅ Utilisation Context7 pour obtenir documentation installation à jour
+
+**Étape 2 : Installation Composants & Packages (15 min)** :
+- ✅ Installation shadcn/ui : `npx shadcn@latest add alert-dialog popover alert dropdown-menu skeleton`
+- ✅ Installation sonner : `npm install sonner`
+- ✅ Configuration Toaster dans `app/layout.tsx` (position: top-right)
+
+**Étape 3 : Corrections Next.js 15 (30 min)** :
+- ✅ Correction `params` asynchrones (3 pages) :
+  - `app/(dashboard)/documents/[id]/page.tsx`
+  - `app/(dashboard)/documents/page.tsx` (searchParams)
+  - `app/(dashboard)/documents/upload/page.tsx` (searchParams)
+- ✅ Pattern Next.js 15 : `params: Promise<{ id: string }>` avec `await params`
+
+**Étape 4 : Corrections TypeScript (45 min)** :
+- ✅ Correction discriminated unions (ActionResult error handling)
+- ✅ Correction type DocumentFilters (Partial → DocumentFiltersInput)
+- ✅ Extraction correcte de `result.data.documents` au lieu de `result.data`
+- ✅ Build TypeScript : **0 erreurs** ✓
+
+**Étape 5 : Simplification & Raffinement Code (1h)** :
+- ✅ Utilisation agent code-simplifier:code-simplifier
+- ✅ **13 fichiers optimisés** :
+  - Supprimé types `any` (document-table.tsx - switch au lieu de coercion)
+  - Utilisé fonctions utilitaires existantes (isPdfFile, isImageFile)
+  - Nettoyé 30+ imports inutilisés
+  - Ajouté imports manquants (Badge dans document-card)
+  - Corrigé mutations array (immutabilité)
+  - Simplifié error handling patterns
+  - Ajouté lien navigation Documents dans dashboard
+  - Ajouté type `DocumentFiltersInput` (z.input pour champs optionnels)
+  - Fixé API Zod v4 (`required_error` → `error`)
+
+**Résultat Final** :
+- ✅ **0 erreurs TypeScript**
+- ✅ **Build compile avec succès** (exit code 0)
+- ✅ **Routes documents générées** (255 kB First Load)
+- ✅ **Code nettoyé, optimisé et maintenable**
+
+**Statistiques session** :
+- Durée totale : ~3h (investigation + résolution + optimisation)
+- Composants installés : 5 shadcn/ui + 1 npm package
+- Fichiers corrigés : 16 fichiers
+- Erreurs résolues : 100% (de 10+ erreurs à 0)
+- Taux de complétion module Documents : **95%** (tests E2E restants)
+
 **Prochaines actions** :
-1. **URGENT** : Résoudre le bug de chargement de page
-   - Vérifier et installer composants shadcn/ui manquants
-   - Corriger erreurs de compilation TypeScript
-   - Tester à nouveau l'interface
-2. Créer tests Playwright (Tâche #5) - 100 scénarios (~4-5h)
-3. Passer au module Cautions & Garanties (OpenSpec déjà complète)
+1. Créer tests Playwright E2E (Tâche #5) - 100 scénarios (~4-5h)
+2. Passer au module Cautions & Garanties (OpenSpec déjà complète, 2-3 jours)
+3. Système d'Alertes (2 jours)
 
 ---
 
-**Dernière mise à jour** : 2026-02-01 à 21:00
+**Dernière mise à jour** : 2026-02-02 à 16:30
 **Prochaine revue** : Après implémentation Frontend Documents & Médias
 
 ---

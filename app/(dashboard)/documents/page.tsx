@@ -12,10 +12,13 @@ import { Skeleton } from '@/components/ui/skeleton'
 export default async function DocumentsPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined }
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   // Vérifier l'authentification
   await requireAuth()
+
+  // Await searchParams (Next.js 15 requirement)
+  const params = await searchParams
 
   return (
     <div className="space-y-6">
@@ -40,7 +43,7 @@ export default async function DocumentsPage({
 
       {/* Contenu avec Suspense */}
       <Suspense fallback={<DocumentsPageSkeleton />}>
-        <DocumentsContent searchParams={searchParams} />
+        <DocumentsContent searchParams={params} />
       </Suspense>
     </div>
   )

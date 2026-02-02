@@ -60,12 +60,12 @@ export function MarcheDocumentsSection({ marcheId }: MarcheDocumentsSectionProps
     setIsLoading(true)
     try {
       const result = await getDocumentsByMarche(marcheId)
-      if (result.success && result.data) {
+      if (result.success) {
         setDocuments(result.data)
       } else {
-        toast.error(result.error || 'Erreur lors du chargement des documents')
+        toast.error(result.error)
       }
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors du chargement des documents')
     } finally {
       setIsLoading(false)
@@ -86,13 +86,13 @@ export function MarcheDocumentsSection({ marcheId }: MarcheDocumentsSectionProps
   const handleDownload = async (document: Document) => {
     try {
       const result = await getSignedUrlForDocument(document.id)
-      if (result.success && result.data) {
+      if (result.success) {
         window.open(result.data, '_blank')
         toast.success('Téléchargement lancé')
       } else {
-        toast.error(result.error || 'Erreur lors du téléchargement')
+        toast.error(result.error)
       }
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors du téléchargement')
     }
   }

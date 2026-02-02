@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Download, Eye, Trash2, History } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { requireAuth } from '@/lib/utils/permissions'
 import { getDocumentById } from '@/lib/actions/documents'
 import { DocumentDetailContent } from './_components/document-detail-content'
@@ -12,13 +12,16 @@ import { DocumentDetailContent } from './_components/document-detail-content'
 export default async function DocumentDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
   // Vérifier l'authentification
   await requireAuth()
 
+  // Await params (Next.js 15 requirement)
+  const { id } = await params
+
   // Récupérer le document
-  const result = await getDocumentById(params.id)
+  const result = await getDocumentById(id)
 
   if (!result.success || !result.data) {
     notFound()

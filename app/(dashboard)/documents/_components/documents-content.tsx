@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import {
   DocumentTable,
   DocumentFilters,
@@ -10,7 +9,7 @@ import {
 } from '@/components/documents'
 import { getAllDocuments, deleteDocument, getSignedUrlForDocument } from '@/lib/actions/documents'
 import type { Document } from '@prisma/client'
-import type { DocumentFilters as Filters } from '@/lib/validations/document'
+import type { DocumentFiltersInput } from '@/lib/validations/document'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -32,10 +31,9 @@ interface DocumentsContentProps {
  * Contenu client de la page documents (filtres, table, dialogs)
  */
 export function DocumentsContent({ searchParams }: DocumentsContentProps) {
-  const router = useRouter()
   const [documents, setDocuments] = useState<Document[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [filters, setFilters] = useState<Filters>({})
+  const [filters, setFilters] = useState<DocumentFiltersInput>({})
 
   // Preview state
   const [previewDocument, setPreviewDocument] = useState<Document | null>(null)
@@ -55,12 +53,12 @@ export function DocumentsContent({ searchParams }: DocumentsContentProps) {
       setIsLoading(true)
       try {
         const result = await getAllDocuments(filters)
-        if (result.success && result.data) {
-          setDocuments(result.data)
+        if (result.success) {
+          setDocuments(result.data.documents)
         } else {
-          toast.error(result.error || 'Erreur lors du chargement des documents')
+          toast.error(result.error)
         }
-      } catch (error) {
+      } catch {
         toast.error('Erreur lors du chargement des documents')
       } finally {
         setIsLoading(false)
@@ -80,14 +78,13 @@ export function DocumentsContent({ searchParams }: DocumentsContentProps) {
   const handleDownload = async (document: Document) => {
     try {
       const result = await getSignedUrlForDocument(document.id)
-      if (result.success && result.data) {
-        // Ouvrir dans un nouvel onglet pour télécharger
+      if (result.success) {
         window.open(result.data, '_blank')
         toast.success('Téléchargement lancé')
       } else {
-        toast.error(result.error || 'Erreur lors du téléchargement')
+        toast.error(result.error)
       }
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors du téléchargement')
     }
   }
@@ -104,9 +101,9 @@ export function DocumentsContent({ searchParams }: DocumentsContentProps) {
         setDocuments(documents.filter((d) => d.id !== deleteDocumentId))
         setDeleteDocumentId(null)
       } else {
-        toast.error(result.error || 'Erreur lors de la suppression')
+        toast.error(result.error)
       }
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors de la suppression')
     } finally {
       setIsDeleting(false)
@@ -125,7 +122,6 @@ export function DocumentsContent({ searchParams }: DocumentsContentProps) {
       <DocumentFilters
         filters={filters}
         onFiltersChange={setFilters}
-        showMarcheFilter={true}
       />
 
       {/* Tableau */}

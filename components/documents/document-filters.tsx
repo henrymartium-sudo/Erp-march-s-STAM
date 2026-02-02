@@ -23,12 +23,11 @@ import { CalendarIcon, FilterX, Search } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
-import type { DocumentFilters } from '@/lib/validations/document'
+import type { DocumentFiltersInput } from '@/lib/validations/document'
 
 interface DocumentFiltersProps {
-  filters: DocumentFilters
-  onFiltersChange: (filters: DocumentFilters) => void
-  showMarcheFilter?: boolean
+  filters: DocumentFiltersInput
+  onFiltersChange: (filters: DocumentFiltersInput) => void
 }
 
 /**
@@ -37,7 +36,6 @@ interface DocumentFiltersProps {
 export function DocumentFilters({
   filters,
   onFiltersChange,
-  showMarcheFilter = true,
 }: DocumentFiltersProps) {
   const [search, setSearch] = useState(filters.search || '')
 
@@ -150,7 +148,7 @@ export function DocumentFilters({
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {filters.dateDebut ? (
-                  format(new Date(filters.dateDebut), 'dd MMM yyyy', { locale: fr })
+                  format(filters.dateDebut, 'dd MMM yyyy', { locale: fr })
                 ) : (
                   <span>Sélectionner</span>
                 )}
@@ -159,11 +157,11 @@ export function DocumentFilters({
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
                 mode="single"
-                selected={filters.dateDebut ? new Date(filters.dateDebut) : undefined}
+                selected={filters.dateDebut ?? undefined}
                 onSelect={(date) =>
                   onFiltersChange({
                     ...filters,
-                    dateDebut: date ? date.toISOString() : undefined,
+                    dateDebut: date ?? undefined,
                   })
                 }
                 initialFocus
@@ -187,7 +185,7 @@ export function DocumentFilters({
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {filters.dateFin ? (
-                  format(new Date(filters.dateFin), 'dd MMM yyyy', { locale: fr })
+                  format(filters.dateFin, 'dd MMM yyyy', { locale: fr })
                 ) : (
                   <span>Sélectionner</span>
                 )}
@@ -196,15 +194,15 @@ export function DocumentFilters({
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
                 mode="single"
-                selected={filters.dateFin ? new Date(filters.dateFin) : undefined}
+                selected={filters.dateFin ?? undefined}
                 onSelect={(date) =>
                   onFiltersChange({
                     ...filters,
-                    dateFin: date ? date.toISOString() : undefined,
+                    dateFin: date ?? undefined,
                   })
                 }
                 disabled={(date) =>
-                  filters.dateDebut ? date < new Date(filters.dateDebut) : false
+                  filters.dateDebut ? date < filters.dateDebut : false
                 }
                 initialFocus
                 locale={fr}
@@ -230,12 +228,12 @@ export function DocumentFilters({
           )}
           {filters.dateDebut && (
             <span className="px-2 py-1 bg-secondary rounded-md">
-              Depuis {format(new Date(filters.dateDebut), 'dd/MM/yyyy')}
+              Depuis {format(filters.dateDebut, 'dd/MM/yyyy')}
             </span>
           )}
           {filters.dateFin && (
             <span className="px-2 py-1 bg-secondary rounded-md">
-              Jusqu'au {format(new Date(filters.dateFin), 'dd/MM/yyyy')}
+              Jusqu'au {format(filters.dateFin, 'dd/MM/yyyy')}
             </span>
           )}
         </div>

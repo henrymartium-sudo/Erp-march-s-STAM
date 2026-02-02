@@ -10,12 +10,14 @@ import { DocumentUploadContent } from './_components/document-upload-content'
 export default async function DocumentUploadPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined }
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   // Vérifier les permissions (ADMIN ou AVANCE)
   await requireMarcheWrite()
 
-  const marcheId = typeof searchParams.marcheId === 'string' ? searchParams.marcheId : undefined
+  // Await searchParams (Next.js 15 requirement)
+  const params = await searchParams
+  const marcheId = typeof params.marcheId === 'string' ? params.marcheId : undefined
 
   return (
     <div className="space-y-6 max-w-4xl">
