@@ -1,9 +1,10 @@
 # Session de Développement - ERP Marchés Publics
 
 **Date de création** : 2026-02-01
-**Dernière mise à jour** : 2026-02-02 (session complète)
+**Dernière mise à jour** : 2026-02-02 (session complète + déploiement)
 **Branche actuelle** : `feat/statuts-dynamiques-marches`
 **Statut global** : MVP en cours (78% complété)
+**🚀 Déploiement Production** : https://erp-marches-stam-m9mr7v33q-abel-atsus-projects.vercel.app
 
 ---
 
@@ -785,9 +786,71 @@ CRON_SECRET=xxx
 2. Passer au module Cautions & Garanties (OpenSpec déjà complète, 2-3 jours)
 3. Système d'Alertes (2 jours)
 
+**Phase 6 : Déploiement Vercel (2026-02-02 soir - 1h30)** :
+
+**Étape 1 : Configuration Vercel (30 min)** :
+- ✅ Vérification Vercel CLI installé (v50.6.1)
+- ✅ Authentification Vercel (henrymartium-3085)
+- ✅ Création projet `erp-marches-stam`
+- ✅ Configuration variables d'environnement (6 variables) :
+  - DATABASE_URL (PostgreSQL Supabase)
+  - NEXTAUTH_SECRET
+  - NEXTAUTH_URL (https://erp-marches-stam.vercel.app)
+  - NEXT_PUBLIC_SUPABASE_URL
+  - NEXT_PUBLIC_SUPABASE_ANON_KEY
+  - SUPABASE_SERVICE_ROLE_KEY
+
+**Étape 2 : Résolution Problèmes Build (45 min)** :
+- ✅ Ajout script `postinstall: "prisma generate"` pour génération client Prisma
+- ✅ Création répertoire `public/` requis par Vercel
+- ✅ Désactivation middleware pour compatibilité Edge Runtime
+  - Problème : NextAuth + Prisma incompatibles avec Edge Runtime
+  - Solution : Protection auth uniquement via `requireAuth()` côté serveur
+
+**Étape 3 : Déploiement Production Réussi (15 min)** :
+- ✅ Build compilé avec succès (0 erreurs)
+- ✅ Génération routes statiques et dynamiques
+- ✅ Déploiement sur infrastructure Vercel (Washington DC - iad1)
+- ✅ Application en ligne et fonctionnelle
+
+**URL de Production** :
+- **Principal** : https://erp-marches-stam-m9mr7v33q-abel-atsus-projects.vercel.app
+- **Domaine** : https://erp-marches-stam.vercel.app (propagation en cours)
+
+**Routes Déployées** :
+- `/` - Dashboard (129 B, 102 kB First Load)
+- `/login` - Page de connexion (4.64 kB, 157 kB)
+- `/marches` - Liste marchés (2.93 kB, 145 kB)
+- `/marches/[id]` - Détail marché (3.89 kB, 256 kB)
+- `/marches/[id]/edit` - Édition marché (136 B, 192 kB)
+- `/marches/nouveau` - Nouveau marché (136 B, 192 kB)
+- `/documents` - Liste documents (2.94 kB, 255 kB)
+- `/documents/[id]` - Détail document (3.59 kB, 256 kB)
+- `/documents/upload` - Upload document (348 B, 252 kB)
+
+**Statistiques Déploiement** :
+- Temps de build : ~1 minute
+- Middleware : 229 kB
+- First Load JS partagé : 102 kB
+- Routes statiques : 3
+- Routes dynamiques : 6
+- Infrastructure : Vercel Edge Network (CDN global)
+
+**Commits de Déploiement** :
+- `6a0b9d5` - Ajout script postinstall Prisma
+- `8ae0fd0` - Création répertoire public
+- `0be6777` - Désactivation middleware (Edge Runtime)
+
+**Résultat Final** :
+- ✅ **Application MVP déployée en production**
+- ✅ **Accessible publiquement via lien Vercel**
+- ✅ **Base de données connectée** (Supabase PostgreSQL)
+- ✅ **Storage configuré** (Supabase Storage)
+- ✅ **Authentification fonctionnelle** (NextAuth v5)
+
 ---
 
-**Dernière mise à jour** : 2026-02-02 à 16:30
+**Dernière mise à jour** : 2026-02-02 à 18:00
 **Prochaine revue** : Après implémentation Frontend Documents & Médias
 
 ---
