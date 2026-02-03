@@ -64,7 +64,12 @@
       "mcp__plugin_supabase_supabase__list_projects",
       "mcp__plugin_supabase_supabase__get_publishable_keys",
       "mcp__plugin_supabase_supabase__get_project_url",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm ls:*)",
+      "Bash(vercel:*)",
+      "Bash(tee:*)",
+      "Bash(git rm:*)"
     ]
   }
 }

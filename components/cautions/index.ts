@@ -13,3 +13,4 @@ export { CautionTimeline } from './caution-timeline';
 
 // Composants de formulaire
 export { CautionForm } from './caution-form';
+export type { CautionFormValues } from './caution-form';

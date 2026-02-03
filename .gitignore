@@ -49,3 +49,6 @@ __pycache__/
 
 # IMPORTANT: On INCLUT le dossier .claude/ pour partager la configuration
 # .claude/ est déjà tracké par défaut car on ne l'exclut pas
+
+.vercel
+.env*.local

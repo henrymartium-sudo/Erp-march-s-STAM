@@ -39,7 +39,7 @@ import {
 import type { TypeCaution, StatutCaution } from '@prisma/client';
 
 // Type pour le formulaire (tous les champs requis)
-type CautionFormValues = {
+export type CautionFormValues = {
   reference: string;
   type: TypeCaution;
   montant: number;
