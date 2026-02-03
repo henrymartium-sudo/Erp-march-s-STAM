@@ -35,6 +35,11 @@ nul
 test-*.js
 .playwright-mcp/
 
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
 # Base de données locale (si vous avez des fichiers SQLite locaux)
 *.db
 *.sqlite
