@@ -29,7 +29,7 @@
 | ✅ Référentiel marché | **Terminé** | 100% | CRUD complet, 13 statuts dynamiques |
 | ✅ Statuts essentiels | **Terminé** | 100% | Tous les statuts + champs conditionnels |
 | ⚠️ Dossier administratif | **En cours** | 30% | Schema défini, UI manquante |
-| ⚠️ Cautions & garanties | **En cours** | 60% | Backend 100% terminé (Jour 1), UI à implémenter |
+| ⚠️ Cautions & garanties | **En cours** | 85% | Backend 100% (Jour 1) + Composants 100% (Jour 2), Pages à créer |
 | ❌ Exécution véhicules | **Non démarré** | 0% | Schema défini, pas d'UI |
 | ✅ Documents & médias | **Quasi-terminé** | 95% | Backend + Frontend complets, Bug résolu, Tests E2E restants |
 | ✅ Tableaux de bord simples | **Terminé** | 80% | Dashboard basique, peut être enrichi |
@@ -224,9 +224,9 @@
 
 ---
 
-### 2. Cautions & Garanties (60%)
+### 2. Cautions & Garanties (85%)
 
-**Statut** : Backend 100% terminé (Jour 1), UI à implémenter
+**Statut** : Backend 100% (Jour 1) + Composants 100% (Jour 2), Pages CRUD à créer (Jour 3)
 
 **Terminé** :
 - ✅ Schema Prisma complet (4 types, 4 statuts)
@@ -240,23 +240,29 @@
   - 6 Server Actions CRUD (464 lignes)
 - ✅ Système d'alerte intelligent (niveaux, seuils)
 - ✅ Intégration RBAC complète
+- ✅ **Frontend complet (1891 lignes) - Commit `75f00be`** :
+  - 7 composants React (badge, card, filters, timeline, form, list, detail)
+  - React Hook Form + Zod validation
+  - Suggestions automatiques (montant, dates)
+  - Timeline visuelle par mois
+  - Filtres avancés multiples
+  - Responsive design
 
 **À faire** :
-- ❌ Pages : `/marches/cautions/`, `/marches/cautions/[id]/`, `/marches/cautions/nouvelle/`
-- ❌ Server Actions : createCaution, updateCaution, deleteCaution, getCautions
-- ❌ Composants : CautionForm, CautionList, CautionDetail
-- ❌ Validation Zod
-- ❌ Filtres et recherche
-- ❌ Association avec marchés
+- ❌ Pages CRUD : `/cautions/`, `/cautions/[id]/`, `/cautions/nouvelle/`, `/cautions/[id]/edit/`
+- ❌ Server Components pour pages
+- ❌ Client Components pour interactivité
+- ❌ Intégration section dans page marché (`marche-cautions-section.tsx`)
+- ❌ Navigation dashboard (lien Cautions)
 
-**Estimation** : 2-3 jours de développement
+**Estimation restante** : 1 jour (Jour 3 - Pages + Intégration)
 
-**Fichiers à créer** :
-- `lib/actions/cautions.ts`
-- `lib/validations/caution.ts`
-- `components/cautions/caution-form.tsx`
-- `components/cautions/caution-list.tsx`
-- `app/(dashboard)/marches/cautions/page.tsx`
+**Fichiers à créer (Jour 3)** :
+- `app/(dashboard)/cautions/page.tsx` (liste)
+- `app/(dashboard)/cautions/nouvelle/page.tsx` (création)
+- `app/(dashboard)/cautions/[id]/page.tsx` (détail)
+- `app/(dashboard)/cautions/[id]/edit/page.tsx` (édition)
+- `components/marches/marche-cautions-section.tsx` (intégration)
 
 ---
 
@@ -900,7 +906,7 @@ CRON_SECRET=xxx
 
 ---
 
-**Dernière mise à jour** : 2026-02-03 à 18:00 (Jour 1 Backend Cautions terminé)
+**Dernière mise à jour** : 2026-02-03 à 21:30 (Jour 2 Frontend Cautions terminé)
 **Prochaine revue** : Après Phase 1 de la roadmap MVP finale
 
 ---
@@ -1269,9 +1275,123 @@ touch lib/constants/caution.ts
 - Pattern identique à module Marches (cohérence codebase)
 - Refinements Zod pour validation métier avancée
 
-**Prochaine étape** : JOUR 2 - Frontend Cautions - Composants (8h)
+**Prochaine étape** : ~~JOUR 2 - Frontend Cautions - Composants (8h)~~ ✅ TERMINÉ
 - Badge, Card, Filters, Timeline, Form, List
 - Estimation : 8h
+
+---
+
+### **✅ JOUR 2 TERMINÉ - Frontend Cautions (2026-02-03 après-midi)**
+
+**Date** : 2026-02-03
+**Durée** : 3h30 (vs 8h estimées)
+**Objectif** : Implémenter tous les composants UI pour les cautions
+
+**Commit** : `75f00be` - feat(cautions): Implement complete frontend components for cautions module
+
+**Fichiers créés (1891 lignes)** :
+
+1. **caution-badge.tsx** (60 lignes) ✅
+   - Badge type/statut avec couleurs dynamiques
+   - Variantes de taille (sm, md, lg)
+   - Utilise constants de lib/constants/caution.ts
+
+2. **caution-card.tsx** (170 lignes) ✅
+   - Card compacte pour affichage liste
+   - Montant, banque, échéance, alerte visuelle
+   - Actions rapides (voir, éditer, supprimer)
+   - Border colorée selon niveau d'alerte (CRITIQUE/ATTENTION)
+   - Mode compact/normal
+
+3. **caution-filters.tsx** (340 lignes) ✅
+   - Filtres avancés multiples :
+     - Type (multi-select checkbox)
+     - Statut (multi-select checkbox)
+     - Niveau d'alerte (select)
+     - Dates émission/échéance (plages avec date picker)
+     - Recherche texte libre
+   - Badges filtres actifs avec suppression
+   - Panneau expand/collapse
+   - Bouton réinitialiser
+   - Compteur filtres actifs
+
+4. **caution-timeline.tsx** (220 lignes) ✅
+   - Timeline visuelle groupée par mois
+   - Ligne verticale avec points colorés
+   - Mois en cours marqué distinctement
+   - Tooltips au survol avec détails
+   - Cards cliquables vers détail
+   - Limite configurable (maxItems)
+   - Tri automatique par échéance
+
+5. **caution-form.tsx** (420 lignes) ✅
+   - React Hook Form + Zod validation
+   - Champs : reference, type, montant, dates, statut, banque, contact
+   - Suggestions automatiques intelligentes :
+     - Montant selon type + montant marché
+     - Date échéance selon type + date émission
+   - Warnings durée/montant incohérents
+   - Date pickers français (date-fns)
+   - Mode création/édition
+   - Loading state
+
+6. **caution-list.tsx** (220 lignes) ✅
+   - Grille responsive (1/2/3 colonnes)
+   - Pagination (20 items/page)
+   - Tri par : échéance, montant, date création
+   - Empty state
+   - Loading skeleton
+   - Compteur total + pages
+   - Scroll to top au changement page
+
+7. **caution-detail.tsx** (260 lignes) ✅
+   - Vue complète toutes informations
+   - 4 sections cards :
+     - En-tête (badges, référence, marché)
+     - Informations financières (montant, %, banque)
+     - Dates et durées (émission, échéance, restant)
+     - Métadonnées système (création, modification)
+   - Alerte visuelle niveau critique
+   - Actions (modifier, supprimer)
+   - Liens vers marché associé
+
+8. **index.ts** (15 lignes) ✅
+   - Barrel file exports propres
+   - Export type CautionFiltersState
+
+**Composants shadcn/ui ajoutés** :
+- ✅ tooltip (survol timeline)
+- ✅ separator (séparations sections)
+
+**Corrections apportées** :
+- ✅ Imports corrigés (getTypeCautionLabel dans utils, pas constants)
+- ✅ Noms champs alignés avec Prisma (reference/banqueNom au lieu de numero/organismeEmetteur)
+- ✅ Type formulaire personnalisé pour résoudre conflit statut optionnel
+- ✅ Import TypeCaution en double supprimé
+
+**Fonctionnalités implémentées** :
+- ✅ Système d'alerte intelligent (CRITIQUE ≤7j, ATTENTION ≤30j, INFO ≤60j)
+- ✅ Formatage dates françaises (date-fns + locale fr)
+- ✅ Formatage montants euros (Intl.NumberFormat)
+- ✅ Calculs automatiques (jours restants, durée totale, pourcentage marché)
+- ✅ Validation métier (durée cohérente, montant cohérent)
+- ✅ Suggestions intelligentes (montant/date selon type)
+- ✅ Responsive design complet
+- ✅ Type-safe TypeScript
+
+**Qualité** :
+- ✅ **0 erreurs TypeScript**
+- ✅ **Build compile avec succès** (exit code 0)
+- ✅ **1891 lignes de code frontend**
+- ✅ **Cohérence pattern** avec modules existants (Marches, Documents)
+
+**Statistiques** :
+- Durée réelle : 3h30 (vs 8h estimées)
+- Lignes de code : 1891
+- Fichiers créés : 10
+- Gain de temps : 4h30 (efficacité 56%)
+
+**Prochaine étape** : JOUR 3 - Pages CRUD Cautions + Intégration Marché + Dossier Admin (8h)
 
 ---
 
