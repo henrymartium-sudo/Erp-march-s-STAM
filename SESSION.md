@@ -1,9 +1,9 @@
 # Session de Développement - ERP Marchés Publics
 
 **Date de création** : 2026-02-01
-**Dernière mise à jour** : 2026-02-03 (Phase 1 terminée - Cautions 100% + Documents 100% + Tests E2E setup)
+**Dernière mise à jour** : 2026-02-03 (Utilisateurs test créés - Prêt pour tests production)
 **Branche actuelle** : `feat/mvp-cautions-priorite`
-**Statut global** : MVP en cours (87% complété → Phase 1 terminée + Jour 4 partiel)
+**Statut global** : MVP en cours (87% complété → Phase 1 terminée + Tests E2E + Env test prêt)
 **🚀 Déploiement Production** : https://erp-marches-stam-m9mr7v33q-abel-atsus-projects.vercel.app
 
 ---
@@ -1661,11 +1661,88 @@ tests/
 **✅ MODULE DOCUMENTS : 100% TERMINÉ** (95% → 100%)
 
 **Prochaines étapes** :
-1. Créer utilisateurs de test en DB (script seed)
+1. ~~Créer utilisateurs de test en DB (script seed)~~ ✅ FAIT
 2. Lancer les tests Documents : `npm run test:documents`
 3. Continuer Jour 4 : Migration Véhicules (backend)
 4. Jours 5-6 : Frontend Véhicules
 5. Jour 7 : Tests E2E Cautions + Véhicules
+
+---
+
+### **🎭 PRÉPARATION TESTS PRODUCTION (2026-02-03 soir - suite)**
+
+**Date** : 2026-02-03
+**Durée** : 1h
+**Objectif** : Créer utilisateurs de test et préparer l'environnement de test en production
+
+---
+
+**Phase 1 : Création scripts seed utilisateurs (30 min)** ✅
+
+- ✅ Génération hashs bcrypt réels pour 4 utilisateurs :
+  - Admin123! → `$2b$10$a94IdTcUzFVldVDRk9EZw..64x0mYHb4oylnpRshAMY0o6tSrBiKO`
+  - Avance123! → `$2b$10$pBhUB23NiURJu02vw3v/k./g5N1Yw150NaomlBFCcDUniyAEypuxi`
+  - Exploitation123! → `$2b$10$35VWYMAKTYqyrXATM.zDWO7o6IvYOcBmTjqL81PF3Y8CafHfASi7K`
+  - Visiteur123! → `$2b$10$jaltKl8slW/n3orsaDfMN.yalul1k0RqIM907evXPfyFshwNedaAK`
+
+- ✅ Création scripts seed :
+  - `prisma/seed-test-users.ts` (150 lignes) - Script Node.js avec Prisma + PostgreSQL adapter
+  - `prisma/seed-test-users.sql` (100 lignes) - Script SQL direct pour Supabase
+  - Configuration Pool PostgreSQL + PrismaPg adapter
+  - Gestion upsert (create or update)
+
+**Phase 2 : Documentation guide de test (20 min)** ✅
+
+- ✅ `GUIDE_TEST_UTILISATEURS.md` (200 lignes) :
+  - Instructions pas-à-pas Supabase SQL Editor
+  - Credentials complets des 4 utilisateurs de test
+  - Matrice des permissions par rôle
+  - Checklist de test pour 3 modules (Marchés, Cautions, Documents)
+  - Scénarios de test détaillés
+  - Troubleshooting et problèmes connus
+
+**Phase 3 : Déploiement et validation (10 min)** ✅
+
+- ✅ Push vers GitHub :
+  - Commit `eb11703` - Setup Playwright + 50 tests E2E
+  - Commit `ddcd399` - Scripts seed + guide de test
+- ✅ Déploiement automatique Vercel déclenché
+- ✅ Utilisateurs de test créés en production Supabase ✅
+
+**Statistiques** :
+- Durée : 1h
+- Fichiers créés : 3
+- Scripts : 2 (SQL + TypeScript)
+- Documentation : 1 guide complet
+- Utilisateurs créés : 4
+
+**Fichiers créés** :
+```
+prisma/
+├── seed-test-users.ts              # Script Node.js seed
+└── seed-test-users.sql             # Script SQL Supabase
+GUIDE_TEST_UTILISATEURS.md          # Guide complet test production
+```
+
+**Credentials de test (4 utilisateurs)** :
+```
+1. admin@erp-marches.local         Password: Admin123!         (ADMIN)
+2. avance@erp-marches.local        Password: Avance123!        (AVANCE)
+3. exploitation@erp-marches.local  Password: Exploitation123!  (EXPLOITATION)
+4. visiteur@erp-marches.local      Password: Visiteur123!      (VISITEUR)
+```
+
+**URLs de test** :
+- **Production** : https://erp-marches-stam-m9mr7v33q-abel-atsus-projects.vercel.app
+- **Supabase Dashboard** : https://supabase.com/dashboard
+
+**Commits** :
+- `eb11703` - test(e2e): Setup Playwright and implement complete Documents E2E test suite
+- `ddcd399` - feat(seed): Add test users seed scripts and testing guide
+
+**✅ ENVIRONNEMENT DE TEST PRÊT** : 4 utilisateurs créés, guide disponible, app en production
+
+**Prochaine action** : Tests manuels en production avec les 4 rôles
 
 ---
 
