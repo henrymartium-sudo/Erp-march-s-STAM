@@ -1,9 +1,9 @@
 # Session de Développement - ERP Marchés Publics
 
 **Date de création** : 2026-02-01
-**Dernière mise à jour** : 2026-02-02 (session complète + déploiement)
-**Branche actuelle** : `feat/statuts-dynamiques-marches`
-**Statut global** : MVP en cours (78% complété)
+**Dernière mise à jour** : 2026-02-03 (planification stratégique MVP final)
+**Branche actuelle** : `feat/statuts-dynamiques-marches` (prochaine : `feat/mvp-cautions-priorite`)
+**Statut global** : MVP en cours (78% complété → Roadmap 12 jours définie)
 **🚀 Déploiement Production** : https://erp-marches-stam-m9mr7v33q-abel-atsus-projects.vercel.app
 
 ---
@@ -29,7 +29,7 @@
 | ✅ Référentiel marché | **Terminé** | 100% | CRUD complet, 13 statuts dynamiques |
 | ✅ Statuts essentiels | **Terminé** | 100% | Tous les statuts + champs conditionnels |
 | ⚠️ Dossier administratif | **En cours** | 30% | Schema défini, UI manquante |
-| ⚠️ Cautions & garanties | **En cours** | 50% | Schema + spec complète, UI à implémenter |
+| ⚠️ Cautions & garanties | **En cours** | 60% | Backend 100% terminé (Jour 1), UI à implémenter |
 | ❌ Exécution véhicules | **Non démarré** | 0% | Schema défini, pas d'UI |
 | ✅ Documents & médias | **Quasi-terminé** | 95% | Backend + Frontend complets, Bug résolu, Tests E2E restants |
 | ✅ Tableaux de bord simples | **Terminé** | 80% | Dashboard basique, peut être enrichi |
@@ -224,15 +224,22 @@
 
 ---
 
-### 2. Cautions & Garanties (50%)
+### 2. Cautions & Garanties (60%)
 
-**Statut** : Schema complet + OpenSpec détaillée, UI manquante
+**Statut** : Backend 100% terminé (Jour 1), UI à implémenter
 
 **Terminé** :
 - ✅ Schema Prisma complet (4 types, 4 statuts)
 - ✅ Relations avec Marche et User
 - ✅ Index sur dateEcheance, statut, marcheId
 - ✅ OpenSpec complète (`openspec/changes/module-cautions-garanties/`)
+- ✅ Backend complet (999 lignes) - Commit `cab4617` :
+  - Validations Zod avec refinements (177 lignes)
+  - Constants et règles métier (133 lignes)
+  - 15+ helpers utilitaires (225 lignes)
+  - 6 Server Actions CRUD (464 lignes)
+- ✅ Système d'alerte intelligent (niveaux, seuils)
+- ✅ Intégration RBAC complète
 
 **À faire** :
 - ❌ Pages : `/marches/cautions/`, `/marches/cautions/[id]/`, `/marches/cautions/nouvelle/`
@@ -482,52 +489,95 @@
 
 ---
 
-## 🎯 Prochaines étapes recommandées
+## 🎯 Roadmap MVP Final - Prochaines Étapes (2026-02-03)
 
-### Sprint actuel (Semaine 1-2)
+### **⚡ NOUVELLE ROADMAP PERSONNALISÉE (10-12 jours)**
 
-**Objectif** : Compléter le MVP core
-
-**Priorité 1 : Module Documents & Médias - Frontend** ⭐ (Backend terminé)
-   - ✅ OpenSpec complète créée (26 requirements, 100 scénarios)
-   - ✅ Phase 1 : Configuration Supabase Storage (clients créés)
-   - ✅ Phase 2 : Base de données (modèle Document dans Prisma)
-   - ✅ Phase 3-6 : Backend complet (validations, actions, utilitaires)
-   - ⚠️ Configuration manuelle Supabase (bucket + RLS + service_role_key) - 15 min
-   - ❌ Phase 7-12 : Frontend (composants, pages, upload, preview) (12-16h)
-   - ❌ Phase 13 : Tests Playwright (100 scénarios) (4-5h)
-   - **Estimation restante** : 2-3 jours (20-25h)
-   - **Statut** : Backend prêt, Frontend à développer
-   - **Bloquant MVP** : OUI
-
-**Priorité 2 : Module Cautions (UI)**
-   - ✅ OpenSpec complète existante
-   - Pages + Server Actions + Composants
-   - Tests responsiveness
-   - **Estimation** : 2-3 jours
-   - **Statut** : Prêt à démarrer après Documents
-   - **Bloquant MVP** : OUI
-
-**Priorité 3 : Système Alertes (MVP)**
-   - Alertes expiration cautions
-   - Configuration Nodemailer
-   - Vercel Cron setup
-   - **Estimation** : 2 jours
-   - **Statut** : Après Cautions
-   - **Bloquant MVP** : MOYENNE
-
-**Total Sprint** : 7-10 jours
+**Mise à jour** : 2026-02-03 après session de planification stratégique
 
 ---
 
-### Sprint suivant (Semaine 3-4)
+### **🔴 PHASE 1 : Cautions URGENTES + Dossier Admin (Jours 1-3)**
 
-**Objectif** : V1 features
+**PRIORITÉ ABSOLUE** : Cautions actives à suivre immédiatement
 
-4. Rapports PDF + Excel
-5. Dashboard Analytics avancé
-6. Panel admin utilisateurs
-7. Tests (unit + E2E)
+**Jour 1** : Backend Cautions complet
+- Schémas Zod + Server Actions CRUD
+- Utilitaires + Constants
+- **Estimation** : 8h
+
+**Jour 2** : Frontend Cautions - Composants
+- Badge, Card, Filters, Timeline, Form, List
+- **Estimation** : 8h
+
+**Jour 3** : Pages Cautions + Intégration + Dossier Admin
+- 4 pages CRUD
+- Section dans page marché
+- Enrichir Documents pour Dossier Admin
+- **Estimation** : 8h
+
+**✅ Livrable** : Module Cautions 100% + Dossier Admin intégré
+
+---
+
+### **🟡 PHASE 2 : Véhicules + Tests E2E (Jours 4-7)**
+
+**Jour 4** : Setup Playwright + Migration Véhicules
+- Installation Playwright complet
+- Migration DB + Backend Véhicules
+- **Estimation** : 8h
+
+**Jours 5-6** : Module Véhicules Complet
+- Backend + Frontend + Intégration
+- **Estimation** : 16h
+
+**Jour 7** : Tests E2E Documents + Cautions
+- Suite tests automatisés
+- **Estimation** : 8h
+
+**✅ Livrable** : Véhicules 100% + Tests E2E OK
+
+---
+
+### **🟢 PHASE 3 : Alertes + Finitions (Jours 8-11)**
+
+**Jours 8-9** : Système d'Alertes Niveau 1
+- Backend génération alertes
+- UI consultation alertes
+- Pas d'emails auto (MVP simplifié)
+- **Estimation** : 16h
+
+**Jour 10** : UI Admin + Dashboard Enrichi
+- CRUD utilisateurs (Admin)
+- Dashboard avec KPI enrichis
+- **Estimation** : 8h
+
+**Jour 11** : Exports Excel
+- Export marchés, cautions, véhicules
+- **Estimation** : 8h
+
+**✅ Livrable** : Alertes + Admin + Dashboard + Exports
+
+---
+
+### **✅ PHASE 4 : Validation & Déploiement (Jour 12)**
+
+**Tests finaux + Documentation + Déploiement Production**
+- **Estimation** : 8h
+
+**✅ Livrable** : **MVP 100% OPÉRATIONNEL EN PRODUCTION** 🎉
+
+---
+
+### **Total Roadmap** : 10-12 jours → MVP Complet
+
+**Prochaine action immédiate** :
+```bash
+git checkout -b feat/mvp-cautions-priorite
+mkdir -p lib/validations lib/actions lib/utils lib/constants
+```
+
+**Démarrage** : Jour 1 - Backend Cautions (code fourni prêt à copier)
 
 ---
 
@@ -850,8 +900,378 @@ CRON_SECRET=xxx
 
 ---
 
-**Dernière mise à jour** : 2026-02-02 à 18:00
-**Prochaine revue** : Après implémentation Frontend Documents & Médias
+**Dernière mise à jour** : 2026-02-03 à 18:00 (Jour 1 Backend Cautions terminé)
+**Prochaine revue** : Après Phase 1 de la roadmap MVP finale
+
+---
+
+### 2026-02-03
+
+## 🎯 Session de Planification Stratégique MVP Final (Matin)
+
+**Date** : 2026-02-03
+**Durée** : 2h (analyse + questionnaire + roadmap)
+**Objectif** : Définir la roadmap optimale pour MVP 100% opérationnel
+
+---
+
+### **Phase 1 : Analyse Croisée SESSION.md + PRD.md + ARCHITECTURE.md + BONNES_PRATIQUES.md**
+
+**Constat** :
+- ✅ **78% du MVP déjà complété** - Base technique solide
+- ✅ **Module Documents quasi-terminé** (95% - tests E2E restants)
+- ⚠️ **Cautions actives urgentes** - Risque métier réel identifié
+- ⚠️ **4 modules manquants** pour MVP complet :
+  1. Cautions & Garanties (50% - infra prête, UI manquante)
+  2. Dossier Administratif (30% - schema OK, UI manquante)
+  3. Exécution Véhicules (0% - schema défini, pas d'UI)
+  4. Système d'Alertes (0% - critique selon SESSION.md)
+
+---
+
+### **Phase 2 : Questionnaire Stratégique (8 questions)**
+
+**Profil Utilisateur Final** :
+
+| Critère | Réponse |
+|---------|---------|
+| **Deadline MVP** | B - Pas de deadline stricte, optimiser pour rapidité |
+| **Équipe** | A - Solo (développement seul) |
+| **Priorité métier** | E - Tous modules égaux MAIS **cautions actives = urgent** |
+| **Cautions actives** | A - **Oui, suivi immédiat nécessaire** 🔴 |
+| **Alertes email** | B - Utiles mais pas critiques (UI suffit) |
+| **SMTP** | B - Configurable facilement (Gmail App Password) |
+| **Scope MVP** | B - **MVP Confortable** (10-12 jours) |
+| **Tests E2E** | A - **Importants** dès maintenant |
+
+**Insights Clés** :
+- 🔴 **Cautions actives** → Module Cautions devient PRIORITÉ 1 absolue
+- 🟢 **Alertes Niveau 1** suffit (UI + génération, pas d'emails auto pour MVP)
+- 🟢 **Tests E2E** → Setup Playwright inclus (qualité maximale)
+- 🟡 **Développement solo** → Roadmap séquentielle optimisée (pas de parallélisation)
+
+---
+
+### **Phase 3 : Roadmap MVP Personnalisée (10-12 jours)**
+
+**Ordre Optimisé** :
+
+```
+🔴 PHASE 1 (Jours 1-3)   : Cautions URGENTES + Dossier Admin (Quick Win)
+🟡 PHASE 2 (Jours 4-7)   : Véhicules Core Business + Tests E2E Setup
+🟢 PHASE 3 (Jours 8-11)  : Alertes Niveau 1 + Finitions (Admin, Dashboard, Exports)
+✅ PHASE 4 (Jour 12)     : Tests Finaux + Documentation + Déploiement
+```
+
+**Rationale** :
+1. ✅ **Cautions en Phase 1** → Risque métier réel (cautions actives à suivre)
+2. ✅ **Dossier Admin intégré Documents** → Smart move (réutilise existant, pas de duplication)
+3. ✅ **Véhicules après Cautions** → Core business mais moins urgent
+4. ✅ **Alertes Niveau 1** → UI consultation + génération (économise 1-2j vs emails auto)
+5. ✅ **Tests E2E inclus** → Investissement qualité dès MVP
+
+---
+
+### **Détail Planning Jour par Jour**
+
+#### **🔴 PHASE 1 : Cautions URGENTES + Dossier Admin (Jours 1-3)**
+
+**Jour 1 : Backend Cautions Complet** (8h)
+- **Matin (4h)** : Schémas Zod + Server Actions CRUD
+  - `lib/validations/caution.ts` - 5 schémas Zod
+  - `lib/actions/cautions.ts` - 5 Server Actions (create, update, delete, get, getAll)
+  - Type-safe avec ActionResult<T>
+  - Gestion d'erreurs complète
+- **Après-midi (4h)** : Utilitaires + Constants + Tests backend
+  - `lib/utils/caution.ts` - 15+ helpers (labels, couleurs, calculs)
+  - `lib/constants/caution.ts` - Options select, seuils alertes
+  - Tests manuels toutes actions
+
+**Jour 2 : Frontend Cautions - Composants** (8h)
+- **Matin (4h)** : Composants de base
+  - `caution-badge.tsx` - Badge statut/type
+  - `caution-card.tsx` - Card compacte
+  - `caution-filters.tsx` - Filtres avancés
+  - `caution-timeline.tsx` - Timeline échéances
+- **Après-midi (4h)** : Formulaire + Liste
+  - `caution-form.tsx` - Formulaire React Hook Form + Zod
+  - `caution-list.tsx` - Liste avec pagination
+  - `caution-detail.tsx` - Vue détail complète
+
+**Jour 3 : Frontend Cautions - Pages + Intégration + Dossier Admin** (8h)
+- **Matin (4h)** : Pages CRUD
+  - `app/(dashboard)/cautions/page.tsx` - Liste
+  - `app/(dashboard)/cautions/nouvelle/page.tsx` - Création
+  - `app/(dashboard)/cautions/[id]/page.tsx` - Détail
+  - `app/(dashboard)/cautions/[id]/edit/page.tsx` - Édition
+- **Après-midi (3h)** : Intégration + Dossier Admin
+  - `components/marches/marche-cautions-section.tsx` - Section dans page marché
+  - **Enrichir enums Documents** : DAO, DRP, OFFRE_DEPOSEE, COURRIER_*, ATTESTATION_*
+  - **Créer vue** : `app/(dashboard)/marches/[id]/dossier/page.tsx`
+- **Fin journée (1h)** : Tests + Validation
+  - Tester CRUD (tous rôles)
+  - Responsive (desktop/tablet/mobile)
+  - Filtres + Timeline
+
+**✅ Livrable Phase 1** : Module Cautions 100% + Dossier Admin intégré
+
+---
+
+#### **🟡 PHASE 2 : Véhicules + Tests E2E (Jours 4-7)**
+
+**Jour 4 : Setup Playwright + Migration Véhicules** (8h)
+- **Matin (4h)** : Setup Tests E2E
+  - Installation Playwright
+  - Configuration `playwright.config.ts`
+  - Fixtures auth + db
+  - Helpers test-data
+- **Après-midi (4h)** : Migration + Backend Véhicules
+  - Enrichir model `Vehicule` (dateLivraison, réceptions, statut)
+  - Enum `StatutVehicule` (6 statuts)
+  - Migration Prisma
+  - Validations Zod + Constants
+
+**Jours 5-6 : Module Véhicules Complet** (16h)
+- Backend complet (actions, utils)
+- Frontend complet (composants, pages)
+- Intégration marché
+- Timeline visuelle livraison → réceptions
+
+**Jour 7 : Tests E2E Documents + Cautions** (8h)
+- `tests/documents/upload.spec.ts`
+- `tests/documents/filters.spec.ts`
+- `tests/cautions/crud.spec.ts`
+- `tests/cautions/timeline.spec.ts`
+
+**✅ Livrable Phase 2** : Véhicules 100% + Tests E2E critiques OK
+
+---
+
+#### **🟢 PHASE 3 : Alertes + Finitions (Jours 8-11)**
+
+**Jours 8-9 : Système d'Alertes Niveau 1** (16h)
+- **Backend** :
+  - `lib/actions/alertes.ts` - Génération alertes
+  - Détection cautions expirées/expirant
+  - Détection marchés en retard
+  - Création enregistrements Alerte (pas d'emails pour MVP)
+- **Frontend** :
+  - `app/(dashboard)/alertes/page.tsx` - Liste alertes
+  - `components/alertes/alerte-list.tsx`
+  - `components/alertes/alerte-card.tsx`
+  - `components/alertes/alerte-badge.tsx`
+
+**Jour 10 : UI Admin + Dashboard Enrichi** (8h)
+- **Matin** : UI Admin Utilisateurs
+  - `app/(dashboard)/utilisateurs/page.tsx`
+  - CRUD utilisateurs (Admin only)
+  - Gestion rôles
+- **Après-midi** : Dashboard enrichi
+  - Montant marchés actifs
+  - Cautions actives (montant)
+  - Alertes non lues
+  - Graphique simple Recharts
+
+**Jour 11 : Exports Excel** (8h)
+- `lib/utils/excel.ts`
+- `generateMarchesExcel()`
+- `generateCautionsExcel()`
+- `generateVehiculesExcel()`
+- Boutons export dans UI
+
+**✅ Livrable Phase 3** : Alertes consultables + Admin + Dashboard + Exports
+
+---
+
+#### **✅ PHASE 4 : Validation & Déploiement (Jour 12)**
+
+**Matin (4h)** : Tests complets
+- Tester tous modules (tous rôles)
+- Responsive complet
+- Suite tests E2E
+- Corrections bugs
+
+**Après-midi (4h)** : Documentation + Déploiement
+- Mise à jour SESSION.md
+- CHANGELOG.md complété
+- Guide utilisateur basique
+- Déploiement Vercel production
+- Migration DB production
+
+**✅ Livrable Phase 4** : **MVP 100% OPÉRATIONNEL EN PRODUCTION** 🎉
+
+---
+
+### **Checklist Finale MVP 100%**
+
+#### Modules Core (PRD.md)
+- [x] ✅ Référentiel marché (100%)
+- [x] ✅ Statuts essentiels (100%)
+- [ ] 🎯 Dossier administratif → **Jour 3**
+- [ ] 🔴 Cautions & garanties → **Jours 1-3**
+- [ ] 🟡 Exécution véhicules → **Jours 5-6**
+- [x] ✅ Documents & médias (tests → **Jour 7**)
+- [x] ✅ Tableaux de bord (enrichi → **Jour 10**)
+- [x] ✅ Gestion utilisateurs (UI admin → **Jour 10**)
+- [ ] 🟢 Système d'alertes Niveau 1 → **Jours 8-9**
+
+#### Bonus Inclus
+- [ ] Tests E2E Playwright → **Jours 4, 7**
+- [ ] Exports Excel → **Jour 11**
+- [ ] Dashboard enrichi → **Jour 10**
+
+#### Qualité & Production
+- [ ] 0 erreurs TypeScript
+- [ ] Responsive validé (desktop/tablet/mobile)
+- [ ] Tests E2E suite complète
+- [ ] Déploiement Vercel production
+- [ ] Documentation à jour
+
+---
+
+### **Décisions Techniques Clés**
+
+1. **Cautions en PRIORITÉ 1** → Risque métier réel (cautions actives à suivre)
+2. **Dossier Admin = Extension Documents** → Pas de module séparé (économie 1 jour)
+3. **Alertes Niveau 1 pour MVP** → UI + génération sans emails auto (économie 1-2 jours)
+4. **Tests E2E inclus dès Phase 2** → Investissement qualité
+5. **Roadmap séquentielle** → Développement solo, jalons clairs tous les 3 jours
+
+---
+
+### **Prochaine Action Immédiate**
+
+**À faire MAINTENANT (15 min)** :
+
+```bash
+# 1. Créer branche Git
+git checkout -b feat/mvp-cautions-priorite
+
+# 2. Créer structure fichiers Jour 1
+mkdir -p lib/validations lib/actions lib/utils lib/constants
+touch lib/validations/caution.ts
+touch lib/actions/cautions.ts
+touch lib/utils/caution.ts
+touch lib/constants/caution.ts
+
+# 3. Prêt à coder !
+```
+
+**Demain matin, commencer par** : Copier le schéma Zod Cautions dans `lib/validations/caution.ts`
+
+---
+
+### **Statistiques Session**
+
+- **Durée** : 2h (analyse + questionnaire + roadmap)
+- **Documents analysés** : SESSION.md, PRD.md, ARCHITECTURE.md, BONNES_PRATIQUES.md
+- **Questions stratégiques** : 8
+- **Roadmap générée** : 12 jours détaillés
+- **Planning** : 4 phases, 12 jalons quotidiens
+- **Estimation MVP final** : 10-12 jours → 100% opérationnel
+
+---
+
+### **Résumé Exécutif**
+
+**État Avant Session** : MVP 78% complété, direction pas claire
+**État Après Session** : Roadmap précise 12 jours, priorisation optimisée
+**Gain** : Clarté totale + économie 2-3 jours (Dossier Admin intégré + Alertes Niveau 1)
+**Prêt à démarrer** : ✅ OUI - Structure définie, code backend Cautions fourni
+
+---
+
+## 🚀 Session Backend Cautions (Après-midi)
+
+**Date** : 2026-02-03
+**Durée** : 2h30 (15:00 - 17:30)
+**Objectif** : JOUR 1 - Backend Cautions Complet
+
+---
+
+### **✅ JOUR 1 TERMINÉ - Backend Cautions (8h estimées → 2h30 réelles)**
+
+**Commit** : `cab4617` - feat(cautions): Implement complete backend for cautions management
+
+**Fichiers créés (999 lignes)** :
+
+1. **lib/validations/caution.ts** (177 lignes) ✅
+   - Enums Zod alignés avec Prisma (TypeCaution, StatutCaution)
+   - Schémas de validation avec refinements intelligents
+   - Validation cross-field (dateEcheance >= dateEmission)
+   - Règles métier (caution PROVISOIRE ne peut être LIBEREE)
+   - Preprocessing des dates pour Server Actions
+   - 5 schémas : base, create, update, filters, server
+   - Types TypeScript inférés
+
+2. **lib/constants/caution.ts** (133 lignes) ✅
+   - Labels français pour tous les enums
+   - Couleurs pour badges UI (4 types, 4 statuts)
+   - Options pour selects
+   - Seuils d'alerte (CRITIQUE: 7j, ATTENTION: 30j, INFO: 60j)
+   - Durées typiques par type (PROVISOIRE: 30-180j, DEFINITIVE: 90-730j, etc.)
+   - Pourcentages typiques du montant marché (PROVISOIRE: 1-3%, DEFINITIVE: 3-5%, etc.)
+   - Descriptions détaillées pour chaque type et statut
+
+3. **lib/utils/caution.ts** (225 lignes) ✅
+   - **15+ fonctions helpers** :
+     - Labels & couleurs (getTypeCautionLabel, getStatutCautionColor, etc.)
+     - Calculs dates (getJoursRestants, isExpired, isExpiringSoon, getDureeCaution)
+     - Formatage durée (formatDureeRestante avec date-fns)
+     - Niveaux d'alerte (getNiveauAlerte, getCouleurNiveauAlerte, getMessageAlerte)
+     - Validation métier (isDureeCoherente, isMontantCoherent)
+     - Suggestions (getMontantSuggere, getDateEcheanceSuggeree)
+     - Formatage (formatMontant, formatDate, formatDateCourte)
+     - Tri (comparerParEcheance, comparerParMontant)
+
+4. **lib/actions/cautions.ts** (464 lignes) ✅
+   - **6 Server Actions complètes** :
+     - `createCaution` - Création avec validation Zod + vérification marché existant
+     - `updateCaution` - Modification avec vérification caution existante
+     - `deleteCaution` - Suppression sécurisée (requireDelete)
+     - `getCaution` - Récupération single avec relations (marche)
+     - `getCautions` - Liste avec filtres avancés (type, statut, dates, search)
+     - `getCautionsByMarche` - Cautions d'un marché (tri par échéance)
+   - Gestion d'erreurs exhaustive :
+     - Permissions (requireAuth, requireMarcheWrite, requireDelete)
+     - Validation Zod avec messages détaillés
+     - Erreurs Prisma (P2002: unique constraint, P2003: foreign key, P2025: not found)
+     - Erreurs génériques avec logging
+   - Revalidation cache Next.js (paths: /cautions, /marches/[id])
+   - Type-safe avec ActionResult<T>
+   - Type CautionWithRelations (caution + marche nested)
+
+**Fonctionnalités implémentées** :
+- ✅ 4 types de cautions : PROVISOIRE, DEFINITIVE, AVANCE, RETENUE_GARANTIE
+- ✅ 4 statuts : ACTIVE, EXPIREE, LIBEREE, APPELEE
+- ✅ Système d'alerte intelligent basé sur dates d'échéance
+- ✅ Règles métier (validation durées typiques, pourcentages)
+- ✅ Relations avec Marche et User
+- ✅ Filtrage avancé (type, statut, dates, recherche)
+- ✅ Tri automatique par date d'échéance (plus proche en premier)
+- ✅ Intégration RBAC complète
+
+**Qualité** :
+- ✅ **0 erreurs TypeScript**
+- ✅ **Build compilé avec succès** (29.9s)
+- ✅ **100% conformité pattern** avec module Marches existant
+- ✅ **Documentation inline complète**
+- ✅ **Gestion d'erreurs robuste**
+
+**Statistiques** :
+- Durée réelle : 2h30 (vs 8h estimées)
+- Lignes de code : 999
+- Fichiers créés : 4
+- Gain de temps : 5h30 (efficacité 68%)
+
+**Décision technique** :
+- Utilisation de Context7 pour documentation Zod et Next.js 15 à jour
+- Pattern identique à module Marches (cohérence codebase)
+- Refinements Zod pour validation métier avancée
+
+**Prochaine étape** : JOUR 2 - Frontend Cautions - Composants (8h)
+- Badge, Card, Filters, Timeline, Form, List
+- Estimation : 8h
 
 ---
 
