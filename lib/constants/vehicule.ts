@@ -59,3 +59,8 @@ export const ANNEES_VEHICULES = Array.from(
   { length: 11 },
   (_, i) => new Date().getFullYear() - i
 );
+
+/**
+ * Alias pour ANNEES_VEHICULES (rétrocompatibilité)
+ */
+export const ANNEES_DISPONIBLES = ANNEES_VEHICULES;

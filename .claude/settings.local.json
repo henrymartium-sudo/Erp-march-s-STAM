@@ -81,7 +81,13 @@
       "Bash(npx vercel:*)",
       "mcp__plugin_supabase_supabase__execute_sql",
       "mcp__plugin_supabase_supabase__list_tables",
-      "mcp__plugin_supabase_supabase__get_logs"
+      "mcp__plugin_supabase_supabase__get_logs",
+      "Bash(npm:*)",
+      "Bash(if [ -f .env.local ])",
+      "Bash(then echo \"✅ .env.local existe\")",
+      "Bash(else echo \"⚠️ .env.local n''existe pas\")",
+      "Bash(fi)",
+      "Bash(git restore:*)"
     ]
   }
 }

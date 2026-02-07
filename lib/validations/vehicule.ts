@@ -45,14 +45,14 @@ export const createVehiculeSchema = z.object({
     .nullable(),
 
   // Tracking livraison
-  dateLivraison: z.coerce.date().optional().nullable(),
+  dateLivraison: z.date().optional().nullable(),
   bonLivraisonRef: z
     .string()
     .max(100, "La référence ne peut pas dépasser 100 caractères")
     .optional()
     .nullable(),
-  dateReceptionProvisoire: z.coerce.date().optional().nullable(),
-  dateReceptionDefinitive: z.coerce.date().optional().nullable(),
+  dateReceptionProvisoire: z.date().optional().nullable(),
+  dateReceptionDefinitive: z.date().optional().nullable(),
   reservesReception: z
     .string()
     .max(2000, "Les réserves ne peuvent pas dépasser 2000 caractères")
@@ -61,7 +61,8 @@ export const createVehiculeSchema = z.object({
 
   statut: z
     .nativeEnum(StatutVehicule)
-    .default(StatutVehicule.EN_ATTENTE_LIVRAISON),
+    .default(StatutVehicule.EN_ATTENTE_LIVRAISON)
+    .optional(),
 
   // Relations
   marcheId: z.string().cuid("ID de marché invalide").optional().nullable(),
