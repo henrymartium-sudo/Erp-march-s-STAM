@@ -2976,3 +2976,147 @@ tests/helpers/auth.ts               # Modification timeout + waitForLoadState
 - ⏳ Exports Excel (marchés, cautions, véhicules)
 
 ---
+
+## Session Interface Alertes Manuelles
+
+**Date** : 2026-02-07
+**Durée** : 3h
+**Objectif** : Remplacer le système d'alertes automatiques par une interface de validation manuelle
+
+---
+
+### Contexte & Décision
+
+**Problème** : Le système d'alertes automatiques (cron quotidien) ne permettait pas le contrôle manuel des destinataires et des envois.
+
+**Solution choisie** : Interface d'administration `/admin/alertes` avec validation manuelle avant envoi.
+
+**Changements** :
+- Cron automatique désactivé (mais code conservé pour réactivation future)
+- Nouveau modèle `AlerteDestinataire` pour gérer les destinataires en BDD
+- Interface web complète avec gestion destinataires + envoi manuel
+
+---
+
+### Phase 1 : Désactivation Cron (5 min) ✅
+
+**Modification** :
+- `vercel.json` : Tableau `crons` vidé (`[]`)
+- Le système ne s'exécute plus automatiquement
+- Code des alertes automatiques conservé dans `lib/actions/alertes.ts` et `app/api/cron/daily-alerts/route.ts`
+
+---
+
+### Phase 2 : Modèle Base de Données (10 min) ✅
+
+**Nouveau modèle Prisma** :
+```prisma
+model AlerteDestinataire {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  nom       String?
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@map("alerte_destinataires")
+}
+```
+
+**Actions** :
+- Schéma ajouté dans `prisma/schema.prisma`
+- Client Prisma régénéré (708ms)
+- Migration SQL à appliquer en production
+
+---
+
+### Phase 3 : Server Actions (1h) ✅
+
+**Fichier créé** : `lib/actions/alertes-manuelles.ts` (420 lignes)
+
+**8 Server Actions implémentées** :
+1. getAlertesActuelles() - Récupération alertes temps réel
+2. getDestinataires() - Liste destinataires
+3. addDestinataire() - Ajouter destinataire (ADMIN)
+4. removeDestinataire() - Supprimer (ADMIN)
+5. toggleDestinataire() - Activer/désactiver (ADMIN)
+6. previewAlertEmail() - Preview HTML (EXPLOITATION+)
+7. sendAlertEmailManual() - Envoi email (AVANCE+)
+8. Types exportés
+
+---
+
+### Phase 4 : Interface Admin (1h30) ✅
+
+**5 Composants créés** :
+1. Page `/admin/alertes` (90 lignes)
+2. Dashboard Principal (230 lignes)
+3. Gestion Destinataires (150 lignes)
+4. Prévisualisation Email (90 lignes)
+5. Confirmation Envoi (130 lignes)
+
+**Navigation** : Lien "Alertes" ajouté dans layout
+
+---
+
+### Phase 5 : Build & Corrections (45 min) ✅
+
+**Build final** :
+- ✅ Compiled successfully in 32.4s
+- ✅ 0 erreurs TypeScript
+- ✅ Route `/admin/alertes` : 7.68 kB
+
+---
+
+### Phase 6 : Documentation & Déploiement (30 min) ✅
+
+**Documentation** : `VERCEL_CONFIG_ALERTES.md` (94 lignes)
+
+**Commits** :
+1. `ed23751` - feat(alertes): Add manual alert management interface (1299 insertions)
+2. `981dcc9` - docs(alertes): Add Vercel configuration guide
+
+**Déploiement** : ✅ Réussi - https://erp-marches-stam.vercel.app
+
+---
+
+### Statistiques Session
+
+- Durée totale : 3h
+- Fichiers créés : 7 nouveaux
+- Lignes de code : 1,393 lignes
+- Server Actions : 8 fonctions
+- Composants React : 5 composants
+- Commits : 2
+- Build : ✅ 0 erreur
+
+---
+
+### Résultat Final
+
+**Interface Alertes Manuelles : 100% COMPLÈTE** ✅
+
+**Features implémentées** :
+- ✅ Visualisation alertes temps réel (cautions <30j, marchés <60j)
+- ✅ Gestion destinataires en BDD
+- ✅ Sélection destinataires par envoi
+- ✅ Prévisualisation email HTML
+- ✅ Envoi manuel avec confirmation
+- ✅ Permissions RBAC
+- ✅ Déployé en production
+
+---
+
+**Actions requises utilisateur** :
+1. ⏳ Configurer 9 variables Vercel
+2. ⏳ Créer table `alerte_destinataires`
+3. ⏳ Tester `/admin/alertes`
+
+---
+
+**Progression MVP** : 98%
+
+**Modules restants** :
+- ⏳ Exports Excel
+- ⏳ Tests E2E finaux
+
+---
