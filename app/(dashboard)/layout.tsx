@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { FileText, Home, FolderOpen, Shield } from 'lucide-react'
+import { FileText, Home, FolderOpen, Shield, Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function DashboardLayout({
@@ -42,6 +42,12 @@ export default function DashboardLayout({
                   <Link href="/cautions">
                     <Shield className="h-4 w-4 mr-2" />
                     Cautions
+                  </Link>
+                </Button>
+                <Button variant="ghost" asChild>
+                  <Link href="/admin/alertes">
+                    <Bell className="h-4 w-4 mr-2" />
+                    Alertes
                   </Link>
                 </Button>
               </nav>

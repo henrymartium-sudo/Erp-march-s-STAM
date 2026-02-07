@@ -265,3 +265,18 @@ enum StatutVehicule {
   GARANTIE
   HORS_SERVICE
 }
+
+// ============================================
+// ALERTES
+// ============================================
+
+model AlerteDestinataire {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  nom       String?
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("alerte_destinataires")
+}
