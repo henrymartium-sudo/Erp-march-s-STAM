@@ -1,11 +1,25 @@
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { FileText, Plus, BarChart } from 'lucide-react'
+import { FileText, Plus } from 'lucide-react'
 import { getAllMarches } from '@/lib/actions/marches'
+import { auth } from '@/lib/auth/auth.config'
+
+export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
-  const marches = await getAllMarches()
+  const session = await auth()
+  if (!session?.user) {
+    redirect('/login')
+  }
+
+  let marches: Awaited<ReturnType<typeof getAllMarches>> = []
+  try {
+    marches = await getAllMarches()
+  } catch {
+    marches = []
+  }
 
   // Statistiques simples
   const stats = {

@@ -9,6 +9,8 @@ import Link from "next/link";
 import { CautionsContent } from "./_components/cautions-content";
 import { Skeleton } from "@/components/ui/skeleton";
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: "Cautions & Garanties - ERP Marchés",
   description: "Gestion des cautions et garanties bancaires",

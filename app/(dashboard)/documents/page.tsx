@@ -6,6 +6,8 @@ import { requireAuth } from '@/lib/utils/permissions'
 import { DocumentsContent } from './_components/documents-content'
 import { Skeleton } from '@/components/ui/skeleton'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * Page de liste des documents
  */

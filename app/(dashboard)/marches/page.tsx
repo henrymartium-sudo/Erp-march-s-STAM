@@ -6,6 +6,8 @@ import { getAllMarches } from '@/lib/actions/marches'
 import { Plus } from 'lucide-react'
 import type { StatutMarche, TypeMarche } from '@prisma/client'
 
+export const dynamic = 'force-dynamic'
+
 interface MarchesPageProps {
   searchParams: Promise<{
     statut?: string

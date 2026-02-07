@@ -1,7 +1,7 @@
 # Session de Développement - ERP Marchés Publics
 
 **Date de création** : 2026-02-01
-**Dernière mise à jour** : 2026-02-03 (Utilisateurs test créés - Prêt pour tests production)
+**Dernière mise à jour** : 2026-02-06 (Correction déploiement Vercel - SSO Protection + Middleware)
 **Branche actuelle** : `feat/mvp-cautions-priorite`
 **Statut global** : MVP en cours (87% complété → Phase 1 terminée + Tests E2E + Env test prêt)
 **🚀 Déploiement Production** : https://erp-marches-stam-m9mr7v33q-abel-atsus-projects.vercel.app
@@ -1746,35 +1746,134 @@ GUIDE_TEST_UTILISATEURS.md          # Guide complet test production
 
 ---
 
-## 📌 Notes importantes
+### 2026-02-06
 
-### Principes de mise à jour de ce fichier
+## Session Correction Déploiement Vercel
 
-1. **Mettre à jour après chaque feature complétée**
-2. **Documenter les commits importants**
-3. **Tracer les décisions techniques**
-4. **Maintenir les estimations à jour**
-5. **Suivre les métriques de qualité**
-
-### Format des mises à jour
-
-```markdown
-### [Date]
-
-**Terminé** :
-- ✅ Feature X (commit hash)
-- ✅ Feature Y (commit hash)
-
-**En cours** :
-- 🚧 Feature Z (50% complété)
-
-**Blocages** :
-- ⚠️ Problème X - Solution proposée
-```
+**Date** : 2026-02-06
+**Durée** : 2h (session 1) + 1h (session 2 - 2026-02-07)
 
 ---
 
-**🎯 Objectif MVP** : Application production-ready pour gestion complète du cycle de vie des marchés publics avec sécurisation contractuelle et documentaire.
+### Problème Initial : 404/401 en production
 
-**📅 Deadline MVP** : À définir
-**📅 Deadline V1** : À définir
+**Cause racine** : SSO Protection Vercel activée (`ssoProtection: {"deploymentType": "all_except_custom_domains"}`)
+**Fix** : API Vercel PATCH `ssoProtection: null` + `framework: "nextjs"`
+
+### Problème Middleware : MIDDLEWARE_INVOCATION_FAILED
+
+**Cause** : Le middleware.ts importait des modules incompatibles Edge Runtime
+**Fix (2026-02-07)** : Réécriture middleware Edge-compatible (cookie check uniquement, 56 lignes, aucun import Prisma/bcrypt)
+
+### Corrections Appliquées (toutes sessions confondues)
+
+1. **SSO Protection désactivée** via API Vercel REST
+2. **Middleware réécrit** Edge-compatible (vérification cookie session uniquement)
+3. **Pages `force-dynamic`** ajouté sur : dashboard, cautions, documents, marches
+4. **Dashboard page** : ajout auth check + try/catch sur getAllMarches()
+5. **app/page.tsx supprimé** (redondant, dashboard = page d'accueil)
+6. **Déploiement `vercel --prod`** réussi (build remote, pas prebuilt)
+
+### Résultat Final
+
+| Problème | Statut |
+|----------|--------|
+| 404 NOT_FOUND (SSO Protection) | **RESOLU** |
+| Framework non détecté | **RESOLU** |
+| MIDDLEWARE_INVOCATION_FAILED | **RESOLU** |
+| Build local fonctionne | **OK** (0 erreurs, middleware 34.1 kB) |
+| Déploiement Vercel prod | **OK** |
+| App accessible en production | **OK** - Page /login confirmée accessible |
+
+**URL Production** : https://erp-marches-stam.vercel.app
+
+---
+
+### 2026-02-07
+
+## Point de Situation Global
+
+### Modules Complétés
+
+| Module | Statut | Commits clés |
+|--------|--------|-------------|
+| Marchés CRUD | 100% | `107e1a7`, `cbb5daa` |
+| 13 Statuts dynamiques | 100% | `107e1a7` |
+| Auth & RBAC (4 rôles) | 100% | `b4c3dbc` |
+| Documents & Médias | 100% | Backend+Frontend+50 tests E2E |
+| Cautions & Garanties | 100% | `cab4617`, `75f00be`, `1c0dd75` |
+| Dashboard basique | 80% | KPI simples, graphiques manquants |
+| Gestion utilisateurs | 70% | Auth ok, UI admin manquante |
+| Déploiement Vercel | 100% | SSO fix + middleware Edge-compatible |
+
+### Modules Restants (Phase 2-4 de la roadmap)
+
+| Module | Priorité | Estimation |
+|--------|----------|-----------|
+| Vehicules (backend+frontend) | Phase 2 - Jours 4-7 | 3-4 jours |
+| Tests E2E Playwright (exécution) | Phase 2 - Jour 7 | 1 jour |
+| Alertes Niveau 1 (UI + génération) | Phase 3 - Jours 8-9 | 2 jours |
+| Admin UI (CRUD utilisateurs) | Phase 3 - Jour 10 | 1 jour |
+| Dashboard enrichi (Recharts) | Phase 3 - Jour 10 | 0.5 jour |
+| Exports Excel | Phase 3 - Jour 11 | 1 jour |
+| Validation finale + Déploiement | Phase 4 - Jour 12 | 1 jour |
+
+### Fichiers non-committés à gérer
+
+- `middleware.ts` - Nouveau, Edge-compatible (A COMMITTER)
+- `app/(dashboard)/page.tsx` - Modifié, auth + force-dynamic (A COMMITTER)
+- `app/(dashboard)/cautions/page.tsx` - force-dynamic ajouté (A COMMITTER)
+- `app/(dashboard)/documents/page.tsx` - force-dynamic ajouté (A COMMITTER)
+- `app/(dashboard)/marches/page.tsx` - force-dynamic ajouté (A COMMITTER)
+- `app/page.tsx` - Supprimé (A COMMITTER)
+
+### Prochaines Actions
+
+1. **Committer** les corrections middleware + force-dynamic
+2. **Demarrer Phase 2** : Backend Vehicules (schema Prisma deja defini)
+3. **Executer** les 50 tests E2E Documents ecrits mais jamais lances
+
+---
+
+## Architecture Technique Confirmee
+
+| Technologie | Version | Usage |
+|-------------|---------|-------|
+| Next.js | 15.5.11 | Framework fullstack |
+| React | 19 | UI |
+| Prisma | 7.3.0 | ORM PostgreSQL |
+| NextAuth | v5 beta.25 | Authentification |
+| Supabase | - | PostgreSQL + Storage |
+| shadcn/ui | Latest | Design system |
+| Zod | 3.24.1 | Validation |
+| Playwright | 1.58.1 | Tests E2E |
+| Vercel | - | Hosting + CDN |
+
+### Patterns Etablis
+
+- **Auth** : `requireAuth()` cote serveur (pas de middleware pour la validation reelle)
+- **Middleware** : Cookie check uniquement (Edge-compatible), redirection /login
+- **Pages dynamiques** : `export const dynamic = 'force-dynamic'` pour toute page avec auth
+- **Params Next.js 15** : `params: Promise<{ id: string }>` avec `await params`
+- **Server Actions** : Pattern `ActionResult<T>` avec gestion erreurs Prisma
+- **Deploiement** : `vercel --prod` (build remote) - le prebuilt a des soucis de lambda
+
+### Credentials de Test
+
+```
+admin@erp-marches.local         / Admin123!         (ADMIN)
+avance@erp-marches.local        / Avance123!        (AVANCE)
+exploitation@erp-marches.local  / Exploitation123!  (EXPLOITATION)
+visiteur@erp-marches.local      / Visiteur123!      (VISITEUR)
+```
+
+### URLs
+
+- **Production** : https://erp-marches-stam.vercel.app
+- **Supabase** : Dashboard Supabase pour DB/Storage
+
+---
+
+**Objectif MVP** : Application production-ready pour gestion complete du cycle de vie des marches publics avec securisation contractuelle et documentaire.
+
+**Progression MVP** : 87% - Phase 1 terminee, Phases 2-4 restantes (8-9 jours estimes)
