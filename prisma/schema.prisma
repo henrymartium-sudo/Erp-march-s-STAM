@@ -82,6 +82,7 @@ model Marche {
 
   cautions            Caution[]
   documents           Document[]
+  vehicules           Vehicule[]
 
   @@map("marches")
   @@index([dateFinPrevue])
@@ -221,4 +222,46 @@ enum PhaseMarche {
   ATTRIBUTION
   EXECUTION
   CLOTURE
+}
+
+// ============================================
+// VÉHICULES
+// ============================================
+
+model Vehicule {
+  id              String   @id @default(cuid())
+  immatriculation String   @unique
+  marque          String
+  modele          String
+  annee           Int?
+
+  // Tracking livraison
+  dateLivraison           DateTime?
+  bonLivraisonRef         String?
+  dateReceptionProvisoire DateTime?
+  dateReceptionDefinitive DateTime?
+  reservesReception       String?       @db.Text
+  statut                  StatutVehicule @default(EN_ATTENTE_LIVRAISON)
+
+  // Relations
+  marcheId        String?
+  marche          Marche?  @relation(fields: [marcheId], references: [id], onDelete: SetNull)
+
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([marcheId])
+  @@index([statut])
+  @@index([immatriculation])
+  @@map("vehicules")
+}
+
+enum StatutVehicule {
+  EN_ATTENTE_LIVRAISON
+  LIVRE
+  RECEPTION_PROVISOIRE
+  RECEPTION_DEFINITIVE
+  GARANTIE
+  HORS_SERVICE
 }
