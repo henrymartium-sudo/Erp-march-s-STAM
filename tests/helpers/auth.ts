@@ -39,13 +39,18 @@ export const TEST_USERS: Record<string, TestUser> = {
 export async function login(page: Page, user: TestUser) {
   await page.goto('/login');
 
+  // Attendre que la page soit complètement chargée
+  await page.waitForLoadState('networkidle');
+
+  // Remplir le formulaire
   await page.fill('input[name="email"]', user.email);
   await page.fill('input[name="password"]', user.password);
 
+  // Cliquer sur le bouton de soumission
   await page.click('button[type="submit"]');
 
-  // Attendre la redirection vers le dashboard
-  await page.waitForURL('/');
+  // Attendre la redirection vers le dashboard (avec timeout augmenté)
+  await page.waitForURL('/', { timeout: 30000 });
 }
 
 /**

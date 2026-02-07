@@ -14,6 +14,7 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
     "db:studio": "prisma studio",
+    "db:seed:test": "ts-node -P tsconfig.json prisma/seed-test-local.ts",
     "migrate:statuts": "ts-node -P tsconfig.json prisma/migrate-statuts.ts",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
