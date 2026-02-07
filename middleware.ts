@@ -20,9 +20,15 @@ export function middleware(request: NextRequest) {
   // Routes publiques - pas de vérification nécessaire
   const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/register')
   const isApiAuthRoute = pathname.startsWith('/api/auth')
+  const isApiDebugRoute = pathname.startsWith('/api/debug')
 
   // Ne pas intercepter les routes API auth (NextAuth en a besoin)
   if (isApiAuthRoute) {
+    return NextResponse.next()
+  }
+
+  // Ne pas intercepter les routes API debug (diagnostics)
+  if (isApiDebugRoute) {
     return NextResponse.next()
   }
 
