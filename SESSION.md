@@ -2098,4 +2098,132 @@ tests/helpers/auth.ts               # Modification timeout + waitForLoadState
 
 ---
 
-**Prochaine action** : Demarrer Phase 2 - Backend Vehicules 🚗
+## Session Backend Vehicules (2026-02-07 apres-midi - suite)
+
+**Date** : 2026-02-07 (apres-midi)
+**Duree** : 1h30
+**Objectif** : Creer le backend complet du module Vehicules
+
+---
+
+### Phase 1 : Schema Prisma (15 min) ✅
+
+**Modele Vehicule cree** :
+- 14 champs (immatriculation, marque, modele, annee, dates livraison/reception, reserves, statut, marcheId)
+- Enum `StatutVehicule` (6 statuts)
+- Relation avec `Marche` (ON DELETE SET NULL)
+- 4 index pour performance (immatriculation unique, marcheId, statut)
+
+**Schema valide** :
+- ✅ Client Prisma genere en 602ms
+- ✅ Build Next.js compile sans erreur (39s)
+- ✅ 0 erreurs TypeScript
+
+---
+
+### Phase 2 : Constantes & Validations (20 min) ✅
+
+**Fichiers crees** :
+
+1. **lib/constants/vehicule.ts** (58 lignes)
+   - Labels statuts (`STATUT_VEHICULE_LABELS`)
+   - Couleurs badges (`STATUT_VEHICULE_COLORS`)
+   - Liste marques vehicules (19 marques + "Autre")
+   - Annees disponibles (10 dernieres annees + annee en cours)
+
+2. **lib/validations/vehicule.ts** (118 lignes)
+   - Schema creation (`createVehiculeSchema`) - 10 champs valides
+   - Schema mise a jour (`updateVehiculeSchema`) - Tous champs optionnels
+   - Schema filtrage (`filterVehiculesSchema`) - Recherche + pagination + tri
+   - Validation immatriculation francaise (regex)
+   - Types TypeScript exportes
+
+---
+
+### Phase 3 : Server Actions (30 min) ✅
+
+**Fichier cree** : `lib/actions/vehicules.ts` (453 lignes)
+
+**8 fonctions principales** :
+1. ✅ `createVehicule()` - Creation avec validation Zod + gestion erreurs Prisma
+2. ✅ `updateVehicule()` - Mise a jour partielle
+3. ✅ `deleteVehicule()` - Suppression (ADMIN/AVANCE uniquement)
+4. ✅ `getVehiculeById()` - Lecture unitaire avec relation marche
+5. ✅ `getVehicules()` - Liste avec filtres (search, marque, statut, marcheId, annee) + pagination + tri
+6. ✅ `getVehiculesStats()` - Statistiques (total + repartition par statut)
+7. ✅ `getVehiculesByMarcheId()` - Vehicules associes a un marche
+8. ✅ `checkImmatriculationExists()` - Verification unicite immatriculation
+
+**Pattern ActionResult<T>** :
+- Gestion erreurs auth (requireMarcheWrite, requireDelete)
+- Gestion erreurs Zod (validation)
+- Gestion erreurs Prisma (P2002 duplicate, P2003 FK, P2025 not found)
+- Revalidation cache Next.js (`revalidatePath`)
+
+---
+
+### Phase 4 : Migration Base de Donnees (25 min) ✅
+
+**Migration executee via Supabase MCP** :
+- ✅ CREATE TYPE `StatutVehicule` (6 valeurs)
+- ✅ CREATE TABLE `vehicules` (14 colonnes)
+- ✅ CREATE UNIQUE INDEX sur `immatriculation`
+- ✅ CREATE INDEX sur `marcheId`, `statut`, `immatriculation`
+- ✅ ALTER TABLE ADD CONSTRAINT FK vers `marches`
+
+**Verification** :
+- ✅ Table creee en production Supabase
+- ✅ 0 lignes (table vide, normal)
+- ✅ Relations etablies avec `marches`
+- ✅ Enum visible dans schema public
+
+**Fichier SQL genere** : `prisma/migrations/20260207_add_vehicule_tracking.sql`
+
+---
+
+### Commit & Documentation (10 min) ✅
+
+**Commit** : `b3fedac` - feat(vehicules): Add complete backend with schema, validations and server actions
+
+**Fichiers commites** :
+- `prisma/schema.prisma` (modele Vehicule + enum + relation)
+- `lib/constants/vehicule.ts` (58 lignes)
+- `lib/validations/vehicule.ts` (118 lignes)
+- `lib/actions/vehicules.ts` (453 lignes)
+
+**Total lignes de code** : ~629 lignes
+
+---
+
+### Statistiques Session
+
+**Duree** : 1h30
+**Fichiers crees** : 3 nouveaux + 1 modifie
+**Lignes de code** : 629 lignes
+**Fonctions** : 8 server actions completes
+**Tests** : 0 erreur TypeScript, build compile avec succes
+
+---
+
+### Resultat Final
+
+**Backend Vehicules : 100% COMPLET** ✅
+
+| Composant | Statut | Details |
+|-----------|--------|---------|
+| Schema Prisma | 100% ✅ | Modele + Enum + Relation + Index |
+| Constantes | 100% ✅ | Labels, couleurs, marques, annees |
+| Validations Zod | 100% ✅ | 3 schemas + types TS |
+| Server Actions | 100% ✅ | 8 fonctions CRUD completes |
+| Migration DB | 100% ✅ | Executee en production Supabase |
+| Build | 100% ✅ | 0 erreur TypeScript |
+
+---
+
+**Progression MVP** : 87% → 90% (+3%)
+
+**Prochaine etape** : Phase 2 - Frontend Vehicules (6-8h estimees)
+
+---
+
+**Prochaine action** : Demarrer Frontend Vehicules 🎨
