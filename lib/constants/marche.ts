@@ -184,3 +184,32 @@ export function getStatutCardClasses(statut: StatutMarche): string {
   const colors = STATUT_COLORS[statut]
   return `${colors.bg} ${colors.border}`
 }
+
+// ============================================================================
+// ALIAS EXPORTS (pour compatibilité avec les composants)
+// ============================================================================
+
+/**
+ * Alias pour STATUT_LABELS (utilisé dans les composants dashboard)
+ */
+export const STATUT_MARCHE_LABELS = STATUT_LABELS
+
+/**
+ * Couleurs simplifiées pour les graphiques (barres)
+ * Mappe chaque statut à une classe Tailwind de couleur de fond
+ */
+export const STATUT_MARCHE_COLORS: Record<StatutMarche, string> = {
+  OPPORTUNITE_IDENTIFIEE: 'bg-blue-500',
+  DOSSIER_EN_PREPARATION: 'bg-indigo-500',
+  OFFRE_DEPOSEE: 'bg-purple-500',
+  EN_ATTENTE_ATTRIBUTION: 'bg-yellow-500',
+  ATTRIBUE_PROVISOIREMENT: 'bg-lime-500',
+  ATTRIBUE_DEFINITIVEMENT: 'bg-green-500',
+  EN_ATTENTE_LIVRAISON_OS: 'bg-teal-500',
+  EN_EXECUTION: 'bg-cyan-500',
+  EXECUTE_ATTENTE_GARANTIES: 'bg-sky-500',
+  CLOTURE: 'bg-gray-500',
+  RESILIE: 'bg-red-500',
+  ANNULE: 'bg-gray-400',
+  INFRUCTUEUX: 'bg-orange-500',
+} as const

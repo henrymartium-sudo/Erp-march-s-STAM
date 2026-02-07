@@ -393,33 +393,54 @@ export async function getVehicules(
 // STATISTIQUES
 // ============================================================================
 
-export async function getVehiculesStats() {
+export interface VehiculesStats {
+  total: number
+  parStatut: Record<StatutVehicule, number>
+  livres: number
+  enAttenteLivraison: number
+  enService: number
+}
+
+export async function getVehiculesStats(): Promise<ActionResult<VehiculesStats>> {
   try {
     await requireAuth()
 
-    const [total, parStatut] = await Promise.all([
-      // Total de véhicules
-      prisma.vehicule.count(),
+    // Récupérer tous les véhicules pour calculer les stats
+    const vehicules = await prisma.vehicule.findMany({
+      select: {
+        statut: true,
+      },
+    })
 
-      // Répartition par statut
-      prisma.vehicule.groupBy({
-        by: ['statut'],
-        _count: true,
-      }),
-    ])
-
-    return {
-      total,
-      parStatut: parStatut.map((item) => ({
-        statut: item.statut,
-        count: item._count,
-      })),
+    // Initialiser les compteurs par statut
+    const parStatut: Record<StatutVehicule, number> = {
+      EN_ATTENTE_LIVRAISON: 0,
+      LIVRE: 0,
+      RECEPTION_PROVISOIRE: 0,
+      RECEPTION_DEFINITIVE: 0,
+      GARANTIE: 0,
+      HORS_SERVICE: 0,
     }
+
+    // Calculer les stats
+    vehicules.forEach((vehicule) => {
+      parStatut[vehicule.statut]++
+    })
+
+    const stats: VehiculesStats = {
+      total: vehicules.length,
+      parStatut,
+      livres: parStatut.LIVRE,
+      enAttenteLivraison: parStatut.EN_ATTENTE_LIVRAISON,
+      enService: parStatut.RECEPTION_DEFINITIVE + parStatut.GARANTIE,
+    }
+
+    return { success: true, data: stats }
   } catch (error) {
-    console.error('Erreur lors de la récupération des statistiques:', error)
+    console.error('Erreur lors de la récupération des statistiques de véhicules:', error)
     return {
-      total: 0,
-      parStatut: [],
+      success: false,
+      error: 'Erreur lors de la récupération des statistiques',
     }
   }
 }
