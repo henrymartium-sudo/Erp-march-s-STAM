@@ -64,3 +64,16 @@ export const ANNEES_VEHICULES = Array.from(
  * Alias pour ANNEES_VEHICULES (rétrocompatibilité)
  */
 export const ANNEES_DISPONIBLES = ANNEES_VEHICULES;
+
+/**
+ * Couleurs simplifiées pour les graphiques (barres de progression)
+ * Mappe chaque statut à une classe Tailwind de couleur de fond
+ */
+export const STATUT_VEHICULE_COLORS_CHART: Record<StatutVehicule, string> = {
+  EN_ATTENTE_LIVRAISON: "bg-yellow-500",
+  LIVRE: "bg-green-500",
+  RECEPTION_PROVISOIRE: "bg-orange-500",
+  RECEPTION_DEFINITIVE: "bg-emerald-500",
+  GARANTIE: "bg-blue-500",
+  HORS_SERVICE: "bg-red-500",
+} as const;

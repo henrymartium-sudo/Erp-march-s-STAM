@@ -291,3 +291,83 @@ export async function getAllMarches(
     return []
   }
 }
+
+// ============================================================================
+// STATISTICS
+// ============================================================================
+
+export interface MarchesStats {
+  total: number
+  parStatut: Record<StatutMarche, number>
+  enCours: number
+  montantTotal: number
+  montantEnCours: number
+}
+
+export async function getMarchesStats(): Promise<ActionResult<MarchesStats>> {
+  try {
+    // Vérification d'authentification
+    await requireAuth()
+
+    // Récupérer tous les marchés pour calculer les stats
+    const marches = await prisma.marche.findMany({
+      select: {
+        statut: true,
+        montant: true,
+      },
+    })
+
+    // Initialiser les compteurs par statut
+    const parStatut: Record<StatutMarche, number> = {
+      OPPORTUNITE_IDENTIFIEE: 0,
+      DOSSIER_EN_PREPARATION: 0,
+      OFFRE_DEPOSEE: 0,
+      EN_ATTENTE_ATTRIBUTION: 0,
+      ATTRIBUE_PROVISOIREMENT: 0,
+      ATTRIBUE_DEFINITIVEMENT: 0,
+      EN_ATTENTE_LIVRAISON_OS: 0,
+      EN_EXECUTION: 0,
+      EXECUTE_ATTENTE_GARANTIES: 0,
+      CLOTURE: 0,
+      RESILIE: 0,
+      ANNULE: 0,
+      INFRUCTUEUX: 0,
+    }
+
+    let montantTotal = 0
+    let montantEnCours = 0
+
+    // Statuts considérés comme "en cours"
+    const statutsEnCours: StatutMarche[] = [
+      'EN_EXECUTION',
+      'EN_ATTENTE_LIVRAISON_OS',
+      'ATTRIBUE_DEFINITIVEMENT',
+    ]
+
+    // Calculer les stats
+    marches.forEach((marche) => {
+      parStatut[marche.statut]++
+      montantTotal += Number(marche.montant || 0)
+
+      if (statutsEnCours.includes(marche.statut)) {
+        montantEnCours += Number(marche.montant || 0)
+      }
+    })
+
+    const stats: MarchesStats = {
+      total: marches.length,
+      parStatut,
+      enCours: statutsEnCours.reduce((sum, statut) => sum + parStatut[statut], 0),
+      montantTotal,
+      montantEnCours,
+    }
+
+    return { success: true, data: stats }
+  } catch (error) {
+    console.error('Erreur lors de la récupération des statistiques:', error)
+    return {
+      success: false,
+      error: 'Erreur lors de la récupération des statistiques',
+    }
+  }
+}

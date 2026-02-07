@@ -1,10 +1,13 @@
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { FileText, Plus } from 'lucide-react'
-import { getAllMarches } from '@/lib/actions/marches'
 import { auth } from '@/lib/auth/auth.config'
+import { getMarchesStats } from '@/lib/actions/marches'
+import { getCautionsStats } from '@/lib/actions/cautions'
+import { getVehiculesStats } from '@/lib/actions/vehicules'
+import { KPICards } from '@/components/dashboard/kpi-cards'
+import { StatusCharts } from '@/components/dashboard/status-charts'
+import { AlertsSection } from '@/components/dashboard/alerts-section'
+import { RecentActivity } from '@/components/dashboard/recent-activity'
+import { QuickActions } from '@/components/dashboard/quick-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,21 +17,73 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
-  let marches: Awaited<ReturnType<typeof getAllMarches>> = []
-  try {
-    marches = await getAllMarches()
-  } catch {
-    marches = []
-  }
+  // Récupérer toutes les statistiques en parallèle
+  const [marchesStatsResult, cautionsStatsResult, vehiculesStatsResult] =
+    await Promise.all([
+      getMarchesStats(),
+      getCautionsStats(),
+      getVehiculesStats(),
+    ])
 
-  // Statistiques simples
-  const stats = {
-    total: marches.length,
-    enCours: marches.filter(m =>
-      ['EN_EXECUTION', 'EN_ATTENTE_LIVRAISON_OS', 'ATTRIBUE_DEFINITIVEMENT'].includes(m.statut)
-    ).length,
-    termine: marches.filter(m => m.statut === 'CLOTURE').length,
-  }
+  // Gérer les erreurs de récupération
+  const marchesStats = marchesStatsResult.success
+    ? marchesStatsResult.data
+    : {
+        total: 0,
+        parStatut: {
+          OPPORTUNITE_IDENTIFIEE: 0,
+          DOSSIER_EN_PREPARATION: 0,
+          OFFRE_DEPOSEE: 0,
+          EN_ATTENTE_ATTRIBUTION: 0,
+          ATTRIBUE_PROVISOIREMENT: 0,
+          ATTRIBUE_DEFINITIVEMENT: 0,
+          EN_ATTENTE_LIVRAISON_OS: 0,
+          EN_EXECUTION: 0,
+          EXECUTE_ATTENTE_GARANTIES: 0,
+          CLOTURE: 0,
+          RESILIE: 0,
+          ANNULE: 0,
+          INFRUCTUEUX: 0,
+        },
+        enCours: 0,
+        montantTotal: 0,
+        montantEnCours: 0,
+      }
+
+  const cautionsStats = cautionsStatsResult.success
+    ? cautionsStatsResult.data
+    : {
+        total: 0,
+        actives: 0,
+        expirees: 0,
+        aVenir: 0,
+        montantTotal: 0,
+        montantActif: 0,
+        parType: {
+          PROVISOIRE: 0,
+          DEFINITIVE: 0,
+          AVANCE: 0,
+          RETENUE_GARANTIE: 0,
+        },
+        prochesEcheance: 0,
+      }
+
+  const vehiculesStats = vehiculesStatsResult.success
+    ? vehiculesStatsResult.data
+    : {
+        total: 0,
+        parStatut: {
+          EN_ATTENTE_LIVRAISON: 0,
+          LIVRE: 0,
+          RECEPTION_PROVISOIRE: 0,
+          RECEPTION_DEFINITIVE: 0,
+          GARANTIE: 0,
+          HORS_SERVICE: 0,
+        },
+        livres: 0,
+        enAttenteLivraison: 0,
+        enService: 0,
+      }
 
   return (
     <div className="space-y-8">
@@ -36,72 +91,32 @@ export default async function DashboardPage() {
       <div>
         <h1 className="text-3xl font-bold mb-2">Tableau de bord</h1>
         <p className="text-muted-foreground">
-          Vue d'ensemble de vos marchés publics
+          Vue d'ensemble de vos marchés publics, cautions et véhicules
         </p>
       </div>
 
-      {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total des marchés</CardDescription>
-            <CardTitle className="text-4xl">{stats.total}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">
-              Tous statuts confondus
-            </p>
-          </CardContent>
-        </Card>
+      {/* KPIs principaux */}
+      <KPICards
+        marchesStats={marchesStats}
+        cautionsStats={cautionsStats}
+        vehiculesStats={vehiculesStats}
+      />
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Marchés en cours</CardDescription>
-            <CardTitle className="text-4xl text-blue-600">{stats.enCours}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">
-              En exécution ou attribués
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Marchés clôturés</CardDescription>
-            <CardTitle className="text-4xl text-green-600">{stats.termine}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">
-              Terminés avec succès
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Alertes et échéances */}
+      <AlertsSection />
 
       {/* Actions rapides */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Actions rapides</CardTitle>
-          <CardDescription>
-            Commencez par créer ou consulter vos marchés
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-4">
-          <Button asChild>
-            <Link href="/marches/nouveau">
-              <Plus className="h-4 w-4 mr-2" />
-              Nouveau marché
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/marches">
-              <FileText className="h-4 w-4 mr-2" />
-              Voir tous les marchés
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <QuickActions />
+
+      {/* Graphiques de répartition */}
+      <StatusCharts
+        marchesStats={marchesStats}
+        cautionsStats={cautionsStats}
+        vehiculesStats={vehiculesStats}
+      />
+
+      {/* Activité récente */}
+      <RecentActivity />
     </div>
   )
 }
