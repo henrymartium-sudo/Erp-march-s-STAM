@@ -1877,3 +1877,63 @@ visiteur@erp-marches.local      / Visiteur123!      (VISITEUR)
 **Objectif MVP** : Application production-ready pour gestion complete du cycle de vie des marches publics avec securisation contractuelle et documentaire.
 
 **Progression MVP** : 87% - Phase 1 terminee, Phases 2-4 restantes (8-9 jours estimes)
+
+---
+
+### 2026-02-07
+
+## Session Debugging Authentification (2h30)
+
+**Probleme initial** : Impossible de se connecter - "Email ou mot de passe incorrect"
+
+### Diagnostics Effectues
+
+1. ✅ Hash bcrypt teste localement → Tous les 4 utilisateurs valides
+2. ✅ Utilisateurs verifie en DB Supabase → Existent
+3. ✅ Routes de diagnostic creees (`/api/debug/db`, `/api/debug/auth`, `/api/debug/env`)
+4. ✅ Middleware corrige pour autoriser routes `/api/debug`
+5. ✅ **Probleme identifie** : DATABASE_URL incorrecte
+
+### Probleme Root Cause
+
+**DATABASE_URL utilisait connexion directe (port 5432) au lieu du Transaction Pooler (port 6543)**
+
+Vercel serverless necessite le Transaction Pooler de Supabase avec pgbouncer.
+
+### Solution Appliquee
+
+**Ancienne DATABASE_URL** :
+```
+postgresql://postgres:***@db.awsvkjdziwzknnvkpuyq.supabase.co:5432/postgres
+```
+
+**Nouvelle DATABASE_URL** :
+```
+postgresql://postgres.awsvkjdziwzknnvkpuyq:***@aws-1-eu-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true&sslmode=no-verify
+```
+
+**Changements** :
+- Port 5432 → 6543 (Transaction Pooler)
+- Ajout `?pgbouncer=true`
+- Ajout `&sslmode=no-verify` (pour certificat SSL auto-signe)
+- Mot de passe DB reinitialise
+
+### Commits
+
+- `9832148` - fix(middleware): Allow /api/debug routes for diagnostics
+- `2c30101` - fix(auth): Resolve authentication issues - correct DATABASE_URL with Transaction Pooler
+
+### Resultat
+
+✅ **Connexion DB fonctionnelle**
+✅ **Authentification operationnelle**
+✅ **Application accessible en production**
+
+**URL Production** : https://erp-marches-stam.vercel.app
+
+### Lecons Apprises
+
+- Vercel serverless **requiert Transaction Pooler** (port 6543) pour Supabase
+- Parametre `?pgbouncer=true` **obligatoire**
+- Certificat SSL auto-signe necessite `sslmode=no-verify`
+- Routes de debug utiles pour diagnostiquer problemes de connexion DB
