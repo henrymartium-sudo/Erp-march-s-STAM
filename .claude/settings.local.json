@@ -70,7 +70,18 @@
       "Bash(vercel:*)",
       "Bash(tee:*)",
       "Bash(git rm:*)",
-      "Bash(npx playwright:*)"
+      "Bash(npx playwright:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(npm run test:documents:*)",
+      "WebFetch(domain:erp-marches-stam.vercel.app)",
+      "WebFetch(domain:erp-marches-stam-dkcvlt6lj-abel-atsus-projects.vercel.app)",
+      "Bash(where:*)",
+      "Bash(python3:*)",
+      "Bash(npx next build:*)",
+      "Bash(npx vercel:*)",
+      "mcp__plugin_supabase_supabase__execute_sql",
+      "mcp__plugin_supabase_supabase__list_tables",
+      "mcp__plugin_supabase_supabase__get_logs"
     ]
   }
 }
