@@ -53,9 +53,12 @@ export async function getAlertsCautionsExpiring(): Promise<
       },
     });
 
-    // Transformer en format pour email
+    // Transformer en format pour email avec niveau de criticité
     const alerts: CautionAlert[] = cautions.map((caution) => {
       const joursRestants = differenceInDays(caution.dateEcheance, today);
+
+      // Déterminer le niveau de criticité
+      const niveau = joursRestants <= 7 ? "CRITIQUE" : "ATTENTION";
 
       return {
         id: caution.id,
@@ -65,6 +68,7 @@ export async function getAlertsCautionsExpiring(): Promise<
         dateEcheance: caution.dateEcheance,
         joursRestants,
         marcheReference: caution.marche?.numero,
+        niveau, // Ajout du niveau de criticité
       };
     });
 

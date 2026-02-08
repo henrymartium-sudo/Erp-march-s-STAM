@@ -39,7 +39,6 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@supabase/supabase-js": "^2.93.3",
     "@types/bcryptjs": "^2.4.6",
-    "@types/nodemailer": "^7.0.9",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -64,6 +63,7 @@
   "devDependencies": {
     "@playwright/test": "^1.58.1",
     "@types/node": "^22.19.7",
+    "@types/nodemailer": "^7.0.9",
     "@types/pg": "^8.16.0",
     "@types/react": "^19.0.6",
     "@types/react-dom": "^19.0.3",
