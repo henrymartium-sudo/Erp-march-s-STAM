@@ -3474,3 +3474,383 @@ vercel git connect https://github.com/<user>/<repo>.git
 ---
 
 **FIN DE SESSION - PROBLÈME VERCEL RÉSOLU DÉFINITIVEMENT** ✅
+
+
+---
+
+---
+
+## Session Planification Améliorations MVP - Roadmap Professionnelle
+
+**Date** : 2026-02-08
+**Durée** : 2h
+**Objectif** : Créer un plan méticuleux pour tester et améliorer le MVP, puis établir une roadmap professionnelle optimale
+
+---
+
+### Phase 1 : Analyse et Plan de Test (45 min)
+
+**Objectif** : Identifier toutes les fonctionnalités manquantes, bugs potentiels et améliorations UX/UI nécessaires.
+
+#### Documents Créés
+
+**1. PLAN_TEST_MVP.md** (400+ tests détaillés)
+
+**Contenu** :
+- 📋 Méthodologie de test complète
+- 🔍 Tests par module (8 modules × 40+ tests)
+  - Authentification (10 tests)
+  - Dashboard (10 tests)
+  - Marchés (45 tests : liste, création, détail, modification, suppression)
+  - Cautions (31 tests)
+  - Documents (27 tests : upload, versioning, soft delete)
+  - Véhicules (30 tests)
+  - Alertes (18 tests : manuelles + automatiques)
+  - Exports (13 tests : Excel + PDF)
+- 🎨 Tests UX/UI transversaux (32 tests)
+- ⚙️ Tests techniques (35 tests)
+- 🔒 Tests permissions RBAC (36 tests par rôle)
+- 🔄 Tests d'intégration - 5 workflows métier complets
+- 🚀 Tests de performance (Lighthouse)
+- ♿ Tests d'accessibilité (19 tests)
+- 🐛 Tests edge cases (24 tests)
+
+**Améliorations Identifiées** : **26 fonctionnalités manquantes ou à améliorer**
+
+---
+
+### Phase 2 : Questions de Priorisation (1h)
+
+**Objectif** : Clarifier les besoins métier avec l'utilisateur pour optimiser la roadmap.
+
+#### 10 Questions Posées & Réponses Obtenues
+
+| # | Question | Réponse | Implication |
+|---|----------|---------|-------------|
+| 1 | Alertes - Fréquence | Hebdomadaire (lundis 7h) + Envoi manuel | Cron simple + bouton ADMIN |
+| 2 | Recherche - Champs | Tous champs (4 modules) | Recherche exhaustive debounce 300ms |
+| 3 | Exports PDF - Entités | Tous (Marché, Caution, Véhicule, Excel multi-sheets) | 4 types exports (2 jours) |
+| 4 | Permissions EXPLOITATION | Lecture marchés EN_EXECUTION uniquement | Filtrage serveur + hiding UI |
+| 5 | Upload - Limites | 50 MB, PDF+Images+Office, max 5 fichiers | Upload direct Supabase + progress |
+| 6 | Pagination | 25 items/page | Standard industrie |
+| 7 | Notifications - Durées | Succès 3s, Erreur 5s, Warning ∞, Progress persist | Config Sonner personnalisée |
+| 8 | Workflow Statuts | Validation partielle (avancer OK, reculer 1-2 OK, sauts bloqués) | Fonction isTransitionValid() |
+| 9 | Brouillons | LocalStorage auto-save 30s | Hook useDraftSave() |
+| 10 | Tests & Validation | E2E partiels + implication utilisateur | Playwright + collaboration |
+
+---
+
+### Phase 3 : Création Roadmap Professionnelle (15 min)
+
+**Objectif** : Transformer les décisions en roadmap exécutable optimale.
+
+#### Document Créé : ROADMAP_AMELIORATIONS_MVP.md
+
+**Structure** : 60+ pages de documentation professionnelle
+
+**Sprints Planifiés** :
+
+**Sprint 1 : Fondations Critiques (3 jours)**
+- Alertes automatiques (Cron hebdo + envoi manuel)
+- Recherche textuelle (4 modules)
+- Pagination (25 items/page)
+- Upload Premium 50MB (direct Supabase + progress)
+- Récupération mot de passe
+- Error Boundaries + Validation workflow statuts
+- 🎯 Jalon J+3 : Validation utilisateur (1h)
+
+**Sprint 2 : Expérience Utilisateur (4 jours)**
+- Exports PDF (Marché, Caution, Bon Livraison)
+- Rapport Excel Multi-Sheets (3 onglets)
+- Brouillons auto-save LocalStorage
+- Permissions EXPLOITATION
+- Timeline visuelles (Marché, Véhicule)
+- Skeleton loaders + Notifications configurées
+- 🎯 Jalon J+7 : Validation utilisateur (2h)
+
+**Sprint 3 : Robustesse & Tests (3 jours)**
+- UI/UX Polish (tri colonnes, breadcrumb, badge rôle, profil)
+- Tests E2E Playwright (critiques uniquement)
+- Tests manuels complets (plan de test)
+- Corrections bugs + Audits performance
+- 🎯 Jalon J+10 : Livraison production
+
+---
+
+### Optimisations Appliquées
+
+**Principe** : "Fondations → Expérience → Robustesse"
+
+**Avantages** :
+1. ✅ Livraison valeur métier rapide (alertes dès J+3)
+2. ✅ Minimisation dépendances bloquantes
+3. ✅ Testing continu (validation progressive)
+4. ✅ Réduction risques techniques (SMTP testé tôt)
+
+**Parallélisation** :
+- Recherche + Pagination (J1-J2) : Indépendants
+- Exports PDF (J4-J5) : 3 types en parallèle
+- UI Polish (J8) : Toutes tâches indépendantes
+
+---
+
+### Statistiques Session
+
+**Durée** : 2h
+**Documents créés** : 2 majeurs
+- PLAN_TEST_MVP.md : 1200+ lignes, 400+ tests
+- ROADMAP_AMELIORATIONS_MVP.md : 1500+ lignes, 60+ pages
+
+**Décisions prises** : 10 questions de priorisation
+**Fonctionnalités planifiées** : 26 améliorations
+**Effort total estimé** : 80 heures (10 jours)
+
+---
+
+### Métriques du Plan
+
+| Catégorie | Nombre | Répartition |
+|-----------|--------|-------------|
+| **Améliorations totales** | 26 | 100% |
+| Priorité CRITIQUE | 8 | 31% |
+| Priorité HAUTE | 10 | 38% |
+| Priorité MOYENNE | 8 | 31% |
+| **Tests planifiés** | 400+ | - |
+
+---
+
+### État Actuel du Projet
+
+**MVP Status** : 100% FONCTIONNEL
+- 7 modules opérationnels en production
+- Autodeploy GitHub → Vercel actif
+- 24 variables d'environnement configurées
+- Build local et production réussis
+
+**Prochaine Phase** : Améliorations MVP+
+- Roadmap professionnelle établie
+- 26 améliorations priorisées
+- 3 sprints planifiés (10 jours)
+- Validation utilisateur à chaque jalon
+
+---
+
+### Décisions Clés Documentées
+
+**Architecture Technique** :
+- ✅ Alertes : Vercel Cron (hebdo) + envoi manuel ADMIN
+- ✅ Recherche : Prisma simple (OK jusqu'à 1000 items)
+- ✅ Upload : Direct client → Supabase Storage (50 MB)
+- ✅ Exports PDF : @react-pdf/renderer (déjà installé)
+- ✅ Brouillons : LocalStorage auto-save (30s)
+- ✅ Tests : E2E partiels (critiques) + manuels collaboratifs
+
+**Choix UX/UI** :
+- ✅ Pagination : 25 items/page (standard)
+- ✅ Notifications : 3s succès, 5s erreur, ∞ warning
+- ✅ Workflow statuts : Validation partielle (garde-fous)
+- ✅ Permissions EXPLOITATION : Lecture marchés EN_EXECUTION uniquement
+
+---
+
+### Prochaines Actions
+
+**Option Recommandée** : Démarrer Sprint 1 immédiatement
+
+**Raisons** :
+1. Roadmap optimale (basée sur réponses utilisateur)
+2. Alertes = besoin métier critique
+3. Momentum et motivation élevés
+4. Validation incrémentale (pas de mauvaises surprises)
+
+**Actions Immédiates** :
+- [ ] Créer branche feat/ameliorations-mvp
+- [ ] Commencer alertes automatiques (J1 - 6h)
+- [ ] Reporting quotidien (async)
+- [ ] Session validation J+3 (1h utilisateur)
+
+---
+
+### KPIs Cibles Post-Roadmap
+
+**Fonctionnel** :
+- ✅ 26/26 améliorations implémentées (100%)
+- ✅ Alertes envoyées automatiquement (hebdo)
+- ✅ Recherche opérationnelle (< 500ms)
+- ✅ 4 types exports disponibles (PDF + Excel)
+
+**Qualité** :
+- ✅ Tests E2E > 70% couverture workflows critiques
+- ✅ 400+ tests manuels exécutés
+- ✅ 0 bugs bloquants en production
+
+**Performance** :
+- ✅ Lighthouse Performance > 90
+- ✅ Lighthouse Accessibility > 90
+- ✅ Temps chargement dashboard < 2s
+
+**Satisfaction** :
+- ✅ Score UX utilisateur > 8/10
+
+---
+
+### Risques Identifiés & Mitigation
+
+| Risque | Impact | Probabilité | Mitigation | Contingence |
+|--------|--------|-------------|------------|-------------|
+| SMTP rate limits | 🔴 Élevé | 🟠 Moyen | Tests dès J1 | SendGrid |
+| Upload 50MB timeout | 🔴 Élevé | 🟡 Faible | Direct Supabase | Limite 25 MB |
+| PDF lente (>10s) | 🟠 Moyen | 🟡 Faible | Optimiser templates | Progress bar |
+| Bugs bloquants J10 | 🔴 Élevé | 🟡 Faible | Tests continus | Livraison partielle |
+
+---
+
+### Outils et Documentation Créés
+
+**Documents Stratégiques** :
+1. ✅ PLAN_TEST_MVP.md - Plan de test exhaustif (400+ tests)
+2. ✅ ROADMAP_AMELIORATIONS_MVP.md - Roadmap professionnelle (60+ pages)
+
+**Matrices de Décision** :
+- ✅ Priorisation fonctionnalités (26 items)
+- ✅ Analyse risques (11 risques + mitigation)
+- ✅ Critères d'acceptation (par sprint + global)
+
+**Planning Détaillé** :
+- ✅ Gantt visuel (jour par jour, heure par heure)
+- ✅ Dépendances critiques identifiées
+- ✅ Jalons de validation définis
+
+---
+
+### Conclusion Session
+
+**Statut** : ✅ PLANIFICATION COMPLÈTE
+
+**Livrables** :
+- ✅ Plan de test méticuleux (400+ tests)
+- ✅ Roadmap professionnelle optimale (10 jours, 80h)
+- ✅ 10 décisions de priorisation documentées
+- ✅ 26 améliorations planifiées et chiffrées
+- ✅ 11 risques identifiés avec mitigation
+- ✅ 3 jalons de validation définis
+
+**Prêt pour** : Démarrage Sprint 1
+
+**Prochaine Session** : Implémentation Sprint 1 (Alertes + Recherche + Upload + Sécurité)
+
+---
+
+**FIN DE SESSION - ROADMAP PROFESSIONNELLE ÉTABLIE** ✅
+
+**MVP+ EN ATTENTE DE LANCEMENT (10 jours)**
+
+
+---
+
+---
+
+## Session Archivage Documentation - Roadmap MVP Complétée
+
+**Date** : 2026-02-08
+**Durée** : 15 min
+**Objectif** : Archiver ROADMAP_MVP.md obsolète et clarifier documentation active
+
+---
+
+### Contexte
+
+**Roadmap MVP (ROADMAP_MVP.md)** créée le 2026-02-03 était devenue obsolète car :
+- Tous les objectifs ont été atteints (MVP 100%)
+- Une nouvelle roadmap active existe (ROADMAP_AMELIORATIONS_MVP.md)
+- Risque de confusion entre les deux documents
+
+---
+
+### Actions Réalisées
+
+**1. Archivage ROADMAP_MVP.md** ✅
+
+```bash
+# Renommé en
+ROADMAP_MVP_COMPLETED_2026-02-08.md
+```
+
+**Modifications apportées** :
+- ✅ Note d'obsolescence ajoutée en haut du fichier
+- ✅ Statut clarifié : "ARCHIVÉE - COMPLÉTÉE LE 2026-02-08"
+- ✅ Lien vers nouvelle roadmap active (ROADMAP_AMELIORATIONS_MVP.md)
+- ✅ Résumé des accomplissements (tous modules 100%)
+
+**2. Vérification Structure Documentation**
+
+```
+Documentation Roadmaps Active :
+✅ ROADMAP_AMELIORATIONS_MVP.md (active - 26 améliorations)
+✅ ROADMAP_MVP_COMPLETED_2026-02-08.md (archivée - référence)
+```
+
+---
+
+### État Documentation Projet
+
+**Documents Actifs** :
+- ✅ **ROADMAP_AMELIORATIONS_MVP.md** - Roadmap MVP+ (10 jours, 3 sprints)
+- ✅ **PLAN_TEST_MVP.md** - Plan de test exhaustif (400+ tests)
+- ✅ **SESSION.md** - Journal de sessions (ce fichier)
+- ✅ **PRD.md** - Requirements métier
+- ✅ **ARCHITECTURE.md** - Architecture technique
+- ✅ **CLAUDE.md** - Instructions développement
+
+**Documents Archivés** :
+- 📦 **ROADMAP_MVP_COMPLETED_2026-02-08.md** - Roadmap MVP initiale (complétée)
+
+---
+
+### Commit Git
+
+```bash
+git add .
+git commit -m "docs: archive completed MVP roadmap (2026-02-03 to 2026-02-08)
+
+- Rename ROADMAP_MVP.md to ROADMAP_MVP_COMPLETED_2026-02-08.md
+- Add obsolescence notice at top of file
+- Clarify all objectives achieved (MVP 100%)
+- Link to active roadmap (ROADMAP_AMELIORATIONS_MVP.md)
+- Update SESSION.md with archiving action"
+```
+
+---
+
+### Bénéfices
+
+**Clarté Documentation** :
+- ✅ Plus de confusion entre roadmaps (1 active, 1 archivée)
+- ✅ Historique préservé (référence future)
+- ✅ Direction claire (focus sur ROADMAP_AMELIORATIONS_MVP.md)
+
+**Organisation** :
+- ✅ Nommage explicite (date d'archivage dans nom fichier)
+- ✅ Statut immédiatement visible (note en haut)
+- ✅ Transition fluide vers MVP+
+
+---
+
+### Prochaine Étape
+
+**Recommandation** : Démarrer Sprint 1 de ROADMAP_AMELIORATIONS_MVP.md
+
+**Sprint 1 - Fondations Critiques (3 jours)** :
+1. Alertes automatiques (Cron + envoi manuel)
+2. Recherche textuelle (4 modules)
+3. Pagination (25 items/page)
+4. Upload Premium 50MB
+5. Récupération mot de passe
+6. Error Boundaries + Validation workflow
+
+**Prêt à lancer** : Oui ✅
+
+---
+
+**FIN DE SESSION - ROADMAP MVP ARCHIVÉE** ✅
+

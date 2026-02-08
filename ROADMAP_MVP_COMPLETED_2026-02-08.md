@@ -1,3 +1,31 @@
+# ⚠️ ROADMAP ARCHIVÉE - COMPLÉTÉE LE 2026-02-08
+
+> **STATUT** : ✅ **OBSOLÈTE - MVP 100% TERMINÉ**
+>
+> Cette roadmap a été **entièrement complétée** entre le 2026-02-03 et le 2026-02-08.
+>
+> **Tous les objectifs ont été atteints** :
+> - ✅ Cautions & Garanties (100%)
+> - ✅ Dossier Administratif (100%)
+> - ✅ Exécution Véhicules (100%)
+> - ✅ Documents & Médias (100%)
+> - ✅ Système d'Alertes (version basique)
+> - ✅ UI Admin (100%)
+> - ✅ Exports Excel (version basique)
+> - ✅ Déploiement Production (actif)
+>
+> **MVP 100% OPÉRATIONNEL** : https://erp-marches-stam.vercel.app
+>
+> **Nouvelle roadmap active** : `ROADMAP_AMELIORATIONS_MVP.md`
+> - 26 améliorations planifiées
+> - 3 sprints (10 jours)
+> - Objectif : MVP+ production-grade
+>
+> **Date d'archivage** : 2026-02-08
+> **Raison** : Objectifs atteints, remplacée par roadmap améliorations
+
+---
+
 # 🎯 ROADMAP MVP - ERP Marchés Publics
 
 **Dernière mise à jour** : 2026-02-03
