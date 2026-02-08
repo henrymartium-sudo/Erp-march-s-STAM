@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { VehiculeList } from '@/components/vehicules/vehicule-list'
 import { VehiculeFilters } from '@/components/vehicules/vehicule-filters'
+import { ExportExcelButton } from '@/components/exports/export-excel-button'
 import { getVehicules } from '@/lib/actions/vehicules'
 import { Plus } from 'lucide-react'
 import type { StatutVehicule } from '@prisma/client'
@@ -43,12 +44,20 @@ export default async function VehiculesPage({ searchParams }: VehiculesPageProps
             Gérez le parc de véhicules liés à vos marchés
           </p>
         </div>
-        <Button asChild>
-          <Link href="/vehicules/nouveau">
-            <Plus className="h-4 w-4 mr-2" />
-            Nouveau véhicule
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <ExportExcelButton
+            type="vehicules"
+            filters={{
+              statut: params.statut,
+            }}
+          />
+          <Button asChild>
+            <Link href="/vehicules/nouveau">
+              <Plus className="h-4 w-4 mr-2" />
+              Nouveau véhicule
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Filtres */}
