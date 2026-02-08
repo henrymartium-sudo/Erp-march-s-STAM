@@ -18,6 +18,7 @@ export interface CautionAlert {
   dateEcheance: Date;
   joursRestants: number;
   marcheReference?: string;
+  niveau?: "CRITIQUE" | "ATTENTION"; // Ajout niveau de criticité
 }
 
 export interface MarcheAlert {
@@ -106,19 +107,30 @@ export function cautionsExpiringEmailTemplate(cautions: CautionAlert[]): {
 
   const cautionsHtml = cautions
     .map(
-      (caution) => `
-        <div style="border-left: 4px solid #f59e0b; background-color: #fffbeb; padding: 16px; margin-bottom: 16px; border-radius: 4px;">
+      (caution) => {
+        // Couleurs selon niveau de criticité
+        const isCritique = caution.niveau === "CRITIQUE" || caution.joursRestants <= 7;
+        const borderColor = isCritique ? "#ef4444" : "#f59e0b"; // Rouge vs Orange
+        const bgColor = isCritique ? "#fef2f2" : "#fffbeb";
+        const textColor = isCritique ? "#991b1b" : "#92400e";
+        const lightTextColor = isCritique ? "#7f1d1d" : "#78350f";
+        const badgeBg = isCritique ? "#fee2e2" : "#fef3c7";
+        const niveauLabel = isCritique ? "🔴 CRITIQUE" : "🟠 ATTENTION";
+
+        return `
+        <div style="border-left: 4px solid ${borderColor}; background-color: ${bgColor}; padding: 16px; margin-bottom: 16px; border-radius: 4px;">
           <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
             <div>
-              <h3 style="margin: 0; color: #92400e; font-size: 16px; font-weight: 600;">
+              <h3 style="margin: 0; color: ${textColor}; font-size: 16px; font-weight: 600;">
                 ${caution.reference}
+                <span style="margin-left: 8px; font-size: 11px; font-weight: 500;">${niveauLabel}</span>
               </h3>
-              <p style="margin: 4px 0 0 0; color: #78350f; font-size: 13px;">
+              <p style="margin: 4px 0 0 0; color: ${lightTextColor}; font-size: 13px;">
                 ${caution.type}
               </p>
             </div>
-            <div style="background-color: #fef3c7; padding: 4px 12px; border-radius: 12px;">
-              <span style="color: #92400e; font-size: 12px; font-weight: 600;">
+            <div style="background-color: ${badgeBg}; padding: 4px 12px; border-radius: 12px;">
+              <span style="color: ${textColor}; font-size: 12px; font-weight: 600;">
                 ${caution.joursRestants} jour${caution.joursRestants > 1 ? "s" : ""}
               </span>
             </div>
@@ -140,13 +152,18 @@ export function cautionsExpiringEmailTemplate(cautions: CautionAlert[]): {
             }
           </div>
 
-          <p style="margin: 0; color: #92400e; font-size: 12px; font-style: italic;">
-            ⚡ Action requise : Renouvellement ou mainlevée à prévoir
+          <p style="margin: 0; color: ${textColor}; font-size: 12px; font-style: italic;">
+            ⚡ Action ${isCritique ? "URGENTE" : "requise"} : Renouvellement ou mainlevée à prévoir
           </p>
         </div>
-      `
+      `;
+      }
     )
     .join("");
+
+  // Compter les cautions par niveau
+  const critiques = cautions.filter(c => c.niveau === "CRITIQUE" || c.joursRestants <= 7).length;
+  const attention = cautions.length - critiques;
 
   const content = `
     <div style="margin-bottom: 24px;">
@@ -154,7 +171,8 @@ export function cautionsExpiringEmailTemplate(cautions: CautionAlert[]): {
         Cautions proches de l'échéance
       </h2>
       <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
-        ${cautions.length} caution${cautions.length > 1 ? "s" : ""} arrive${cautions.length > 1 ? "nt" : ""} à échéance dans moins de <strong>30 jours</strong>.
+        ${cautions.length} caution${cautions.length > 1 ? "s" : ""} arrive${cautions.length > 1 ? "nt" : ""} à échéance dans moins de <strong>30 jours</strong>
+        ${critiques > 0 ? ` (<span style="color: #ef4444; font-weight: 600;">${critiques} critique${critiques > 1 ? "s" : ""} &lt; 7j</span>` : ""}${attention > 0 ? `, ${attention} attention` : ""}).
         Veuillez prendre les dispositions nécessaires.
       </p>
     </div>
