@@ -4,6 +4,7 @@ import { requireAuth } from "@/lib/utils/permissions";
 import { getCautions } from "@/lib/actions/cautions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ExportExcelButton } from "@/components/exports/export-excel-button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { CautionsContent } from "./_components/cautions-content";
@@ -67,12 +68,21 @@ export default async function CautionsPage({ searchParams }: CautionsPageProps) 
             Gestion et suivi des cautions bancaires
           </p>
         </div>
-        <Button asChild>
-          <Link href="/cautions/nouvelle">
-            <Plus className="h-4 w-4 mr-2" />
-            Nouvelle Caution
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <ExportExcelButton
+            type="cautions"
+            filters={{
+              statut: params.statut,
+              type: params.type,
+            }}
+          />
+          <Button asChild>
+            <Link href="/cautions/nouvelle">
+              <Plus className="h-4 w-4 mr-2" />
+              Nouvelle Caution
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Statistiques rapides */}

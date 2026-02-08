@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { MarcheList } from '@/components/marches/marche-list'
 import { MarcheFilters } from '@/components/marches/marche-filters'
+import { ExportExcelButton } from '@/components/exports/export-excel-button'
 import { getAllMarches } from '@/lib/actions/marches'
 import { Plus } from 'lucide-react'
 import type { StatutMarche, TypeMarche } from '@prisma/client'
@@ -47,12 +48,21 @@ export default async function MarchesPage({ searchParams }: MarchesPageProps) {
             Gérez vos marchés publics de bout en bout
           </p>
         </div>
-        <Button asChild>
-          <Link href="/marches/nouveau">
-            <Plus className="h-4 w-4 mr-2" />
-            Nouveau marché
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <ExportExcelButton
+            type="marches"
+            filters={{
+              statut: params.statut,
+              type: params.type,
+            }}
+          />
+          <Button asChild>
+            <Link href="/marches/nouveau">
+              <Plus className="h-4 w-4 mr-2" />
+              Nouveau marché
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Filtres */}
