@@ -10,6 +10,7 @@ import Link from "next/link";
 import { CautionsContent } from "./_components/cautions-content";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SerializedCaution } from "@/types/serialized";
+import { serializeMarche } from "@/lib/utils/serialize";
 
 export const dynamic = 'force-dynamic'
 
@@ -50,12 +51,7 @@ function serializeCaution(caution: any): SerializedCaution {
     updatedAt: caution.updatedAt instanceof Date
       ? caution.updatedAt.toISOString()
       : String(caution.updatedAt),
-    marche: caution.marche ? {
-      ...caution.marche,
-      montant: typeof caution.marche.montant === 'number'
-        ? caution.marche.montant
-        : Number(caution.marche.montant),
-    } : undefined,
+    marche: caution.marche ? serializeMarche(caution.marche) : undefined,
   };
 }
 
