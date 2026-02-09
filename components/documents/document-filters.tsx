@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,7 +19,8 @@ import {
 } from '@/components/ui/popover'
 import { TypeDocument, PhaseMarche } from '@prisma/client'
 import { TYPE_DOCUMENT_LABELS, PHASE_MARCHE_LABELS } from '@/lib/utils/document'
-import { CalendarIcon, FilterX, Search } from 'lucide-react'
+import { CalendarIcon, FilterX, Search, X } from 'lucide-react'
+import { useDebounce } from '@/hooks/use-debounce'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
@@ -37,15 +38,18 @@ export function DocumentFilters({
   filters,
   onFiltersChange,
 }: DocumentFiltersProps) {
-  const [search, setSearch] = useState(filters.search || '')
+  const [searchQuery, setSearchQuery] = useState(filters.search || '')
+  const debouncedSearch = useDebounce(searchQuery, 300)
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onFiltersChange({ ...filters, search: search || undefined })
-  }
+  // Synchroniser le debounced search avec les filtres parents
+  useEffect(() => {
+    if (debouncedSearch !== filters.search) {
+      onFiltersChange({ ...filters, search: debouncedSearch || undefined })
+    }
+  }, [debouncedSearch])
 
   const handleReset = () => {
-    setSearch('')
+    setSearchQuery('')
     onFiltersChange({})
   }
 
@@ -55,18 +59,27 @@ export function DocumentFilters({
   return (
     <div className="space-y-4">
       {/* Recherche par nom */}
-      <form onSubmit={handleSearchSubmit} className="flex gap-2">
+      <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Rechercher par nom de document..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            placeholder="Rechercher un document..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 pr-9"
           />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
-        <Button type="submit">Rechercher</Button>
         {hasActiveFilters && (
           <Button
             type="button"
@@ -78,7 +91,7 @@ export function DocumentFilters({
             Réinitialiser
           </Button>
         )}
-      </form>
+      </div>
 
       {/* Filtres avancés */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

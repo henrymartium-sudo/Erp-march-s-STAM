@@ -49,6 +49,7 @@ export default async function VehiculesPage({ searchParams }: VehiculesPageProps
             type="vehicules"
             filters={{
               statut: params.statut,
+              search: params.search,
             }}
           />
           <Button asChild>

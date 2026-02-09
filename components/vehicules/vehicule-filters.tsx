@@ -102,11 +102,21 @@ export function VehiculeFilters({ totalCount, filteredCount }: VehiculeFiltersPr
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Immatriculation, modèle..."
+              placeholder="Rechercher un véhicule..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="pl-9"
+              className="pl-9 pr-9"
             />
+            {searchInput && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSearchInput('')}
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -152,7 +162,11 @@ export function VehiculeFilters({ totalCount, filteredCount }: VehiculeFiltersPr
       {/* Nombre de résultats */}
       <div className="pt-2 border-t">
         <p className="text-sm text-muted-foreground">
-          {hasFilters ? (
+          {searchInput && filteredCount === 0 ? (
+            <>
+              Aucun résultat pour <span className="font-semibold text-foreground">"{searchInput}"</span>
+            </>
+          ) : hasFilters ? (
             <>
               <span className="font-semibold text-foreground">{filteredCount}</span> résultat
               {filteredCount > 1 ? 's' : ''} sur {totalCount}
