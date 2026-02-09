@@ -207,3 +207,8 @@ User not found: admin@stam.tg
  ✓ Compiled in 1818ms (1017 modules)
  ✓ Compiled in 881ms (1017 modules)
  ✓ Compiled in 839ms (1017 modules)
+ ✓ Compiled in 11.2s (1017 modules)
+ ✓ Compiled in 1052ms (1017 modules)
+ ✓ Compiled in 911ms (1017 modules)
+ ✓ Compiled in 850ms (1017 modules)
+ ✓ Compiled in 760ms (1017 modules)
