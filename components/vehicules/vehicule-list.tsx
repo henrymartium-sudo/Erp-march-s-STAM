@@ -2,17 +2,10 @@ import Link from 'next/link'
 import { VehiculeCard } from './vehicule-card'
 import { Button } from '@/components/ui/button'
 import { Plus, Truck } from 'lucide-react'
-import type { Vehicule } from '@prisma/client'
+import type { SerializedVehicule } from '@/types/serialized'
 
 interface VehiculeListProps {
-  vehicules: (Vehicule & {
-    marche?: {
-      id: string
-      numero: string
-      objet: string
-      statut: string
-    } | null
-  })[]
+  vehicules: SerializedVehicule[]
 }
 
 export function VehiculeList({ vehicules }: VehiculeListProps) {

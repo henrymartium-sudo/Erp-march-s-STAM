@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getVehiculeById } from '@/lib/actions/vehicules'
 import { VehiculeDetail } from '@/components/vehicules/vehicule-detail'
+import { serializeVehicule } from '@/lib/utils/serialize'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,5 +21,8 @@ export default async function VehiculePage({ params }: VehiculePageProps) {
     notFound()
   }
 
-  return <VehiculeDetail vehicule={vehicule} />
+  // Sérialiser le véhicule pour le passage au Client Component
+  const serializedVehicule = serializeVehicule(vehicule)
+
+  return <VehiculeDetail vehicule={serializedVehicule} />
 }

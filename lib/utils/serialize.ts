@@ -6,7 +6,7 @@
  * - Date -> converti en string ISO
  */
 
-import type { SerializedMarche, SerializedCaution } from '@/types/serialized'
+import type { SerializedMarche, SerializedCaution, SerializedVehicule } from '@/types/serialized'
 
 /**
  * Sérialise un marché Prisma en objet plain pour le passage aux Client Components.
@@ -133,5 +133,37 @@ export function serializeCaution(caution: any): SerializedCaution {
         ? caution.marche.montant
         : Number(caution.marche.montant),
     } : undefined,
+  }
+}
+
+/**
+ * Sérialise un véhicule Prisma en objet plain pour le passage aux Client Components.
+ * Convertit les Date en string ISO.
+ */
+export function serializeVehicule(vehicule: any): SerializedVehicule {
+  return {
+    ...vehicule,
+    dateLivraison: vehicule.dateLivraison instanceof Date
+      ? vehicule.dateLivraison.toISOString()
+      : vehicule.dateLivraison
+        ? String(vehicule.dateLivraison)
+        : null,
+    dateReceptionProvisoire: vehicule.dateReceptionProvisoire instanceof Date
+      ? vehicule.dateReceptionProvisoire.toISOString()
+      : vehicule.dateReceptionProvisoire
+        ? String(vehicule.dateReceptionProvisoire)
+        : null,
+    dateReceptionDefinitive: vehicule.dateReceptionDefinitive instanceof Date
+      ? vehicule.dateReceptionDefinitive.toISOString()
+      : vehicule.dateReceptionDefinitive
+        ? String(vehicule.dateReceptionDefinitive)
+        : null,
+    createdAt: vehicule.createdAt instanceof Date
+      ? vehicule.createdAt.toISOString()
+      : String(vehicule.createdAt),
+    updatedAt: vehicule.updatedAt instanceof Date
+      ? vehicule.updatedAt.toISOString()
+      : String(vehicule.updatedAt),
+    marche: vehicule.marche || null,
   }
 }
