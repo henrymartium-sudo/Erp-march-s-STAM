@@ -21,6 +21,7 @@ export function middleware(request: NextRequest) {
   const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/register')
   const isApiAuthRoute = pathname.startsWith('/api/auth')
   const isApiDebugRoute = pathname.startsWith('/api/debug')
+  const isApiCronRoute = pathname.startsWith('/api/cron') // Routes cron (authentification via CRON_SECRET)
 
   // Ne pas intercepter les routes API auth (NextAuth en a besoin)
   if (isApiAuthRoute) {
@@ -29,6 +30,11 @@ export function middleware(request: NextRequest) {
 
   // Ne pas intercepter les routes API debug (diagnostics)
   if (isApiDebugRoute) {
+    return NextResponse.next()
+  }
+
+  // Ne pas intercepter les routes API cron (authentification via CRON_SECRET)
+  if (isApiCronRoute) {
     return NextResponse.next()
   }
 
