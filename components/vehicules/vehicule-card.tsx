@@ -4,17 +4,10 @@ import { Button } from '@/components/ui/button'
 import { StatutBadge } from './statut-badge'
 import { formatDateCourt } from '@/lib/utils/format'
 import { Eye, Pencil, Calendar, Truck } from 'lucide-react'
-import type { Vehicule } from '@prisma/client'
+import type { SerializedVehicule } from '@/types/serialized'
 
 interface VehiculeCardProps {
-  vehicule: Vehicule & {
-    marche?: {
-      id: string
-      numero: string
-      objet: string
-      statut: string
-    } | null
-  }
+  vehicule: SerializedVehicule
 }
 
 export function VehiculeCard({ vehicule }: VehiculeCardProps) {

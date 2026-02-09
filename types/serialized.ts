@@ -8,7 +8,7 @@
  * Ces types représentent les données APRÈS sérialisation.
  */
 
-import type { TypeCaution, StatutCaution, TypeMarche, StatutMarche } from '@prisma/client'
+import type { TypeCaution, StatutCaution, TypeMarche, StatutMarche, StatutVehicule } from '@prisma/client'
 
 // ============================================================================
 // CAUTION SÉRIALISÉE
@@ -78,4 +78,31 @@ export interface SerializedMarche {
   concurrentGagnant: string | null
   montantOffreConcurrent: number | null // Decimal -> number
   userId: string
+}
+
+// ============================================================================
+// VÉHICULE SÉRIALISÉ
+// ============================================================================
+
+export interface SerializedVehicule {
+  id: string
+  immatriculation: string
+  marque: string
+  modele: string
+  annee: number | null
+  dateLivraison: string | null // Date -> ISO string
+  bonLivraisonRef: string | null
+  dateReceptionProvisoire: string | null // Date -> ISO string
+  dateReceptionDefinitive: string | null // Date -> ISO string
+  reservesReception: string | null
+  statut: StatutVehicule
+  marcheId: string | null
+  createdAt: string // Date -> ISO string
+  updatedAt: string // Date -> ISO string
+  marche?: {
+    id: string
+    numero: string
+    objet: string
+    statut: string
+  } | null
 }

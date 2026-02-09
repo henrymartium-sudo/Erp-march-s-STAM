@@ -38,5 +38,26 @@
 - `lib/auth/auth.config.ts` - Config NextAuth (Prisma + bcrypt, Node.js only)
 - `lib/db/prisma.ts` - Client Prisma avec PrismaPg adapter
 
+### 4. Prisma Decimal non serialisable par RSC (Client-side exception sur Cautions)
+- **Erreur** : "Application error: a client-side exception has occurred" en production
+- **Cause racine** : `Prisma.Decimal` n'est PAS serialisable par React Server Components
+- Les Server Components passaient des objets Caution avec `montant: Decimal` aux Client Components
+- En dev : warning "Only plain objects can be passed to Client Components. Decimal objects are not supported."
+- En production : crash client-side car le Decimal est corrompu lors de la serialisation
+- **Fix** : Creer une fonction `serializeCaution()` dans le Server Component qui convertit :
+  - `Decimal` -> `number` via `Number(caution.montant)`
+  - `Date` -> `string ISO` via `date.toISOString()`
+- **Type serialise** : `types/serialized.ts` avec `SerializedCaution` (number au lieu de Decimal, string au lieu de Date)
+- **Fichiers corriges** : `page.tsx` (listing), `[id]/page.tsx` (detail), `[id]/edit/page.tsx` (edition),
+  `caution-card.tsx`, `caution-list.tsx`, `caution-detail.tsx`, `caution-form.tsx`, `caution-timeline.tsx`,
+  `marche-cautions-section.tsx`
+- **Bugs secondaires corriges** :
+  - `.toNumber()` sur des Decimal serialises -> `Number()` resilient
+  - `.getTime()` sur des Date serialisees en string -> `new Date(str).getTime()`
+  - `<SelectItem value="">` Radix UI crash -> `<SelectItem value="ALL">`
+  - `search` param manquant dans ExportExcelButton URL construction
+- **Lecon** : TOUJOURS serialiser les objets Prisma avec Decimal AVANT de les passer aux Client Components
+- **Lecon** : Le module Marches a potentiellement le meme probleme (Decimal sur montant) -- a verifier
+
 ## URL Production
 - https://erp-marches-stam.vercel.app

@@ -1,21 +1,14 @@
 import Link from 'next/link'
-import { Vehicule } from '@prisma/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatutBadge } from './statut-badge'
 import { DeleteVehiculeDialog } from './delete-vehicule-dialog'
 import { formatDateLong } from '@/lib/utils/format'
 import { ArrowLeft, Pencil, Truck, FileText } from 'lucide-react'
+import type { SerializedVehicule } from '@/types/serialized'
 
 interface VehiculeDetailProps {
-  vehicule: Vehicule & {
-    marche?: {
-      id: string
-      numero: string
-      objet: string
-      statut: string
-    } | null
-  }
+  vehicule: SerializedVehicule
 }
 
 export function VehiculeDetail({ vehicule }: VehiculeDetailProps) {

@@ -4,6 +4,7 @@ import { VehiculeList } from '@/components/vehicules/vehicule-list'
 import { VehiculeFilters } from '@/components/vehicules/vehicule-filters'
 import { ExportExcelButton } from '@/components/exports/export-excel-button'
 import { getVehicules } from '@/lib/actions/vehicules'
+import { serializeVehicule } from '@/lib/utils/serialize'
 import { Plus } from 'lucide-react'
 import type { StatutVehicule } from '@prisma/client'
 
@@ -28,7 +29,8 @@ export default async function VehiculesPage({ searchParams }: VehiculesPageProps
     marque: params.marque,
   })
 
-  const vehicules = result.vehicules || []
+  // Sérialiser les véhicules pour le passage aux Client Components
+  const vehicules = (result.vehicules || []).map(serializeVehicule)
 
   // Compter le nombre total sans filtres
   const totalResult = await getVehicules({})
