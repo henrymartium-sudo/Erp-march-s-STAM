@@ -3854,3 +3854,190 @@ git commit -m "docs: archive completed MVP roadmap (2026-02-03 to 2026-02-08)
 
 **FIN DE SESSION - ROADMAP MVP ARCHIVÉE** ✅
 
+
+
+---
+
+---
+
+## Session Sprint 1 - Priorité 1 : Alertes Automatiques
+
+**Date** : 2026-02-09
+**Durée** : 4h
+**Objectif** : Améliorer système d'alertes existant + Configuration Vercel Cron
+
+---
+
+### Phase 1 : Analyse État Initial (30 min)
+
+**Découverte** :
+- ✅ Système d'alertes déjà implémenté (MVP 100%)
+- ✅ Route API `/api/cron/daily-alerts` existante
+- ✅ Actions serveur `sendDailyAlertsEmail()` fonctionnelles
+- ✅ Configuration SMTP déjà en place sur Vercel
+- ✅ Templates email HTML professionnels
+- ❌ Configuration Vercel Cron manquante (vercel.json vide)
+- ❌ Pas de distinction niveaux criticité (toutes < 30j)
+
+**Fichiers Existants** :
+```
+app/api/cron/daily-alerts/route.ts - Route API avec validation CRON_SECRET
+lib/actions/alertes.ts             - Logique détection + envoi emails
+lib/config/email.ts                 - Configuration Nodemailer
+lib/email/templates.ts              - Templates HTML emails
+```
+
+---
+
+### Phase 2 : Améliorations Code (45 min)
+
+#### 2.1 Niveaux de Criticité Cautions
+
+**Fichier** : `lib/email/templates.ts`
+
+**Avant** :
+- Toutes cautions < 30j affichées uniformément (orange)
+
+**Après** :
+- 🔴 **CRITIQUE** : < 7 jours (rouge)
+- 🟠 **ATTENTION** : < 30 jours (orange)
+- Couleurs conditionnelles (bordure, background, texte, badge)
+- Labels visibles dans email
+
+**Commits** :
+```bash
+90680da - feat(alertes): améliorer détection et configurer Vercel Cron
+```
+
+---
+
+### Phase 3 : Déploiement et Problèmes (2h)
+
+#### 3.1 Problème Middleware
+
+**Symptôme** : Route `/api/cron/daily-alerts` redirige vers `/login` (HTTP 307)
+
+**Cause** : Middleware Next.js protège toutes routes sauf `/api/auth` et `/api/debug`
+
+**Solution** : Ajout exception pour `/api/cron` dans `middleware.ts`
+
+**Commit** :
+```bash
+6e5864e - fix(middleware): exclure routes API cron de la protection session
+```
+
+---
+
+#### 3.2 Erreur Déploiement Vercel - Cron Job
+
+**Symptôme** : Build échoue sur Vercel (● Error)
+
+**Cause** : Cron Jobs nécessitent plan Vercel Pro (pas Hobby gratuit)
+
+**Solution** : Retrait config cron de `vercel.json`
+
+**Commit** :
+```bash
+9324693 - fix(vercel): retirer config cron (plan Hobby incompatible)
+```
+
+---
+
+#### 3.3 Problème CRON_SECRET
+
+**Symptôme** : `{"success":false,"error":"Unauthorized"}` après déploiement
+
+**Statut actuel** : En attente validation après mise à jour manuelle sur Vercel
+
+**Nouveau secret généré** :
+```
+533f13f52694c1e9c9a457d448f03ad3e35f9caa5e61f8ddf7a976d45fb6dec9
+```
+
+---
+
+### Phase 4 : État Actuel et Prochaines Actions
+
+#### État Système
+
+**✅ Fonctionnel** :
+- Route API `/api/cron/daily-alerts` accessible
+- Middleware n'interfère plus avec routes cron
+- Variables SMTP configurées (Gmail)
+- Templates email avec niveaux criticité
+- Build production réussi
+- Déploiement Vercel stable (sans cron)
+
+**❌ En cours** :
+- Validation CRON_SECRET (problème authentification)
+- Test envoi email réel
+
+---
+
+#### Prochaines Actions
+
+**Option A : Résoudre CRON_SECRET** (30 min)
+1. Supprimer CRON_SECRET sur Vercel
+2. Recréer avec nouvelle valeur propre
+3. Redéployer
+4. Tester endpoint
+5. Valider réception email
+
+**Option B : Passer Priorité 2 - Envoi Manuel** (2h)
+- Créer page `/admin/alertes`
+- Bouton "📧 Envoyer alertes maintenant"
+- Server Action `sendAlertsManually()`
+- Ne dépend pas du cron
+
+**Option C : Priorité 3 - Recherche Textuelle** (2h)
+- Composant `<SearchBar />` réutilisable
+- Recherche sur 4 modules
+- Debounce 300ms
+
+---
+
+### Progression Sprint 1
+
+| Priorité | Tâche | Durée Prévue | Durée Réelle | Statut |
+|----------|-------|--------------|--------------|--------|
+| **1** | **Alertes Automatiques** | 6h | 4h | 🟡 **90% (auth restante)** |
+| 2 | Envoi Manuel Alertes | 2h | - | ⏸️ En attente |
+| 3 | Recherche Textuelle | 2h | - | ⏸️ En attente |
+| 4 | Pagination | 3h | - | ⏸️ En attente |
+| 5 | Upload Premium 50MB | 5h | - | ⏸️ En attente |
+| 6 | Récupération Mot de Passe | 4h | - | ⏸️ En attente |
+| 7 | Error Boundaries | 4h | - | ⏸️ En attente |
+
+**Total Sprint 1** : 1/7 priorités (90% première, 14% global)
+
+---
+
+### Fichiers Modifiés
+
+```
+lib/email/templates.ts              +38 -10  (niveaux criticité)
+lib/actions/alertes.ts             +6 -2    (niveau dans CautionAlert)
+vercel.json                        +0 -6    (retrait cron temporaire)
+middleware.ts                      +6 -0    (exclusion /api/cron)
+.env.example                       +1 -0    (exemple CRON_SECRET)
+CONFIG_ALERTES_VERCEL.md           +292     (nouveau fichier)
+package.json                       +1 -1    (nodemailer 7.0.13)
+```
+
+---
+
+### Recommandation
+
+**Passer à Priorité 2 (Envoi Manuel Alertes)** :
+
+**Raisons** :
+1. Ne dépend pas de CRON_SECRET (résolution complexe)
+2. Fonctionnalité utile même avec cron (tests, envois exceptionnels)
+3. Déblocage immédiat (2h de développement)
+4. Valeur métier concrète pour utilisateur ADMIN
+
+---
+
+**FIN DE SESSION - ALERTES 90% COMPLÉTÉES** 🟡
+
+**Prochaine Session** : Option A (finaliser auth) ou Option B (envoi manuel)
