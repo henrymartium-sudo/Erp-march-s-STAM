@@ -255,7 +255,11 @@ export function comparerParMontant(
   a: { montant: number | { toNumber: () => number } },
   b: { montant: number | { toNumber: () => number } }
 ): number {
-  const montantA = typeof a.montant === 'number' ? a.montant : a.montant.toNumber()
-  const montantB = typeof b.montant === 'number' ? b.montant : b.montant.toNumber()
+  const montantA = typeof a.montant === 'number'
+    ? a.montant
+    : (a.montant && typeof a.montant.toNumber === 'function' ? a.montant.toNumber() : 0)
+  const montantB = typeof b.montant === 'number'
+    ? b.montant
+    : (b.montant && typeof b.montant.toNumber === 'function' ? b.montant.toNumber() : 0)
   return montantB - montantA
 }
