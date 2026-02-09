@@ -4425,3 +4425,191 @@ components/admin/alertes/email-preview-dialog.tsx  +2 -3   (fix hydration)
 **FIN DE SESSION - ALERTES EMAIL VALIDÉES EN PRODUCTION** ✅
 
 ---
+
+## Session Recherche Textuelle Globale - Sprint 1 Priorité 3
+
+**Date** : 2026-02-09
+**Durée** : 1h45
+**Objectif** : Implémenter recherche textuelle sur les 4 modules
+**Méthodologie** : Design-First + Pattern Replication
+
+---
+
+### Phase 1 : Design & Validation (30 min)
+
+**Approche** : Brainstorming interactif avec validation incrémentale
+
+**Décisions d'architecture** :
+1. **Recherche côté client** (Marchés) vs côté serveur (Cautions/Véhicules)
+2. **Champs essentiels uniquement** par module
+3. **Intégration dans composants Filters existants** (pas de composant global)
+4. **Recherche souple** : insensible casse + accents
+5. **Feedback intégré** : compteur adapté + message "Aucun résultat"
+
+**Design documenté** :
+- Fichier créé : `docs/plans/2026-02-09-recherche-textuelle-design.md`
+- Architecture détaillée avec exemples de code
+- Champs de recherche par module
+- Tests Playwright définis
+
+**Commit** :
+```bash
+5266e0c - docs(design): Ajouter design validé pour recherche textuelle globale
+```
+
+---
+
+### Phase 2 : Implémentation Module Marchés (45 min)
+
+**Tâches réalisées** :
+1. ✅ Créer `lib/utils/search.ts` (fonctions utilitaires)
+   - `normalizeText()` : lowercase + suppression accents
+   - `searchInFields()` : recherche dans multiples champs
+
+2. ✅ Modifier `components/marches/marche-filters.tsx`
+   - Ajout input de recherche avec icône Search
+   - Debounce 300ms via `useDebounce` hook
+   - Synchronisation URL via `useEffect`
+   - Bouton clear (X) conditionnel
+   - Compteur adapté : "Aucun résultat pour 'xxx'"
+
+3. ✅ Modifier `app/(dashboard)/marches/page.tsx`
+   - Import `searchInFields`
+   - Filtrage sur `['numero', 'objet', 'organismeAcheteur']`
+   - Propagation `search` param à `ExportExcelButton`
+
+**Commit** :
+```bash
+82261a4 - feat(recherche): Ajouter recherche textuelle sur module Marchés
+```
+
+---
+
+### Phase 3 : Réplication Autres Modules (30 min)
+
+**Module Cautions** :
+- Recherche **déjà implémentée** côté serveur (Prisma)
+- Ajouté : Debounce + icône Search + bouton clear
+- Champs recherchés : `reference`, `banqueEmettrice`, `typeCaution`
+
+**Module Documents** :
+- Remplacé : Bouton "Rechercher" → Debounce automatique
+- Ajouté : Icône Search + bouton clear (X)
+- Placeholder : "Rechercher un document..."
+
+**Module Véhicules** :
+- Recherche debounce **déjà implémentée**
+- Ajouté : Bouton clear (X) + message "Aucun résultat"
+- Placeholder uniformisé : "Rechercher un véhicule..."
+- Champs recherchés : `immatriculation`, `marque`, `modele`
+
+**Commit** :
+```bash
+d2091b7 - feat(recherche): Uniformiser recherche textuelle sur les 4 modules
+```
+
+---
+
+### Résultats
+
+**✅ Fonctionnalités Livrées** :
+- Recherche textuelle sur **4 modules** (Marchés, Cautions, Documents, Véhicules)
+- Pattern UI **cohérent** sur tous les modules
+- Debounce **300ms** pour optimisation
+- Synchronisation **URL params** (partage liens avec recherche)
+- Export Excel **respecte la recherche** active
+
+**📊 Statistiques** :
+- Durée totale : 1h45 (sous estimation 2h)
+- Design : 30 min
+- Implémentation : 1h15
+- Commits : 3
+- Fichiers créés : 1
+- Fichiers modifiés : 8
+
+**🎯 Pattern UI Unifié** :
+```
+┌─ Filtres ────────────────────────┐
+│ 🔍 [Rechercher...________] ✕    │ ← Input + debounce + clear
+│                                  │
+│ [Filtre 1 ▼]  [Filtre 2 ▼]      │ ← Filtres existants
+│                                  │
+│ X résultats sur Y                │ ← Compteur adapté
+└──────────────────────────────────┘
+```
+
+---
+
+### Fichiers Modifiés
+
+```
+lib/utils/search.ts                      +56 (nouveau - fonctions utilitaires)
+components/marches/marche-filters.tsx    +33 -3  (debounce + UI)
+app/(dashboard)/marches/page.tsx         +10 -1  (filtrage + export)
+components/cautions/caution-filters.tsx  +23 -5  (debounce + UI)
+app/(dashboard)/cautions/page.tsx        +1      (export search)
+components/documents/document-filters.tsx +21 -10 (debounce + UI)
+components/vehicules/vehicule-filters.tsx +17 -3  (clear btn + message)
+app/(dashboard)/vehicules/page.tsx       +1      (export search)
+docs/plans/2026-02-09-recherche-textuelle-design.md +382 (design doc)
+```
+
+---
+
+### Progression Sprint 1
+
+| Priorité | Tâche | Durée Prévue | Durée Réelle | Statut |
+|----------|-------|--------------|--------------|--------|
+| **1** | **Alertes Automatiques** | 6h | 4h | ✅ **100%** |
+| **2** | **Envoi Manuel Alertes** | 2h | 3h | ✅ **100%** |
+| **3** | **Recherche Textuelle** | 2h | 1h45 | ✅ **100%** |
+| 4 | Pagination | 3h | - | ⏸️ En attente |
+| 5 | Upload Premium 50MB | 5h | - | ⏸️ En attente |
+| 6 | Récupération Mot de Passe | 4h | - | ⏸️ En attente |
+| 7 | Error Boundaries | 4h | - | ⏸️ En attente |
+
+**Total Sprint 1** : **3/7 priorités (43%)** complétées
+
+---
+
+### Leçons Apprises
+
+1. **Design-First** :
+   - Brainstorming interactif évite les refactos
+   - Validation incrémentale = design robuste
+   - Documentation design = référence implémentation
+
+2. **Pattern Replication** :
+   - Marchés = module de référence
+   - Autres modules = copie adaptée
+   - Cohérence UI critique pour UX
+
+3. **Recherche Hybride** :
+   - Côté client (Marchés) : Simple, rapide
+   - Côté serveur (Cautions) : Scalable, déjà existant
+   - Les deux approches valides selon contexte
+
+4. **Debounce Essentiel** :
+   - 300ms = bon compromis UX/performance
+   - Évite requêtes inutiles à chaque frappe
+   - Hook réutilisable facilite implémentation
+
+---
+
+### Prochaine Session
+
+**Recommandation** : Sprint 1 - Priorité 4 (Pagination)
+
+**Objectif** :
+- Pagination sur tables longues (> 20 entrées)
+- Composant `<Pagination />` réutilisable
+- Synchronisation URL (page param)
+- Compatible avec recherche + filtres
+
+**Durée estimée** : 3h
+
+---
+
+**FIN DE SESSION - RECHERCHE TEXTUELLE 100% COMPLÉTÉE** ✅
+
+---
