@@ -5048,3 +5048,388 @@ components/vehicules/vehicule-card.tsx          +2 ('use client' directive)
 ---
 
 **FIN DE SESSION - TESTS DOCUMENTS & VÉHICULES - 100% RÉUSSITE** ✅
+
+---
+
+## 📐 Session Brainstorming - Sprint 1 Priorité 4 : Pagination
+
+**Date** : 2026-02-09
+**Durée** : 1h15
+**Objectif** : Concevoir le système de pagination réutilisable pour les 4 modules
+**Méthodologie** : Brainstorming structuré avec validation incrémentale
+
+---
+
+### Contexte
+
+**Besoin** : Pagination sur les listes longues (> 20 entrées) pour les 4 modules (Marchés, Cautions, Documents, Véhicules).
+
+**Contraintes** :
+- Compatible avec recherche textuelle existante (debounce 300ms + URL sync)
+- Compatible avec filtres statut/type
+- Pattern cohérent avec le code existant
+- Aligné avec vision V2 (reporting avancé, analyses comparatives)
+
+---
+
+### Processus de Brainstorming (1h)
+
+**Méthode** : Questions une par une avec options multiples, validation incrémentale.
+
+#### Question 1 : Approche technique (10 min)
+
+**Options explorées** :
+- A) Pagination côté client ✅ **RETENU**
+- B) Pagination côté serveur
+- C) Approche hybride
+
+**Décision** : **Option A**
+
+**Justification** :
+- Volumétries actuelles < 500 entrées/module (acceptable en mémoire)
+- Compatible avec architecture existante (filtres côté serveur)
+- Navigation instantanée entre pages (pas de requête réseau)
+- Simple à implémenter et maintenir
+- Suffisant pour MVP et V1
+
+#### Question 2 : Taille de page (8 min)
+
+**Options explorées** :
+- A) Taille fixe de 20
+- B) Taille variable (10, 20, 50) ✅ **RETENU**
+- C) Taille + option "Tout afficher"
+
+**Consultation PRD** : Vision V2 "Piloter et décider" avec reporting avancé et comparaisons multi-annuelles.
+
+**Décision** : **Option B**
+
+**Justification** :
+- Aligné avec vision V2 (analyses comparatives nécessitent flexibilité)
+- Exploitabilité des données (Principe #2 du PRD)
+- Facilite reporting avancé (10 pour vue rapide, 50 pour analyses)
+- Coût implémentation faible (Select simple)
+- Évite refactorisation future
+- Cohérent avec le travail déjà réalisé (pattern Select + URL sync déjà maîtrisé)
+
+#### Question 3 : Placement UI (5 min)
+
+**Options explorées** :
+- A) Sélecteur dans filtres, pagination en bas ✅ **RETENU**
+- B) Approche séparée (barre dédiée)
+- C) Tout regroupé en bas
+
+**Décision** : **Option A**
+
+**Justification** :
+- Cohérent avec zone filtres existante
+- Séparation claire contrôles (filtres) / affichage (grille) / navigation (pagination)
+- Standard UX
+
+#### Question 4 : Style des contrôles (5 min)
+
+**Options explorées** :
+- A) Complet avec numéros de page ✅ **RETENU**
+- B) Simple prev/next + indicateur
+- C) Hybrid (prev/next + input)
+
+**Décision** : **Option A**
+
+**Justification** :
+- Navigation directe vers n'importe quelle page
+- Idéal pour analyses/reporting V2
+- Shadcn/ui a ce composant prêt
+- Visibilité totale du nombre de pages
+
+#### Question 5 : Comportement filtres (5 min)
+
+**Options explorées** :
+- A) Reset automatique à page 1 ✅ **RETENU**
+- B) Maintenir page courante si possible
+- C) Reset seulement pour recherche textuelle
+
+**Décision** : **Option A**
+
+**Justification** :
+- Comportement standard web (Google, Amazon, etc.)
+- Prévisible et simple
+- Évite confusion (page vide si résultats < page actuelle)
+
+#### Question 6 : Scroll automatique (5 min)
+
+**Options explorées** :
+- A) Scroll en haut de la grille ✅ **RETENU**
+- B) Pas de scroll automatique
+- C) Scroll en haut de page complète
+
+**Décision** : **Option A**
+
+**Justification** :
+- Standard UX (Amazon, Google)
+- Garde filtres visibles (pas de scroll jusqu'au header)
+- Utilisateur voit immédiatement les nouveaux résultats
+
+---
+
+### Présentation du Design (30 min)
+
+**Format** : Sections de 200-300 mots, validation incrémentale
+
+**5 sections présentées et validées** :
+
+1. ✅ **Vue d'ensemble et Architecture** (5 min)
+   - Flux de données Server Component → Client Components
+   - Composants créés (hook, UI, modifications)
+   - Pagination côté client avec sync URL
+
+2. ✅ **Hook usePagination** (8 min)
+   - Interface TypeScript complète
+   - 5 responsabilités clés (lecture URL, calculs, sync, reset, validation)
+   - Exemple d'utilisation
+
+3. ✅ **Composant PaginationControls** (6 min)
+   - Affichage intelligent selon nombre de pages
+   - Utilisation shadcn/ui Pagination
+   - Responsive (version mobile simplifiée)
+
+4. ✅ **Modifications composants existants** (6 min)
+   - `*-filters.tsx` : Ajout sélecteur pageSize
+   - `*-list.tsx` : Intégration hook + scroll automatique
+
+5. ✅ **Gestion erreurs & Tests** (5 min)
+   - 6 cas limites gérés
+   - Validation automatique dans le hook
+   - 10 scénarios Playwright à implémenter
+   - Tests performance
+
+---
+
+### Document de Design (15 min)
+
+**Fichier créé** : `docs/plans/2026-02-09-pagination-design.md` (782 lignes)
+
+**Contenu** :
+1. Contexte et objectif
+2. Architecture globale
+3. Composants et fichiers (détail complet)
+4. Comportements UX
+5. Cas limites et validation
+6. Tests de validation (10 scénarios Playwright)
+7. Plan d'implémentation (4 phases, 3h)
+8. Décisions de design (6 décisions documentées)
+9. Impacts et considérations
+10. Checklist de validation
+11. Risques et mitigations
+12. Références
+
+**Commit** : `6eb6470` - docs(design): Ajouter document de design pagination
+
+---
+
+### Décisions Clés
+
+| # | Décision | Justification |
+|---|----------|---------------|
+| 1 | Pagination côté client | Volumétries < 500, navigation instantanée, simple |
+| 2 | Taille variable (10/20/50) | Vision V2, exploitabilité, évite refacto |
+| 3 | Sélecteur dans filtres, pagination en bas | Cohérent avec UI existante |
+| 4 | Contrôles complets avec numéros | Navigation directe, idéal analyses V2 |
+| 5 | Reset page 1 sur filtre | Standard web, prévisible |
+| 6 | Scroll en haut de grille | UX standard, garde filtres visibles |
+
+---
+
+### Architecture Finale
+
+**Composants** :
+```
+hooks/use-pagination.ts                      (NOUVEAU - 150 lignes)
+components/ui/pagination-controls.tsx        (NOUVEAU - 80 lignes)
+components/marches/marche-filters.tsx        (MODIF - +15 lignes)
+components/marches/marche-list.tsx           (MODIF - +20 lignes)
+components/cautions/caution-filters.tsx      (MODIF - +15 lignes)
+components/cautions/caution-list.tsx         (MODIF - +20 lignes)
+components/documents/document-filters.tsx    (MODIF - +15 lignes)
+components/documents/document-list.tsx       (MODIF - +20 lignes)
+components/vehicules/vehicule-filters.tsx    (MODIF - +15 lignes)
+components/vehicules/vehicule-list.tsx       (MODIF - +20 lignes)
+```
+
+**Flux de données** :
+```
+Server Component (page.tsx)
+  ↓ Charge + sérialise + filtre (statut, type, search)
+Client Component (*-filters.tsx)
+  ↓ Gère pageSize via URL param
+Client Component (*-list.tsx)
+  ↓ usePagination(totalItems) → slice(startIndex, endIndex)
+  ↓ Affiche page courante + <PaginationControls />
+```
+
+---
+
+### Plan d'Implémentation
+
+**4 phases - Durée totale : 3h**
+
+| Phase | Tâches | Durée |
+|-------|--------|-------|
+| **1** | Hook `usePagination` + Composant `PaginationControls` | 1h |
+| **2** | Intégration module Marchés + test manuel | 45min |
+| **3** | Réplication Cautions, Documents, Véhicules | 1h |
+| **4** | Tests Playwright + validation responsive | 15min |
+
+**Total estimé** : 3h
+
+---
+
+### Validation Design
+
+**Cohérence avec existant** : ✅ 100%
+- Pattern Select + URL sync déjà maîtrisé (2 Select existants)
+- Composants réutilisables (même architecture que MarcheFilters/MarcheList)
+- Multi-params URL déjà en place (statut, type, search)
+- Complexité ajoutée marginale (1 Select + 1 composant + slice())
+
+**Alignement PRD** : ✅ 100%
+- Exploitabilité des données (Principe #2)
+- Vision V2 "Piloter et décider" (reporting avancé)
+- Tableaux de bord personnalisables (préférences pageSize)
+- Comparaisons multi-annuelles (50 items pour analyses)
+
+**Compatibilité** : ✅ 100%
+- Recherche textuelle (debounce 300ms + URL sync)
+- Filtres statut/type
+- Export Excel (exporte TOUT, pas juste la page)
+- Sérialisation Prisma
+- Next.js 15 (async params, RSC)
+
+---
+
+### Tests Prévus
+
+**10 scénarios Playwright** :
+1. PAG-01 : Navigation basique (page 1 → 2)
+2. PAG-02 : Changement pageSize (20 → 10 → 50)
+3. PAG-03 : Reset page sur filtre
+4. PAG-04 : Reset page sur recherche
+5. PAG-05 : URL directe avec params
+6. PAG-06 : Scroll automatique
+7. PAG-07 : Navigation prev/next + disabled
+8. PAG-08 : Pagination masquée si ≤ 1 page
+9. PAG-09 : Export Excel (tous les items)
+10. PAG-10 : Responsive mobile
+
+---
+
+### Leçons Apprises
+
+1. **Vision Long Terme Essentielle** :
+   - Consulter PRD a fait évoluer décision (taille fixe → variable)
+   - Vision V2 "Piloter et décider" influence choix techniques MVP
+   - Éviter refactorisation future = investissement rentable maintenant
+
+2. **Brainstorming Structuré Efficace** :
+   - Questions une par une = progression claire
+   - Options multiples avec recommandation = décision rapide
+   - Validation incrémentale du design (5 sections) = robustesse
+   - Durée totale 1h15 vs 30min si implémentation directe → ROI élevé
+
+3. **Documentation Proactive** :
+   - Document design complet (782 lignes) = référence implémentation
+   - 6 décisions documentées avec justifications = traçabilité
+   - Plan implémentation 4 phases = roadmap clair
+   - Checklist validation = critères acceptation explicites
+
+4. **Cohérence Pattern Critique** :
+   - Vérifier compatibilité avec travail existant évite friction
+   - Pattern Select + URL sync déjà maîtrisé → implémentation fluide
+   - Architecture composants réutilisables → maintenance simplifiée
+
+---
+
+### Fichiers Modifiés
+
+```
+docs/plans/2026-02-09-pagination-design.md  +782  (NOUVEAU - document design)
+```
+
+---
+
+### Impact Projet
+
+**Avant brainstorming** :
+- Idée vague "ajouter pagination"
+- Risque choix techniques non alignés avec V2
+- Pas de plan clair
+
+**Après brainstorming** :
+- ✅ Architecture complète validée
+- ✅ 6 décisions clés documentées avec justifications
+- ✅ Plan implémentation 4 phases (3h)
+- ✅ 10 tests Playwright spécifiés
+- ✅ Document référence 782 lignes
+- ✅ Alignement PRD + vision V2 confirmé
+- ✅ Prêt pour implémentation directe
+
+**ROI** :
+- Temps investi : 1h15 (brainstorming + documentation)
+- Évite : 2-3h de refactorisation future (si choix taille fixe)
+- Prévient : Incohérence UI (si placement non standard)
+- Accélère : Implémentation (plan clair, décisions prises)
+- **ROI estimé** : 1h15 investi → 3-4h économisées
+
+---
+
+### Progression Sprint 1
+
+| Priorité | Tâche | Durée Prévue | Durée Réelle | Statut |
+|----------|-------|--------------|--------------|--------|
+| **1** | **Alertes Automatiques** | 6h | 4h | ✅ **100%** |
+| **2** | **Envoi Manuel Alertes** | 2h | 3h | ✅ **100%** |
+| **3** | **Recherche Textuelle** | 2h | 1h45 | ✅ **100%** |
+| **3b** | **Tests Production Validation** | - | 45min | ✅ **100%** |
+| **4** | **Pagination** | 3h | 1h15 (design) | 🔄 **Design 100%** |
+| 5 | Upload Premium 50MB | 5h | - | ⏸️ En attente |
+| 6 | Récupération Mot de Passe | 4h | - | ⏸️ En attente |
+| 7 | Error Boundaries | 4h | - | ⏸️ En attente |
+
+**Total Sprint 1** : **3.5/7 priorités (50%)** + Pagination design complété
+
+---
+
+### Prochaine Session
+
+**Recommandation** : Implémentation Pagination (Phase 1-4)
+
+**Prérequis** : ✅ Tous validés
+- ✅ Document design complet et committé
+- ✅ Architecture validée (côté client)
+- ✅ Composants définis (hook + UI + modifications)
+- ✅ Plan implémentation 4 phases (3h)
+- ✅ Tests spécifiés (10 scénarios Playwright)
+
+**Phase 1 : Hook + Composant UI (1h)**
+- Créer `hooks/use-pagination.ts`
+- Créer `components/ui/pagination-controls.tsx`
+
+**Phase 2 : Intégration Marchés (45min)**
+- Modifier `components/marches/marche-filters.tsx`
+- Modifier `components/marches/marche-list.tsx`
+- Test manuel
+
+**Phase 3 : Réplication autres modules (1h)**
+- Cautions (15min)
+- Documents (15min)
+- Véhicules (15min)
+- Tests manuels (15min)
+
+**Phase 4 : Tests et validation (15min)**
+- Tests Playwright critiques
+- Validation responsive
+- Test export Excel
+
+**Durée totale estimée** : 3h
+
+---
+
+**FIN DE SESSION - BRAINSTORMING PAGINATION - DESIGN 100% VALIDÉ** ✅
