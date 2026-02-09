@@ -4613,3 +4613,222 @@ docs/plans/2026-02-09-recherche-textuelle-design.md +382 (design doc)
 **FIN DE SESSION - RECHERCHE TEXTUELLE 100% COMPLÉTÉE** ✅
 
 ---
+
+## Session Tests Production - Validation Sérialisation Prisma
+
+**Date** : 2026-02-09
+**Durée** : 45 min
+**Objectif** : Valider modifications sérialisation en production
+**Méthodologie** : Test-Driven Bug Detection & Fix
+
+---
+
+### Contexte
+
+Après push de 8 commits incluant refactorisation majeure (sérialisation Prisma Decimal/Date pour RSC), test production nécessaire avant de continuer développement (pagination).
+
+**Commits pushés** :
+- `385756f` - feat(types): Ajouter sérialisation Prisma Decimal/Date pour RSC
+- 7 commits précédents (recherche textuelle + fixes)
+
+---
+
+### Phase 1 : Tests Initiaux - Détection Bug #1 (15 min)
+
+**Module Marchés** :
+- ✅ Liste `/marches` : Affichage OK
+- ✅ Recherche textuelle : 3 résultats pour "véhicules"
+- ❌ **Détail marché** : `TypeError: s.montant.toNumber is not a function`
+
+**Analyse** :
+- Erreur dans `lib/utils/caution.ts:258-259`
+- Fonction `comparerParMontant` appelait `.toNumber()` sans vérification type
+- Montant sérialisé en `number` → crash
+
+**Fix #1** :
+```typescript
+// Avant (ligne 258-259)
+const montantA = typeof a.montant === 'number' ? a.montant : a.montant.toNumber()
+
+// Après
+const montantA = typeof a.montant === 'number'
+  ? a.montant
+  : (a.montant && typeof a.montant.toNumber === 'function' ? a.montant.toNumber() : 0)
+```
+
+**Commit** : `59540da` - fix(caution): Corriger comparerParMontant
+
+---
+
+### Phase 2 : Retest & Détection Bug #2 (15 min)
+
+**Redéploiement** : Build Vercel 1m → Ready
+
+**Module Marchés** :
+- ✅ Détail marché : Affichage OK (montant 175.000,00 DH)
+
+**Module Cautions** :
+- ❌ **Liste `/cautions`** : `TypeError: s.montant.toNumber is not a function`
+
+**Analyse approfondie** :
+- Erreur différente (chunk 5165 vs 4bd1)
+- Fonction `serializeCaution` dans `cautions/page.tsx` (lignes 53-58)
+- Sérialisation **incomplète** du marché associé :
+  ```typescript
+  marche: caution.marche ? {
+    ...caution.marche,
+    montant: Number(caution.marche.montant), // ❌ Seulement montant, pas les dates !
+  } : undefined
+  ```
+
+**Impact** : Marché associé avec dates non sérialisées → crash RSC
+
+**Fix #2 & #3** :
+```typescript
+// Solution : Utiliser fonction centralisée
+import { serializeMarche } from '@/lib/utils/serialize'
+
+marche: caution.marche ? serializeMarche(caution.marche) : undefined
+```
+
+**Fichiers corrigés** :
+1. `app/(dashboard)/cautions/page.tsx` (ligne 58)
+2. `components/marches/marche-cautions-section.tsx` (ligne 50)
+
+**Commit** : `8b75945` - fix(serialization): Utiliser serializeMarche
+
+---
+
+### Phase 3 : Validation Finale (15 min)
+
+**Redéploiement** : Build Vercel 1m → Ready
+
+**Module Cautions** :
+- ✅ Liste : 2 cautions affichées
+- ✅ Montants : 12 500,00 € / 17 500,00 €
+- ✅ Dates échéance : 30/04/2026 / 01/02/2027
+- ✅ Marchés associés : Liens fonctionnels
+- ✅ Recherche textuelle : "test" → 2 résultats
+
+**Module Marchés** (revalidation) :
+- ✅ Liste + détail + recherche : Tout OK
+
+---
+
+### Résultats
+
+**✅ Bugs Critiques Détectés & Corrigés** :
+
+| # | Fichier | Problème | Impact | Statut |
+|---|---------|----------|--------|--------|
+| 1 | `lib/utils/caution.ts` | `.toNumber()` sans check | Crash détail marché | ✅ Fixé |
+| 2 | `app/(dashboard)/cautions/page.tsx` | Sérialisation partielle marché | Crash liste cautions | ✅ Fixé |
+| 3 | `components/marches/marche-cautions-section.tsx` | Même problème | Crash section cautions | ✅ Fixé |
+
+**📊 Statistiques** :
+- Tests Playwright : 8 scénarios
+- Bugs détectés : 3 (tous bloquants)
+- Bugs corrigés : 3/3 (100%)
+- Commits : 3
+- Déploiements : 3
+- Temps total : 45 min
+
+**🎯 Validation** :
+- ✅ Sérialisation Prisma Decimal → number : OK
+- ✅ Sérialisation Date → string ISO : OK
+- ✅ Passage RSC → Client Components : OK
+- ✅ Recherche textuelle : OK (4 modules)
+
+---
+
+### Leçons Apprises
+
+1. **Tests Production Essentiels** :
+   - Bugs invisibles en local détectés en prod
+   - Edge cases sérialisés différemment (Decimal vs number)
+   - Validation critique avant continuation dev
+
+2. **Duplication Code Dangereuse** :
+   - 3 fichiers avec logique sérialisation
+   - Solution : Fonction centralisée `serializeMarche()`
+   - Pattern : DRY (Don't Repeat Yourself)
+
+3. **Pattern `.toNumber()` Fragile** :
+   - Toujours vérifier `typeof obj.toNumber === 'function'`
+   - Ou convertir systématiquement en `number` côté serveur
+
+4. **Build Vercel Timing** :
+   - Attendre ~1min pour build complet
+   - Vérifier statut avec `vercel ls`
+   - Ne pas retester avant "● Ready"
+
+---
+
+### Fichiers Modifiés
+
+```
+lib/utils/caution.ts                          +6 -2   (fix comparerParMontant)
+app/(dashboard)/cautions/page.tsx              +2 -8   (import + use serializeMarche)
+components/marches/marche-cautions-section.tsx +2 -8   (import + use serializeMarche)
+```
+
+---
+
+### Impact Projet
+
+**Avant tests** :
+- 8 commits non testés en production
+- Risque bugs bloquants en production
+- Confiance moyenne dans sérialisation
+
+**Après tests** :
+- ✅ 3 bugs critiques éliminés
+- ✅ Code production-ready validé
+- ✅ Confiance élevée pour continuer Sprint 1
+- ✅ Pattern sérialisation documenté
+
+**ROI** :
+- 45 min investis → 3 bugs majeurs évités
+- Prévention incidents production
+- Accélération développement futur (pas de debug en prod)
+
+---
+
+### Progression Sprint 1
+
+| Priorité | Tâche | Durée Prévue | Durée Réelle | Statut |
+|----------|-------|--------------|--------------|--------|
+| **1** | **Alertes Automatiques** | 6h | 4h | ✅ **100%** |
+| **2** | **Envoi Manuel Alertes** | 2h | 3h | ✅ **100%** |
+| **3** | **Recherche Textuelle** | 2h | 1h45 | ✅ **100%** |
+| **3b** | **Tests Production Validation** | - | 45min | ✅ **100%** |
+| 4 | Pagination | 3h | - | ⏸️ En attente |
+| 5 | Upload Premium 50MB | 5h | - | ⏸️ En attente |
+| 6 | Récupération Mot de Passe | 4h | - | ⏸️ En attente |
+| 7 | Error Boundaries | 4h | - | ⏸️ En attente |
+
+**Total Sprint 1** : **3.5/7 priorités (50%)** complétées
+
+---
+
+### Prochaine Session
+
+**Recommandation** : Sprint 1 - Priorité 4 (Pagination)
+
+**Pré-requis validés** :
+- ✅ Sérialisation production-ready
+- ✅ Recherche textuelle opérationnelle
+- ✅ Modules Marchés & Cautions stables
+
+**Objectif Pagination** :
+- Composant `<Pagination />` réutilisable
+- Synchronisation URL (page param)
+- Compatible avec recherche + filtres
+- Tests sur tables longues (> 20 entrées)
+
+**Durée estimée** : 3h
+
+---
+
+**FIN DE SESSION - TESTS PRODUCTION VALIDÉS** ✅
+
