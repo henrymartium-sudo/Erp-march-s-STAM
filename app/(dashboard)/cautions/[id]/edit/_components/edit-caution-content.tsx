@@ -5,10 +5,8 @@ import { toast } from "sonner";
 import { CautionForm } from "@/components/cautions";
 import type { CautionFormValues } from "@/components/cautions";
 import { updateCaution } from "@/lib/actions/cautions";
-import type { CautionWithRelations } from "@/lib/actions/cautions";
-
 interface EditCautionContentProps {
-  caution: CautionWithRelations;
+  caution: any; // Données sérialisées depuis le Server Component
 }
 
 export function EditCautionContent({ caution }: EditCautionContentProps) {

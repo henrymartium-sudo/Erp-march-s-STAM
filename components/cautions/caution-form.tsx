@@ -60,10 +60,8 @@ import {
   isDureeCoherente,
   formatMontant,
 } from '@/lib/utils/caution';
-import type { Caution } from '@prisma/client';
-
 interface CautionFormProps {
-  caution?: Caution;
+  caution?: any; // Données sérialisées depuis le Server Component (Decimal -> number, Date -> string)
   marcheId?: string;
   montantMarche?: number;
   onSubmit: (data: CautionFormValues) => Promise<void>;
@@ -99,9 +97,13 @@ export function CautionForm({
           type: caution.type,
           montant: typeof caution.montant === 'number'
             ? caution.montant
-            : caution.montant.toNumber(),
-          dateEmission: caution.dateEmission,
-          dateEcheance: caution.dateEcheance,
+            : Number(caution.montant),
+          dateEmission: typeof caution.dateEmission === 'string'
+            ? new Date(caution.dateEmission)
+            : caution.dateEmission,
+          dateEcheance: typeof caution.dateEcheance === 'string'
+            ? new Date(caution.dateEcheance)
+            : caution.dateEcheance,
           statut: caution.statut,
           banqueNom: caution.banqueNom,
           banqueContact: caution.banqueContact || undefined,

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CautionCard, CautionTimeline } from "@/components/cautions";
 import { getCautionsByMarche } from "@/lib/actions/cautions";
-import type { CautionWithRelations } from "@/lib/actions/cautions";
+import type { SerializedCaution } from "@/types/serialized";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -16,10 +16,45 @@ interface MarcheCautionsSectionProps {
   marcheId: string;
 }
 
+/**
+ * Sérialise les données Prisma reçues via Server Action pour les Client Components.
+ * Les Server Actions sérialisent automatiquement mais les Decimal deviennent des strings.
+ */
+function serializeCautionFromAction(caution: any): SerializedCaution {
+  return {
+    ...caution,
+    montant: Number(caution.montant),
+    dateEmission: typeof caution.dateEmission === 'string'
+      ? caution.dateEmission
+      : caution.dateEmission instanceof Date
+        ? caution.dateEmission.toISOString()
+        : String(caution.dateEmission),
+    dateEcheance: typeof caution.dateEcheance === 'string'
+      ? caution.dateEcheance
+      : caution.dateEcheance instanceof Date
+        ? caution.dateEcheance.toISOString()
+        : String(caution.dateEcheance),
+    createdAt: typeof caution.createdAt === 'string'
+      ? caution.createdAt
+      : caution.createdAt instanceof Date
+        ? caution.createdAt.toISOString()
+        : String(caution.createdAt),
+    updatedAt: typeof caution.updatedAt === 'string'
+      ? caution.updatedAt
+      : caution.updatedAt instanceof Date
+        ? caution.updatedAt.toISOString()
+        : String(caution.updatedAt),
+    marche: caution.marche ? {
+      ...caution.marche,
+      montant: Number(caution.marche.montant),
+    } : undefined,
+  };
+}
+
 export function MarcheCautionsSection({
   marcheId,
 }: MarcheCautionsSectionProps) {
-  const [cautions, setCautions] = useState<CautionWithRelations[]>([]);
+  const [cautions, setCautions] = useState<SerializedCaution[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +71,7 @@ export function MarcheCautionsSection({
         return;
       }
 
-      setCautions(result.data);
+      setCautions(result.data.map(serializeCautionFromAction));
       setLoading(false);
     };
 
@@ -76,14 +111,12 @@ export function MarcheCautionsSection({
     );
   }
 
-  // Statistiques des cautions
+  // Statistiques des cautions (les montants sont déjà des numbers après sérialisation)
   const cautionsActives = cautions.filter((c) => c.statut === "ACTIVE");
-  const montantTotal = cautionsActives.reduce((sum, c) => {
-    const montant = typeof c.montant === "number"
-      ? c.montant
-      : c.montant.toNumber();
-    return sum + montant;
-  }, 0);
+  const montantTotal = cautionsActives.reduce(
+    (sum, c) => sum + c.montant,
+    0
+  );
   const cautionsCritiques = cautions.filter((c) => {
     if (c.statut !== "ACTIVE" || !c.dateEcheance) return false;
     const jours = Math.ceil(

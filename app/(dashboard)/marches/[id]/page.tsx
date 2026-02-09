@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getMarcheById } from '@/lib/actions/marches'
 import { MarcheDetail } from '@/components/marches/marche-detail'
+import { serializeMarche } from '@/lib/utils/serialize'
 
 interface MarchePageProps {
   params: Promise<{
@@ -10,11 +11,15 @@ interface MarchePageProps {
 
 export default async function MarchePage({ params }: MarchePageProps) {
   const { id } = await params
-  const marche = await getMarcheById(id)
+  const marcheRaw = await getMarcheById(id)
 
-  if (!marche) {
+  if (!marcheRaw) {
     notFound()
   }
+
+  // Sérialiser le marché pour le Client Component
+  // Les Decimal Prisma ne sont PAS sérialisables par RSC
+  const marche = serializeMarche(marcheRaw)
 
   return <MarcheDetail marche={marche} />
 }

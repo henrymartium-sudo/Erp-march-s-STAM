@@ -20,17 +20,11 @@ import {
 } from '@/lib/utils/caution';
 import { Eye, Pencil, Trash2, MoreVertical, Building2, Calendar, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Caution } from '@prisma/client';
+import type { SerializedCaution } from '@/types/serialized';
 import Link from 'next/link';
 
 interface CautionCardProps {
-  caution: Caution & {
-    marche?: {
-      id: string;
-      numero: string;
-      objet: string;
-    };
-  };
+  caution: SerializedCaution;
   mode?: 'compact' | 'normal';
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
@@ -48,15 +42,15 @@ export function CautionCard({
   onDelete,
   className,
 }: CautionCardProps) {
-  const joursRestants = getJoursRestants(caution.dateEcheance);
-  const niveauAlerte = getNiveauAlerte(caution.statut, caution.dateEcheance);
+  // Les dates sont des strings ISO après sérialisation RSC
+  const dateEcheance = new Date(caution.dateEcheance);
+  const joursRestants = getJoursRestants(dateEcheance);
+  const niveauAlerte = getNiveauAlerte(caution.statut, dateEcheance);
   const couleurAlerte = getCouleurNiveauAlerte(niveauAlerte);
   const messageAlerte = getMessageAlerte(niveauAlerte, joursRestants);
 
-  // Convertir Prisma.Decimal en number
-  const montantNumber = typeof caution.montant === 'number'
-    ? caution.montant
-    : caution.montant.toNumber();
+  // Le montant est déjà un number après sérialisation
+  const montantNumber = caution.montant;
 
   return (
     <Card className={cn(

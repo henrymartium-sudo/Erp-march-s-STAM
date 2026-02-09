@@ -64,7 +64,33 @@ export default async function EditCautionPage({
     );
   }
 
-  const caution = result.data;
+  const rawCaution = result.data;
+
+  // Sérialiser pour le Client Component (Decimal -> number, Date -> string ISO)
+  const caution = {
+    ...rawCaution,
+    montant: typeof rawCaution.montant === 'number'
+      ? rawCaution.montant
+      : Number(rawCaution.montant),
+    dateEmission: rawCaution.dateEmission instanceof Date
+      ? rawCaution.dateEmission.toISOString()
+      : String(rawCaution.dateEmission),
+    dateEcheance: rawCaution.dateEcheance instanceof Date
+      ? rawCaution.dateEcheance.toISOString()
+      : String(rawCaution.dateEcheance),
+    createdAt: rawCaution.createdAt instanceof Date
+      ? rawCaution.createdAt.toISOString()
+      : String(rawCaution.createdAt),
+    updatedAt: rawCaution.updatedAt instanceof Date
+      ? rawCaution.updatedAt.toISOString()
+      : String(rawCaution.updatedAt),
+    marche: rawCaution.marche ? {
+      ...rawCaution.marche,
+      montant: typeof rawCaution.marche.montant === 'number'
+        ? rawCaution.marche.montant
+        : Number(rawCaution.marche.montant),
+    } : undefined,
+  };
 
   return (
     <div className="container mx-auto py-8 max-w-4xl space-y-6">

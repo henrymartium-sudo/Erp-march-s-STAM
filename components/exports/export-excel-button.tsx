@@ -70,6 +70,7 @@ export function ExportExcelButton({
       if (filters?.type) params.set('type', filters.type)
       if (filters?.dateDebut) params.set('dateDebut', filters.dateDebut)
       if (filters?.dateFin) params.set('dateFin', filters.dateFin)
+      if (filters?.search) params.set('search', filters.search)
 
       const url = `/api/exports/${type}${params.toString() ? `?${params.toString()}` : ''}`
 

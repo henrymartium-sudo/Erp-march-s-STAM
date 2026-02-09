@@ -4,10 +4,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { CautionDetail } from "@/components/cautions";
 import { deleteCaution } from "@/lib/actions/cautions";
-import type { CautionWithRelations } from "@/lib/actions/cautions";
 
 interface CautionDetailContentProps {
-  caution: CautionWithRelations;
+  caution: any; // Données sérialisées depuis le Server Component
   canWrite: boolean;
 }
 

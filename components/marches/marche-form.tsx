@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Marche, StatutMarche } from '@prisma/client'
+import { StatutMarche } from '@prisma/client'
 import { createMarcheSchema, type CreateMarcheInput } from '@/lib/validations/marche'
 import { createMarche, updateMarche } from '@/lib/actions/marches'
 import { Button } from '@/components/ui/button'
@@ -31,9 +31,10 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Calendar } from '@/components/ui/calendar'
 import { STATUT_LABELS } from '@/lib/utils/statut'
 import { Loader2 } from 'lucide-react'
+import type { SerializedMarche } from '@/types/serialized'
 
 interface MarcheFormProps {
-  marche?: Marche
+  marche?: SerializedMarche
   onSuccess?: () => void
 }
 
@@ -105,37 +106,37 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
           numero: marche.numero,
           objet: marche.objet,
           type: marche.type,
-          montant: Number(marche.montant),
-          dateNotification: marche.dateNotification,
-          dateOrdreService: marche.dateOrdreService || undefined,
+          montant: marche.montant,
+          dateNotification: new Date(marche.dateNotification),
+          dateOrdreService: marche.dateOrdreService ? new Date(marche.dateOrdreService) : undefined,
           delaiExecution: marche.delaiExecution,
-          dateFinPrevue: marche.dateFinPrevue || undefined,
-          dateReception: marche.dateReception || undefined,
+          dateFinPrevue: marche.dateFinPrevue ? new Date(marche.dateFinPrevue) : undefined,
+          dateReception: marche.dateReception ? new Date(marche.dateReception) : undefined,
           statut: marche.statut,
           autoriteContractanteNom: marche.autoriteContractanteNom,
           autoriteContractanteContact: marche.autoriteContractanteContact || undefined,
           autoriteContractanteEmail: marche.autoriteContractanteEmail || undefined,
           autoriteContractanteTel: marche.autoriteContractanteTel || undefined,
           // Champs spécifiques
-          dateIdentification: marche.dateIdentification || undefined,
-          dateDepotPrevue: marche.dateDepotPrevue || undefined,
-          dateDepotOffre: marche.dateDepotOffre || undefined,
+          dateIdentification: marche.dateIdentification ? new Date(marche.dateIdentification) : undefined,
+          dateDepotPrevue: marche.dateDepotPrevue ? new Date(marche.dateDepotPrevue) : undefined,
+          dateDepotOffre: marche.dateDepotOffre ? new Date(marche.dateDepotOffre) : undefined,
           delaiValiditeOffre: marche.delaiValiditeOffre || undefined,
-          dateAttributionProvisoire: marche.dateAttributionProvisoire || undefined,
-          dateAttributionDefinitive: marche.dateAttributionDefinitive || undefined,
-          dateLivraisonPrevue: marche.dateLivraisonPrevue || undefined,
+          dateAttributionProvisoire: marche.dateAttributionProvisoire ? new Date(marche.dateAttributionProvisoire) : undefined,
+          dateAttributionDefinitive: marche.dateAttributionDefinitive ? new Date(marche.dateAttributionDefinitive) : undefined,
+          dateLivraisonPrevue: marche.dateLivraisonPrevue ? new Date(marche.dateLivraisonPrevue) : undefined,
           dureeLivraisonPrevue: marche.dureeLivraisonPrevue || undefined,
-          dateReceptionProvisoirePrevue: marche.dateReceptionProvisoirePrevue || undefined,
+          dateReceptionProvisoirePrevue: marche.dateReceptionProvisoirePrevue ? new Date(marche.dateReceptionProvisoirePrevue) : undefined,
           garantiesLiberees: marche.garantiesLiberees || undefined,
-          dateClotureAdministrative: marche.dateClotureAdministrative || undefined,
-          dateResiliation: marche.dateResiliation || undefined,
+          dateClotureAdministrative: marche.dateClotureAdministrative ? new Date(marche.dateClotureAdministrative) : undefined,
+          dateResiliation: marche.dateResiliation ? new Date(marche.dateResiliation) : undefined,
           motifsResiliation: marche.motifsResiliation || undefined,
-          dateAnnulation: marche.dateAnnulation || undefined,
+          dateAnnulation: marche.dateAnnulation ? new Date(marche.dateAnnulation) : undefined,
           motifsAnnulation: marche.motifsAnnulation || undefined,
-          dateInfructueux: marche.dateInfructueux || undefined,
+          dateInfructueux: marche.dateInfructueux ? new Date(marche.dateInfructueux) : undefined,
           motifsInfructueux: marche.motifsInfructueux || undefined,
           concurrentGagnant: marche.concurrentGagnant || undefined,
-          montantOffreConcurrent: marche.montantOffreConcurrent ? Number(marche.montantOffreConcurrent) : undefined,
+          montantOffreConcurrent: marche.montantOffreConcurrent || undefined,
         }
       : {
           numero: '',

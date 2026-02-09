@@ -9,6 +9,7 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { CautionsContent } from "./_components/cautions-content";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { SerializedCaution } from "@/types/serialized";
 
 export const dynamic = 'force-dynamic'
 
@@ -25,6 +26,37 @@ interface CautionsPageProps {
     search?: string;
     page?: string;
   }>;
+}
+
+/**
+ * Sérialise une caution Prisma en objet plain pour le passage aux Client Components.
+ * Convertit les Decimal en number et les Date en string ISO.
+ */
+function serializeCaution(caution: any): SerializedCaution {
+  return {
+    ...caution,
+    montant: typeof caution.montant === 'number'
+      ? caution.montant
+      : Number(caution.montant),
+    dateEmission: caution.dateEmission instanceof Date
+      ? caution.dateEmission.toISOString()
+      : String(caution.dateEmission),
+    dateEcheance: caution.dateEcheance instanceof Date
+      ? caution.dateEcheance.toISOString()
+      : String(caution.dateEcheance),
+    createdAt: caution.createdAt instanceof Date
+      ? caution.createdAt.toISOString()
+      : String(caution.createdAt),
+    updatedAt: caution.updatedAt instanceof Date
+      ? caution.updatedAt.toISOString()
+      : String(caution.updatedAt),
+    marche: caution.marche ? {
+      ...caution.marche,
+      montant: typeof caution.marche.montant === 'number'
+        ? caution.marche.montant
+        : Number(caution.marche.montant),
+    } : undefined,
+  };
 }
 
 export default async function CautionsPage({ searchParams }: CautionsPageProps) {
@@ -54,7 +86,26 @@ export default async function CautionsPage({ searchParams }: CautionsPageProps) 
     );
   }
 
-  const { cautions, total } = result.data;
+  const { cautions: rawCautions, total } = result.data;
+
+  // Sérialiser les cautions pour les Client Components
+  // Les Decimal Prisma ne sont PAS sérialisables par RSC
+  const cautions = rawCautions.map(serializeCaution);
+
+  // Calculs statistiques côté serveur (avant sérialisation, on utilise les données sérialisées)
+  const activeCautions = cautions.filter((c) => c.statut === "ACTIVE");
+  const criticalCount = cautions.filter((c) => {
+    if (c.statut !== "ACTIVE" || !c.dateEcheance) return false;
+    const jours = Math.ceil(
+      (new Date(c.dateEcheance).getTime() - Date.now()) /
+        (1000 * 60 * 60 * 24)
+    );
+    return jours <= 7 && jours >= 0;
+  }).length;
+  const montantTotalActif = activeCautions.reduce(
+    (sum, c) => sum + c.montant,
+    0
+  );
 
   return (
     <div className="container mx-auto py-8 space-y-6">
@@ -98,7 +149,7 @@ export default async function CautionsPage({ searchParams }: CautionsPageProps) 
           <CardHeader className="pb-2">
             <CardDescription>Actives</CardDescription>
             <CardTitle className="text-2xl">
-              {cautions.filter((c) => c.statut === "ACTIVE").length}
+              {activeCautions.length}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -106,16 +157,7 @@ export default async function CautionsPage({ searchParams }: CautionsPageProps) 
           <CardHeader className="pb-2">
             <CardDescription>Alertes Critiques</CardDescription>
             <CardTitle className="text-2xl text-destructive">
-              {
-                cautions.filter((c) => {
-                  if (c.statut !== "ACTIVE" || !c.dateEcheance) return false;
-                  const jours = Math.ceil(
-                    (new Date(c.dateEcheance).getTime() - Date.now()) /
-                      (1000 * 60 * 60 * 24)
-                  );
-                  return jours <= 7 && jours >= 0;
-                }).length
-              }
+              {criticalCount}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -127,16 +169,7 @@ export default async function CautionsPage({ searchParams }: CautionsPageProps) 
                 style: "currency",
                 currency: "EUR",
                 maximumFractionDigits: 0,
-              }).format(
-                cautions
-                  .filter((c) => c.statut === "ACTIVE")
-                  .reduce((sum, c) => {
-                    const montant = typeof c.montant === "number"
-                      ? c.montant
-                      : c.montant.toNumber();
-                    return sum + montant;
-                  }, 0)
-              )}
+              }).format(montantTotalActif)}
             </CardTitle>
           </CardHeader>
         </Card>
