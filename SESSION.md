@@ -5467,12 +5467,44 @@ docs/plans/2026-02-09-pagination-design.md  +782  (NOUVEAU - document design)
 **Étapes** :
 1. ✅ Audit complet (20 min) - TERMINÉ
 2. ✅ Rapport créé et committé - TERMINÉ
-3. ✅ SESSION.md mis à jour - EN COURS
-4. 🔄 Créer 4 tâches corrections
-5. 🔄 Exécuter corrections (45 min)
-6. 🔄 Tests & validation (10 min)
+3. ✅ SESSION.md mis à jour - TERMINÉ
+4. ✅ Tâches créées - TERMINÉ
+5. 🔄 Exécuter corrections (45 min) - EN COURS
+6. ⏸️ Tests & validation (10 min)
 7. ⏸️ Pagination (3h)
 
 ---
 
-**FIN DE SESSION - AUDIT COMPLET - PRÊT POUR CORRECTIONS** ✅
+### Tâches de Correction Créées
+
+**Tâche #2** : Corriger types de caution (5 problèmes) - 20 min
+- PROVISOIRE → SOUMISSION
+- Ajouter CAPACITE_FINANCIERE (manquant)
+- DEFINITIVE → BONNE_EXECUTION
+- AVANCE → AVANCE_DEMARRAGE
+- Mise à jour labels, couleurs, descriptions, règles métier
+- Migration SQL données production (2 cautions)
+
+**Tâche #3** : Corriger devise MAD → XOF - 10 min
+- Fichier : lib/utils/format.ts
+- MAD (Dirham) → XOF (Franc CFA)
+- Affichage : 'DH' → 'FCFA'
+- Decimals : 2 → 0 (XOF n'a pas centimes)
+- Impact : TOUS montants (UI, exports, rapports)
+
+**Tâche #4** : Débloquer marques véhicules - 10 min
+- Fichier : components/vehicules/vehicule-form.tsx
+- Select liste fermée → Input autocomplete (ou Combobox)
+- Permet saisie libre marques rares/chinoises/africaines
+- Validation Zod déjà OK, BDD déjà OK
+
+**Tâche #5** : Vérifier statuts marchés UI - 5 min
+- Vérifier labels RESILIE/ANNULE/INFRUCTUEUX
+- Vérifier affichage filtres/formulaires
+- Schéma Prisma déjà OK (3 statuts présents)
+
+**Total corrections critiques** : 45 min
+
+---
+
+**FIN DE SESSION - AUDIT COMPLET - TÂCHES CRÉÉES - PRÊT POUR EXÉCUTION** ✅
