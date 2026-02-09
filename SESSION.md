@@ -4211,3 +4211,217 @@ scripts/sync-vercel-env.js      +811 (créé précédemment)
 **FIN DE SESSION - ENVOI EMAIL RÉSOLU** ✅
 
 **Status Alertes** : 100% fonctionnel (local)
+
+---
+
+## Session Test Production - Synchronisation & Validation Email
+
+**Date** : 2026-02-09
+**Durée** : 45 min
+**Objectif** : Synchroniser production + Valider envoi email alertes
+**Méthodologie** : Systematic Debugging + Test E2E Playwright
+
+---
+
+### Phase 1 : Correction Bug Hydration (5 min)
+
+**Problème identifié** :
+- Console error : `<p> cannot be a descendant of <p>`
+- Fichier : `components/admin/alertes/email-preview-dialog.tsx`
+- Ligne 60-66 : `DialogDescription` (rendu comme `<p>`) contenait des `<p>` imbriqués
+
+**Solution appliquée** :
+```tsx
+// ❌ AVANT
+<DialogDescription className="space-y-1">
+  <p>...</p>  <!-- <p> dans <p> -->
+</DialogDescription>
+
+// ✅ APRÈS
+<div className="space-y-1 text-sm text-muted-foreground">
+  <p>...</p>  <!-- <p> dans <div> -->
+</div>
+```
+
+**Commit** :
+```bash
+5fac5e1 - fix(ui): Corriger erreur hydration dans email-preview-dialog
+```
+
+---
+
+### Phase 2 : Synchronisation Git & Déploiement (10 min)
+
+**Actions** :
+1. ✅ Push correction hydration vers origin/main
+2. ✅ Mise à jour 7 variables SMTP sur Vercel
+3. ✅ Redéploiement production #1 (build 1m)
+
+**Variables SMTP mises à jour** :
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`
+- `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
+- `ALERT_EMAIL_TO`
+
+---
+
+### Phase 3 : Test Production #1 - ÉCHEC (5 min)
+
+**Test Playwright** :
+- URL : https://erp-marches-stam.vercel.app/admin/alertes
+- Action : Clic "Envoyer maintenant"
+- Résultat : ❌ Toast "Impossible d'envoyer l'email"
+
+**Investigation** :
+```bash
+vercel logs --since 5m | grep -i "error"
+→ Erreur: queryA EBADNAME smtp.gmail.com
+  hostname: 'smtp.gmail.com\n'
+```
+
+**Cause racine identifiée** : Variables SMTP contiennent `\n` à la fin
+
+---
+
+### Phase 4 : Correction Variables SMTP (15 min)
+
+**Problème** : Script `echo | vercel env add` ajoutait `\n` automatiquement
+
+**Solution** :
+```bash
+# ❌ AVANT (avec echo)
+echo "smtp.gmail.com" | vercel env add SMTP_HOST production
+→ hostname: 'smtp.gmail.com\n'  # EBADNAME
+
+# ✅ APRÈS (avec printf)
+printf "smtp.gmail.com" | vercel env add SMTP_HOST production
+→ hostname: 'smtp.gmail.com'    # OK
+```
+
+**Script correction** :
+```bash
+#!/bin/bash
+update_smtp_var() {
+  VAR_NAME="$1"
+  VAR_VALUE="$2"
+  echo "y" | vercel env rm "$VAR_NAME" production > /dev/null 2>&1
+  printf "%s" "$VAR_VALUE" | vercel env add "$VAR_NAME" production > /dev/null 2>&1
+}
+
+# Mise à jour de toutes les variables
+update_smtp_var "SMTP_HOST" "smtp.gmail.com"
+update_smtp_var "SMTP_PORT" "587"
+# ... (7 variables au total)
+```
+
+**Résultat** :
+```bash
+✅ Toutes les variables SMTP corrigées !
+```
+
+---
+
+### Phase 5 : Redéploiement & Test #2 - SUCCÈS (10 min)
+
+**Redéploiement** :
+```bash
+vercel --prod
+→ Build: 56s
+→ Status: ● Ready
+→ URL: https://erp-marches-stam.vercel.app
+```
+
+**Test Playwright #2** :
+1. Navigation : `/admin/alertes`
+2. Sélection : 2 destinataires
+3. Action : Clic "Envoyer maintenant"
+4. **Résultat** : ✅ Toast vert "Email envoyé à 2 destinataire(s)"
+
+**Confirmation** :
+- Email reçu dans `honoreatsu@gmail.com` ✓
+- Email reçu dans `atsu@stam.tg` ✓
+
+---
+
+### Résultats
+
+**✅ Problèmes Résolus** :
+1. Bug hydration `<p>` dans `<p>` corrigé
+2. Variables SMTP nettoyées (sans `\n`)
+3. Envoi email fonctionnel en production
+
+**📊 Statistiques** :
+- Durée totale : 45 min
+- Redéploiements : 2
+- Tests Playwright : 3
+- Commits : 1
+
+**🔧 Cause Racine** :
+- `echo` ajoute automatiquement `\n` à la fin
+- Solution : Utiliser `printf` pour variables env
+
+---
+
+### Fichiers Modifiés
+
+```
+components/admin/alertes/email-preview-dialog.tsx  +2 -3   (fix hydration)
+```
+
+**Variables Vercel** :
+- 7 variables SMTP mises à jour (sans `\n`)
+
+---
+
+### Leçons Apprises
+
+1. **Debugging Production** :
+   - Toujours vérifier logs Vercel pour erreurs exactes
+   - Ne pas deviner, identifier cause racine d'abord
+
+2. **Variables d'environnement** :
+   - `echo` ajoute `\n` → utiliser `printf` à la place
+   - Tester localement avant mise en production
+
+3. **Test E2E** :
+   - Playwright essentiel pour valider fonctionnement réel
+   - Toast messages donnent feedback immédiat
+
+4. **Systematic Debugging** :
+   - Investigation méthodique > corrections aléatoires
+   - Un problème bien identifié est à moitié résolu
+
+---
+
+### Progression Sprint 1
+
+| Priorité | Tâche | Durée Prévue | Durée Réelle | Statut |
+|----------|-------|--------------|--------------|--------|
+| **1** | **Alertes Automatiques** | 6h | 4h | ✅ **100%** |
+| **2** | **Envoi Manuel Alertes** | 2h | 3h | ✅ **100%** |
+| 3 | Recherche Textuelle | 2h | - | ⏸️ En attente |
+| 4 | Pagination | 3h | - | ⏸️ En attente |
+| 5 | Upload Premium 50MB | 5h | - | ⏸️ En attente |
+| 6 | Récupération Mot de Passe | 4h | - | ⏸️ En attente |
+| 7 | Error Boundaries | 4h | - | ⏸️ En attente |
+
+**Total Sprint 1** : **2/7 priorités (29%)** complétées
+
+---
+
+### Prochaine Session
+
+**Recommandation** : Sprint 1 - Priorité 3 (Recherche Textuelle)
+
+**Objectif** :
+- Composant `<SearchBar />` réutilisable
+- Recherche sur 4 modules (Marchés, Cautions, Documents, Véhicules)
+- Hook `useDebounce` (300ms)
+- Intégration dans toutes les pages de liste
+
+**Durée estimée** : 2h
+
+---
+
+**FIN DE SESSION - ALERTES EMAIL VALIDÉES EN PRODUCTION** ✅
+
+---
