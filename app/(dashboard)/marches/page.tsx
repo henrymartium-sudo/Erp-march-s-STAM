@@ -4,6 +4,7 @@ import { MarcheList } from '@/components/marches/marche-list'
 import { MarcheFilters } from '@/components/marches/marche-filters'
 import { ExportExcelButton } from '@/components/exports/export-excel-button'
 import { getAllMarches } from '@/lib/actions/marches'
+import { searchInFields } from '@/lib/utils/search'
 import { Plus } from 'lucide-react'
 import type { StatutMarche, TypeMarche } from '@prisma/client'
 
@@ -13,6 +14,7 @@ interface MarchesPageProps {
   searchParams: Promise<{
     statut?: string
     type?: string
+    search?: string
   }>
 }
 
@@ -38,6 +40,16 @@ export default async function MarchesPage({ searchParams }: MarchesPageProps) {
     )
   }
 
+  if (params.search) {
+    marchesFiltres = marchesFiltres.filter((marche) =>
+      searchInFields(
+        marche,
+        ['numero', 'objet', 'organismeAcheteur'],
+        params.search!
+      )
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* En-tête */}
@@ -54,6 +66,7 @@ export default async function MarchesPage({ searchParams }: MarchesPageProps) {
             filters={{
               statut: params.statut,
               type: params.type,
+              search: params.search,
             }}
           />
           <Button asChild>
