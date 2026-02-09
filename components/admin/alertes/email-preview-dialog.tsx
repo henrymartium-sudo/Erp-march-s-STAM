@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -57,12 +56,12 @@ export function EmailPreviewDialog({
             Prévisualisation de l'email
           </DialogTitle>
           {preview && (
-            <DialogDescription className="space-y-1">
+            <div className="space-y-1 text-sm text-muted-foreground">
               <p>
                 <strong>Sujet :</strong> {preview.subject}
               </p>
               <p className="text-xs">{preview.summary}</p>
-            </DialogDescription>
+            </div>
           )}
         </DialogHeader>
 
