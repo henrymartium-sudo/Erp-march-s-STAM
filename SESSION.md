@@ -4041,3 +4041,173 @@ package.json                       +1 -1    (nodemailer 7.0.13)
 **FIN DE SESSION - ALERTES 90% COMPLÉTÉES** 🟡
 
 **Prochaine Session** : Option A (finaliser auth) ou Option B (envoi manuel)
+
+---
+
+---
+
+## Session Debug - Résolution "Impossible d'envoyer l'email"
+
+**Date** : 2026-02-09
+**Durée** : 2h30
+**Objectif** : Résoudre l'erreur d'envoi d'email sur page /admin/alertes
+**Méthodologie** : Systematic Debugging
+
+---
+
+### Phase 1 : Investigation Initiale (30 min)
+
+**Symptôme Rapporté** :
+- Toast d'erreur "Impossible d'envoyer l'email" lors de l'envoi manuel
+- Page /admin/alertes fonctionnelle mais envoi échoue
+
+**Actions Entreprises** :
+1. ✅ Lecture fichier `.env.local` → Découverte variables SMTP malformées
+2. ✅ Identification : Caractères `\n` littéraux et guillemets doubles superflus
+3. ✅ Correction première version `.env.local` (suppression `\n`)
+4. ❌ Effet secondaire non anticipé : Suppression variables critiques
+
+---
+
+### Phase 2 : Problème Aggravé - Internal Server Error (45 min)
+
+**Nouveau Symptôme** :
+- Toutes les pages → "Internal Server Error" (erreur 500)
+- Page d'accueil → 404
+- Serveur Next.js ne démarre plus correctement
+
+**Investigation Systematic Debugging** :
+```bash
+# Test connexion serveur
+curl http://localhost:3000/login
+→ Internal Server Error
+
+# Diagnostic Prisma
+node test-db.js
+→ PrismaClientConstructorValidationError:
+   "Using engine type 'client' requires either 'adapter' or 'accelerateUrl'"
+```
+
+**Cause Racine Identifiée** :
+1. En corrigeant `.env.local`, les variables `DATABASE_URL`, `NEXTAUTH_SECRET`, `SUPABASE_*` ont été **supprimées**
+2. Sans `DATABASE_URL` → Prisma ne peut pas se connecter → Erreur fatale au démarrage
+3. Toutes les routes redirigent vers `/login` qui crashe à cause de NextAuth/Prisma
+
+---
+
+### Phase 3 : Restauration Complète (30 min)
+
+**Solution Appliquée** :
+
+1. **Récupération variables depuis `.env`** :
+   - Fichier `.env` contenait toutes les variables originales
+   - `DATABASE_URL`, `NEXTAUTH_SECRET`, `SUPABASE_*` récupérées
+
+2. **Création `.env.local` complet** :
+   ```env
+   # Variables critiques (depuis .env)
+   DATABASE_URL="postgresql://..."
+   NEXTAUTH_SECRET="..."
+   NEXT_PUBLIC_SUPABASE_URL="..."
+   SUPABASE_SERVICE_ROLE_KEY="..."
+
+   # Variables SMTP corrigées (sans \n)
+   SMTP_HOST="smtp.gmail.com"
+   SMTP_PORT="587"
+   SMTP_USER="henrymartium@gmail.com"
+   SMTP_PASS="vsjzokuhjdyoipsr"
+   SMTP_FROM="ERP Marchés STAM <henrymartium@gmail.com>"
+   ALERT_EMAIL_TO="honoreatsu@gmail.com"
+   ```
+
+3. **Nettoyage cache Next.js** :
+   ```bash
+   rm -rf .next
+   taskkill //F //IM node.exe  # Arrêt multiples processus
+   npm run dev
+   ```
+
+---
+
+### Phase 4 : Validation Complète (15 min)
+
+**Tests Effectués** :
+```bash
+# 1. Démarrage serveur
+npm run dev
+→ ✓ Ready in 9.9s
+
+# 2. Test pages
+http://localhost:3000          → ✅ Dashboard OK
+http://localhost:3000/login    → ✅ Page login OK
+http://localhost:3000/admin/alertes → ✅ Page alertes OK
+
+# 3. Test envoi email
+Clic "Envoyer maintenant"
+→ ✅ Toast vert : "Email envoyé à X destinataire(s)"
+→ ✅ Email reçu dans boîte honoreatsu@gmail.com
+```
+
+---
+
+### Résultats
+
+**✅ Problème Résolu** :
+- Envoi d'email fonctionne en local
+- Toutes les pages accessibles
+- Application stable
+
+**📊 Statistiques** :
+- Durée totale : 2h30
+- Cause racine : Variables env malformées + manquantes
+- Fix #1 échoué : Correction partielle
+- Fix #2 réussi : Restauration complète
+
+---
+
+### Fichiers Modifiés
+
+```
+.env.local                      Restauré complet (47 lignes)
+.next/                          Supprimé et regénéré
+debug-server.js                 +40 (nouveau - script debug)
+test-db.js                      +35 (nouveau - test Prisma)
+scripts/sync-vercel-env.js      +811 (créé précédemment)
+```
+
+---
+
+### Leçons Apprées
+
+1. **Systematic Debugging Efficace** :
+   - Pas de fix aléatoire
+   - Investigation cause racine AVANT correction
+   - Un fix partiel peut aggraver le problème
+
+2. **Variables d'environnement** :
+   - Toujours vérifier TOUTES les variables requises
+   - Ne jamais éditer `.env.local` sans backup
+   - `vercel env pull` peut récupérer valeurs malformées
+
+3. **Cache Next.js** :
+   - Nettoyer `.next` après modifications critiques
+   - Multiples processus Node peuvent causer conflits
+
+4. **Pattern Analysis** :
+   - Comparer avec fichier `.env` de référence
+   - Identifier différences systématiquement
+
+---
+
+### Prochaine Étape
+
+**Synchronisation Vercel (Production)** :
+- Script automatisé : `npm run env:deploy`
+- Variables SMTP sur Vercel contiennent aussi les `\n` → À corriger
+- Documentation complète disponible : `scripts/GUIDE_DEMARRAGE_RAPIDE.md`
+
+---
+
+**FIN DE SESSION - ENVOI EMAIL RÉSOLU** ✅
+
+**Status Alertes** : 100% fonctionnel (local)
