@@ -5433,3 +5433,46 @@ docs/plans/2026-02-09-pagination-design.md  +782  (NOUVEAU - document design)
 ---
 
 **FIN DE SESSION - BRAINSTORMING PAGINATION - DESIGN 100% VALIDÉ** ✅
+
+---
+
+## 🔍 Session Audit Incohérences PRD vs Implémentation
+
+**Date** : 2026-02-09
+**Durée** : 20 min
+**Objectif** : Identifier TOUTES les incohérences entre PRD et code actuel
+**Méthodologie** : Audit systématique 4 modules
+
+**Résultats** : **10 incohérences** (8 critiques + 2 mineures)
+**Rapport** : `docs/audit/2026-02-09-audit-incoherences-prd.md` (850 lignes)
+**Plan correction** : 65 min (45 min critiques + 10 min mineures + 10 min tests)
+
+---
+
+### Incohérences CRITIQUES Identifiées
+
+| # | Problème | Impact |
+|---|----------|--------|
+| 1-5 | Types Caution incorrects (PROVISOIRE→SOUMISSION, CAPACITE_FINANCIERE manquant, etc.) | 2 cautions prod + type absent |
+| 6 | Devise MAD au lieu de XOF | 🚨 TOUS montants affichent "DH" au lieu de "FCFA" |
+| 7 | Statuts Marchés UI (vérifier RESILIE/ANNULE/INFRUCTUEUX) | Labels à vérifier |
+| 8 | Marques Véhicules liste fermée | 🚨 BLOQUANT - saisie impossible |
+
+---
+
+### Décision : Corrections AVANT Pagination
+
+**✅ APPROCHE A RETENUE** : Corrections + Tâches (session simple)
+
+**Étapes** :
+1. ✅ Audit complet (20 min) - TERMINÉ
+2. ✅ Rapport créé et committé - TERMINÉ
+3. ✅ SESSION.md mis à jour - EN COURS
+4. 🔄 Créer 4 tâches corrections
+5. 🔄 Exécuter corrections (45 min)
+6. 🔄 Tests & validation (10 min)
+7. ⏸️ Pagination (3h)
+
+---
+
+**FIN DE SESSION - AUDIT COMPLET - PRÊT POUR CORRECTIONS** ✅
