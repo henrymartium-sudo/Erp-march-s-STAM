@@ -5,6 +5,7 @@ import { MarcheFilters } from '@/components/marches/marche-filters'
 import { ExportExcelButton } from '@/components/exports/export-excel-button'
 import { getAllMarches } from '@/lib/actions/marches'
 import { searchInFields } from '@/lib/utils/search'
+import { serializeMarche } from '@/lib/utils/serialize'
 import { Plus } from 'lucide-react'
 import type { StatutMarche, TypeMarche } from '@prisma/client'
 
@@ -20,7 +21,11 @@ interface MarchesPageProps {
 
 export default async function MarchesPage({ searchParams }: MarchesPageProps) {
   // Récupérer tous les marchés
-  const allMarches = await getAllMarches()
+  const allMarchesRaw = await getAllMarches()
+
+  // Sérialiser les marchés pour les Client Components
+  // Les Decimal Prisma ne sont PAS sérialisables par RSC
+  const allMarches = allMarchesRaw.map(serializeMarche)
 
   // Await searchParams (Next.js 15)
   const params = await searchParams
@@ -44,7 +49,7 @@ export default async function MarchesPage({ searchParams }: MarchesPageProps) {
     marchesFiltres = marchesFiltres.filter((marche) =>
       searchInFields(
         marche,
-        ['numero', 'objet', 'organismeAcheteur'],
+        ['numero', 'objet', 'autoriteContractanteNom'],
         params.search!
       )
     )

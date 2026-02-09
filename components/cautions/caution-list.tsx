@@ -12,21 +12,12 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChevronLeft, ChevronRight, FileText, ArrowUpDown } from 'lucide-react';
-import type { Caution } from '@prisma/client';
-import { comparerParEcheance, comparerParMontant } from '@/lib/utils/caution';
-
-type CautionWithMarche = Caution & {
-  marche?: {
-    id: string;
-    numero: string;
-    objet: string;
-  };
-};
+import type { SerializedCaution } from '@/types/serialized';
 
 type SortOption = 'echeance' | 'montant' | 'dateCreation';
 
 interface CautionListProps {
-  cautions: CautionWithMarche[];
+  cautions: SerializedCaution[];
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   isLoading?: boolean;
@@ -49,15 +40,15 @@ export function CautionList({
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortOption>('echeance');
 
-  // Tri
+  // Tri (les dates sont des strings ISO, les montants sont des numbers)
   const sortedCautions = [...cautions].sort((a, b) => {
     switch (sortBy) {
       case 'echeance':
-        return comparerParEcheance(a, b);
+        return new Date(a.dateEcheance).getTime() - new Date(b.dateEcheance).getTime();
       case 'montant':
-        return comparerParMontant(a, b);
+        return b.montant - a.montant;
       case 'dateCreation':
-        return b.createdAt.getTime() - a.createdAt.getTime();
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       default:
         return 0;
     }

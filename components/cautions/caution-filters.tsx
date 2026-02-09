@@ -242,11 +242,11 @@ export function CautionFilters({
             <div className="space-y-2">
               <Label htmlFor="niveau-alerte">Niveau d&apos;alerte</Label>
               <Select
-                value={filters.niveauAlerte || ''}
+                value={filters.niveauAlerte || 'ALL'}
                 onValueChange={(value) =>
                   onFiltersChange({
                     ...filters,
-                    niveauAlerte: value ? (value as NiveauAlerte) : undefined,
+                    niveauAlerte: value === 'ALL' ? undefined : (value as NiveauAlerte),
                   })
                 }
               >
@@ -254,7 +254,7 @@ export function CautionFilters({
                   <SelectValue placeholder="Tous les niveaux" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tous les niveaux</SelectItem>
+                  <SelectItem value="ALL">Tous les niveaux</SelectItem>
                   {NIVEAU_ALERTE_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}

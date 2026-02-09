@@ -22,19 +22,11 @@ import { cn } from '@/lib/utils';
 import { Calendar, AlertCircle } from 'lucide-react';
 import { format, startOfMonth, isSameMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import type { Caution } from '@prisma/client';
+import type { SerializedCaution } from '@/types/serialized';
 import Link from 'next/link';
 
 interface CautionTimelineProps {
-  cautions: Array<
-    Caution & {
-      marche?: {
-        id: string;
-        numero: string;
-        objet: string;
-      };
-    }
-  >;
+  cautions: SerializedCaution[];
   className?: string;
   maxItems?: number;
 }
@@ -42,7 +34,7 @@ interface CautionTimelineProps {
 interface GroupedCaution {
   month: Date;
   cautions: Array<
-    Caution & {
+    SerializedCaution & {
       marche?: {
         id: string;
         numero: string;
@@ -63,8 +55,10 @@ export function CautionTimeline({
 }: CautionTimelineProps) {
   // Grouper les cautions par mois
   const groupedCautions = useMemo(() => {
-    // Trier par date d'échéance
-    const sorted = [...cautions].sort(comparerParEcheance);
+    // Trier par date d'échéance (les dates sont des strings ISO)
+    const sorted = [...cautions].sort((a, b) =>
+      new Date(a.dateEcheance).getTime() - new Date(b.dateEcheance).getTime()
+    );
 
     // Limiter le nombre d'items
     const limited = sorted.slice(0, maxItems);
@@ -72,7 +66,7 @@ export function CautionTimeline({
     // Grouper par mois
     const groups: GroupedCaution[] = [];
     limited.forEach((caution) => {
-      const month = startOfMonth(caution.dateEcheance);
+      const month = startOfMonth(new Date(caution.dateEcheance));
       const existingGroup = groups.find((g) =>
         isSameMonth(g.month, month)
       );
@@ -151,15 +145,14 @@ export function CautionTimeline({
                 {/* Cautions du mois */}
                 <div className="space-y-3">
                   {group.cautions.map((caution) => {
-                    const joursRestants = getJoursRestants(caution.dateEcheance);
+                    const dateEcheance = new Date(caution.dateEcheance);
+                    const joursRestants = getJoursRestants(dateEcheance);
                     const niveauAlerte = getNiveauAlerte(
                       caution.statut,
-                      caution.dateEcheance
+                      dateEcheance
                     );
                     const couleurAlerte = getCouleurNiveauAlerte(niveauAlerte);
-                    const montantNumber = typeof caution.montant === 'number'
-                      ? caution.montant
-                      : caution.montant.toNumber();
+                    const montantNumber = caution.montant;
 
                     return (
                       <TooltipProvider key={caution.id}>

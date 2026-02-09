@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Marche } from '@prisma/client'
+import type { SerializedMarche } from '@/types/serialized'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatutBadge } from './statut-badge'
@@ -7,7 +7,7 @@ import { formatMontant, formatDateCourt } from '@/lib/utils/format'
 import { Eye, Pencil, Trash2 } from 'lucide-react'
 
 interface MarcheCardProps {
-  marche: Marche
+  marche: SerializedMarche
 }
 
 const TYPE_LABELS = {

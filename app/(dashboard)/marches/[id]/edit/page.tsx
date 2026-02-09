@@ -4,6 +4,7 @@ import { MarcheForm } from '@/components/marches/marche-form'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { serializeMarche } from '@/lib/utils/serialize'
 
 interface EditMarchePageProps {
   params: Promise<{
@@ -18,6 +19,8 @@ export default async function EditMarchePage({ params }: EditMarchePageProps) {
   if (!marche) {
     notFound()
   }
+
+  const serializedMarche = serializeMarche(marche)
 
   return (
     <div className="space-y-6">
@@ -40,7 +43,7 @@ export default async function EditMarchePage({ params }: EditMarchePageProps) {
       </div>
 
       {/* Formulaire */}
-      <MarcheForm marche={marche} />
+      <MarcheForm marche={serializedMarche} />
     </div>
   )
 }

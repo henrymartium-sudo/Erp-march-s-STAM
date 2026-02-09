@@ -1,11 +1,11 @@
 import Link from 'next/link'
-import { Marche } from '@prisma/client'
+import type { SerializedMarche } from '@/types/serialized'
 import { MarcheCard } from './marche-card'
 import { Button } from '@/components/ui/button'
 import { Plus, FileText } from 'lucide-react'
 
 interface MarcheListProps {
-  marches: Marche[]
+  marches: SerializedMarche[]
 }
 
 export function MarcheList({ marches }: MarcheListProps) {

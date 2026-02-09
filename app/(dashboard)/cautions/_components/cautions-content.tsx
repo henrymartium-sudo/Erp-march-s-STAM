@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CautionWithRelations } from "@/lib/actions/cautions";
+import type { SerializedCaution } from "@/types/serialized";
 import { CautionFilters, CautionList } from "@/components/cautions";
 import type { CautionFiltersState } from "@/components/cautions";
 import { Card } from "@/components/ui/card";
 
 interface CautionsContentProps {
-  cautions: CautionWithRelations[];
+  cautions: SerializedCaution[];
   canWrite: boolean;
 }
 

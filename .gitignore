@@ -57,3 +57,4 @@ __pycache__/
 
 .vercel
 .env*.local
+server-logs.txt

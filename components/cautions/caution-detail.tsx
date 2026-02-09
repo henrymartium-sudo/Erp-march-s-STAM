@@ -31,16 +31,28 @@ import {
   Phone,
   Mail,
 } from 'lucide-react';
-import type { Caution } from '@prisma/client';
 import Link from 'next/link';
 
 interface CautionDetailProps {
-  caution: Caution & {
+  caution: {
+    id: string;
+    reference: string;
+    type: any;
+    montant: number | { toNumber: () => number };
+    dateEmission: Date | string;
+    dateEcheance: Date | string;
+    statut: any;
+    banqueNom: string;
+    banqueContact: string | null;
+    marcheId: string;
+    userId: string;
+    createdAt: Date | string;
+    updatedAt: Date | string;
     marche?: {
       id: string;
       numero: string;
       objet: string;
-      montant: { toNumber: () => number } | number;
+      montant: number | { toNumber: () => number };
     };
     user?: {
       id: string;
@@ -65,21 +77,30 @@ export function CautionDetail({
   showActions = true,
   className,
 }: CautionDetailProps) {
-  const joursRestants = getJoursRestants(caution.dateEcheance);
-  const niveauAlerte = getNiveauAlerte(caution.statut, caution.dateEcheance);
+  // Les dates peuvent être des Date ou des strings ISO (après sérialisation RSC)
+  const dateEcheance = typeof caution.dateEcheance === 'string'
+    ? new Date(caution.dateEcheance)
+    : caution.dateEcheance;
+  const dateEmission = typeof caution.dateEmission === 'string'
+    ? new Date(caution.dateEmission)
+    : caution.dateEmission;
+
+  const joursRestants = getJoursRestants(dateEcheance);
+  const niveauAlerte = getNiveauAlerte(caution.statut, dateEcheance);
   const couleurAlerte = getCouleurNiveauAlerte(niveauAlerte);
   const messageAlerte = getMessageAlerte(niveauAlerte, joursRestants);
-  const dureeTotale = getDureeCaution(caution.dateEmission, caution.dateEcheance);
-  const dureeRestante = formatDureeRestante(caution.dateEcheance);
+  const dureeTotale = getDureeCaution(dateEmission, dateEcheance);
+  const dureeRestante = formatDureeRestante(dateEcheance);
 
+  // Le montant peut être un number ou un Decimal Prisma
   const montantNumber = typeof caution.montant === 'number'
     ? caution.montant
-    : caution.montant.toNumber();
+    : Number(caution.montant);
 
   const montantMarcheNumber = caution.marche
     ? typeof caution.marche.montant === 'number'
       ? caution.marche.montant
-      : caution.marche.montant.toNumber()
+      : Number(caution.marche.montant)
     : null;
 
   const pourcentageMarche = montantMarcheNumber
