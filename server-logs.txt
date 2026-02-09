@@ -122,3 +122,88 @@ prisma:query SELECT "public"."cautions"."id", "public"."cautions"."reference", "
 prisma:query SELECT "public"."marches"."id", "public"."marches"."numero", "public"."marches"."objet" FROM "public"."marches" WHERE "public"."marches"."id" IN (NULL) OFFSET $1
 prisma:query SELECT "public"."marches"."id", "public"."marches"."numero", "public"."marches"."objet", "public"."marches"."type"::text, "public"."marches"."montant", "public"."marches"."dateNotification", "public"."marches"."dateOrdreService", "public"."marches"."delaiExecution", "public"."marches"."dateFinPrevue", "public"."marches"."dateReception", "public"."marches"."statut"::text, "public"."marches"."autoriteContractanteNom", "public"."marches"."autoriteContractanteContact", "public"."marches"."autoriteContractanteEmail", "public"."marches"."autoriteContractanteTel", "public"."marches"."createdAt", "public"."marches"."updatedAt", "public"."marches"."dateIdentification", "public"."marches"."dateDepotPrevue", "public"."marches"."dateDepotOffre", "public"."marches"."delaiValiditeOffre", "public"."marches"."dateAttributionProvisoire", "public"."marches"."dateAttributionDefinitive", "public"."marches"."dateLivraisonPrevue", "public"."marches"."dureeLivraisonPrevue", "public"."marches"."dateReceptionProvisoirePrevue", "public"."marches"."garantiesLiberees", "public"."marches"."dateClotureAdministrative", "public"."marches"."dateResiliation", "public"."marches"."motifsResiliation", "public"."marches"."dateAnnulation", "public"."marches"."motifsAnnulation", "public"."marches"."dateInfructueux", "public"."marches"."motifsInfructueux", "public"."marches"."concurrentGagnant", "public"."marches"."montantOffreConcurrent", "public"."marches"."userId" FROM "public"."marches" WHERE ("public"."marches"."dateFinPrevue" IS NOT NULL AND "public"."marches"."dateFinPrevue" <= $1 AND "public"."marches"."statut" IN (CAST($2::text AS "public"."StatutMarche"),CAST($3::text AS "public"."StatutMarche"))) ORDER BY "public"."marches"."dateFinPrevue" ASC OFFSET $4
  POST /admin/alertes 200 in 2631ms
+ ✓ Compiled in 16.5s (1017 modules)
+ ✓ Compiled in 1876ms (1017 modules)
+ ✓ Compiled in 744ms (1017 modules)
+ ✓ Compiled in 866ms (1017 modules)
+ ✓ Compiled in 692ms (1017 modules)
+ ✓ Compiled in 846ms (1017 modules)
+ ✓ Compiled in 749ms (1017 modules)
+ ✓ Compiled in 631ms (1017 modules)
+ ✓ Compiled in 659ms (1017 modules)
+ GET /login 200 in 2458ms
+ ○ Compiling /api/auth/[...nextauth] ...
+ ✓ Compiled /api/auth/[...nextauth] in 11.3s (2078 modules)
+ GET /api/auth/providers 200 in 23198ms
+ GET /login?callbackUrl=%2Fmarches 200 in 22601ms
+ GET /login 200 in 3555ms
+ GET /api/auth/providers 200 in 196ms
+ GET /api/auth/csrf 200 in 82ms
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."password", "public"."users"."role"::text, "public"."users"."createdAt", "public"."users"."updatedAt" FROM "public"."users" WHERE ("public"."users"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+User not found: admin@stam.tg
+[31m[auth][error][0m CredentialsSignin: Read more at https://errors.authjs.dev#credentialssignin
+    at Module.callback (webpack-internal:///(rsc)/./node_modules/@auth/core/lib/actions/callback/index.js:246:23)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async AuthInternal (webpack-internal:///(rsc)/./node_modules/@auth/core/lib/index.js:70:24)
+    at async Auth (webpack-internal:///(rsc)/./node_modules/@auth/core/index.js:130:34)
+    at async AppRouteRouteModule.do (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:5:38696)
+    at async AppRouteRouteModule.handle (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:5:45978)
+    at async responseGenerator (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fauth%2F%5B...nextauth%5D%2Froute&page=%2Fapi%2Fauth%2F%5B...nextauth%5D%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fauth%2F%5B...nextauth%5D%2Froute.ts&appDir=C%3A%5CUsers%5CHP%5CDocuments%5Cclaude%20projets%5Cprojet%20ERP%20march%C3%A9s%5CERP%20March%C3%A9s%20STAM%20Final%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=C%3A%5CUsers%5CHP%5CDocuments%5Cclaude%20projets%5Cprojet%20ERP%20march%C3%A9s%5CERP%20March%C3%A9s%20STAM%20Final&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:206:38)
+    at async AppRouteRouteModule.handleResponse (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:1:195179)
+    at async handleResponse (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fauth%2F%5B...nextauth%5D%2Froute&page=%2Fapi%2Fauth%2F%5B...nextauth%5D%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fauth%2F%5B...nextauth%5D%2Froute.ts&appDir=C%3A%5CUsers%5CHP%5CDocuments%5Cclaude%20projets%5Cprojet%20ERP%20march%C3%A9s%5CERP%20March%C3%A9s%20STAM%20Final%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=C%3A%5CUsers%5CHP%5CDocuments%5Cclaude%20projets%5Cprojet%20ERP%20march%C3%A9s%5CERP%20March%C3%A9s%20STAM%20Final&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:268:32)
+    at async handler (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fauth%2F%5B...nextauth%5D%2Froute&page=%2Fapi%2Fauth%2F%5B...nextauth%5D%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fauth%2F%5B...nextauth%5D%2Froute.ts&appDir=C%3A%5CUsers%5CHP%5CDocuments%5Cclaude%20projets%5Cprojet%20ERP%20march%C3%A9s%5CERP%20March%C3%A9s%20STAM%20Final%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=C%3A%5CUsers%5CHP%5CDocuments%5Cclaude%20projets%5Cprojet%20ERP%20march%C3%A9s%5CERP%20March%C3%A9s%20STAM%20Final&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:320:13)
+    at async DevServer.renderToResponseWithComponentsImpl (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\base-server.js:1422:9)
+    at async DevServer.renderPageComponent (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\base-server.js:1474:24)
+    at async DevServer.renderToResponseImpl (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\base-server.js:1514:32)
+    at async DevServer.pipeImpl (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\base-server.js:1025:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\next-server.js:393:17)
+    at async DevServer.handleRequestImpl (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\base-server.js:916:17)
+    at async C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\dev\next-dev-server.js:400:20
+    at async Span.traceAsyncFn (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\trace\trace.js:157:20)
+    at async DevServer.handleRequest (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\dev\next-dev-server.js:396:24)
+    at async invokeRender (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\lib\router-server.js:240:21)
+    at async handleRequest (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\lib\router-server.js:437:24)
+    at async requestHandlerImpl (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\lib\router-server.js:485:13)
+    at async Server.requestListener (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\lib\start-server.js:226:13)
+ POST /api/auth/callback/credentials? 200 in 2212ms
+ GET /login 200 in 1475ms
+ GET /api/auth/providers 200 in 211ms
+ GET /api/auth/csrf 200 in 112ms
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."password", "public"."users"."role"::text, "public"."users"."createdAt", "public"."users"."updatedAt" FROM "public"."users" WHERE ("public"."users"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+User not found: admin@stam.tg
+[31m[auth][error][0m CredentialsSignin: Read more at https://errors.authjs.dev#credentialssignin
+    at Module.callback (webpack-internal:///(rsc)/./node_modules/@auth/core/lib/actions/callback/index.js:246:23)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async AuthInternal (webpack-internal:///(rsc)/./node_modules/@auth/core/lib/index.js:70:24)
+    at async Auth (webpack-internal:///(rsc)/./node_modules/@auth/core/index.js:130:34)
+    at async AppRouteRouteModule.do (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:5:38696)
+    at async AppRouteRouteModule.handle (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:5:45978)
+    at async responseGenerator (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fauth%2F%5B...nextauth%5D%2Froute&page=%2Fapi%2Fauth%2F%5B...nextauth%5D%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fauth%2F%5B...nextauth%5D%2Froute.ts&appDir=C%3A%5CUsers%5CHP%5CDocuments%5Cclaude%20projets%5Cprojet%20ERP%20march%C3%A9s%5CERP%20March%C3%A9s%20STAM%20Final%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=C%3A%5CUsers%5CHP%5CDocuments%5Cclaude%20projets%5Cprojet%20ERP%20march%C3%A9s%5CERP%20March%C3%A9s%20STAM%20Final&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:206:38)
+    at async AppRouteRouteModule.handleResponse (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:1:195179)
+    at async handleResponse (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fauth%2F%5B...nextauth%5D%2Froute&page=%2Fapi%2Fauth%2F%5B...nextauth%5D%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fauth%2F%5B...nextauth%5D%2Froute.ts&appDir=C%3A%5CUsers%5CHP%5CDocuments%5Cclaude%20projets%5Cprojet%20ERP%20march%C3%A9s%5CERP%20March%C3%A9s%20STAM%20Final%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=C%3A%5CUsers%5CHP%5CDocuments%5Cclaude%20projets%5Cprojet%20ERP%20march%C3%A9s%5CERP%20March%C3%A9s%20STAM%20Final&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:268:32)
+    at async handler (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fauth%2F%5B...nextauth%5D%2Froute&page=%2Fapi%2Fauth%2F%5B...nextauth%5D%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fauth%2F%5B...nextauth%5D%2Froute.ts&appDir=C%3A%5CUsers%5CHP%5CDocuments%5Cclaude%20projets%5Cprojet%20ERP%20march%C3%A9s%5CERP%20March%C3%A9s%20STAM%20Final%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=C%3A%5CUsers%5CHP%5CDocuments%5Cclaude%20projets%5Cprojet%20ERP%20march%C3%A9s%5CERP%20March%C3%A9s%20STAM%20Final&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:320:13)
+    at async DevServer.renderToResponseWithComponentsImpl (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\base-server.js:1422:9)
+    at async DevServer.renderPageComponent (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\base-server.js:1474:24)
+    at async DevServer.renderToResponseImpl (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\base-server.js:1514:32)
+    at async DevServer.pipeImpl (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\base-server.js:1025:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\next-server.js:393:17)
+    at async DevServer.handleRequestImpl (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\base-server.js:916:17)
+    at async C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\dev\next-dev-server.js:400:20
+    at async Span.traceAsyncFn (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\trace\trace.js:157:20)
+    at async DevServer.handleRequest (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\dev\next-dev-server.js:396:24)
+    at async invokeRender (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\lib\router-server.js:240:21)
+    at async handleRequest (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\lib\router-server.js:437:24)
+    at async requestHandlerImpl (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\lib\router-server.js:485:13)
+    at async Server.requestListener (C:\Users\HP\Documents\claude projets\projet ERP marchés\ERP Marchés STAM Final\node_modules\next\dist\server\lib\start-server.js:226:13)
+ POST /api/auth/callback/credentials? 200 in 4248ms
+ GET /api/auth/session 200 in 167ms
+ ✓ Compiled in 6.7s (1017 modules)
+ ✓ Compiled in 935ms (1017 modules)
+ ✓ Compiled in 675ms (1017 modules)
+ ✓ Compiled in 2.1s (1017 modules)
+ ✓ Compiled in 944ms (1017 modules)
+ ✓ Compiled in 1492ms (1017 modules)
+ ✓ Compiled in 769ms (1017 modules)
+ ✓ Compiled in 1818ms (1017 modules)
+ ✓ Compiled in 881ms (1017 modules)
+ ✓ Compiled in 839ms (1017 modules)

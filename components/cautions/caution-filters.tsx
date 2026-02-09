@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,7 +18,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { X, Filter, CalendarIcon, RotateCcw } from 'lucide-react';
+import { X, Filter, CalendarIcon, RotateCcw, Search } from 'lucide-react';
+import { useDebounce } from '@/hooks/use-debounce';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -64,6 +65,15 @@ export function CautionFilters({
   className,
 }: CautionFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(filters.search || '');
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
+  // Synchroniser le debounced search avec les filtres parents
+  useEffect(() => {
+    if (debouncedSearch !== filters.search) {
+      onFiltersChange({ ...filters, search: debouncedSearch || undefined });
+    }
+  }, [debouncedSearch]);
 
   const hasActiveFilters = Boolean(
     filters.search ||
@@ -111,15 +121,24 @@ export function CautionFilters({
     <div className={cn('space-y-4', className)}>
       {/* Barre de recherche et bouton filtres */}
       <div className="flex flex-col sm:flex-row gap-2">
-        <div className="flex-1">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Rechercher par référence, banque..."
-            value={filters.search || ''}
-            onChange={(e) =>
-              onFiltersChange({ ...filters, search: e.target.value || undefined })
-            }
-            className="w-full"
+            placeholder="Rechercher une caution..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-9"
           />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
         <div className="flex gap-2">

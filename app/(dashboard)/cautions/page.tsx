@@ -74,6 +74,7 @@ export default async function CautionsPage({ searchParams }: CautionsPageProps) 
             filters={{
               statut: params.statut,
               type: params.type,
+              search: params.search,
             }}
           />
           <Button asChild>
