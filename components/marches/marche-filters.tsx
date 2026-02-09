@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Select,
@@ -8,9 +9,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { STATUT_LABELS } from '@/lib/utils/statut'
-import { X } from 'lucide-react'
+import { Search, X } from 'lucide-react'
+import { useDebounce } from '@/hooks/use-debounce'
 
 const TYPE_LABELS = {
   TRAVAUX: 'Travaux',
@@ -30,6 +33,23 @@ export function MarcheFilters({ totalCount, filteredCount }: MarcheFiltersProps)
 
   const statutActuel = searchParams.get('statut') || 'tous'
   const typeActuel = searchParams.get('type') || 'tous'
+
+  // État de recherche
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
+  const debouncedSearch = useDebounce(searchQuery, 300)
+
+  // Synchronisation URL avec recherche debouncée
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString())
+
+    if (debouncedSearch) {
+      params.set('search', debouncedSearch)
+    } else {
+      params.delete('search')
+    }
+
+    router.push(`/marches?${params.toString()}`)
+  }, [debouncedSearch, router, searchParams])
 
   const handleStatutChange = (value: string) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -56,10 +76,11 @@ export function MarcheFilters({ totalCount, filteredCount }: MarcheFiltersProps)
   }
 
   const handleReset = () => {
+    setSearchQuery('')
     router.push('/marches')
   }
 
-  const hasFilters = statutActuel !== 'tous' || typeActuel !== 'tous'
+  const hasFilters = statutActuel !== 'tous' || typeActuel !== 'tous' || searchQuery !== ''
 
   return (
     <div className="bg-white p-4 rounded-lg border space-y-4">
@@ -74,6 +95,27 @@ export function MarcheFilters({ totalCount, filteredCount }: MarcheFiltersProps)
           >
             <X className="h-4 w-4 mr-2" />
             Réinitialiser
+          </Button>
+        )}
+      </div>
+
+      {/* Barre de recherche */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Rechercher un marché..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9 pr-9"
+        />
+        {searchQuery && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSearchQuery('')}
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+          >
+            <X className="h-4 w-4" />
           </Button>
         )}
       </div>
@@ -134,7 +176,11 @@ export function MarcheFilters({ totalCount, filteredCount }: MarcheFiltersProps)
       {/* Nombre de résultats */}
       <div className="pt-2 border-t">
         <p className="text-sm text-muted-foreground">
-          {hasFilters ? (
+          {searchQuery && filteredCount === 0 ? (
+            <>
+              Aucun résultat pour <span className="font-semibold text-foreground">"{searchQuery}"</span>
+            </>
+          ) : hasFilters ? (
             <>
               <span className="font-semibold text-foreground">{filteredCount}</span> résultat
               {filteredCount > 1 ? 's' : ''} sur {totalCount}
