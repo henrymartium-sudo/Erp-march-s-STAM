@@ -14,6 +14,7 @@ export interface ExportFilters {
   type?: string
   dateDebut?: string
   dateFin?: string
+  search?: string
 }
 
 interface ExportExcelButtonProps {
