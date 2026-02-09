@@ -11,6 +11,7 @@ import type { SerializedCaution } from "@/types/serialized";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { serializeMarche } from "@/lib/utils/serialize";
 
 interface MarcheCautionsSectionProps {
   marcheId: string;
@@ -44,10 +45,7 @@ function serializeCautionFromAction(caution: any): SerializedCaution {
       : caution.updatedAt instanceof Date
         ? caution.updatedAt.toISOString()
         : String(caution.updatedAt),
-    marche: caution.marche ? {
-      ...caution.marche,
-      montant: Number(caution.marche.montant),
-    } : undefined,
+    marche: caution.marche ? serializeMarche(caution.marche) : undefined,
   };
 }
 
