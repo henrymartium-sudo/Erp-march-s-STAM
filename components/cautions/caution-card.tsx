@@ -10,8 +10,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { CautionBadge } from './caution-badge';
+import { formatMontant } from '@/lib/utils/format';
 import {
-  formatMontant,
   formatDateCourte,
   getJoursRestants,
   getNiveauAlerte,
