@@ -5738,3 +5738,252 @@ Appliquer `serializeMarche()` / `serializeCaution()` dans Server Actions
 **Action requise** : Redémarrer serveur + tester + confirmer
 
 ---
+
+---
+
+## 📅 Session 2026-02-10 : Tests Production + Corrections Devise
+
+**Durée** : 45 min
+**Objectif** : Tests automatisés production + Validation corrections PRD
+**Statut** : ✅ **TERMINÉ**
+
+---
+
+### 🧪 Tests Production Automatisés (Playwright)
+
+**Environnement** : https://erp-marches-stam.vercel.app
+**Navigateur** : Chromium headless
+**Compte test** : admin@erp-marches.local
+
+#### Checklist Tests (5/5)
+
+| # | Test | Résultat | Détails |
+|---|------|----------|---------|
+| 1 | Dashboard → FCFA | ✅ PASS | 45 545 000 FCFA affiché |
+| 2 | Page Cautions → FCFA | ❌ **FAIL** | 30 000 € au lieu de FCFA |
+| 3 | Warnings Decimal | ✅ PASS | Aucun warning console |
+| 4 | Type CAPACITE_FINANCIERE | ✅ PASS | Disponible dans liste |
+| 5 | Statuts Terminaison | ✅ PASS | RESILIE/ANNULE/INFRUCTUEUX OK |
+
+---
+
+### 🐛 Bug Critique Détecté : Devise EUR Module Cautions
+
+#### Symptôme
+
+**Page Cautions** affichait encore **EUR (€)** au lieu de **FCFA** :
+- Card "Montant Total Actif" : `30 000 €`
+- Liste cautions : `12 500,00 €` et `17 500,00 €`
+
+**Screenshot** : `cautions-devise-eur-bug.png`
+
+#### Cause Racine
+
+**2 fichiers non corrigés** lors de la session précédente :
+
+1. **`lib/utils/caution.ts:209`**
+   ```typescript
+   // Fonction locale formatMontant avec EUR hardcodé
+   export function formatMontant(montant: number | string): string {
+     return new Intl.NumberFormat('fr-FR', {
+       style: 'currency',
+       currency: 'EUR', // ❌ Problème ici
+     }).format(num)
+   }
+   ```
+
+2. **`app/(dashboard)/cautions/page.tsx:164-168`**
+   ```typescript
+   // Formatage inline avec EUR
+   {new Intl.NumberFormat("fr-FR", {
+     style: "currency",
+     currency: "EUR", // ❌ Problème ici
+   }).format(montantTotalActif)}
+   ```
+
+**Impact secondaire** : 4 composants importaient `formatMontant` de `lib/utils/caution.ts` :
+- `components/cautions/caution-card.tsx`
+- `components/cautions/caution-detail.tsx`
+- `components/cautions/caution-form.tsx`
+- `components/cautions/caution-timeline.tsx`
+
+---
+
+### ✅ Corrections Appliquées (3 commits)
+
+#### Commit 1 : `1b5dcf3` - Correction fichiers racine
+
+**Changements** :
+1. `lib/utils/caution.ts`
+   - Suppression fonction `formatMontant()` locale
+   - Ajout commentaire `@deprecated`
+
+2. `app/(dashboard)/cautions/page.tsx`
+   - Ajout import : `import { formatMontant } from '@/lib/utils/format'`
+   - Remplacement code inline par `formatMontant(montantTotalActif)`
+
+**Déploiement Vercel** : ❌ FAILED (erreurs TypeScript)
+
+---
+
+#### Commit 2 : `16c6c5a` - Correction imports composants
+
+**Changements** : Correction imports dans 4 composants
+
+**Avant** :
+```typescript
+import { formatMontant, ... } from '@/lib/utils/caution'
+```
+
+**Après** :
+```typescript
+import { formatMontant } from '@/lib/utils/format'
+import { ... } from '@/lib/utils/caution'
+```
+
+**Fichiers modifiés** :
+1. `components/cautions/caution-card.tsx`
+2. `components/cautions/caution-detail.tsx`
+3. `components/cautions/caution-form.tsx`
+4. `components/cautions/caution-timeline.tsx`
+
+**Validation** : `npx tsc --noEmit` → ✅ Aucune erreur composants Cautions
+
+**Déploiement Vercel** : ✅ SUCCESS (Build 56s)
+
+---
+
+### 🎉 Tests Validation Post-Correction
+
+**URL** : https://erp-marches-stam.vercel.app/cautions
+
+**Résultats** :
+```
+✅ Montant Total Actif : 30 000 FCFA (au lieu de 30 000 €)
+✅ Caution 1 : 12 500 FCFA (au lieu de 12 500,00 €)
+✅ Caution 2 : 17 500 FCFA (au lieu de 17 500,00 €)
+✅ Console : 0 warnings Decimal
+```
+
+**Screenshot** : `cautions-devise-fcfa-fix.png`
+
+---
+
+### 📊 Bilan Session
+
+#### Résultats Tests Complets (5/5)
+
+| Test | Statut Final |
+|------|--------------|
+| Dashboard → FCFA | ✅ |
+| Module Cautions → FCFA | ✅ (corrigé) |
+| Warnings Decimal | ✅ |
+| Type CAPACITE_FINANCIERE | ✅ |
+| Statuts Terminaison | ✅ |
+
+#### Métriques
+
+- **Durée** : 45 min
+- **Commits** : 3
+- **Fichiers modifiés** : 7
+- **Déploiements Vercel** : 3 (1 error, 2 success)
+- **Screenshots** : 2 (avant/après)
+- **Tests automatisés** : 5/5 PASS
+
+---
+
+### 📝 Fichiers Modifiés (7)
+
+#### Corrections principales (2)
+1. `lib/utils/caution.ts` - Suppression formatMontant local
+2. `app/(dashboard)/cautions/page.tsx` - Import global + utilisation
+
+#### Corrections imports (4)
+3. `components/cautions/caution-card.tsx`
+4. `components/cautions/caution-detail.tsx`
+5. `components/cautions/caution-form.tsx`
+6. `components/cautions/caution-timeline.tsx`
+
+#### Documentation (1)
+7. `cautions-devise-eur-bug.png` + `cautions-devise-fcfa-fix.png`
+
+---
+
+### 🎓 Leçons Apprées
+
+1. **Grep Exhaustif** : Recherche EUR a manqué 2 fichiers (pattern regex insuffisant)
+2. **Imports Cascades** : Suppression export → erreurs TypeScript en cascade (4 fichiers)
+3. **Tests Production Essentiels** : Bug détecté **uniquement** par tests Playwright réels
+4. **Vercel Build Rapide** : 56s pour corriger + redéployer
+5. **Screenshots Documentation** : Avant/après crucials pour traçabilité
+
+---
+
+### ✅ État Final Sprint 1 Priorité 3
+
+| Tâche | Statut | Notes |
+|-------|--------|-------|
+| Corrections PRD | ✅ 100% | 10 incohérences corrigées |
+| Tests Production | ✅ 100% | 5/5 tests automatisés PASS |
+| Bug Devise Cautions | ✅ 100% | Corrigé + validé production |
+
+---
+
+### 🎯 Prochaines Étapes
+
+#### Option 1 : Pagination (Sprint 1 P4) - 3h
+
+**Roadmap** :
+```
+Priorité 4 : Pagination
+- Installer composant shadcn/ui (15min)
+- Hook usePagination (1h)
+- Intégration 4 modules (2h)
+```
+
+**Prérequis** : ✅ Tous validés
+
+---
+
+#### Option 2 : Upload Premium 50MB (Sprint 1 P5) - 5h
+
+Upload direct client → Supabase Storage avec progress bar
+
+---
+
+#### Option 3 : Récupération Password (Sprint 1 P6) - 4h
+
+Workflow complet avec token + email
+
+---
+
+### Progression Globale Sprint 1
+
+| Priorité | Tâche | Durée | Statut |
+|----------|-------|-------|--------|
+| **P1** | Alertes Auto | 4h | ✅ 100% |
+| **P2** | Alertes Manuelles | 3h | ✅ 100% |
+| **P3** | Recherche Textuelle | 1h45 | ✅ 100% |
+| **P3b** | Tests Production | 45min | ✅ 100% |
+| **P3c** | Corrections PRD + Bug Devise | 90min | ✅ 100% |
+| **P4** | **Pagination** | 3h | ⏸️ **PRÊTE** |
+| P5 | Upload 50MB | 5h | ⏸️ Attente |
+| P6 | Récup Password | 4h | ⏸️ Attente |
+| P7 | Error Boundaries | 2h | ⏸️ Attente |
+| P8 | Workflow Statuts | 2h | ⏸️ Attente |
+
+**Progression** : 13.75h / 24h Sprint 1 = **57%**
+
+---
+
+**STATUT** : ✅ **PRÊT POUR PAGINATION (P4)**
+
+**Prochaine session** : Implémenter pagination sur 4 modules (3h estimées)
+
+**Commits aujourd'hui** :
+- `6b7f1fb` - fix: Corriger incohérences PRD + bugs critiques devise/types
+- `1b5dcf3` - fix(cautions): Corriger devise EUR → FCFA dans module Cautions
+- `16c6c5a` - fix(cautions): Corriger imports formatMontant dans 4 composants
+
+---
+
