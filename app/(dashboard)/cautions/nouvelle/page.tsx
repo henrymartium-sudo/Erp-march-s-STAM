@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireAuth } from "@/lib/utils/permissions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { NouvelleChutionContent } from "./_components/nouvelle-caution-content";
+import { NouvelleCautionContent } from "./_components/nouvelle-caution-content";
 
 export const metadata: Metadata = {
   title: "Nouvelle Caution - ERP Marchés",
@@ -36,7 +36,7 @@ export default async function NouvelleCautionPage({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <NouvelleChutionContent marcheId={params.marcheId} />
+          <NouvelleCautionContent marcheId={params.marcheId} />
         </CardContent>
       </Card>
     </div>
