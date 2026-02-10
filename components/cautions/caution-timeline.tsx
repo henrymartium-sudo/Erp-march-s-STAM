@@ -10,9 +10,9 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { CautionBadge } from './caution-badge';
+import { formatMontant } from '@/lib/utils/format';
 import {
   formatDateCourte,
-  formatMontant,
   getNiveauAlerte,
   getCouleurNiveauAlerte,
   getJoursRestants,

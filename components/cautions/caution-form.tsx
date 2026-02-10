@@ -54,11 +54,11 @@ import {
   TYPE_CAUTION_OPTIONS,
   STATUT_CAUTION_OPTIONS,
 } from '@/lib/constants/caution';
+import { formatMontant } from '@/lib/utils/format';
 import {
   getMontantSuggere,
   getDateEcheanceSuggeree,
   isDureeCoherente,
-  formatMontant,
 } from '@/lib/utils/caution';
 interface CautionFormProps {
   caution?: any; // Données sérialisées depuis le Server Component (Decimal -> number, Date -> string)

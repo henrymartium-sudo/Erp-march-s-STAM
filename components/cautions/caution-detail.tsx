@@ -6,8 +6,8 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CautionBadge } from './caution-badge';
+import { formatMontant } from '@/lib/utils/format';
 import {
-  formatMontant,
   formatDate,
   formatDateCourte,
   getJoursRestants,
