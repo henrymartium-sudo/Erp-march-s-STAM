@@ -6167,3 +6167,21 @@ npx tsc --noEmit
 
 **STATUT** : ✅ **BUGS CAUTIONS RÉSOLUS - PRÊT POUR P4**
 
+
+
+---
+
+## ⚠️ TÂCHE INTERROMPUE (2026-02-10 15h00)
+
+**Sujet** : Correction Bug Création Caution - Erreur TypeScript
+
+**Progression** : 60% (Migration SQL ✅, 2/7 fichiers corrigés)
+
+**Voir** : `TACHE_INTERROMPUE.md` pour reprendre la tâche
+
+**Blocage** : 5 composants React nécessitent corrections TypeScript pour gérer `caution.marche` nullable
+
+**Prochaine étape** : Corriger les 5 composants listés dans TACHE_INTERROMPUE.md
+
+---
+
