@@ -10,7 +10,7 @@ interface NouvelleCautionContentProps {
   marcheId?: string;
 }
 
-export function NouvelleChutionContent({
+export function NouvelleCautionContent({
   marcheId,
 }: NouvelleCautionContentProps) {
   const router = useRouter();

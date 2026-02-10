@@ -244,7 +244,7 @@ export function CautionForm({
             name="montant"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Montant (€) *</FormLabel>
+                <FormLabel>Montant (FCFA) *</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
