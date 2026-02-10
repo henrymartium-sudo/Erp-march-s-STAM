@@ -5,9 +5,10 @@ import { z } from 'zod'
 // ============================================================================
 
 export const typeCautionEnum = z.enum([
-  'PROVISOIRE',
-  'DEFINITIVE',
-  'AVANCE',
+  'SOUMISSION',
+  'CAPACITE_FINANCIERE',
+  'BONNE_EXECUTION',
+  'AVANCE_DEMARRAGE',
   'RETENUE_GARANTIE',
 ])
 
@@ -80,11 +81,11 @@ export const cautionSchema = baseCautionSchema.superRefine((data, ctx) => {
     })
   }
 
-  // Validation : les cautions PROVISOIRE ne peuvent pas avoir le statut LIBEREE
-  if (data.type === 'PROVISOIRE' && data.statut === 'LIBEREE') {
+  // Validation : les cautions de SOUMISSION ne peuvent pas avoir le statut LIBEREE
+  if (data.type === 'SOUMISSION' && data.statut === 'LIBEREE') {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'Une caution provisoire ne peut pas être libérée (elle est remplacée par la caution définitive)',
+      message: 'Une caution de soumission ne peut pas être libérée (elle est remplacée par la caution de bonne exécution)',
       path: ['statut'],
     })
   }
@@ -124,10 +125,10 @@ export const createCautionServerSchema = baseCautionSchema
       })
     }
 
-    if (data.type === 'PROVISOIRE' && data.statut === 'LIBEREE') {
+    if (data.type === 'SOUMISSION' && data.statut === 'LIBEREE') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Une caution provisoire ne peut pas être libérée',
+        message: 'Une caution de soumission ne peut pas être libérée',
         path: ['statut'],
       })
     }

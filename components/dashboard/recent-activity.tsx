@@ -6,6 +6,7 @@ import { getAllMarches } from '@/lib/actions/marches'
 import { getCautions } from '@/lib/actions/cautions'
 import { getVehicules } from '@/lib/actions/vehicules'
 import { formatDate } from '@/lib/utils'
+import { formatMontant } from '@/lib/utils/format'
 import { STATUT_MARCHE_LABELS } from '@/lib/constants/marche'
 import { TYPE_CAUTION_LABELS } from '@/lib/constants/caution'
 import { STATUT_VEHICULE_LABELS } from '@/lib/constants/vehicule'
@@ -115,11 +116,7 @@ export async function RecentActivity() {
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-xs font-medium">
-                        {new Intl.NumberFormat('fr-FR', {
-                          style: 'currency',
-                          currency: 'EUR',
-                          maximumFractionDigits: 0,
-                        }).format(Number(caution.montant))}
+                        {formatMontant(caution.montant)}
                       </p>
                     </div>
                   </div>

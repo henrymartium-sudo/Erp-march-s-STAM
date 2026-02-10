@@ -6,9 +6,9 @@ import { fr } from 'date-fns/locale'
 // ============================================================================
 
 /**
- * Formate un montant en dirhams marocains avec séparateurs de milliers
+ * Formate un montant en francs CFA avec séparateurs de milliers
  * @param montant - Le montant à formater (number, string ou Decimal)
- * @returns Le montant formaté avec "DH" (ex: "1 234 567,00 DH")
+ * @returns Le montant formaté avec "FCFA" (ex: "1 234 567 FCFA")
  */
 export function formatMontant(montant: number | string | any): string {
   let montantNum: number
@@ -25,24 +25,22 @@ export function formatMontant(montant: number | string | any): string {
   }
 
   if (isNaN(montantNum)) {
-    return '0,00 DH'
+    return '0 FCFA'
   }
 
-  return new Intl.NumberFormat('fr-MA', {
-    style: 'currency',
-    currency: 'MAD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-    .format(montantNum)
-    .replace('MAD', 'DH')
-    .trim()
+  // Formater le nombre sans devise, puis ajouter FCFA manuellement
+  const formattedNumber = new Intl.NumberFormat('fr-FR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(montantNum)
+
+  return `${formattedNumber} FCFA`
 }
 
 /**
  * Formate un montant sans devise (juste le nombre avec séparateurs)
  * @param montant - Le montant à formater (number, string ou Decimal)
- * @returns Le montant formaté sans devise (ex: "1 234 567,00")
+ * @returns Le montant formaté sans devise (ex: "1 234 567")
  */
 export function formatMontantSansDevise(montant: number | string | any): string {
   let montantNum: number
@@ -59,12 +57,12 @@ export function formatMontantSansDevise(montant: number | string | any): string 
   }
 
   if (isNaN(montantNum)) {
-    return '0,00'
+    return '0'
   }
 
   return new Intl.NumberFormat('fr-FR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(montantNum)
 }
 

@@ -70,7 +70,7 @@ export async function exportMarches(
       { header: 'Objet', key: 'objet', width: 40 },
       { header: 'Type', key: 'type', width: 15 },
       { header: 'Statut', key: 'statut', width: 25 },
-      { header: 'Montant (DH)', key: 'montant', width: 15 },
+      { header: 'Montant (FCFA)', key: 'montant', width: 15 },
       { header: 'Date Notification', key: 'dateNotification', width: 15 },
       {
         header: "Date Ordre Service",
@@ -182,7 +182,7 @@ export async function exportCautions(
       { header: 'Référence', key: 'reference', width: 20 },
       { header: 'Type', key: 'type', width: 20 },
       { header: 'Statut', key: 'statut', width: 15 },
-      { header: 'Montant (DH)', key: 'montant', width: 15 },
+      { header: 'Montant (FCFA)', key: 'montant', width: 15 },
       { header: 'Date Émission', key: 'dateEmission', width: 15 },
       { header: 'Date Échéance', key: 'dateEcheance', width: 15 },
       { header: 'Jours Restants', key: 'joursRestants', width: 12 },

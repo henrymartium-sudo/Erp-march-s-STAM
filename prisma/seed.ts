@@ -300,7 +300,7 @@ async function main() {
     prisma.caution.create({
       data: {
         reference: 'CAU-2024-001',
-        type: TypeCaution.PROVISOIRE,
+        type: TypeCaution.SOUMISSION,
         montant: 25000,
         dateEmission: new Date('2024-02-01'),
         dateEcheance: addDays(now, 45),
@@ -316,7 +316,7 @@ async function main() {
     prisma.caution.create({
       data: {
         reference: 'CAU-2024-002',
-        type: TypeCaution.DEFINITIVE,
+        type: TypeCaution.BONNE_EXECUTION,
         montant: 42000,
         dateEmission: new Date('2024-03-20'),
         dateEcheance: addDays(now, 25),
@@ -332,7 +332,7 @@ async function main() {
     prisma.caution.create({
       data: {
         reference: 'CAU-2023-015',
-        type: TypeCaution.AVANCE,
+        type: TypeCaution.AVANCE_DEMARRAGE,
         montant: 250000,
         dateEmission: new Date('2024-01-10'),
         dateEcheance: addDays(now, 12),

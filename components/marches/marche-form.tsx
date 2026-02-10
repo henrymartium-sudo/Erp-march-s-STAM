@@ -23,7 +23,9 @@ import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -312,7 +314,7 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
                 name="montant"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Montant (DH) *</FormLabel>
+                    <FormLabel>Montant (FCFA) *</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -351,7 +353,8 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
                           ))}
 
                         {/* Groupe Terminés */}
-                        <optgroup label="Terminés">
+                        <SelectGroup>
+                          <SelectLabel>Terminés</SelectLabel>
                           {['RESILIE', 'ANNULE', 'INFRUCTUEUX']
                             .filter(value => STATUT_LABELS[value as keyof typeof STATUT_LABELS])
                             .map((value) => (
@@ -359,7 +362,7 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
                                 {STATUT_LABELS[value as keyof typeof STATUT_LABELS]}
                               </SelectItem>
                             ))}
-                        </optgroup>
+                        </SelectGroup>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -954,7 +957,7 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
                       name="montantOffreConcurrent"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Montant de l'offre du concurrent (DH)</FormLabel>
+                          <FormLabel>Montant de l'offre du concurrent (FCFA)</FormLabel>
                           <FormControl>
                             <Input
                               type="number"

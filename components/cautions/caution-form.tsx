@@ -198,7 +198,11 @@ export function CautionForm({
               <FormItem>
                 <FormLabel>Référence *</FormLabel>
                 <FormControl>
-                  <Input placeholder="Ex: CAU-2024-001" {...field} />
+                  <Input
+                    placeholder="Ex: CAU-2024-001"
+                    {...field}
+                    value={field.value || ''}
+                  />
                 </FormControl>
                 <FormDescription>
                   Numéro unique de la caution bancaire

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CautionCard, CautionTimeline } from "@/components/cautions";
 import { getCautionsByMarche } from "@/lib/actions/cautions";
 import type { SerializedCaution } from "@/types/serialized";
+import { formatMontant } from "@/lib/utils/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -159,11 +160,7 @@ export function MarcheCautionsSection({
               <CardHeader className="pb-2">
                 <CardDescription>Montant Total</CardDescription>
                 <CardTitle className="text-2xl">
-                  {new Intl.NumberFormat("fr-FR", {
-                    style: "currency",
-                    currency: "EUR",
-                    maximumFractionDigits: 0,
-                  }).format(montantTotal)}
+                  {formatMontant(montantTotal)}
                 </CardTitle>
               </CardHeader>
             </Card>

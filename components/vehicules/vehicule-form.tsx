@@ -218,23 +218,18 @@ export function VehiculeForm({ vehicule, marches: initialMarches, onSuccess }: V
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Marque *</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner une marque" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {MARQUES_VEHICULES.map((marque) => (
-                          <SelectItem key={marque} value={marque}>
-                            {marque}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        list="marques-datalist"
+                        placeholder="Saisir ou sélectionner une marque"
+                      />
+                    </FormControl>
+                    <datalist id="marques-datalist">
+                      {MARQUES_VEHICULES.map((marque) => (
+                        <option key={marque} value={marque} />
+                      ))}
+                    </datalist>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -60,9 +60,10 @@ export default async function DashboardPage() {
         montantTotal: 0,
         montantActif: 0,
         parType: {
-          PROVISOIRE: 0,
-          DEFINITIVE: 0,
-          AVANCE: 0,
+          SOUMISSION: 0,
+          CAPACITE_FINANCIERE: 0,
+          BONNE_EXECUTION: 0,
+          AVANCE_DEMARRAGE: 0,
           RETENUE_GARANTIE: 0,
         },
         prochesEcheance: 0,
