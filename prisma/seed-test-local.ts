@@ -156,7 +156,7 @@ async function main() {
     const cautions = [
       {
         reference: 'CAU-TEST-001',
-        type: TypeCaution.PROVISOIRE,
+        type: TypeCaution.SOUMISSION,
         montant: 12500,
         dateEmission: new Date('2026-01-20'),
         dateEcheance: new Date('2026-04-30'),
@@ -168,7 +168,7 @@ async function main() {
       },
       {
         reference: 'CAU-TEST-002',
-        type: TypeCaution.DEFINITIVE,
+        type: TypeCaution.BONNE_EXECUTION,
         montant: 17500,
         dateEmission: new Date('2026-01-15'),
         dateEcheance: new Date('2027-02-01'),

@@ -106,3 +106,87 @@ export interface SerializedVehicule {
     statut: string
   } | null
 }
+
+// ============================================================================
+// FONCTIONS DE SÉRIALISATION
+// ============================================================================
+
+/**
+ * Convertit un objet Prisma.Decimal en number
+ */
+export function serializeDecimal(decimal: any): number {
+  if (!decimal) return 0
+  if (typeof decimal === 'number') return decimal
+  if (typeof decimal.toNumber === 'function') return decimal.toNumber()
+  return Number(decimal)
+}
+
+/**
+ * Convertit une Date en string ISO
+ */
+export function serializeDate(date: any): string | null {
+  if (!date) return null
+  if (date instanceof Date) return date.toISOString()
+  if (typeof date === 'string') return new Date(date).toISOString()
+  return null
+}
+
+/**
+ * Sérialise un marché Prisma vers SerializedMarche
+ */
+export function serializeMarche(marche: any): SerializedMarche {
+  return {
+    ...marche,
+    montant: serializeDecimal(marche.montant),
+    montantOffreConcurrent: marche.montantOffreConcurrent ? serializeDecimal(marche.montantOffreConcurrent) : null,
+    dateNotification: serializeDate(marche.dateNotification) || '',
+    dateOrdreService: serializeDate(marche.dateOrdreService),
+    dateFinPrevue: serializeDate(marche.dateFinPrevue),
+    dateReception: serializeDate(marche.dateReception),
+    createdAt: serializeDate(marche.createdAt) || '',
+    updatedAt: serializeDate(marche.updatedAt) || '',
+    dateIdentification: serializeDate(marche.dateIdentification),
+    dateDepotPrevue: serializeDate(marche.dateDepotPrevue),
+    dateDepotOffre: serializeDate(marche.dateDepotOffre),
+    dateAttributionProvisoire: serializeDate(marche.dateAttributionProvisoire),
+    dateAttributionDefinitive: serializeDate(marche.dateAttributionDefinitive),
+    dateLivraisonPrevue: serializeDate(marche.dateLivraisonPrevue),
+    dateReceptionProvisoirePrevue: serializeDate(marche.dateReceptionProvisoirePrevue),
+    dateClotureAdministrative: serializeDate(marche.dateClotureAdministrative),
+    dateResiliation: serializeDate(marche.dateResiliation),
+    dateAnnulation: serializeDate(marche.dateAnnulation),
+    dateInfructueux: serializeDate(marche.dateInfructueux),
+  }
+}
+
+/**
+ * Sérialise une caution Prisma vers SerializedCaution
+ */
+export function serializeCaution(caution: any): SerializedCaution {
+  return {
+    ...caution,
+    montant: serializeDecimal(caution.montant),
+    dateEmission: serializeDate(caution.dateEmission) || '',
+    dateEcheance: serializeDate(caution.dateEcheance) || '',
+    createdAt: serializeDate(caution.createdAt) || '',
+    updatedAt: serializeDate(caution.updatedAt) || '',
+    marche: caution.marche ? {
+      ...caution.marche,
+      montant: serializeDecimal(caution.marche.montant),
+    } : undefined,
+  }
+}
+
+/**
+ * Sérialise un véhicule Prisma vers SerializedVehicule
+ */
+export function serializeVehicule(vehicule: any): SerializedVehicule {
+  return {
+    ...vehicule,
+    dateLivraison: serializeDate(vehicule.dateLivraison),
+    dateReceptionProvisoire: serializeDate(vehicule.dateReceptionProvisoire),
+    dateReceptionDefinitive: serializeDate(vehicule.dateReceptionDefinitive),
+    createdAt: serializeDate(vehicule.createdAt) || '',
+    updatedAt: serializeDate(vehicule.updatedAt) || '',
+  }
+}

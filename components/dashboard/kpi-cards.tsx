@@ -19,11 +19,10 @@ interface KPICardsProps {
 
 export function KPICards({ marchesStats, cautionsStats, vehiculesStats }: KPICardsProps) {
   const formatMontant = (montant: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
+    const formatted = new Intl.NumberFormat('fr-FR', {
       maximumFractionDigits: 0,
     }).format(montant)
+    return `${formatted} FCFA`
   }
 
   return (

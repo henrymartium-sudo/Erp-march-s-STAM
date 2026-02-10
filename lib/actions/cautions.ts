@@ -523,9 +523,10 @@ export async function getCautionsStats(): Promise<ActionResult<CautionsStats>> {
 
     // Initialiser les compteurs par type
     const parType: Record<TypeCaution, number> = {
-      PROVISOIRE: 0,
-      DEFINITIVE: 0,
-      AVANCE: 0,
+      SOUMISSION: 0,
+      CAPACITE_FINANCIERE: 0,
+      BONNE_EXECUTION: 0,
+      AVANCE_DEMARRAGE: 0,
       RETENUE_GARANTIE: 0,
     }
 

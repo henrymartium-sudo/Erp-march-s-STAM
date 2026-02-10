@@ -29,6 +29,7 @@ export const STATUT_VEHICULE_COLORS: Record<
 
 /**
  * Liste des marques de véhicules les plus courantes (pour autocomplete)
+ * Note: La saisie est libre, cette liste sert uniquement de suggestions
  */
 export const MARQUES_VEHICULES = [
   "Renault",
@@ -49,8 +50,7 @@ export const MARQUES_VEHICULES = [
   "Seat",
   "Skoda",
   "Volvo",
-  "Autre",
-] as const;
+];
 
 /**
  * Années disponibles pour les véhicules (dernières 10 années + année en cours)

@@ -6,6 +6,7 @@ import { AlertCircle, Calendar, Shield, FileText, ChevronRight } from 'lucide-re
 import { getCautions } from '@/lib/actions/cautions'
 import { getAllMarches } from '@/lib/actions/marches'
 import { formatDate } from '@/lib/utils'
+import { formatMontant } from '@/lib/utils/format'
 import { TYPE_CAUTION_LABELS } from '@/lib/constants/caution'
 
 export async function AlertsSection() {
@@ -104,11 +105,7 @@ export async function AlertsSection() {
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-semibold">
-                          {new Intl.NumberFormat('fr-FR', {
-                            style: 'currency',
-                            currency: 'EUR',
-                            maximumFractionDigits: 0,
-                          }).format(Number(caution.montant))}
+                          {formatMontant(caution.montant)}
                         </p>
                       </div>
                     </div>
@@ -169,11 +166,7 @@ export async function AlertsSection() {
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-semibold">
-                          {new Intl.NumberFormat('fr-FR', {
-                            style: 'currency',
-                            currency: 'EUR',
-                            maximumFractionDigits: 0,
-                          }).format(Number(marche.montant || 0))}
+                          {formatMontant(marche.montant || 0)}
                         </p>
                       </div>
                     </div>
