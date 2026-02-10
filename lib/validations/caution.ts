@@ -66,8 +66,8 @@ const baseCautionSchema = z.object({
     .optional()
     .nullable(),
 
-  // Relation avec le marché
-  marcheId: z.string().cuid('ID de marché invalide'),
+  // Relation avec le marché (optionnelle - une caution peut être créée sans marché)
+  marcheId: z.string().cuid('ID de marché invalide').optional().or(z.literal('')),
 })
 
 // Schéma avec refinements pour la validation complète
