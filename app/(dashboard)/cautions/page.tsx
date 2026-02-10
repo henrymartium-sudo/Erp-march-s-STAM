@@ -11,6 +11,7 @@ import { CautionsContent } from "./_components/cautions-content";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SerializedCaution } from "@/types/serialized";
 import { serializeMarche } from "@/lib/utils/serialize";
+import { formatMontant } from "@/lib/utils/format";
 
 export const dynamic = 'force-dynamic'
 
@@ -161,11 +162,7 @@ export default async function CautionsPage({ searchParams }: CautionsPageProps) 
           <CardHeader className="pb-2">
             <CardDescription>Montant Total Actif</CardDescription>
             <CardTitle className="text-2xl">
-              {new Intl.NumberFormat("fr-FR", {
-                style: "currency",
-                currency: "EUR",
-                maximumFractionDigits: 0,
-              }).format(montantTotalActif)}
+              {formatMontant(montantTotalActif)}
             </CardTitle>
           </CardHeader>
         </Card>
