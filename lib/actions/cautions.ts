@@ -38,29 +38,48 @@ export async function createCaution(data: unknown): Promise<ActionResult<Caution
     // 2. Validation avec Zod
     const validatedData = createCautionServerSchema.parse(data)
 
-    // 3. Vérification que le marché existe
-    const marche = await prisma.marche.findUnique({
-      where: { id: validatedData.marcheId },
-    })
+    // 3. Vérification que le marché existe (si marcheId est fourni)
+    if (validatedData.marcheId && validatedData.marcheId !== '') {
+      const marche = await prisma.marche.findUnique({
+        where: { id: validatedData.marcheId },
+      })
 
-    if (!marche) {
-      return {
-        success: false,
-        error: 'Le marché associé n\'existe pas',
+      if (!marche) {
+        return {
+          success: false,
+          error: 'Le marché associé n\'existe pas',
+        }
       }
     }
 
     // 4. Création dans Prisma avec userId
+    // Si marcheId est vide, on ne l'envoie pas à Prisma (undefined)
+    const cautionData: any = {
+      reference: validatedData.reference,
+      type: validatedData.type,
+      montant: validatedData.montant,
+      dateEmission: validatedData.dateEmission,
+      dateEcheance: validatedData.dateEcheance,
+      statut: validatedData.statut,
+      banqueNom: validatedData.banqueNom,
+      banqueContact: validatedData.banqueContact,
+      userId: session.user.id,
+    }
+
+    // N'ajouter marcheId que s'il est fourni
+    if (validatedData.marcheId && validatedData.marcheId !== '') {
+      cautionData.marcheId = validatedData.marcheId
+    }
+
     const caution = await prisma.caution.create({
-      data: {
-        ...validatedData,
-        userId: session.user.id,
-      },
+      data: cautionData,
     })
 
     // 5. Revalidation du cache Next.js
     revalidatePath('/cautions')
-    revalidatePath(`/marches/${validatedData.marcheId}`)
+    if (validatedData.marcheId && validatedData.marcheId !== '') {
+      revalidatePath(`/marches/${validatedData.marcheId}`)
+    }
 
     // 6. Retour succès
     return { success: true, data: caution }
