@@ -200,15 +200,9 @@ export function getDateEcheanceSuggeree(type: TypeCaution, dateEmission: Date): 
 // ============================================================================
 
 /**
- * Formate un montant en euros
+ * Formate un montant en FCFA
+ * @deprecated Utiliser formatMontant() de lib/utils/format.ts à la place
  */
-export function formatMontant(montant: number | string): string {
-  const num = typeof montant === 'string' ? parseFloat(montant) : montant
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(num)
-}
 
 /**
  * Formate une date en français
