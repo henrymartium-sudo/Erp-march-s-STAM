@@ -12,6 +12,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { SerializedCaution } from "@/types/serialized";
 import { serializeMarche } from "@/lib/utils/serialize";
 import { formatMontant } from "@/lib/utils/format";
+import { DataPagination } from "@/components/ui/data-pagination";
+import { shouldShowPagination } from "@/lib/utils/pagination";
 
 export const dynamic = 'force-dynamic'
 
@@ -60,12 +62,16 @@ export default async function CautionsPage({ searchParams }: CautionsPageProps) 
   const session = await requireAuth();
   const params = await searchParams;
 
-  // Récupérer les cautions avec filtres
+  // Parse page number
+  const currentPage = Number(params.page) || 1;
+
+  // Récupérer les cautions avec filtres et pagination
   const result = await getCautions({
     type: params.type,
     statut: params.statut,
     niveauAlerte: params.niveauAlerte,
     search: params.search,
+    page: currentPage,
   });
 
   if (!result.success) {
@@ -83,13 +89,12 @@ export default async function CautionsPage({ searchParams }: CautionsPageProps) 
     );
   }
 
-  const { cautions: rawCautions, total } = result.data;
+  const { data: rawCautions, pagination } = result.data;
 
   // Sérialiser les cautions pour les Client Components
-  // Les Decimal Prisma ne sont PAS sérialisables par RSC
   const cautions = rawCautions.map(serializeCaution);
 
-  // Calculs statistiques côté serveur (avant sérialisation, on utilise les données sérialisées)
+  // Calculs statistiques côté serveur
   const activeCautions = cautions.filter((c) => c.statut === "ACTIVE");
   const criticalCount = cautions.filter((c) => {
     if (c.statut !== "ACTIVE" || !c.dateEcheance) return false;
@@ -175,6 +180,11 @@ export default async function CautionsPage({ searchParams }: CautionsPageProps) 
           canWrite={session.user?.role === "ADMIN" || session.user?.role === "AVANCE"}
         />
       </Suspense>
+
+      {/* Pagination */}
+      {shouldShowPagination(pagination.totalItems) && (
+        <DataPagination pagination={pagination} />
+      )}
     </div>
   );
 }
