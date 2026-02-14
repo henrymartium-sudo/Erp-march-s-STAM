@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Vehicule, Marche, StatutVehicule } from '@prisma/client'
 import { createVehiculeSchema, type CreateVehiculeInput } from '@/lib/validations/vehicule'
 import { createVehicule, updateVehicule, checkImmatriculationExists } from '@/lib/actions/vehicules'
-import { getAllMarches } from '@/lib/actions/marches'
+import { getAllMarchesArray } from '@/lib/actions/marches'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -55,7 +55,7 @@ export function VehiculeForm({ vehicule, marches: initialMarches, onSuccess }: V
   // Charger les marchés si non fournis
   useEffect(() => {
     if (!initialMarches) {
-      getAllMarches().then((data) => {
+      getAllMarchesArray().then((data) => {
         setMarches(data)
       })
     }

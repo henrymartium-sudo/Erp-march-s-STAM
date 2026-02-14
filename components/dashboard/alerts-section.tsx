@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { AlertCircle, Calendar, Shield, FileText, ChevronRight } from 'lucide-react'
 import { getCautions } from '@/lib/actions/cautions'
-import { getAllMarches } from '@/lib/actions/marches'
+import { getAllMarchesArray } from '@/lib/actions/marches'
 import { formatDate } from '@/lib/utils'
 import { formatMontant } from '@/lib/utils/format'
 import { TYPE_CAUTION_LABELS } from '@/lib/constants/caution'
@@ -15,7 +15,7 @@ export async function AlertsSection() {
   const cautions = cautionsResult.success ? cautionsResult.data.cautions : []
 
   // Récupérer tous les marchés
-  const marches = await getAllMarches()
+  const marches = await getAllMarchesArray()
 
   const now = new Date()
   const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)

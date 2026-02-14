@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { FileText, Shield, Car, Clock } from 'lucide-react'
-import { getAllMarches } from '@/lib/actions/marches'
+import { getAllMarchesArray } from '@/lib/actions/marches'
 import { getCautions } from '@/lib/actions/cautions'
 import { getVehicules } from '@/lib/actions/vehicules'
 import { formatDate } from '@/lib/utils'
@@ -14,7 +14,7 @@ import { STATUT_VEHICULE_LABELS } from '@/lib/constants/vehicule'
 export async function RecentActivity() {
   // Récupérer les dernières données
   const [marches, cautionsResult, vehiculesResult] = await Promise.all([
-    getAllMarches({ limit: 5 }),
+    getAllMarchesArray({ limit: 5 }),
     getCautions(),
     getVehicules({ limit: 5 }),
   ])
