@@ -17,6 +17,8 @@ import type { ActionResult } from '@/types'
 import type { Vehicule, StatutVehicule } from '@prisma/client'
 import { Prisma } from '@prisma/client'
 import { ZodError } from 'zod'
+import type { PaginatedResponse } from '@/types/pagination'
+import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
 
 // ============================================================================
 // Types pour les résultats de lecture
@@ -29,13 +31,6 @@ export interface VehiculeWithRelations extends Vehicule {
     objet: string
     statut: string
   } | null
-}
-
-export interface VehiculesListResult {
-  vehicules: VehiculeWithRelations[]
-  total: number
-  page: number
-  totalPages: number
 }
 
 // ============================================================================
@@ -310,7 +305,7 @@ export async function getVehiculeById(
 
 export async function getVehicules(
   filters: FilterVehiculesInput = {}
-): Promise<VehiculesListResult> {
+): Promise<ActionResult<PaginatedResponse<VehiculeWithRelations>>> {
   try {
     // Vérification d'authentification (lecture accessible à tous les utilisateurs connectés)
     await requireAuth()
@@ -323,11 +318,14 @@ export async function getVehicules(
       statut,
       marcheId,
       annee,
-      page = 1,
-      limit = 50,
+      page,
+      limit,
       sortBy = 'createdAt',
       sortOrder = 'desc',
     } = validatedFilters
+
+    // Calcul skip/take pour Prisma
+    const { skip, take } = getPrismaSkipTake({ page, limit })
 
     // Construction de la clause WHERE
     const where: Prisma.VehiculeWhereInput = {
@@ -345,48 +343,72 @@ export async function getVehicules(
       ...(annee && { annee }),
     }
 
-    // Compte total pour pagination
-    const total = await prisma.vehicule.count({ where })
-
-    // Calcul pagination
-    const skip = (page - 1) * limit
-    const totalPages = Math.ceil(total / limit)
-
-    // Requête avec relations
-    const vehicules = await prisma.vehicule.findMany({
-      where,
-      include: {
-        marche: {
-          select: {
-            id: true,
-            numero: true,
-            objet: true,
-            statut: true,
+    // Exécution parallèle : données + count
+    const [vehicules, total] = await Promise.all([
+      prisma.vehicule.findMany({
+        where,
+        include: {
+          marche: {
+            select: {
+              id: true,
+              numero: true,
+              objet: true,
+              statut: true,
+            },
           },
         },
-      },
-      orderBy: {
-        [sortBy]: sortOrder,
-      },
-      skip,
-      take: limit,
-    })
+        orderBy: {
+          [sortBy]: sortOrder,
+        },
+        skip,
+        take,
+      }),
+      prisma.vehicule.count({ where }),
+    ])
+
+    // Calcul métadonnées pagination
+    const pagination = calculatePagination(total, page, limit)
 
     return {
-      vehicules,
-      total,
-      page,
-      totalPages,
+      success: true,
+      data: {
+        data: vehicules,
+        pagination,
+      },
     }
   } catch (error) {
+    // Gestion des erreurs de permissions
+    if (error instanceof Error && error.message.includes('Non authentifié')) {
+      return { success: false, error: 'Vous devez être connecté pour consulter les véhicules' }
+    }
+
+    // Gestion des erreurs Zod
+    if (error instanceof ZodError) {
+      const errorMessages = error.issues.map((e) => `${e.path.join('.')}: ${e.message}`)
+      return {
+        success: false,
+        error: `Erreur de validation des filtres : ${errorMessages.join(', ')}`,
+      }
+    }
+
+    // Erreur générique
     console.error('Erreur lors de la récupération des véhicules:', error)
     return {
-      vehicules: [],
-      total: 0,
-      page: 1,
-      totalPages: 0,
+      success: false,
+      error: 'Une erreur inattendue est survenue lors de la récupération des véhicules',
     }
   }
+}
+
+/**
+ * Fonction wrapper pour les composants qui veulent juste un tableau de véhicules
+ * (sans pagination) - utilisée par Dashboard, Forms, etc.
+ */
+export async function getVehiculesArray(
+  filters: FilterVehiculesInput = {}
+): Promise<VehiculeWithRelations[]> {
+  const result = await getVehicules({ ...filters, limit: 10000 })
+  return result.success ? result.data.data : []
 }
 
 // ============================================================================
