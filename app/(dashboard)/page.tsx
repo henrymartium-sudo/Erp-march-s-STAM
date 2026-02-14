@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth/auth.config'
 import { getMarchesStats } from '@/lib/actions/marches'
 import { getCautionsStats } from '@/lib/actions/cautions'
 import { getVehiculesStats } from '@/lib/actions/vehicules'
+import { getStatutDistribution } from '@/lib/dashboard/stats'
 import { KPICards } from '@/components/dashboard/kpi-cards'
 import { StatusCharts } from '@/components/dashboard/status-charts'
 import { AlertsSection } from '@/components/dashboard/alerts-section'
@@ -18,11 +19,12 @@ export default async function DashboardPage() {
   }
 
   // Récupérer toutes les statistiques en parallèle
-  const [marchesStatsResult, cautionsStatsResult, vehiculesStatsResult] =
+  const [marchesStatsResult, cautionsStatsResult, vehiculesStatsResult, statutDistribution] =
     await Promise.all([
       getMarchesStats(),
       getCautionsStats(),
       getVehiculesStats(),
+      getStatutDistribution(),
     ])
 
   // Gérer les erreurs de récupération
@@ -114,6 +116,7 @@ export default async function DashboardPage() {
         marchesStats={marchesStats}
         cautionsStats={cautionsStats}
         vehiculesStats={vehiculesStats}
+        statutDistribution={statutDistribution}
       />
 
       {/* Activité récente */}
