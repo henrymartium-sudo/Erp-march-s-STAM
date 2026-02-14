@@ -19,6 +19,16 @@ Effective dashboard planning includes:
 - Phase-based implementation plan with clear steps
 - Responsive design specifications (mobile, tablet, desktop)
 
+### Dashboard Implementation Pattern (2026-02-14)
+When implementing dashboard with charts (Recharts):
+- Use shadcn/ui chart components for optimal integration
+- Separate backend (Server Components) from frontend (Client Components)
+- Backend: Prisma aggregations (groupBy, count) in `lib/dashboard/stats.ts`
+- Frontend: Client components in `components/dashboard/*.tsx`
+- Create `lib/dashboard/types.ts` for shared TypeScript interfaces
+- Test responsive design thoroughly before deployment
+- Document time overhead (+20% for documentation and testing)
+
 ## Project-Specific Context Requirements
 
 ### Always Capture for This Project
@@ -33,6 +43,8 @@ Effective dashboard planning includes:
 - `MEMORY.md` (in `.claude\projects\...`) - Global project memory
 - `PLAN_*.md` - Implementation plans for features
 - `GUIDE_TEST_UTILISATEURS.md` - Test credentials and validation
+- `SESSION_SNAPSHOT_*.md` - Complete state snapshots at major milestones
+- `SESSION_DASHBOARD_*.md` - Detailed session logs for specific features
 
 ## Common Resumption Challenges
 
@@ -75,22 +87,49 @@ Effective dashboard planning includes:
 - Next immediate step: [actionable task]
 ```
 
+### Deployment Snapshot Structure
+```markdown
+## DEPLOYMENT COMPLETED
+- Feature: [name and scope]
+- Commits: [list with hashes and messages]
+- Merge strategy: [fast-forward, squash, rebase]
+- Build status: [time, size, errors]
+- Production URL: [verify accessibility]
+- Performance: [First Load JS, bundle size delta]
+- Files modified: [exact paths and roles]
+- Next steps: [user testing, monitoring, optional features]
+```
+
 ## Notes on This Project
 
-- MVP is 98% complete, nearing production readiness
+- MVP is 99% complete, production-ready with Dashboard enrichi deployed
 - Real production data exists (50 marchés, 7 cautions)
-- Next phase focuses on Dashboard enrichment
+- Dashboard enrichi Phases 1-3 deployed and functional in production
 - Always verify against real data counts in production
 - Planning documents are valuable artifacts to preserve
+- Vercel deployments are automatic from `main` branch
+- Fast-forward merge preferred for clean git history
 
 ## Session History
 
-### 2026-02-14: Migration Excel + Dashboard Planning
+### 2026-02-14 Morning: Migration Excel + Dashboard Planning
 - **Completed**: Excel → PostgreSQL migration (50 marchés, 7 cautions)
 - **Schema fixes**: Float → Decimal for amounts, optional relations
 - **Cleanup**: Removed temporary scripts and dependencies (xlsx, unpdf)
 - **Artifact**: PLAN_DASHBOARD_ENRICHI.md created (8h30 roadmap)
 - **Snapshot**: SESSION_SNAPSHOT_2026-02-14.md
+
+### 2026-02-14 Afternoon: Dashboard Enrichi Implementation + Deployment
+- **Completed**: Phases 1-3 Dashboard (Setup + Status Charts + Montants Chart)
+- **Stack**: Recharts 2.15.0 + shadcn/ui chart components
+- **Components**: `status-charts.tsx` (164L), `montants-chart.tsx` (158L)
+- **Backend**: `lib/dashboard/stats.ts` (getStatusStats, getMontantsMensuels)
+- **Merge**: feature/dashboard-enrichi → main (fast-forward)
+- **Deploy**: Vercel SUCCESS (67s build, 224 kB First Load JS)
+- **Artifacts**: SESSION_DASHBOARD_2026-02-14.md (detailed log)
+- **Snapshot**: SESSION_SNAPSHOT_DEPLOYMENT_2026-02-14.md
+- **Time**: 4h15 (vs 3h30 estimated, +20% overhead documentation/testing)
+- **Status**: ✅ PRODUCTION READY at https://erp-marches-stam.vercel.app
 
 ## Links to Detailed Topics
 
