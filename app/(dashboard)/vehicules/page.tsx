@@ -1,10 +1,13 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { VehiculeList } from '@/components/vehicules/vehicule-list'
 import { VehiculeFilters } from '@/components/vehicules/vehicule-filters'
 import { ExportExcelButton } from '@/components/exports/export-excel-button'
+import { DataPagination } from '@/components/ui/data-pagination'
 import { getVehicules } from '@/lib/actions/vehicules'
 import { serializeVehicule } from '@/lib/utils/serialize'
+import { shouldShowPagination } from '@/lib/utils/pagination'
 import { Plus } from 'lucide-react'
 import type { StatutVehicule } from '@prisma/client'
 
@@ -15,6 +18,7 @@ interface VehiculesPageProps {
     search?: string
     statut?: string
     marque?: string
+    page?: string
   }>
 }
 
@@ -22,19 +26,37 @@ export default async function VehiculesPage({ searchParams }: VehiculesPageProps
   // Await searchParams (Next.js 15)
   const params = await searchParams
 
-  // Récupérer les véhicules avec filtres
+  // Parse page number
+  const currentPage = Number(params.page) || 1
+
+  // Récupérer les véhicules avec filtres et pagination
   const result = await getVehicules({
     search: params.search,
     statut: params.statut as StatutVehicule | undefined,
     marque: params.marque,
+    page: currentPage,
   })
 
-  // Sérialiser les véhicules pour le passage aux Client Components
-  const vehicules = (result.vehicules || []).map(serializeVehicule)
+  // Gérer les erreurs
+  if (!result.success) {
+    return (
+      <div className="container mx-auto py-8">
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Erreur</CardTitle>
+            <CardDescription>
+              Impossible de charger les véhicules : {result.error}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
+  }
 
-  // Compter le nombre total sans filtres
-  const totalResult = await getVehicules({})
-  const totalCount = totalResult.total || 0
+  const { data: rawVehicules, pagination } = result.data
+
+  // Sérialiser les véhicules pour le passage aux Client Components
+  const vehicules = rawVehicules.map(serializeVehicule)
 
   return (
     <div className="space-y-6">
@@ -65,12 +87,17 @@ export default async function VehiculesPage({ searchParams }: VehiculesPageProps
 
       {/* Filtres */}
       <VehiculeFilters
-        totalCount={totalCount}
+        totalCount={pagination.totalItems}
         filteredCount={vehicules.length}
       />
 
       {/* Liste des véhicules */}
       <VehiculeList vehicules={vehicules} />
+
+      {/* Pagination */}
+      {shouldShowPagination(pagination.totalItems) && (
+        <DataPagination pagination={pagination} />
+      )}
     </div>
   )
 }

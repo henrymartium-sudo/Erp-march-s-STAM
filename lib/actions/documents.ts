@@ -14,6 +14,8 @@ import { generateStoragePath, generateVersionedFileName } from '@/lib/utils/docu
 import { revalidatePath } from 'next/cache'
 import type { Document, TypeDocument, Prisma } from '@prisma/client'
 import { z } from 'zod'
+import type { PaginatedResponse } from '@/types/pagination'
+import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
 
 /**
  * TYPE DE RÉSULTAT
@@ -298,11 +300,11 @@ export async function getDocumentById(
 }
 
 /**
- * RÉCUPÉRER TOUS LES DOCUMENTS (avec filtres)
+ * RÉCUPÉRER TOUS LES DOCUMENTS (avec filtres et pagination)
  */
 export async function getAllDocuments(
   filters?: Partial<DocumentFilters>
-): Promise<ActionResult<{ documents: Document[]; totalCount: number }>> {
+): Promise<ActionResult<PaginatedResponse<Document>>> {
   try {
     await requireAuth()
 
@@ -318,9 +320,12 @@ export async function getAllDocuments(
       search,
       dateDebut,
       dateFin,
-      page = 1,
-      pageSize = 50,
+      page,
+      limit,
     } = validatedFilters
+
+    // Calcul skip/take pour Prisma
+    const { skip, take } = getPrismaSkipTake({ page, limit })
 
     // Construction du WHERE dynamique
     const where: Prisma.DocumentWhereInput = {
@@ -348,7 +353,7 @@ export async function getAllDocuments(
     }
 
     // Exécution des requêtes en parallèle
-    const [documents, totalCount] = await Promise.all([
+    const [documents, total] = await Promise.all([
       prisma.document.findMany({
         where,
         include: {
@@ -360,17 +365,20 @@ export async function getAllDocuments(
           },
         },
         orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip,
+        take,
       }),
       prisma.document.count({ where }),
     ])
 
+    // Calcul métadonnées pagination
+    const pagination = calculatePagination(total, page, limit)
+
     return {
       success: true,
       data: {
-        documents,
-        totalCount,
+        data: documents,
+        pagination,
       },
     }
   } catch (error) {
@@ -380,6 +388,17 @@ export async function getAllDocuments(
       error: error instanceof Error ? error.message : 'Erreur serveur',
     }
   }
+}
+
+/**
+ * Fonction wrapper pour les composants qui veulent juste un tableau de documents
+ * (sans pagination) - utilisée par Dashboard, Forms, etc.
+ */
+export async function getAllDocumentsArray(
+  filters?: Partial<DocumentFilters>
+): Promise<Document[]> {
+  const result = await getAllDocuments(filters ? { ...filters, limit: 10000 } : { limit: 10000 })
+  return result.success ? result.data.data : []
 }
 
 /**

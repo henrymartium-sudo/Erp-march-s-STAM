@@ -4,24 +4,25 @@ import { Badge } from '@/components/ui/badge'
 import { FileText, Shield, Car, Clock } from 'lucide-react'
 import { getAllMarchesArray } from '@/lib/actions/marches'
 import { getCautionsArray } from '@/lib/actions/cautions'
-import { getVehicules } from '@/lib/actions/vehicules'
+import { getVehiculesArray } from '@/lib/actions/vehicules'
 import { formatDate } from '@/lib/utils'
 import { formatMontant } from '@/lib/utils/format'
 import { STATUT_MARCHE_LABELS } from '@/lib/constants/marche'
 import { TYPE_CAUTION_LABELS } from '@/lib/constants/caution'
 import { STATUT_VEHICULE_LABELS } from '@/lib/constants/vehicule'
+import type { StatutVehicule } from '@prisma/client'
 
 export async function RecentActivity() {
   // Récupérer les dernières données
-  const [marches, cautionsAll, vehiculesResult] = await Promise.all([
+  const [marches, cautionsAll, vehiculesAll] = await Promise.all([
     getAllMarchesArray({ limit: 5 }),
     getCautionsArray(),
-    getVehicules({ limit: 5 }),
+    getVehiculesArray({ limit: 5 }),
   ])
 
   const cautions = cautionsAll.slice(0, 5)
 
-  const vehicules = vehiculesResult.vehicules || []
+  const vehicules = vehiculesAll.slice(0, 5)
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

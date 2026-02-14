@@ -1,26 +1,62 @@
-import { Suspense } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { DataPagination } from '@/components/ui/data-pagination'
 import { Plus, FileText } from 'lucide-react'
 import { requireAuth } from '@/lib/utils/permissions'
+import { getAllDocuments } from '@/lib/actions/documents'
+import { shouldShowPagination } from '@/lib/utils/pagination'
 import { DocumentsContent } from './_components/documents-content'
-import { Skeleton } from '@/components/ui/skeleton'
+import type { TypeDocument, PhaseMarche } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 
-/**
- * Page de liste des documents
- */
-export default async function DocumentsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
-}) {
+interface DocumentsPageProps {
+  searchParams: Promise<{
+    type?: string
+    phase?: string
+    marcheId?: string
+    search?: string
+    page?: string
+  }>
+}
+
+export default async function DocumentsPage({ searchParams }: DocumentsPageProps) {
   // Vérifier l'authentification
   await requireAuth()
 
-  // Await searchParams (Next.js 15 requirement)
+  // Await searchParams (Next.js 15)
   const params = await searchParams
+
+  // Parse page number
+  const currentPage = Number(params.page) || 1
+
+  // Récupérer les documents avec filtres et pagination
+  const result = await getAllDocuments({
+    type: params.type as TypeDocument | undefined,
+    phase: params.phase as PhaseMarche | undefined,
+    marcheId: params.marcheId,
+    search: params.search,
+    page: currentPage,
+  })
+
+  // Gérer les erreurs
+  if (!result.success) {
+    return (
+      <div className="container mx-auto py-8">
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Erreur</CardTitle>
+            <CardDescription>
+              Impossible de charger les documents : {result.error}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
+  }
+
+  const { data: documents, pagination } = result.data
 
   return (
     <div className="space-y-6">
@@ -43,37 +79,13 @@ export default async function DocumentsPage({
         </Link>
       </div>
 
-      {/* Contenu avec Suspense */}
-      <Suspense fallback={<DocumentsPageSkeleton />}>
-        <DocumentsContent searchParams={params} />
-      </Suspense>
-    </div>
-  )
-}
+      {/* Contenu */}
+      <DocumentsContent documents={documents} />
 
-/**
- * Skeleton de chargement
- */
-function DocumentsPageSkeleton() {
-  return (
-    <div className="space-y-6">
-      {/* Filtres skeleton */}
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-full" />
-        <div className="grid grid-cols-4 gap-4">
-          <Skeleton className="h-10" />
-          <Skeleton className="h-10" />
-          <Skeleton className="h-10" />
-          <Skeleton className="h-10" />
-        </div>
-      </div>
-
-      {/* Table skeleton */}
-      <div className="border rounded-lg p-4 space-y-4">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <Skeleton key={i} className="h-16 w-full" />
-        ))}
-      </div>
+      {/* Pagination */}
+      {shouldShowPagination(pagination.totalItems) && (
+        <DataPagination pagination={pagination} />
+      )}
     </div>
   )
 }

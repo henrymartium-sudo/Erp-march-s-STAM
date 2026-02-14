@@ -1,15 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
   DocumentTable,
   DocumentFilters,
   DocumentPreview,
   DocumentVersionHistory,
 } from '@/components/documents'
-import { getAllDocuments, deleteDocument, getSignedUrlForDocument } from '@/lib/actions/documents'
+import { deleteDocument, getSignedUrlForDocument } from '@/lib/actions/documents'
 import type { Document } from '@prisma/client'
-import type { DocumentFiltersInput } from '@/lib/validations/document'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -24,16 +23,14 @@ import {
 import { Loader2 } from 'lucide-react'
 
 interface DocumentsContentProps {
-  searchParams: { [key: string]: string | string[] | undefined }
+  documents: Document[]
 }
 
 /**
  * Contenu client de la page documents (filtres, table, dialogs)
  */
-export function DocumentsContent({ searchParams }: DocumentsContentProps) {
-  const [documents, setDocuments] = useState<Document[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [filters, setFilters] = useState<DocumentFiltersInput>({})
+export function DocumentsContent({ documents: initialDocuments }: DocumentsContentProps) {
+  const [documents, setDocuments] = useState<Document[]>(initialDocuments)
 
   // Preview state
   const [previewDocument, setPreviewDocument] = useState<Document | null>(null)
@@ -46,27 +43,6 @@ export function DocumentsContent({ searchParams }: DocumentsContentProps) {
   // Delete state
   const [deleteDocumentId, setDeleteDocumentId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-
-  // Charger les documents
-  useEffect(() => {
-    const loadDocuments = async () => {
-      setIsLoading(true)
-      try {
-        const result = await getAllDocuments(filters)
-        if (result.success) {
-          setDocuments(result.data.documents)
-        } else {
-          toast.error(result.error)
-        }
-      } catch {
-        toast.error('Erreur lors du chargement des documents')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadDocuments()
-  }, [filters])
 
   // Gérer la prévisualisation
   const handlePreview = (document: Document) => {
@@ -119,25 +95,16 @@ export function DocumentsContent({ searchParams }: DocumentsContentProps) {
   return (
     <>
       {/* Filtres */}
-      <DocumentFilters
-        filters={filters}
-        onFiltersChange={setFilters}
-      />
+      <DocumentFilters />
 
       {/* Tableau */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      ) : (
-        <DocumentTable
-          documents={documents}
-          onPreview={handlePreview}
-          onDownload={handleDownload}
-          onDelete={(doc) => setDeleteDocumentId(doc.id)}
-          onViewVersions={handleViewVersions}
-        />
-      )}
+      <DocumentTable
+        documents={documents}
+        onPreview={handlePreview}
+        onDownload={handleDownload}
+        onDelete={(doc) => setDeleteDocumentId(doc.id)}
+        onViewVersions={handleViewVersions}
+      />
 
       {/* Dialog de prévisualisation */}
       <DocumentPreview
