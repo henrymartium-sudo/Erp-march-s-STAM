@@ -23,7 +23,7 @@ export type CautionWithRelations = Caution & {
     numero: string
     objet: string
     montant: Prisma.Decimal
-  }
+  } | null
 }
 
 // ============================================================================
