@@ -8,6 +8,8 @@ import type { ActionResult } from '@/types'
 import type { Marche, TypeMarche, StatutMarche } from '@prisma/client'
 import { Prisma } from '@prisma/client'
 import { ZodError } from 'zod'
+import type { PaginatedResponse } from '@/types/pagination'
+import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
 
 // ============================================================================
 // CREATE
@@ -250,46 +252,77 @@ export async function getMarcheById(id: string): Promise<Marche | null> {
 export interface GetMarchesOptions {
   statut?: StatutMarche
   type?: TypeMarche
+  page?: number
   limit?: number
-  offset?: number
 }
 
 export async function getAllMarches(
   options: GetMarchesOptions = {}
-): Promise<Marche[]> {
+): Promise<PaginatedResponse<Marche>> {
   try {
     // Vérification d'authentification (lecture accessible à tous les utilisateurs connectés)
     await requireAuth()
 
-    const { statut, type, limit, offset } = options
+    const { statut, type, page, limit } = options
 
-    const marches = await prisma.marche.findMany({
-      where: {
-        ...(statut && { statut }),
-        ...(type && { type }),
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
+    // Calcul skip/take pour Prisma
+    const { skip, take } = getPrismaSkipTake({ page, limit })
+
+    // Construction des filtres
+    const where = {
+      ...(statut && { statut }),
+      ...(type && { type }),
+    }
+
+    // Exécution parallèle : données + count
+    const [marches, total] = await Promise.all([
+      prisma.marche.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      ...(limit && { take: limit }),
-      ...(offset && { skip: offset }),
-    })
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take,
+      }),
+      prisma.marche.count({ where }),
+    ])
 
-    return marches
+    // Calcul métadonnées pagination
+    const pagination = calculatePagination(total, page, limit)
+
+    return {
+      data: marches,
+      pagination,
+    }
   } catch (error) {
     console.error('Erreur lors de la récupération des marchés:', error)
-    return []
+    // Retour vide en cas d'erreur
+    return {
+      data: [],
+      pagination: calculatePagination(0, 1, options.limit),
+    }
   }
+}
+
+/**
+ * Fonction wrapper pour les composants qui veulent juste un tableau de marchés
+ * (sans pagination) - utilisée par Dashboard, Forms, etc.
+ */
+export async function getAllMarchesArray(
+  options: GetMarchesOptions = {}
+): Promise<Marche[]> {
+  const response = await getAllMarches({ ...options, limit: 10000 });
+  return response.data;
 }
 
 // ============================================================================
