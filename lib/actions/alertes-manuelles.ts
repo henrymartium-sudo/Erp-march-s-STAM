@@ -112,8 +112,8 @@ export async function getAlertesActuelles(): Promise<
         montant: Number(caution.montant),
         dateEcheance: caution.dateEcheance,
         joursRestants,
-        marcheNumero: caution.marche.numero,
-        marcheObjet: caution.marche.objet,
+        marcheNumero: caution.marche?.numero || 'N/A',
+        marcheObjet: caution.marche?.objet || 'Aucun marché associé',
       };
     });
 

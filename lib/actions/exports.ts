@@ -211,8 +211,8 @@ export async function exportCautions(
         joursRestants: joursRestants > 0 ? joursRestants : 0,
         banqueNom: caution.banqueNom,
         banqueContact: caution.banqueContact || '',
-        marcheNumero: caution.marche.numero,
-        marcheObjet: caution.marche.objet,
+        marcheNumero: caution.marche?.numero || 'N/A',
+        marcheObjet: caution.marche?.objet || 'Aucun marché associé',
         userName: caution.user.name,
       }
     })
