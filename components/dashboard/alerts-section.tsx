@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { AlertCircle, Calendar, Shield, FileText, ChevronRight } from 'lucide-react'
-import { getCautions } from '@/lib/actions/cautions'
+import { getCautionsArray } from '@/lib/actions/cautions'
 import { getAllMarchesArray } from '@/lib/actions/marches'
 import { formatDate } from '@/lib/utils'
 import { formatMontant } from '@/lib/utils/format'
@@ -11,8 +11,7 @@ import { TYPE_CAUTION_LABELS } from '@/lib/constants/caution'
 
 export async function AlertsSection() {
   // Récupérer les cautions actives
-  const cautionsResult = await getCautions()
-  const cautions = cautionsResult.success ? cautionsResult.data.cautions : []
+  const cautions = await getCautionsArray()
 
   // Récupérer tous les marchés
   const marches = await getAllMarchesArray()

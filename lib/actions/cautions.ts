@@ -12,6 +12,8 @@ import type { ActionResult } from '@/types'
 import type { Caution, TypeCaution, StatutCaution } from '@prisma/client'
 import { Prisma } from '@prisma/client'
 import { ZodError } from 'zod'
+import type { PaginatedResponse } from '@/types/pagination'
+import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
 
 // ============================================================================
 // TYPES
@@ -347,20 +349,30 @@ export async function getCaution(id: string): Promise<ActionResult<CautionWithRe
 // ============================================================================
 
 export async function getCautions(filters?: unknown): Promise<
-  ActionResult<{
-    cautions: CautionWithRelations[]
-    total: number
-  }>
+  ActionResult<PaginatedResponse<CautionWithRelations>>
 > {
   try {
     // 1. Vérification d'authentification
     await requireAuth()
 
-    // 2. Construction des filtres Prisma
+    // 2. Validation et extraction des filtres
+    let validatedFilters: any = {}
+    let page = 1
+    let limit: number | undefined
+
+    if (filters) {
+      validatedFilters = cautionFiltersSchema.parse(filters)
+      page = validatedFilters.page || 1
+      limit = validatedFilters.limit
+    }
+
+    // Calcul skip/take pour Prisma
+    const { skip, take } = getPrismaSkipTake({ page, limit })
+
+    // 3. Construction des filtres Prisma
     const where: Prisma.CautionWhereInput = {}
 
     if (filters) {
-      const validatedFilters = cautionFiltersSchema.parse(filters)
 
       if (validatedFilters.type) {
         where.type = validatedFilters.type
@@ -404,7 +416,7 @@ export async function getCautions(filters?: unknown): Promise<
       }
     }
 
-    // 3. Récupération des cautions avec relations
+    // 4. Récupération des cautions avec relations et pagination
     const [cautions, total] = await Promise.all([
       prisma.caution.findMany({
         where,
@@ -421,16 +433,21 @@ export async function getCautions(filters?: unknown): Promise<
         orderBy: {
           dateEcheance: 'asc', // Tri par date d'échéance (plus proche en premier)
         },
+        skip,
+        take,
       }),
       prisma.caution.count({ where }),
     ])
 
-    // 4. Retour succès
+    // 5. Calcul métadonnées pagination
+    const pagination = calculatePagination(total, page, limit)
+
+    // 6. Retour succès
     return {
       success: true,
       data: {
-        cautions,
-        total,
+        data: cautions,
+        pagination,
       },
     }
   } catch (error) {
@@ -455,6 +472,15 @@ export async function getCautions(filters?: unknown): Promise<
       error: 'Une erreur inattendue est survenue lors de la récupération des cautions',
     }
   }
+}
+
+/**
+ * Fonction wrapper pour les composants qui veulent juste un tableau de cautions
+ * (sans pagination) - utilisée par Dashboard, Alertes, etc.
+ */
+export async function getCautionsArray(filters?: unknown): Promise<CautionWithRelations[]> {
+  const result = await getCautions(filters ? { ...(filters as object), limit: 10000 } : { limit: 10000 });
+  return result.success ? result.data.data : [];
 }
 
 // ============================================================================
