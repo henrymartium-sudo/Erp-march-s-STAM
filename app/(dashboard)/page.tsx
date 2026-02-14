@@ -3,9 +3,10 @@ import { auth } from '@/lib/auth/auth.config'
 import { getMarchesStats } from '@/lib/actions/marches'
 import { getCautionsStats } from '@/lib/actions/cautions'
 import { getVehiculesStats } from '@/lib/actions/vehicules'
-import { getStatutDistribution } from '@/lib/dashboard/stats'
+import { getStatutDistribution, getMontantsMensuels } from '@/lib/dashboard/stats'
 import { KPICards } from '@/components/dashboard/kpi-cards'
 import { StatusCharts } from '@/components/dashboard/status-charts'
+import { MontantsChart } from '@/components/dashboard/montants-chart'
 import { AlertsSection } from '@/components/dashboard/alerts-section'
 import { RecentActivity } from '@/components/dashboard/recent-activity'
 import { QuickActions } from '@/components/dashboard/quick-actions'
@@ -19,13 +20,19 @@ export default async function DashboardPage() {
   }
 
   // Récupérer toutes les statistiques en parallèle
-  const [marchesStatsResult, cautionsStatsResult, vehiculesStatsResult, statutDistribution] =
-    await Promise.all([
-      getMarchesStats(),
-      getCautionsStats(),
-      getVehiculesStats(),
-      getStatutDistribution(),
-    ])
+  const [
+    marchesStatsResult,
+    cautionsStatsResult,
+    vehiculesStatsResult,
+    statutDistribution,
+    montantsMensuels,
+  ] = await Promise.all([
+    getMarchesStats(),
+    getCautionsStats(),
+    getVehiculesStats(),
+    getStatutDistribution(),
+    getMontantsMensuels(),
+  ])
 
   // Gérer les erreurs de récupération
   const marchesStats = marchesStatsResult.success
@@ -118,6 +125,9 @@ export default async function DashboardPage() {
         vehiculesStats={vehiculesStats}
         statutDistribution={statutDistribution}
       />
+
+      {/* Montants mensuels */}
+      <MontantsChart data={montantsMensuels} />
 
       {/* Activité récente */}
       <RecentActivity />
