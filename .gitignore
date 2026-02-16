@@ -1,6 +1,7 @@
 # Fichiers d'environnement (secrets et configurations locales)
 .env
 .env.local
+.env.test
 .env.*.local
 
 # Dépendances Node.js
