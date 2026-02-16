@@ -4,7 +4,7 @@ import { requireAuth } from "@/lib/utils/permissions";
 import { getCautions } from "@/lib/actions/cautions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExportExcelButton } from "@/components/exports/export-excel-button";
+import { ExportMenu } from "@/components/exports";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { CautionsContent } from "./_components/cautions-content";
@@ -122,7 +122,7 @@ export default async function CautionsPage({ searchParams }: CautionsPageProps) 
           </p>
         </div>
         <div className="flex gap-2">
-          <ExportExcelButton
+          <ExportMenu
             type="cautions"
             filters={{
               statut: params.statut,
