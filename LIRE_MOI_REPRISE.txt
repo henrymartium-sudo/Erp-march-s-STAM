@@ -1,0 +1,79 @@
+═══════════════════════════════════════════════════════════════
+   🚀 REPRISE SESSION - ERP MARCHÉS STAM
+═══════════════════════════════════════════════════════════════
+
+📅 Dernière session : 16/02/2026 (2h)
+🔖 Dernier commit : 344f807 (documentation) + 91ff3db (code)
+🌿 Branche : main
+
+───────────────────────────────────────────────────────────────
+  ✅ CE QUI A ÉTÉ FAIT
+───────────────────────────────────────────────────────────────
+
+✓ 4 utilisateurs de test créés (pour tests E2E)
+✓ Audit complet module Alertes Email
+✓ Infrastructure alertes 100% prête
+✓ Configuration cron ajoutée dans vercel.json
+
+───────────────────────────────────────────────────────────────
+  ⚠️ PROBLÈME EN COURS
+───────────────────────────────────────────────────────────────
+
+⚠ Dernier déploiement Vercel en ERREUR (7s build fail)
+✅ App production STABLE (déploiement précédent actif)
+✅ Aucun impact utilisateur
+
+───────────────────────────────────────────────────────────────
+  🎯 PROCHAINE ÉTAPE (3 options)
+───────────────────────────────────────────────────────────────
+
+Option A : Debug cron Vercel (10-15 min)
+Option B : Phase 3 Exports PDF/Excel (8-10h) ⭐ RECOMMANDÉ
+Option C : Rollback + Phase 3
+
+───────────────────────────────────────────────────────────────
+  📖 DOCUMENTATION DÉTAILLÉE
+───────────────────────────────────────────────────────────────
+
+1. REPRISE_SESSION_2026-02-16.md
+   → Guide rapide avec 3 options + checklist
+
+2. SESSION.md (chercher "Session 16/02/2026")
+   → Documentation complète (1000+ lignes)
+
+3. session-update-2026-02-16.md
+   → Contenu détaillé session
+
+───────────────────────────────────────────────────────────────
+  🚀 POUR REPRENDRE
+───────────────────────────────────────────────────────────────
+
+1. Ouvrir : REPRISE_SESSION_2026-02-16.md
+
+2. Choisir option (A, B ou C)
+
+3. Dire à Claude :
+   "Reprenons avec Option B - Phase 3 Exports"
+   (ou A/C selon ton choix)
+
+───────────────────────────────────────────────────────────────
+  💡 AIDE RAPIDE
+───────────────────────────────────────────────────────────────
+
+Vérifier état :
+  git status
+  git log -1 --oneline
+  vercel ls
+
+Utilisateurs test créés :
+  admin@erp-marches.local : Admin123!
+  avance@erp-marches.local : Avance123!
+  exploitation@erp-marches.local : Exploitation123!
+  visiteur@erp-marches.local : Visiteur123!
+
+App production :
+  https://erp-marches-stam.vercel.app
+
+═══════════════════════════════════════════════════════════════
+  BONNE REPRISE ! 🎯
+═══════════════════════════════════════════════════════════════
