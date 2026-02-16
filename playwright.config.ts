@@ -1,4 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Charger les variables d'environnement de test
+// .env.test utilise une connexion directe (port 5432) au lieu de PgBouncer
+// pour éviter les timeouts lors des tests parallèles
+dotenv.config({ path: path.resolve(__dirname, '.env.test') });
 
 /**
  * Configuration Playwright pour ERP Marchés STAM
@@ -25,7 +32,8 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
 
   // Nombre de workers (tests en parallèle)
-  workers: process.env.CI ? 1 : undefined,
+  // 1 worker pour éviter l'épuisement du pool de connexions DB
+  workers: 1,
 
   // Reporter
   reporter: [
