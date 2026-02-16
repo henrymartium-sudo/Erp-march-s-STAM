@@ -23,6 +23,7 @@
     "test:debug": "playwright test --debug",
     "test:report": "playwright show-report",
     "test:documents": "playwright test tests/documents/",
+    "test:exports": "playwright test tests/exports/",
     "env:sync": "node scripts/sync-vercel-env.js",
     "env:sync:dry": "node scripts/sync-vercel-env.js --dry-run",
     "env:deploy": "npm run env:sync && vercel --prod"
