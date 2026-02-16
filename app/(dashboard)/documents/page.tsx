@@ -7,6 +7,7 @@ import { requireAuth } from '@/lib/utils/permissions'
 import { getAllDocuments } from '@/lib/actions/documents'
 import { shouldShowPagination } from '@/lib/utils/pagination'
 import { DocumentsContent } from './_components/documents-content'
+import { ExportMenu } from '@/components/exports'
 import type { TypeDocument, PhaseMarche } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
@@ -71,12 +72,22 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
             Gérez tous vos documents liés aux marchés publics
           </p>
         </div>
-        <Link href="/documents/upload">
-          <Button size="lg" className="gap-2">
-            <Plus className="h-5 w-5" />
-            Nouveau document
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <ExportMenu
+            type="documents"
+            filters={{
+              type: params.type,
+              phase: params.phase,
+              search: params.search,
+            }}
+          />
+          <Link href="/documents/upload">
+            <Button size="lg" className="gap-2">
+              <Plus className="h-5 w-5" />
+              Nouveau document
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Contenu */}

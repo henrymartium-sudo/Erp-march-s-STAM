@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { VehiculeList } from '@/components/vehicules/vehicule-list'
 import { VehiculeFilters } from '@/components/vehicules/vehicule-filters'
-import { ExportExcelButton } from '@/components/exports/export-excel-button'
+import { ExportMenu } from '@/components/exports'
 import { DataPagination } from '@/components/ui/data-pagination'
 import { getVehicules } from '@/lib/actions/vehicules'
 import { serializeVehicule } from '@/lib/utils/serialize'
@@ -69,7 +69,7 @@ export default async function VehiculesPage({ searchParams }: VehiculesPageProps
           </p>
         </div>
         <div className="flex gap-2">
-          <ExportExcelButton
+          <ExportMenu
             type="vehicules"
             filters={{
               statut: params.statut,

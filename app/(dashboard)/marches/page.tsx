@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { MarcheList } from '@/components/marches/marche-list'
 import { MarcheFilters } from '@/components/marches/marche-filters'
 import { MarchePagination } from '@/components/marches/marche-pagination'
-import { ExportExcelButton } from '@/components/exports/export-excel-button'
+import { ExportMenu } from '@/components/exports'
 import { getAllMarches } from '@/lib/actions/marches'
 import { searchInFields } from '@/lib/utils/search'
 import { serializeMarche } from '@/lib/utils/serialize'
@@ -80,7 +80,7 @@ export default async function MarchesPage({ searchParams }: MarchesPageProps) {
           </p>
         </div>
         <div className="flex gap-2">
-          <ExportExcelButton
+          <ExportMenu
             type="marches"
             filters={{
               statut: params.statut,
