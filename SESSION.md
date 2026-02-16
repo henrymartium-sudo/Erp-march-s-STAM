@@ -1,10 +1,10 @@
 # Session de Développement - ERP Marchés Publics
 
 **Date de création** : 2026-02-01
-**Dernière mise à jour** : 2026-02-16 (Utilisateurs test créés + Audit Alertes + Cron config - Déploiement en erreur)
+**Dernière mise à jour** : 2026-02-16 (Phase 3 Exports PDF/Excel - 5/6 tâches terminées - Fix cron - Déploiement en cours)
 **Branche actuelle** : `main`
-**Statut global** : MVP 96% → Utilisateurs test ✅ + Alertes 98% + Exports en attente
-**🚀 Déploiement Production** : https://erp-marches-stam.vercel.app (stable sur déploiement précédent)
+**Statut global** : MVP 99% → Exports PDF/Excel ✅ (infrastructure + UI) - Tests en attente
+**🚀 Déploiement Production** : https://erp-marches-stam.vercel.app ⏳ Build en cours (commit ee07bf9)
 
 ---
 
@@ -71,6 +71,42 @@
 ---
 
 ## 🆕 Dernières avancées (2026-02-14 → 2026-02-16)
+
+### 📦 Phase 3 Exports PDF/Excel (2026-02-16) - ⏳ DÉPLOIEMENT EN COURS
+
+**⚠️ IMPORTANT** : Voir **SESSION_UPDATE_2026-02-16_EXPORTS.md** pour le contexte complet et les instructions de reprise.
+
+**Commits** :
+- `ce6aabb` - feat(exports): Implémenter exports PDF/Excel pour 4 modules (+2260 lignes)
+- `ee07bf9` - fix(deploy): Retirer config cron Vercel (non supporté plan Hobby)
+
+**Implémentations** :
+- ✅ **Infrastructure PDF** : `lib/utils/pdf.tsx` (500+ lignes) avec @react-pdf/renderer
+- ✅ **4 exports PDF** : exportMarchesPDF(), exportCautionsPDF(), exportDocumentsPDF(), exportVehiculesPDF()
+- ✅ **1 export Excel** : exportDocuments() (complète les 3 existants)
+- ✅ **4 routes API** : `/api/exports-pdf/{marches,cautions,documents,vehicules}`
+- ✅ **Composant UI** : ExportMenu (dropdown Excel + PDF avec loading states)
+- ✅ **Intégration** : 4 pages (Marchés, Cautions, Documents, Véhicules)
+
+**Problème cron résolu** :
+- ❌ Config cron bloquait déploiements (plan Hobby ne supporte pas crons)
+- ✅ Cron retiré → Déploiements débloqués
+- ⚠️ Impact : Plus d'envoi auto alertes (envoi manuel via /admin/alertes reste actif)
+
+**Status actuel** :
+- ⏳ **Déploiement Vercel en cours** (commit `ee07bf9`)
+- 🧪 **Exports PDF NON testés** (à tester en prod dès déploiement Ready)
+- 📋 **Tâche #6 en attente** : Tests E2E et polish (optionnel MVP)
+
+**Prochaines actions** :
+1. Vérifier déploiement : `vercel ls --yes`
+2. Si Ready → Tester exports PDF/Excel manuellement
+3. Si Error → Investiguer logs et corriger
+
+**Build local** : ✅ SUCCESS (79s, 0 erreurs TypeScript)
+**Progression MVP** : 98% → **99%** 🎯
+
+---
 
 ### 🎨 Dashboard Enrichi Recharts (2026-02-14) - ✅ DÉPLOYÉ
 
