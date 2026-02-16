@@ -9,7 +9,7 @@
 BEGIN;
 
 -- Créer ou mettre à jour les 4 utilisateurs de test
-INSERT INTO "User" (id, email, name, password, role, "createdAt", "updatedAt")
+INSERT INTO users (id, email, name, password, role, "createdAt", "updatedAt")
 VALUES
   -- ADMIN
   (
@@ -65,7 +65,7 @@ SELECT
   name,
   role,
   "createdAt"
-FROM "User"
+FROM users
 WHERE email LIKE '%@erp-marches.local'
 ORDER BY role, email;
 
