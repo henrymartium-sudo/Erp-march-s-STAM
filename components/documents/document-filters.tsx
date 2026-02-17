@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -14,7 +13,7 @@ import {
 } from '@/components/ui/select'
 import { TypeDocument, PhaseMarche } from '@prisma/client'
 import { TYPE_DOCUMENT_LABELS, PHASE_MARCHE_LABELS } from '@/lib/utils/document'
-import { FilterX, Search, X } from 'lucide-react'
+import { Search, X } from 'lucide-react'
 import { useDebounce } from '@/hooks/use-debounce'
 
 /**
@@ -85,11 +84,13 @@ export function DocumentFilters() {
     typeActuel !== 'all' || phaseActuel !== 'all' || searchQuery
 
   return (
-    <div className="space-y-4">
-      {/* Recherche par nom */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+    <div className="bg-white rounded-xl border border-gray-100 shadow-card">
+      {/* Barre principale : recherche + dropdowns + reset */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-3">
+
+        {/* Recherche — flex-1 */}
+        <div className="relative flex-1 min-w-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
             type="text"
             placeholder="Rechercher un document..."
@@ -102,81 +103,71 @@ export function DocumentFilters() {
               variant="ghost"
               size="sm"
               onClick={() => setSearchQuery('')}
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>
-        {hasActiveFilters && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleReset}
-            className="gap-2"
-          >
-            <FilterX className="h-4 w-4" />
-            Réinitialiser
-          </Button>
-        )}
-      </div>
 
-      {/* Filtres avancés */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
-        {/* Type de document */}
-        <div className="space-y-2">
-          <Label htmlFor="type-filter">Type de document</Label>
+        {/* Dropdowns compacts */}
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Select value={typeActuel} onValueChange={handleTypeChange}>
-            <SelectTrigger id="type-filter">
-              <SelectValue placeholder="Tous les types" />
+            <SelectTrigger className="w-44 h-10">
+              <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tous les types</SelectItem>
               {Object.entries(TYPE_DOCUMENT_LABELS).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
+                <SelectItem key={value} value={value}>{label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-        </div>
 
-        {/* Phase du marché */}
-        <div className="space-y-2">
-          <Label htmlFor="phase-filter">Phase du marché</Label>
           <Select value={phaseActuel} onValueChange={handlePhaseChange}>
-            <SelectTrigger id="phase-filter">
-              <SelectValue placeholder="Toutes les phases" />
+            <SelectTrigger className="w-44 h-10">
+              <SelectValue placeholder="Phase" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Toutes les phases</SelectItem>
               {Object.entries(PHASE_MARCHE_LABELS).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
+                <SelectItem key={value} value={value}>{label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
+
+          {hasActiveFilters && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleReset}
+              className="text-muted-foreground hover:text-foreground flex-shrink-0"
+            >
+              <X className="h-4 w-4 mr-1.5" />
+              Effacer
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Indicateur de filtres actifs */}
+      {/* Filtres actifs — badges discrets */}
       {hasActiveFilters && (
-        <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-          <span>Filtres actifs:</span>
+        <div className="px-4 py-2 border-t border-gray-50 flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">Actifs :</span>
           {typeActuel !== 'all' && (
-            <span className="px-2 py-1 bg-secondary rounded-md">
+            <span className="inline-flex items-center gap-1 text-xs bg-primary/8 text-primary rounded-full px-2 py-0.5">
               {TYPE_DOCUMENT_LABELS[typeActuel as TypeDocument]}
             </span>
           )}
           {phaseActuel !== 'all' && (
-            <span className="px-2 py-1 bg-secondary rounded-md">
+            <span className="inline-flex items-center gap-1 text-xs bg-primary/8 text-primary rounded-full px-2 py-0.5">
               {PHASE_MARCHE_LABELS[phaseActuel as PhaseMarche]}
             </span>
           )}
           {searchQuery && (
-            <span className="px-2 py-1 bg-secondary rounded-md">
-              Recherche: "{searchQuery}"
+            <span className="inline-flex items-center gap-1 text-xs bg-primary/8 text-primary rounded-full px-2 py-0.5">
+              &ldquo;{searchQuery}&rdquo;
             </span>
           )}
         </div>

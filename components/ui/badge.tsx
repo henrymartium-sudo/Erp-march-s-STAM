@@ -14,7 +14,19 @@ const badgeVariants = cva(
           "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
         destructive:
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground",
+        outline:
+          "text-foreground",
+        /* ---- Variantes sémantiques STAM ---- */
+        success:
+          "border-stam-success/20 bg-stam-success-bg text-stam-success",
+        warning:
+          "border-stam-warning/20 bg-stam-warning-bg text-stam-warning",
+        danger:
+          "border-stam-danger/20 bg-stam-danger-bg text-stam-danger",
+        info:
+          "border-primary/20 bg-stam-accent-light text-primary",
+        muted:
+          "border-transparent bg-muted text-muted-foreground",
       },
     },
     defaultVariants: {

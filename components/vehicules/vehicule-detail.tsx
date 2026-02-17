@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { StatutBadge } from './statut-badge'
 import { DeleteVehiculeDialog } from './delete-vehicule-dialog'
 import { formatDateLong } from '@/lib/utils/format'
-import { ArrowLeft, Pencil, Truck, FileText } from 'lucide-react'
+import { Pencil, Truck, FileText } from 'lucide-react'
 import type { SerializedVehicule } from '@/types/serialized'
 
 interface VehiculeDetailProps {
@@ -14,36 +14,27 @@ interface VehiculeDetailProps {
 export function VehiculeDetail({ vehicule }: VehiculeDetailProps) {
   return (
     <div className="space-y-6">
-      {/* Navigation */}
-      <Button variant="ghost" size="sm" asChild>
-        <Link href="/vehicules">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Retour aux véhicules
-        </Link>
-      </Button>
-
-      {/* En-tête */}
+      {/* Header 2 colonnes : identité + statut/actions */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold">{vehicule.immatriculation}</h1>
-          <p className="text-muted-foreground">
-            {vehicule.marque} {vehicule.modele} ({vehicule.annee})
+        <div className="min-w-0">
+          <p className="font-mono-marche text-stam-accent font-semibold text-base leading-tight">
+            {vehicule.immatriculation}
           </p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground mt-1">
+            {vehicule.marque} {vehicule.modele}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Année {vehicule.annee}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <StatutBadge statut={vehicule.statut} size="lg" />
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/vehicules/${vehicule.id}/edit`}>
+              <Pencil className="h-4 w-4 mr-1.5" />
+              Modifier
+            </Link>
+          </Button>
+          <DeleteVehiculeDialog vehiculeId={vehicule.id} vehiculeImmat={vehicule.immatriculation} />
         </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-2">
-        <Button variant="outline" asChild>
-          <Link href={`/vehicules/${vehicule.id}/edit`}>
-            <Pencil className="h-4 w-4 mr-2" />
-            Modifier
-          </Link>
-        </Button>
-        <DeleteVehiculeDialog vehiculeId={vehicule.id} vehiculeImmat={vehicule.immatriculation} />
       </div>
 
       {/* Informations générales */}

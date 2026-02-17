@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/shared/page-header'
 import { MarcheList } from '@/components/marches/marche-list'
 import { MarcheFilters } from '@/components/marches/marche-filters'
 import { MarchePagination } from '@/components/marches/marche-pagination'
@@ -72,30 +73,29 @@ export default async function MarchesPage({ searchParams }: MarchesPageProps) {
   return (
     <div className="space-y-6">
       {/* En-tête */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Marchés publics</h1>
-          <p className="text-muted-foreground">
-            Gérez vos marchés publics de bout en bout
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <ExportMenu
-            type="marches"
-            filters={{
-              statut: params.statut,
-              type: params.type,
-              search: params.search,
-            }}
-          />
-          <Button asChild>
-            <Link href="/marches/nouveau">
-              <Plus className="h-4 w-4 mr-2" />
-              Nouveau marché
-            </Link>
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Marchés publics"
+        description="Gérez vos marchés publics de bout en bout"
+        count={paginationData.totalItems}
+        action={
+          <>
+            <ExportMenu
+              type="marches"
+              filters={{
+                statut: params.statut,
+                type: params.type,
+                search: params.search,
+              }}
+            />
+            <Button asChild>
+              <Link href="/marches/nouveau">
+                <Plus className="h-4 w-4 mr-2" />
+                Nouveau marché
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
       {/* Filtres */}
       <MarcheFilters

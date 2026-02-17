@@ -96,15 +96,7 @@ export default async function DashboardPage() {
       }
 
   return (
-    <div className="space-y-8">
-      {/* En-tête */}
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Tableau de bord</h1>
-        <p className="text-muted-foreground">
-          Vue d'ensemble de vos marchés publics, cautions et véhicules
-        </p>
-      </div>
-
+    <div className="space-y-6">
       {/* KPIs principaux */}
       <KPICards
         marchesStats={marchesStats}

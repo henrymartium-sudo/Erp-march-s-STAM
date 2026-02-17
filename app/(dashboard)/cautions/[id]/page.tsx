@@ -2,9 +2,11 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { requireAuth } from "@/lib/utils/permissions";
 import { getCaution } from "@/lib/actions/cautions";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Edit } from "lucide-react";
+import { BreadcrumbNav } from "@/components/shared/breadcrumb-nav";
+import { PageHeader } from "@/components/shared/page-header";
+import { Edit } from "lucide-react";
 import Link from "next/link";
 import { CautionDetailContent } from "./_components/caution-detail-content";
 
@@ -89,33 +91,26 @@ export default async function CautionDetailPage({
   };
 
   return (
-    <div className="container mx-auto py-8 max-w-5xl space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" asChild>
-            <Link href="/cautions">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              {caution.reference || "Caution sans référence"}
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Détails de la caution bancaire
-            </p>
-          </div>
-        </div>
-        {canWrite && (
+    <div className="space-y-5 max-w-5xl">
+      <BreadcrumbNav
+        showHome
+        items={[
+          { label: 'Cautions', href: '/cautions' },
+          { label: caution.reference || 'Détail caution' },
+        ]}
+      />
+      <PageHeader
+        title={caution.reference || "Caution sans référence"}
+        description="Détails de la caution bancaire"
+        action={canWrite ? (
           <Button asChild>
             <Link href={`/cautions/${caution.id}/edit`}>
               <Edit className="h-4 w-4 mr-2" />
               Modifier
             </Link>
           </Button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {/* Contenu */}
       <CautionDetailContent caution={caution} canWrite={canWrite} />

@@ -7,7 +7,7 @@ import { DeleteMarcheDialog } from './delete-marche-dialog'
 import { MarcheDocumentsSection } from './marche-documents-section'
 import { MarcheCautionsSection } from './marche-cautions-section'
 import { formatMontant, formatDateLong, formatDelai } from '@/lib/utils/format'
-import { ArrowLeft, Pencil } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 
 interface MarcheDetailProps {
   marche: SerializedMarche
@@ -23,13 +23,33 @@ const TYPE_LABELS = {
 export function MarcheDetail({ marche }: MarcheDetailProps) {
   return (
     <div className="space-y-6">
-      {/* En-tête */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold">{marche.numero}</h1>
-          <p className="text-muted-foreground">{TYPE_LABELS[marche.type]}</p>
+      {/* Header 2 colonnes : identité + statut/actions */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="min-w-0">
+          <p className="font-mono-marche text-stam-accent font-semibold text-base leading-tight">
+            {marche.numero}
+          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground mt-1 leading-snug">
+            {marche.objet}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {TYPE_LABELS[marche.type]}
+          </p>
         </div>
-        <StatutBadge statut={marche.statut} size="lg" />
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <StatutBadge statut={marche.statut} size="lg" />
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/marches/${marche.id}/edit`}>
+              <Pencil className="h-4 w-4 mr-1.5" />
+              Modifier
+            </Link>
+          </Button>
+          <DeleteMarcheDialog
+            marcheId={marche.id}
+            marcheNumero={marche.numero}
+            marcheObjet={marche.objet}
+          />
+        </div>
       </div>
 
       {/* Informations générales */}
@@ -405,26 +425,6 @@ export function MarcheDetail({ marche }: MarcheDetailProps) {
       {/* Section Cautions */}
       <MarcheCautionsSection marcheId={marche.id} />
 
-      {/* Boutons d'action */}
-      <div className="flex gap-4">
-        <Button variant="outline" asChild>
-          <Link href="/marches">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour à la liste
-          </Link>
-        </Button>
-        <Button variant="outline" asChild>
-          <Link href={`/marches/${marche.id}/edit`}>
-            <Pencil className="h-4 w-4 mr-2" />
-            Modifier
-          </Link>
-        </Button>
-        <DeleteMarcheDialog
-          marcheId={marche.id}
-          marcheNumero={marche.numero}
-          marcheObjet={marche.objet}
-        />
-      </div>
     </div>
   )
 }
