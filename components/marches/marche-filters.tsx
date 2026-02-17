@@ -5,7 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -83,65 +86,47 @@ export function MarcheFilters({ totalCount, filteredCount }: MarcheFiltersProps)
   const hasFilters = statutActuel !== 'tous' || typeActuel !== 'tous' || searchQuery !== ''
 
   return (
-    <div className="bg-white p-4 rounded-lg border space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold">Filtres</h3>
-        {hasFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleReset}
-            className="text-muted-foreground"
-          >
-            <X className="h-4 w-4 mr-2" />
-            Réinitialiser
-          </Button>
-        )}
-      </div>
+    <div className="bg-white rounded-xl border border-gray-100 shadow-card">
+      {/* Barre principale : recherche + dropdowns + reset */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-3">
 
-      {/* Barre de recherche */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Rechercher un marché..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 pr-9"
-        />
-        {searchQuery && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSearchQuery('')}
-            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
+        {/* Recherche — flex-1 */}
+        <div className="relative flex-1 min-w-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder="Rechercher un marché..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 pr-9"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Filtre par statut */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Statut</label>
+        {/* Dropdowns compacts */}
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Select value={statutActuel} onValueChange={handleStatutChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Tous les statuts" />
+            <SelectTrigger className="w-40 h-10">
+              <SelectValue placeholder="Statut" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="tous">Tous les statuts</SelectItem>
-
-              {/* Statuts actifs */}
               {Object.entries(STATUT_LABELS)
                 .filter(([value]) => !['RESILIE', 'ANNULE', 'INFRUCTUEUX'].includes(value))
                 .map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
                 ))}
-
-              {/* Groupe Terminés */}
-              <optgroup label="Terminés">
+              <SelectSeparator />
+              <SelectGroup>
+                <SelectLabel>Terminés</SelectLabel>
                 {['RESILIE', 'ANNULE', 'INFRUCTUEUX']
                   .filter(value => STATUT_LABELS[value as keyof typeof STATUT_LABELS])
                   .map((value) => (
@@ -149,47 +134,45 @@ export function MarcheFilters({ totalCount, filteredCount }: MarcheFiltersProps)
                       {STATUT_LABELS[value as keyof typeof STATUT_LABELS]}
                     </SelectItem>
                   ))}
-              </optgroup>
+              </SelectGroup>
             </SelectContent>
           </Select>
-        </div>
 
-        {/* Filtre par type */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Type de marché</label>
           <Select value={typeActuel} onValueChange={handleTypeChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Tous les types" />
+            <SelectTrigger className="w-40 h-10">
+              <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="tous">Tous les types</SelectItem>
               {Object.entries(TYPE_LABELS).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
+                <SelectItem key={value} value={value}>{label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
+
+          {hasFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleReset}
+              className="text-muted-foreground hover:text-foreground flex-shrink-0"
+            >
+              <X className="h-4 w-4 mr-1.5" />
+              Effacer
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Nombre de résultats */}
-      <div className="pt-2 border-t">
-        <p className="text-sm text-muted-foreground">
+      {/* Compteur de résultats */}
+      <div className="px-4 py-2 border-t border-gray-50">
+        <p className="text-xs text-muted-foreground">
           {searchQuery && filteredCount === 0 ? (
-            <>
-              Aucun résultat pour <span className="font-semibold text-foreground">"{searchQuery}"</span>
-            </>
+            <>Aucun résultat pour <span className="font-semibold text-foreground">"{searchQuery}"</span></>
           ) : hasFilters ? (
-            <>
-              <span className="font-semibold text-foreground">{filteredCount}</span> résultat
-              {filteredCount > 1 ? 's' : ''} sur {totalCount}
-            </>
+            <><span className="font-semibold text-foreground">{filteredCount}</span> résultat{filteredCount > 1 ? 's' : ''} sur {totalCount}</>
           ) : (
-            <>
-              <span className="font-semibold text-foreground">{totalCount}</span> marché
-              {totalCount > 1 ? 's' : ''} au total
-            </>
+            <><span className="font-semibold text-foreground">{totalCount}</span> marché{totalCount > 1 ? 's' : ''} au total</>
           )}
         </p>
       </div>

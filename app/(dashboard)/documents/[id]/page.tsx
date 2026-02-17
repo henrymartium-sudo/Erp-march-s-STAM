@@ -1,9 +1,8 @@
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft } from 'lucide-react'
 import { requireAuth } from '@/lib/utils/permissions'
 import { getDocumentById } from '@/lib/actions/documents'
+import { BreadcrumbNav } from '@/components/shared/breadcrumb-nav'
+import { PageHeader } from '@/components/shared/page-header'
 import { DocumentDetailContent } from './_components/document-detail-content'
 
 /**
@@ -30,23 +29,18 @@ export default async function DocumentDetailPage({
   const document = result.data
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      {/* Header avec bouton retour */}
-      <div className="flex items-center gap-4">
-        <Link href="/documents">
-          <Button variant="outline" size="icon">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold tracking-tight">
-            {document.nom}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {document.nomOriginal}
-          </p>
-        </div>
-      </div>
+    <div className="space-y-5 max-w-5xl">
+      <BreadcrumbNav
+        showHome
+        items={[
+          { label: 'Documents', href: '/documents' },
+          { label: document.nom },
+        ]}
+      />
+      <PageHeader
+        title={document.nom}
+        description={document.nomOriginal}
+      />
 
       {/* Contenu avec actions */}
       <DocumentDetailContent document={document} />

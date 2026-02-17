@@ -2,8 +2,9 @@ import { Suspense } from "react";
 import { Metadata } from "next";
 import { requireAuth } from "@/lib/utils/permissions";
 import { getCautions } from "@/lib/actions/cautions";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/shared/page-header";
 import { ExportMenu } from "@/components/exports";
 import { Plus } from "lucide-react";
 import Link from "next/link";
@@ -110,34 +111,31 @@ export default async function CautionsPage({ searchParams }: CautionsPageProps) 
   );
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Cautions & Garanties
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Gestion et suivi des cautions bancaires
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <ExportMenu
-            type="cautions"
-            filters={{
-              statut: params.statut,
-              type: params.type,
-              search: params.search,
-            }}
-          />
-          <Button asChild>
-            <Link href="/cautions/nouvelle">
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvelle Caution
-            </Link>
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Cautions & Garanties"
+        description="Gestion et suivi des cautions bancaires"
+        count={pagination.totalItems}
+        action={
+          <>
+            <ExportMenu
+              type="cautions"
+              filters={{
+                statut: params.statut,
+                type: params.type,
+                search: params.search,
+              }}
+            />
+            <Button asChild>
+              <Link href="/cautions/nouvelle">
+                <Plus className="h-4 w-4 mr-2" />
+                Nouvelle caution
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
       {/* Statistiques rapides */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageHeader } from '@/components/shared/page-header'
 import { DataPagination } from '@/components/ui/data-pagination'
-import { Plus, FileText } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { requireAuth } from '@/lib/utils/permissions'
 import { getAllDocuments } from '@/lib/actions/documents'
 import { shouldShowPagination } from '@/lib/utils/pagination'
@@ -62,33 +63,29 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-            <FileText className="h-8 w-8" />
-            Documents & Médias
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Gérez tous vos documents liés aux marchés publics
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <ExportMenu
-            type="documents"
-            filters={{
-              type: params.type,
-              phase: params.phase,
-              search: params.search,
-            }}
-          />
-          <Link href="/documents/upload">
-            <Button size="lg" className="gap-2">
-              <Plus className="h-5 w-5" />
-              Nouveau document
+      <PageHeader
+        title="Documents & Médias"
+        description="Gérez tous vos documents liés aux marchés publics"
+        count={pagination.totalItems}
+        action={
+          <>
+            <ExportMenu
+              type="documents"
+              filters={{
+                type: params.type,
+                phase: params.phase,
+                search: params.search,
+              }}
+            />
+            <Button asChild>
+              <Link href="/documents/upload">
+                <Plus className="h-4 w-4 mr-2" />
+                Nouveau document
+              </Link>
             </Button>
-          </Link>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Contenu */}
       <DocumentsContent documents={documents} />

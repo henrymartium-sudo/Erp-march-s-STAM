@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageHeader } from '@/components/shared/page-header'
 import { VehiculeList } from '@/components/vehicules/vehicule-list'
 import { VehiculeFilters } from '@/components/vehicules/vehicule-filters'
 import { ExportMenu } from '@/components/exports'
@@ -61,29 +62,28 @@ export default async function VehiculesPage({ searchParams }: VehiculesPageProps
   return (
     <div className="space-y-6">
       {/* En-tête */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Véhicules</h1>
-          <p className="text-muted-foreground">
-            Gérez le parc de véhicules liés à vos marchés
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <ExportMenu
-            type="vehicules"
-            filters={{
-              statut: params.statut,
-              search: params.search,
-            }}
-          />
-          <Button asChild>
-            <Link href="/vehicules/nouveau">
-              <Plus className="h-4 w-4 mr-2" />
-              Nouveau véhicule
-            </Link>
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Véhicules"
+        description="Gérez le parc de véhicules liés à vos marchés"
+        count={pagination.totalItems}
+        action={
+          <>
+            <ExportMenu
+              type="vehicules"
+              filters={{
+                statut: params.statut,
+                search: params.search,
+              }}
+            />
+            <Button asChild>
+              <Link href="/vehicules/nouveau">
+                <Plus className="h-4 w-4 mr-2" />
+                Nouveau véhicule
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
       {/* Filtres */}
       <VehiculeFilters

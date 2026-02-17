@@ -4,39 +4,237 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* ================================================================
+       PALETTE SHADCN/UI — MAPPÉE SUR L'IDENTITÉ VISUELLE STAM
+    ================================================================ */
+
+    /* Background principal — blanc cassé chaud */
+    --background: 210 20% 98%;
+    --foreground: 217 33% 17%;        /* #1E293B gris ardoise */
+
+    /* Cards */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 217 33% 17%;
+
+    /* Popover */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --popover-foreground: 217 33% 17%;
+
+    /* Primary = Bleu électrique #2563EB — boutons CTA principaux */
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary = Gris doux */
+    --secondary: 214 32% 95%;
+    --secondary-foreground: 217 33% 17%;
+
+    /* Muted — fonds neutres discrets */
+    --muted: 214 32% 95%;
+    --muted-foreground: 215 16% 47%;  /* #64748B */
+
+    /* Accent = bleu très léger — hover ghost/outline buttons */
+    --accent: 214 100% 95%;
+    --accent-foreground: 221 83% 45%;
+
+    /* Destructive = Rouge sobre #DC2626 */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders et inputs */
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
+
+    /* Border radius */
     --radius: 0.5rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+
+    /* ================================================================
+       COULEURS CHARTS
+    ================================================================ */
+    --chart-1: 221 83% 53%;   /* Bleu électrique */
+    --chart-2: 142 72% 29%;   /* Vert forêt */
+    --chart-3: 45 77% 44%;    /* Or/ambre */
+    --chart-4: 0 72% 51%;     /* Rouge sobre */
+    --chart-5: 262 52% 47%;   /* Violet */
+
+    /* ================================================================
+       PALETTE STAM — Variables spécifiques à l'identité de marque
+    ================================================================ */
+
+    /* Bleu institutionnel profond — couleur principale de la sidebar */
+    --stam-primary: 214 52% 25%;         /* #1E3A5F */
+    --stam-primary-dark: 214 55% 18%;    /* Hover sidebar header */
+    --stam-primary-light: 214 52% 35%;   /* Variante plus claire */
+
+    /* Or/Ambre — accent secondaire (secteur automobile premium) */
+    --stam-gold: 45 77% 44%;             /* #C49A1A */
+    --stam-gold-light: 45 85% 60%;       /* Version plus lumineuse */
+    --stam-gold-subtle: 45 77% 96%;      /* Fond très léger */
+
+    /* Bleu électrique — interactions, CTAs */
+    --stam-accent: 221 83% 53%;          /* #2563EB */
+    --stam-accent-light: 214 100% 95%;   /* Fond hover */
+
+    /* Statuts sémantiques */
+    --stam-success: 142 72% 29%;         /* #16A34A Vert forêt */
+    --stam-success-bg: 142 76% 95%;      /* Fond succès */
+    --stam-warning: 32 95% 44%;          /* #D97706 Ambre */
+    --stam-warning-bg: 32 100% 95%;      /* Fond warning */
+    --stam-danger: 0 72% 51%;            /* #DC2626 Rouge sobre */
+    --stam-danger-bg: 0 100% 96%;        /* Fond danger */
+
+    /* ================================================================
+       SIDEBAR — Dark sidebar institutionnelle
+    ================================================================ */
+    --sidebar-bg: 214 52% 18%;           /* Bleu institutionnel très profond */
+    --sidebar-fg: 210 30% 92%;           /* Texte blanc cassé */
+    --sidebar-muted: 214 25% 58%;        /* Texte secondaire estompé */
+    --sidebar-active-bg: 214 48% 28%;    /* Item actif — fond légèrement plus clair */
+    --sidebar-hover-bg: 214 48% 22%;     /* Hover — transition douce */
+    --sidebar-border: 214 35% 25%;       /* Séparateurs subtils */
+    --sidebar-accent: 45 77% 44%;        /* Bordure gauche item actif — couleur or */
+    --sidebar-logo-bg: 214 55% 14%;      /* Zone logo — encore plus sombre */
   }
 }
 
+/* ================================================================
+   BASE STYLES
+================================================================ */
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-dm-sans), 'DM Sans', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1 { @apply text-2xl font-bold tracking-tight; }
+  h2 { @apply text-xl font-semibold tracking-tight; }
+  h3 { @apply text-lg font-semibold; }
+  h4 { @apply text-base font-semibold; }
+
+  /* Scrollbar sobre */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+}
+
+/* ================================================================
+   ANIMATIONS KEYFRAMES
+================================================================ */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-badge {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.7; transform: scale(1.05); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+
+/* ================================================================
+   UTILITIES CUSTOM
+================================================================ */
+@layer utilities {
+
+  /* Skeleton shimmer loading */
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 25%,
+      hsl(215 16% 80%) 50%,
+      hsl(var(--muted)) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  /* Badge pulsant pour alertes urgentes */
+  .badge-pulse {
+    animation: pulse-badge 1.5s ease-in-out infinite;
+  }
+
+  /* Entrées de page */
+  .animate-fade-in {
+    animation: fade-in 150ms ease-out;
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 200ms ease-out;
+  }
+
+  .animate-slide-in-left {
+    animation: slide-in-left 200ms ease-out;
+  }
+
+  /* Sidebar item actif — fond éclairci */
+  .sidebar-item-active {
+    background-color: hsl(var(--sidebar-active-bg));
+    color: hsl(0 0% 100%);
+  }
+
+  /* Bordure gauche active — desktop uniquement (pas de décalage en mode icônes tablette) */
+  @media (min-width: 1024px) {
+    .sidebar-active-border {
+      border-left: 3px solid hsl(var(--sidebar-accent));
+      padding-left: calc(0.75rem - 3px) !important;
+    }
+  }
+
+  /* Sidebar item hover */
+  .sidebar-item-hover {
+    transition: background-color 150ms ease, color 150ms ease;
+  }
+  .sidebar-item-hover:hover {
+    background-color: hsl(var(--sidebar-hover-bg));
+    color: hsl(0 0% 100%);
+  }
+
+  /* Card hover standard */
+  .card-hover {
+    transition: box-shadow 200ms ease, transform 200ms ease;
+  }
+  .card-hover:hover {
+    box-shadow: 0 4px 16px rgba(30, 58, 95, 0.12);
+    transform: translateY(-1px);
+  }
+
+  /* Texte monospace pour codes marchés */
+  .font-mono-marche {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    font-size: 0.8125rem;
+    letter-spacing: 0.025em;
   }
 }

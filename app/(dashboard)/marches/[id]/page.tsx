@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getMarcheById } from '@/lib/actions/marches'
 import { MarcheDetail } from '@/components/marches/marche-detail'
+import { BreadcrumbNav } from '@/components/shared/breadcrumb-nav'
 import { serializeMarche } from '@/lib/utils/serialize'
 
 interface MarchePageProps {
@@ -21,5 +22,16 @@ export default async function MarchePage({ params }: MarchePageProps) {
   // Les Decimal Prisma ne sont PAS sérialisables par RSC
   const marche = serializeMarche(marcheRaw)
 
-  return <MarcheDetail marche={marche} />
+  return (
+    <div className="space-y-5">
+      <BreadcrumbNav
+        showHome
+        items={[
+          { label: 'Marchés', href: '/marches' },
+          { label: marche.numero },
+        ]}
+      />
+      <MarcheDetail marche={marche} />
+    </div>
+  )
 }

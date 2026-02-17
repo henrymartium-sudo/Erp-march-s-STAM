@@ -5,15 +5,16 @@ import {
   getDestinataires,
 } from "@/lib/actions/alertes-manuelles";
 import { AlertesDashboard } from "@/components/admin/alertes/alertes-dashboard";
+import { AlertesTimeline } from "@/components/admin/alertes/alertes-timeline";
+import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Mail } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function AlertesPage() {
   await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION']);
 
-  // Récupérer les données en parallèle
   const [alertesResult, destinatairesResult] = await Promise.all([
     getAlertesActuelles(),
     getDestinataires(),
@@ -26,7 +27,11 @@ export default async function AlertesPage() {
 
   if (!alertes) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="space-y-6">
+        <PageHeader
+          title="Gestion des Alertes"
+          description="Envoyez manuellement les alertes aux destinataires sélectionnés"
+        />
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-destructive">
@@ -45,43 +50,47 @@ export default async function AlertesPage() {
   const totalAlertes = alertes.cautions.length + alertes.marches.length;
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* En-tête */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Gestion des Alertes
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Envoyez manuellement les alertes aux destinataires sélectionnés
-          </p>
-        </div>
-        <div className="flex items-center gap-3 px-4 py-2 bg-primary/10 rounded-lg">
-          <Mail className="h-5 w-5 text-primary" />
-          <div>
-            <p className="text-sm font-medium">Alertes en cours</p>
-            <p className="text-2xl font-bold text-primary">{totalAlertes}</p>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-6">
+      {/* En-tête STAM */}
+      <PageHeader
+        title="Gestion des Alertes"
+        description="Surveillance en temps réel — marchés et cautions proches échéance"
+        count={totalAlertes > 0 ? totalAlertes : undefined}
+      />
 
-      {/* Dashboard des alertes */}
-      <Suspense
-        fallback={
-          <Card>
-            <CardContent className="p-6">
-              <p className="text-center text-muted-foreground">
-                Chargement...
-              </p>
-            </CardContent>
-          </Card>
-        }
-      >
-        <AlertesDashboard
-          alertes={alertes}
-          destinataires={destinataires || []}
-        />
-      </Suspense>
+      {/* Timeline visuelle rouge / ambre / vert */}
+      <section>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          Tableau de bord des échéances
+        </h2>
+        <AlertesTimeline alertes={alertes} />
+      </section>
+
+      {/* Séparateur visuel */}
+      <div className="border-t border-dashed border-gray-200" />
+
+      {/* Dashboard email (destinataires + envoi) */}
+      <section>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          Envoi manuel des alertes
+        </h2>
+        <Suspense
+          fallback={
+            <Card>
+              <CardContent className="p-6">
+                <p className="text-center text-muted-foreground">
+                  Chargement...
+                </p>
+              </CardContent>
+            </Card>
+          }
+        >
+          <AlertesDashboard
+            alertes={alertes}
+            destinataires={destinataires || []}
+          />
+        </Suspense>
+      </section>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getVehiculeById } from '@/lib/actions/vehicules'
 import { VehiculeDetail } from '@/components/vehicules/vehicule-detail'
+import { BreadcrumbNav } from '@/components/shared/breadcrumb-nav'
 import { serializeVehicule } from '@/lib/utils/serialize'
 
 export const dynamic = 'force-dynamic'
@@ -24,5 +25,16 @@ export default async function VehiculePage({ params }: VehiculePageProps) {
   // Sérialiser le véhicule pour le passage au Client Component
   const serializedVehicule = serializeVehicule(vehicule)
 
-  return <VehiculeDetail vehicule={serializedVehicule} />
+  return (
+    <div className="space-y-5">
+      <BreadcrumbNav
+        showHome
+        items={[
+          { label: 'Véhicules', href: '/vehicules' },
+          { label: serializedVehicule.immatriculation },
+        ]}
+      />
+      <VehiculeDetail vehicule={serializedVehicule} />
+    </div>
+  )
 }
