@@ -1,7 +1,11 @@
+'use client'
+
 import Link from 'next/link'
-import { VehiculeCard } from './vehicule-card'
+import { Truck, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Plus, Truck } from 'lucide-react'
+import { VehiculeCard } from './vehicule-card'
+import { SortableHeader } from '@/components/shared/SortableHeader'
+import { useSortable } from '@/hooks/use-sortable'
 import type { SerializedVehicule } from '@/types/serialized'
 
 interface VehiculeListProps {
@@ -9,13 +13,12 @@ interface VehiculeListProps {
 }
 
 export function VehiculeList({ vehicules }: VehiculeListProps) {
-  // Trier les véhicules par date de création (plus récents en premier)
-  const vehiculesTries = [...vehicules].sort((a, b) => {
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  })
+  const { sortedData, sortConfig, onSort } = useSortable<SerializedVehicule>(
+    vehicules,
+    { key: 'createdAt', direction: 'desc' }
+  )
 
-  // État vide
-  if (vehiculesTries.length === 0) {
+  if (vehicules.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-4">
         <Truck className="h-16 w-16 text-muted-foreground mb-4" />
@@ -34,12 +37,49 @@ export function VehiculeList({ vehicules }: VehiculeListProps) {
     )
   }
 
-  // Grille responsive de véhicules
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {vehiculesTries.map((vehicule) => (
-        <VehiculeCard key={vehicule.id} vehicule={vehicule} />
-      ))}
+    <div>
+      {/* Toolbar de tri */}
+      <div className="flex flex-wrap items-center gap-1 mb-4">
+        <span className="text-xs text-muted-foreground mr-1">Trier par :</span>
+        <SortableHeader<SerializedVehicule>
+          field="immatriculation"
+          label="Immatriculation"
+          sortConfig={sortConfig}
+          onSort={onSort}
+        />
+        <SortableHeader<SerializedVehicule>
+          field="marque"
+          label="Marque"
+          sortConfig={sortConfig}
+          onSort={onSort}
+        />
+        <SortableHeader<SerializedVehicule>
+          field="annee"
+          label="Année"
+          sortConfig={sortConfig}
+          onSort={onSort}
+        />
+        <SortableHeader<SerializedVehicule>
+          field="dateLivraison"
+          label="Livraison"
+          sortConfig={sortConfig}
+          onSort={onSort}
+        />
+        <SortableHeader<SerializedVehicule>
+          field="createdAt"
+          label="Ajouté"
+          sortConfig={sortConfig}
+          onSort={onSort}
+        />
+      </div>
+
+      {/* Grille responsive de véhicules */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {sortedData.map((vehicule) => (
+          <VehiculeCard key={vehicule.id} vehicule={vehicule} />
+        ))}
+      </div>
     </div>
   )
 }

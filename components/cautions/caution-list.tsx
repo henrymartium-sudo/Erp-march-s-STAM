@@ -3,18 +3,11 @@
 import { useState } from 'react';
 import { CautionCard } from './caution-card';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChevronLeft, ChevronRight, FileText, ArrowUpDown } from 'lucide-react';
+import { SortableHeader } from '@/components/shared/SortableHeader';
+import { useSortable } from '@/hooks/use-sortable';
+import { ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import type { SerializedCaution } from '@/types/serialized';
-
-type SortOption = 'echeance' | 'montant' | 'dateCreation';
 
 interface CautionListProps {
   cautions: SerializedCaution[];
@@ -26,8 +19,7 @@ interface CautionListProps {
 }
 
 /**
- * Liste paginée de cautions avec tri
- * Affiche les cautions en grille responsive
+ * Liste paginée de cautions avec tri par colonne (asc/desc).
  */
 export function CautionList({
   cautions,
@@ -38,31 +30,26 @@ export function CautionList({
   className,
 }: CautionListProps) {
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortBy, setSortBy] = useState<SortOption>('echeance');
 
-  // Tri (les dates sont des strings ISO, les montants sont des numbers)
-  const sortedCautions = [...cautions].sort((a, b) => {
-    switch (sortBy) {
-      case 'echeance':
-        return new Date(a.dateEcheance).getTime() - new Date(b.dateEcheance).getTime();
-      case 'montant':
-        return b.montant - a.montant;
-      case 'dateCreation':
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      default:
-        return 0;
-    }
-  });
+  const { sortedData, sortConfig, onSort } = useSortable<SerializedCaution>(
+    cautions,
+    { key: 'dateEcheance', direction: 'asc' }
+  );
 
-  // Pagination
-  const totalPages = Math.ceil(sortedCautions.length / itemsPerPage);
+  // Pagination sur les données triées
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedCautions = sortedCautions.slice(startIndex, endIndex);
+  const paginatedCautions = sortedData.slice(startIndex, startIndex + itemsPerPage);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Réinitialiser la page quand le tri change
+  const handleSort = (key: keyof SerializedCaution) => {
+    setCurrentPage(1);
+    onSort(key);
   };
 
   if (isLoading) {
@@ -100,18 +87,32 @@ export function CautionList({
           {totalPages > 1 && ` (page ${currentPage} sur ${totalPages})`}
         </div>
 
-        <div className="flex items-center gap-2">
-          <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
-          <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Trier par..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="echeance">Échéance (proche)</SelectItem>
-              <SelectItem value="montant">Montant (élevé)</SelectItem>
-              <SelectItem value="dateCreation">Récentes</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex flex-wrap items-center gap-1">
+          <span className="text-xs text-muted-foreground mr-1">Trier par :</span>
+          <SortableHeader<SerializedCaution>
+            field="dateEcheance"
+            label="Échéance"
+            sortConfig={sortConfig}
+            onSort={handleSort}
+          />
+          <SortableHeader<SerializedCaution>
+            field="montant"
+            label="Montant"
+            sortConfig={sortConfig}
+            onSort={handleSort}
+          />
+          <SortableHeader<SerializedCaution>
+            field="statut"
+            label="Statut"
+            sortConfig={sortConfig}
+            onSort={handleSort}
+          />
+          <SortableHeader<SerializedCaution>
+            field="createdAt"
+            label="Ajoutée"
+            sortConfig={sortConfig}
+            onSort={handleSort}
+          />
         </div>
       </div>
 
