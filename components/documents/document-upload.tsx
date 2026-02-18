@@ -19,7 +19,8 @@ import { TYPE_DOCUMENT_LABELS, PHASE_MARCHE_LABELS, formatTaille } from '@/lib/u
 import { ALLOWED_FILE_EXTENSIONS, MAX_FILE_SIZE } from '@/lib/validations/document'
 import { Upload, FileText, X, CheckCircle2, Save } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { uploadDocument } from '@/lib/actions/documents'
+import { getUploadUrl, saveDocumentMetadata } from '@/lib/actions/documents'
+import { uploadWithProgress } from '@/lib/supabase/upload-client'
 import { toast } from '@/lib/utils/toast'
 import { loadDraft, useDraftSave, formatDraftAge } from '@/hooks/use-draft-save'
 
@@ -146,7 +147,7 @@ export function DocumentUpload({ marcheId, onSuccess, onCancel }: DocumentUpload
     setFile(null)
   }
 
-  // Soumettre le formulaire
+  // Soumettre le formulaire — upload direct client → Supabase (50MB max)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -164,48 +165,58 @@ export function DocumentUpload({ marcheId, onSuccess, onCancel }: DocumentUpload
     setUploadProgress(0)
 
     try {
-      // Créer FormData
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('nom', nom || file.name)
-      formData.append('type', type)
-      if (phase) formData.append('phase', phase)
-      if (description) formData.append('description', description)
-      if (dateValidite) formData.append('dateValidite', new Date(dateValidite).toISOString())
-      if (marcheId) formData.append('marcheId', marcheId)
-      if (tags) formData.append('tags', tags)
+      // Étape 1 : obtenir une URL signée côté serveur
+      const urlResult = await getUploadUrl({
+        type,
+        fileName: file.name,
+        marcheId: marcheId || undefined,
+      })
 
-      // Simuler la progression (car FormData ne supporte pas les événements de progression)
-      const progressInterval = setInterval(() => {
-        setUploadProgress((prev) => Math.min(prev + 10, 90))
-      }, 200)
+      if (!urlResult.success) {
+        toast.error(urlResult.error)
+        return
+      }
 
-      // Upload
-      const result = await uploadDocument(formData)
+      const { signedUrl, storagePath } = urlResult.data
 
-      clearInterval(progressInterval)
-      setUploadProgress(100)
+      // Étape 2 : upload direct client → Supabase avec vraie progression
+      await uploadWithProgress(signedUrl, file, setUploadProgress)
 
-      if (result.success) {
-        toast.success('Document uploadé avec succès')
-        clearDraft()
-        // Réinitialiser le formulaire
-        setFile(null)
-        setNom('')
-        setType(undefined)
-        setPhase(undefined)
-        setDescription('')
-        setDateValidite('')
-        setTags('')
-        setUploadProgress(0)
+      // Étape 3 : sauvegarder les métadonnées en base de données
+      const metaResult = await saveDocumentMetadata({
+        storagePath,
+        nom: nom || file.name,
+        nomOriginal: file.name,
+        type,
+        phase: phase || undefined,
+        taille: file.size,
+        mimeType: file.type,
+        description: description || undefined,
+        dateValidite: dateValidite ? new Date(dateValidite).toISOString() : undefined,
+        marcheId: marcheId || undefined,
+        tags: tags || undefined,
+      })
 
-        if (onSuccess) {
-          onSuccess()
-        } else {
-          router.refresh()
-        }
+      if (!metaResult.success) {
+        toast.error(metaResult.error)
+        return
+      }
+
+      toast.success('Document uploadé avec succès')
+      clearDraft()
+      setFile(null)
+      setNom('')
+      setType(undefined)
+      setPhase(undefined)
+      setDescription('')
+      setDateValidite('')
+      setTags('')
+      setUploadProgress(0)
+
+      if (onSuccess) {
+        onSuccess()
       } else {
-        toast.error(result.error)
+        router.refresh()
       }
     } catch (error) {
       console.error('Upload error:', error)

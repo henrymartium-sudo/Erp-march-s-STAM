@@ -138,6 +138,102 @@ export async function uploadDocument(
 }
 
 /**
+ * GET UPLOAD URL
+ * Génère une URL signée pour upload direct client → Supabase Storage (bypass Next.js, limite 50MB)
+ * Le client upload directement, puis appelle saveDocumentMetadata()
+ */
+export async function getUploadUrl(params: {
+  type: TypeDocument
+  fileName: string
+  marcheId?: string
+}): Promise<ActionResult<{ signedUrl: string; storagePath: string }>> {
+  try {
+    await requireMarcheWrite()
+
+    const storagePath = generateStoragePath(params.type, params.fileName, params.marcheId)
+
+    const supabase = createClient()
+    const { data, error } = await supabase.storage
+      .from('marches-documents')
+      .createSignedUploadUrl(storagePath)
+
+    if (error || !data) {
+      console.error('[getUploadUrl Error]', error)
+      return { success: false, error: 'Impossible de générer l\'URL d\'upload' }
+    }
+
+    return { success: true, data: { signedUrl: data.signedUrl, storagePath } }
+  } catch (error) {
+    console.error('[getUploadUrl Error]', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur serveur' }
+  }
+}
+
+/**
+ * SAVE DOCUMENT METADATA
+ * Sauvegarde les métadonnées d'un document après upload direct client → Supabase
+ */
+export async function saveDocumentMetadata(params: {
+  storagePath: string
+  nom: string
+  nomOriginal: string
+  type: TypeDocument
+  phase?: string
+  taille: number
+  mimeType: string
+  description?: string
+  dateValidite?: string
+  marcheId?: string
+  tags?: string
+}): Promise<ActionResult<Document>> {
+  try {
+    const session = await requireMarcheWrite()
+
+    const documentData: Prisma.DocumentCreateInput = {
+      nom: params.nom,
+      nomOriginal: params.nomOriginal,
+      type: params.type,
+      phase: (params.phase as import('@prisma/client').PhaseMarche) || null,
+      taille: params.taille,
+      mimeType: params.mimeType,
+      storagePath: params.storagePath,
+      storageUrl: null,
+      description: params.description || null,
+      dateValidite: params.dateValidite ? new Date(params.dateValidite) : null,
+      tags: params.tags ? params.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
+      user: { connect: { id: session.user.id } },
+      ...(params.marcheId && { marche: { connect: { id: params.marcheId } } }),
+    }
+
+    const document = await prisma.document.create({
+      data: documentData,
+      include: {
+        user: { select: { id: true, name: true, role: true } },
+        marche: { select: { id: true, numero: true, objet: true } },
+      },
+    })
+
+    revalidatePath('/documents')
+    if (params.marcheId) {
+      revalidatePath(`/marches/${params.marcheId}`)
+    }
+
+    return { success: true, data: document }
+  } catch (error) {
+    // Rollback : supprimer le fichier uploadé si la sauvegarde DB échoue
+    try {
+      const supabase = createClient()
+      await supabase.storage.from('marches-documents').remove([params.storagePath])
+    } catch (rollbackError) {
+      console.error('[saveDocumentMetadata Rollback Error]', rollbackError)
+    }
+
+    console.error('[saveDocumentMetadata Error]', error)
+    return { success: false, error: 'Erreur lors de la sauvegarde en base de données' }
+  }
+}
+
+/**
  * UPLOAD NOUVELLE VERSION
  * Upload une nouvelle version d'un document existant
  */
