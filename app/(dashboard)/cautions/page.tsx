@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
-import { requireAuth } from "@/lib/utils/permissions";
+import { requireAuth, canWrite } from "@/lib/utils/permissions";
 import { getCautions } from "@/lib/actions/cautions";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,6 +61,8 @@ function serializeCaution(caution: any): SerializedCaution {
 
 export default async function CautionsPage({ searchParams }: CautionsPageProps) {
   const session = await requireAuth();
+  const role = (session.user as { role?: string } | undefined)?.role;
+  const userCanWrite = canWrite(role);
   const params = await searchParams;
 
   // Parse page number
@@ -127,12 +129,14 @@ export default async function CautionsPage({ searchParams }: CautionsPageProps) 
                 search: params.search,
               }}
             />
-            <Button asChild>
-              <Link href="/cautions/nouvelle">
-                <Plus className="h-4 w-4 mr-2" />
-                Nouvelle caution
-              </Link>
-            </Button>
+            {userCanWrite && (
+              <Button asChild>
+                <Link href="/cautions/nouvelle">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nouvelle caution
+                </Link>
+              </Button>
+            )}
           </>
         }
       />

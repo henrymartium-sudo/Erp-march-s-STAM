@@ -9,6 +9,8 @@ import { getAllMarches } from '@/lib/actions/marches'
 import { searchInFields } from '@/lib/utils/search'
 import { serializeMarche } from '@/lib/utils/serialize'
 import { shouldShowPagination, formatPaginationMessage } from '@/lib/utils/pagination'
+import { canWrite, isExploitation } from '@/lib/utils/permissions'
+import { auth } from '@/lib/auth/auth.config'
 import { Plus } from 'lucide-react'
 import type { StatutMarche, TypeMarche } from '@prisma/client'
 
@@ -24,15 +26,26 @@ interface MarchesPageProps {
 }
 
 export default async function MarchesPage({ searchParams }: MarchesPageProps) {
+  // Session + permissions
+  const session = await auth()
+  const role = (session?.user as { role?: string } | undefined)?.role
+  const userCanWrite = canWrite(role)
+  const userIsExploitation = isExploitation(role)
+
   // Await searchParams (Next.js 15)
   const params = await searchParams
 
   // Parse page number
   const currentPage = Number(params.page) || 1
 
+  // EXPLOITATION : forcer le filtre EN_EXECUTION
+  const statutFilter = userIsExploitation
+    ? 'EN_EXECUTION'
+    : (params.statut as StatutMarche | undefined)
+
   // Récupérer les marchés avec pagination (backend)
   const marchesResponse = await getAllMarches({
-    statut: params.statut as StatutMarche | undefined,
+    statut: statutFilter as StatutMarche | undefined,
     type: params.type as TypeMarche | undefined,
     page: currentPage,
   })
@@ -45,7 +58,7 @@ export default async function MarchesPage({ searchParams }: MarchesPageProps) {
   if (params.search) {
     // Récupérer TOUS les marchés pour la recherche
     const allMarchesResponse = await getAllMarches({
-      statut: params.statut as StatutMarche | undefined,
+      statut: statutFilter as StatutMarche | undefined,
       type: params.type as TypeMarche | undefined,
       limit: 10000, // Récupérer tout
     })
@@ -87,12 +100,14 @@ export default async function MarchesPage({ searchParams }: MarchesPageProps) {
                 search: params.search,
               }}
             />
-            <Button asChild>
-              <Link href="/marches/nouveau">
-                <Plus className="h-4 w-4 mr-2" />
-                Nouveau marché
-              </Link>
-            </Button>
+            {userCanWrite && (
+              <Button asChild>
+                <Link href="/marches/nouveau">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nouveau marché
+                </Link>
+              </Button>
+            )}
           </>
         }
       />

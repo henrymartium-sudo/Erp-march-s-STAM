@@ -4,7 +4,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/ca
 import { PageHeader } from '@/components/shared/page-header'
 import { DataPagination } from '@/components/ui/data-pagination'
 import { Plus } from 'lucide-react'
-import { requireAuth } from '@/lib/utils/permissions'
+import { requireAuth, canWrite } from '@/lib/utils/permissions'
 import { getAllDocuments } from '@/lib/actions/documents'
 import { shouldShowPagination } from '@/lib/utils/pagination'
 import { DocumentsContent } from './_components/documents-content'
@@ -24,8 +24,10 @@ interface DocumentsPageProps {
 }
 
 export default async function DocumentsPage({ searchParams }: DocumentsPageProps) {
-  // Vérifier l'authentification
-  await requireAuth()
+  // Vérifier l'authentification + permissions
+  const session = await requireAuth()
+  const role = (session.user as { role?: string } | undefined)?.role
+  const userCanWrite = canWrite(role)
 
   // Await searchParams (Next.js 15)
   const params = await searchParams
@@ -77,12 +79,14 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
                 search: params.search,
               }}
             />
-            <Button asChild>
-              <Link href="/documents/upload">
-                <Plus className="h-4 w-4 mr-2" />
-                Nouveau document
-              </Link>
-            </Button>
+            {userCanWrite && (
+              <Button asChild>
+                <Link href="/documents/upload">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nouveau document
+                </Link>
+              </Button>
+            )}
           </>
         }
       />

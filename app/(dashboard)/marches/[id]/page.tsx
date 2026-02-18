@@ -3,6 +3,8 @@ import { getMarcheById } from '@/lib/actions/marches'
 import { MarcheDetail } from '@/components/marches/marche-detail'
 import { BreadcrumbNav } from '@/components/shared/breadcrumb-nav'
 import { serializeMarche } from '@/lib/utils/serialize'
+import { auth } from '@/lib/auth/auth.config'
+import { canWrite } from '@/lib/utils/permissions'
 
 interface MarchePageProps {
   params: Promise<{
@@ -11,15 +13,16 @@ interface MarchePageProps {
 }
 
 export default async function MarchePage({ params }: MarchePageProps) {
-  const { id } = await params
+  const [session, { id }] = await Promise.all([auth(), params])
+  const role = (session?.user as { role?: string } | undefined)?.role
+  const userCanWrite = canWrite(role)
+
   const marcheRaw = await getMarcheById(id)
 
   if (!marcheRaw) {
     notFound()
   }
 
-  // Sérialiser le marché pour le Client Component
-  // Les Decimal Prisma ne sont PAS sérialisables par RSC
   const marche = serializeMarche(marcheRaw)
 
   return (
@@ -31,7 +34,7 @@ export default async function MarchePage({ params }: MarchePageProps) {
           { label: marche.numero },
         ]}
       />
-      <MarcheDetail marche={marche} />
+      <MarcheDetail marche={marche} canWrite={userCanWrite} />
     </div>
   )
 }

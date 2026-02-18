@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  UserCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -57,6 +58,7 @@ const pageTitles: Record<string, string> = {
   '/vehicules':     'Véhicules',
   '/documents':     'Documents',
   '/admin/alertes': 'Alertes & Notifications',
+  '/profil':        'Mon profil',
 }
 
 function getPageTitle(pathname: string): string {
@@ -215,6 +217,31 @@ function SidebarContent({ userName, userRole, onClose, forceExpanded = false }: 
             </div>
           </div>
         </div>
+
+        {/* Lien Mon profil */}
+        <Link
+          href="/profil"
+          onClick={onClose}
+          title="Mon profil"
+          className={cn(
+            'flex items-center w-full py-2 rounded-lg text-[13px] font-medium transition-all duration-150',
+            forceExpanded ? 'gap-3 px-3' : 'justify-center gap-0 px-1 lg:justify-start lg:gap-3 lg:px-3'
+          )}
+          style={{ color: 'hsl(var(--sidebar-muted))' }}
+          onMouseEnter={(e) => {
+            const el = e.currentTarget as HTMLElement
+            el.style.color = 'white'
+            el.style.backgroundColor = 'hsl(var(--sidebar-hover-bg))'
+          }}
+          onMouseLeave={(e) => {
+            const el = e.currentTarget as HTMLElement
+            el.style.color = 'hsl(var(--sidebar-muted))'
+            el.style.backgroundColor = ''
+          }}
+        >
+          <UserCircle className="h-4 w-4 flex-shrink-0" />
+          <span className={forceExpanded ? 'block' : 'hidden lg:block'}>Mon profil</span>
+        </Link>
 
         {/* Bouton déconnexion */}
         <button
