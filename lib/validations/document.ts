@@ -5,8 +5,8 @@ import { TypeDocument, PhaseMarche } from '@prisma/client'
  * CONSTANTES DE VALIDATION
  */
 
-// Taille maximale : 10 MB
-export const MAX_FILE_SIZE = 10 * 1024 * 1024
+// Taille maximale : 50 MB (upload direct Supabase, bypass Next.js)
+export const MAX_FILE_SIZE = 50 * 1024 * 1024
 
 // Types MIME autorisés
 export const ALLOWED_MIME_TYPES = [
