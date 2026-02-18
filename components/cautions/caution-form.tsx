@@ -32,10 +32,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { CalendarIcon, Loader2, AlertTriangle, Lightbulb } from 'lucide-react';
+import { CalendarIcon, Loader2, AlertTriangle, Lightbulb, Save } from 'lucide-react';
 import {
   createCautionSchema,
 } from '@/lib/validations/caution';
+import { loadDraft, useDraftSave, formatDraftAge } from '@/hooks/use-draft-save';
+import { toast } from '@/lib/utils/toast';
 import type { TypeCaution, StatutCaution } from '@prisma/client';
 
 // Type pour le formulaire (tous les champs requis)
@@ -120,6 +122,22 @@ export function CautionForm({
   const watchDateEmission = form.watch('dateEmission');
   const watchDateEcheance = form.watch('dateEcheance');
 
+  // --- Brouillons Auto-Save (create mode uniquement) ---
+  const DRAFT_KEY = 'draft:caution:new';
+
+  // Restauration du brouillon au montage (client uniquement)
+  useEffect(() => {
+    if (isEditMode) return;
+    const draft = loadDraft<CautionFormValues>(DRAFT_KEY);
+    if (!draft) return;
+    form.reset(draft.data);
+    toast.info(`Brouillon restauré (sauvegardé ${formatDraftAge(draft.savedAt)})`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const allFormValues = form.watch();
+  const { savedAt, clearDraft } = useDraftSave(DRAFT_KEY, allFormValues, 2000, !isEditMode);
+
   // Calculer les suggestions
   useEffect(() => {
     if (!watchType) return;
@@ -170,6 +188,7 @@ export function CautionForm({
 
   const handleSubmit = form.handleSubmit(async (data) => {
     await onSubmit(data);
+    clearDraft();
   });
 
   return (
@@ -432,6 +451,14 @@ export function CautionForm({
             )}
           />
         </div>
+
+        {/* Indicateur brouillon */}
+        {savedAt && !isEditMode && (
+          <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
+            <Save className="h-3 w-3" />
+            <span>Brouillon sauvegardé</span>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex justify-end gap-4">

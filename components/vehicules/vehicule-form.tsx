@@ -31,7 +31,9 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { STATUT_VEHICULE_LABELS, MARQUES_VEHICULES, ANNEES_DISPONIBLES } from '@/lib/constants/vehicule'
-import { CalendarIcon, Loader2 } from 'lucide-react'
+import { loadDraft, useDraftSave, formatDraftAge } from '@/hooks/use-draft-save'
+import { toast } from '@/lib/utils/toast'
+import { CalendarIcon, Loader2, Save } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
@@ -90,6 +92,22 @@ export function VehiculeForm({ vehicule, marches: initialMarches, onSuccess }: V
   const watchedStatut = form.watch('statut')
   const watchedImmatriculation = form.watch('immatriculation')
 
+  // --- Brouillons Auto-Save (create mode uniquement) ---
+  const DRAFT_KEY = 'draft:vehicule:new'
+
+  // Restauration du brouillon au montage (client uniquement)
+  useEffect(() => {
+    if (isEditing) return
+    const draft = loadDraft<CreateVehiculeInput>(DRAFT_KEY)
+    if (!draft) return
+    form.reset(draft.data)
+    toast.info(`Brouillon restauré (sauvegardé ${formatDraftAge(draft.savedAt)})`)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const allFormValues = form.watch()
+  const { savedAt, clearDraft } = useDraftSave(DRAFT_KEY, allFormValues, 2000, !isEditing)
+
   // Vérifier l'unicité de l'immatriculation
   useEffect(() => {
     if (!isEditing && watchedImmatriculation && watchedImmatriculation.length >= 5) {
@@ -116,6 +134,7 @@ export function VehiculeForm({ vehicule, marches: initialMarches, onSuccess }: V
 
         if (result.success) {
           setSuccess(true)
+          clearDraft()
           form.reset()
 
           // Callback optionnel
@@ -498,6 +517,14 @@ export function VehiculeForm({ vehicule, marches: initialMarches, onSuccess }: V
             />
           </CardContent>
         </Card>
+
+        {/* Indicateur brouillon */}
+        {savedAt && !isEditing && (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Save className="h-3 w-3" />
+            <span>Brouillon sauvegardé</span>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex gap-4">
