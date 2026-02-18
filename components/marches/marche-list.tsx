@@ -1,21 +1,24 @@
+'use client'
+
 import Link from 'next/link'
-import type { SerializedMarche } from '@/types/serialized'
-import { MarcheCard } from './marche-card'
+import { FileText, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Plus, FileText } from 'lucide-react'
+import { MarcheCard } from './marche-card'
+import { SortableHeader } from '@/components/shared/SortableHeader'
+import { useSortable } from '@/hooks/use-sortable'
+import type { SerializedMarche } from '@/types/serialized'
 
 interface MarcheListProps {
   marches: SerializedMarche[]
 }
 
 export function MarcheList({ marches }: MarcheListProps) {
-  // Trier les marchés par date de création (plus récents en premier)
-  const marchesTries = [...marches].sort((a, b) => {
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  })
+  const { sortedData, sortConfig, onSort } = useSortable<SerializedMarche>(
+    marches,
+    { key: 'createdAt', direction: 'desc' }
+  )
 
-  // État vide
-  if (marchesTries.length === 0) {
+  if (marches.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-4">
         <FileText className="h-16 w-16 text-muted-foreground mb-4" />
@@ -34,12 +37,49 @@ export function MarcheList({ marches }: MarcheListProps) {
     )
   }
 
-  // Grille responsive de marchés
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {marchesTries.map((marche) => (
-        <MarcheCard key={marche.id} marche={marche} />
-      ))}
+    <div>
+      {/* Toolbar de tri */}
+      <div className="flex flex-wrap items-center gap-1 mb-4">
+        <span className="text-xs text-muted-foreground mr-1">Trier par :</span>
+        <SortableHeader<SerializedMarche>
+          field="dateNotification"
+          label="Date"
+          sortConfig={sortConfig}
+          onSort={onSort}
+        />
+        <SortableHeader<SerializedMarche>
+          field="montant"
+          label="Montant"
+          sortConfig={sortConfig}
+          onSort={onSort}
+        />
+        <SortableHeader<SerializedMarche>
+          field="statut"
+          label="Statut"
+          sortConfig={sortConfig}
+          onSort={onSort}
+        />
+        <SortableHeader<SerializedMarche>
+          field="autoriteContractanteNom"
+          label="Organisme"
+          sortConfig={sortConfig}
+          onSort={onSort}
+        />
+        <SortableHeader<SerializedMarche>
+          field="createdAt"
+          label="Ajouté"
+          sortConfig={sortConfig}
+          onSort={onSort}
+        />
+      </div>
+
+      {/* Grille responsive de marchés */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {sortedData.map((marche) => (
+          <MarcheCard key={marche.id} marche={marche} />
+        ))}
+      </div>
     </div>
   )
 }
