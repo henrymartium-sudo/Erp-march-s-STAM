@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from '@/lib/utils/toast';
 import { CautionForm } from "@/components/cautions";
 import type { CautionFormValues } from "@/components/cautions";
 import { updateCaution } from "@/lib/actions/cautions";

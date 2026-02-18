@@ -11,20 +11,36 @@ datasource db {
 // ============================================
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
+  id            String          @id @default(cuid())
+  email         String          @unique
   name          String
-  password      String    // Hash bcrypt
-  role          UserRole  @default(VISITEUR)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  password      String          // Hash bcrypt
+  role          UserRole        @default(VISITEUR)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
   // Relations
-  marches       Marche[]
-  cautions      Caution[]
-  documents     Document[]
+  marches         Marche[]
+  cautions        Caution[]
+  documents       Document[]
+  passwordResets  PasswordReset[]
 
   @@map("users")
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("password_resets")
 }
 
 enum UserRole {

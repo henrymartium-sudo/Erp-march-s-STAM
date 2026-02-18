@@ -17,7 +17,7 @@ import { fr } from 'date-fns/locale'
 import type { Document } from '@prisma/client'
 import { Download, Eye, Trash2, History, Calendar, FileText, Tag } from 'lucide-react'
 import { deleteDocument, getSignedUrlForDocument } from '@/lib/actions/documents'
-import { toast } from 'sonner'
+import { toast } from '@/lib/utils/toast'
 import {
   AlertDialog,
   AlertDialogAction,

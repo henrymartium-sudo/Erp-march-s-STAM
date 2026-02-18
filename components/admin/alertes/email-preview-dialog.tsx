@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loader2, Eye } from "lucide-react";
 import { previewAlertEmail } from "@/lib/actions/alertes-manuelles";
-import { toast } from "sonner";
+import { toast } from '@/lib/utils/toast';
 
 type EmailPreviewDialogProps = {
   open: boolean;

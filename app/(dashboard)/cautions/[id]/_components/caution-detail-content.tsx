@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from '@/lib/utils/toast';
 import { CautionDetail } from "@/components/cautions";
 import { deleteCaution } from "@/lib/actions/cautions";
 

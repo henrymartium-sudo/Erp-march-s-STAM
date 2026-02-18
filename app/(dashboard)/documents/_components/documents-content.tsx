@@ -10,7 +10,7 @@ import {
 } from '@/components/documents'
 import { deleteDocument, getSignedUrlForDocument } from '@/lib/actions/documents'
 import type { Document } from '@prisma/client'
-import { toast } from 'sonner'
+import { toast } from '@/lib/utils/toast'
 import {
   AlertDialog,
   AlertDialogAction,
