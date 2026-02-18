@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -33,7 +33,9 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Calendar } from '@/components/ui/calendar'
 import { STATUT_LABELS } from '@/lib/utils/statut'
 import { getAvailableStatuts, isTerminal } from '@/lib/utils/workflow-statuts'
-import { Loader2 } from 'lucide-react'
+import { loadDraft, useDraftSave, formatDraftAge } from '@/hooks/use-draft-save'
+import { toast } from '@/lib/utils/toast'
+import { Loader2, Save } from 'lucide-react'
 import type { SerializedMarche } from '@/types/serialized'
 
 interface MarcheFormProps {
@@ -162,6 +164,22 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
   const isTerminalStatut = isEditing && initialStatut ? isTerminal(initialStatut) : false
   const availableStatuts = isEditing && initialStatut ? getAvailableStatuts(initialStatut) : null
 
+  // --- Brouillons Auto-Save (create mode uniquement) ---
+  const DRAFT_KEY = 'draft:marche:new'
+
+  // Restauration du brouillon au montage (client uniquement)
+  useEffect(() => {
+    if (isEditing) return
+    const draft = loadDraft<CreateMarcheInput>(DRAFT_KEY)
+    if (!draft) return
+    form.reset(draft.data)
+    toast.info(`Brouillon restauré (sauvegardé ${formatDraftAge(draft.savedAt)})`)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const allFormValues = form.watch()
+  const { savedAt, clearDraft } = useDraftSave(DRAFT_KEY, allFormValues, 2000, !isEditing)
+
   // Vérifier les avertissements pour les statuts de terminaison
   const checkTerminationWarnings = (data: any): boolean => {
     setWarning(null)
@@ -223,6 +241,7 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
 
         if (result.success) {
           setSuccess(true)
+          clearDraft()
           form.reset()
 
           if (onSuccess) {
@@ -1129,6 +1148,14 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
           {success && (
             <div className="p-4 text-sm text-green-800 bg-green-100 border border-green-200 rounded-md">
               Marché {isEditing ? 'modifié' : 'créé'} avec succès !
+            </div>
+          )}
+
+          {/* Indicateur brouillon */}
+          {savedAt && !isEditing && (
+            <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
+              <Save className="h-3 w-3" />
+              <span>Brouillon sauvegardé</span>
             </div>
           )}
 

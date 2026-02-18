@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,10 +17,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { TypeDocument, PhaseMarche } from '@prisma/client'
 import { TYPE_DOCUMENT_LABELS, PHASE_MARCHE_LABELS, formatTaille } from '@/lib/utils/document'
 import { ALLOWED_FILE_EXTENSIONS, MAX_FILE_SIZE } from '@/lib/validations/document'
-import { Upload, FileText, X, CheckCircle2 } from 'lucide-react'
+import { Upload, FileText, X, CheckCircle2, Save } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { uploadDocument } from '@/lib/actions/documents'
 import { toast } from '@/lib/utils/toast'
+import { loadDraft, useDraftSave, formatDraftAge } from '@/hooks/use-draft-save'
 
 interface DocumentUploadProps {
   marcheId?: string
@@ -45,6 +46,30 @@ export function DocumentUpload({ marcheId, onSuccess, onCancel }: DocumentUpload
   const [description, setDescription] = useState('')
   const [dateValidite, setDateValidite] = useState('')
   const [tags, setTags] = useState('')
+
+  // --- Brouillons Auto-Save ---
+  type DocumentDraft = { nom: string; type?: TypeDocument; phase?: PhaseMarche; description: string; dateValidite: string; tags: string }
+  const DRAFT_KEY = 'draft:document:new'
+
+  // Restauration du brouillon au montage (client uniquement, champs texte seulement — pas le fichier)
+  useEffect(() => {
+    const draft = loadDraft<DocumentDraft>(DRAFT_KEY)
+    if (!draft) return
+    setNom(draft.data.nom || '')
+    if (draft.data.type) setType(draft.data.type)
+    if (draft.data.phase) setPhase(draft.data.phase)
+    setDescription(draft.data.description || '')
+    setDateValidite(draft.data.dateValidite || '')
+    setTags(draft.data.tags || '')
+    toast.info(`Brouillon restauré (sauvegardé ${formatDraftAge(draft.savedAt)})`)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const draftData = useMemo<DocumentDraft>(
+    () => ({ nom, type, phase, description, dateValidite, tags }),
+    [nom, type, phase, description, dateValidite, tags]
+  )
+  const { savedAt, clearDraft } = useDraftSave<DocumentDraft>(DRAFT_KEY, draftData)
 
   // Validation d'un fichier
   const validateFile = useCallback((file: File): string | null => {
@@ -163,6 +188,7 @@ export function DocumentUpload({ marcheId, onSuccess, onCancel }: DocumentUpload
 
       if (result.success) {
         toast.success('Document uploadé avec succès')
+        clearDraft()
         // Réinitialiser le formulaire
         setFile(null)
         setNom('')
@@ -370,6 +396,14 @@ export function DocumentUpload({ marcheId, onSuccess, onCancel }: DocumentUpload
                   placeholder="Ex: urgent, confidentiel (séparés par des virgules)"
                 />
               </div>
+
+              {/* Indicateur brouillon */}
+              {savedAt && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Save className="h-3 w-3" />
+                  <span>Brouillon sauvegardé</span>
+                </div>
+              )}
 
               {/* Actions */}
               <div className="flex gap-3">
