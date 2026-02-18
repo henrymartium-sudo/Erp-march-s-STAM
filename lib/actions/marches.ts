@@ -6,6 +6,8 @@ import { createMarcheSchema, updateMarcheSchema } from '@/lib/validations/marche
 import { requireAuth, requireMarcheWrite, requireDelete } from '@/lib/utils/permissions'
 import type { ActionResult } from '@/types'
 import type { Marche, TypeMarche, StatutMarche } from '@prisma/client'
+import { isTransitionValid } from '@/lib/utils/workflow-statuts'
+import { STATUT_LABELS } from '@/lib/utils/statut'
 import { Prisma } from '@prisma/client'
 import { ZodError } from 'zod'
 import type { PaginatedResponse } from '@/types/pagination'
@@ -97,7 +99,23 @@ export async function updateMarche(data: unknown): Promise<ActionResult<Marche>>
     const validatedData = updateMarcheSchema.parse(data)
     const { id, ...updateData } = validatedData
 
-    // 3. Recalcul de dateFinPrevue si nécessaire
+    // 3. Validation du workflow de statut
+    if (updateData.statut) {
+      const currentMarche = await prisma.marche.findUnique({
+        where: { id },
+        select: { statut: true },
+      })
+      if (currentMarche && currentMarche.statut !== updateData.statut) {
+        if (!isTransitionValid(currentMarche.statut, updateData.statut)) {
+          return {
+            success: false,
+            error: `Transition de statut invalide : "${STATUT_LABELS[currentMarche.statut]}" → "${STATUT_LABELS[updateData.statut]}" n'est pas autorisée.`,
+          }
+        }
+      }
+    }
+
+    // 4. Recalcul de dateFinPrevue si nécessaire
     let dateFinPrevue = updateData.dateFinPrevue
     if (updateData.dateOrdreService && updateData.delaiExecution) {
       dateFinPrevue = new Date(
@@ -106,7 +124,7 @@ export async function updateMarche(data: unknown): Promise<ActionResult<Marche>>
       )
     }
 
-    // 4. Mise à jour dans Prisma
+    // 5. Mise à jour dans Prisma
     const marche = await prisma.marche.update({
       where: { id },
       data: {

@@ -32,6 +32,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Calendar } from '@/components/ui/calendar'
 import { STATUT_LABELS } from '@/lib/utils/statut'
+import { getAvailableStatuts, isTerminal } from '@/lib/utils/workflow-statuts'
 import { Loader2 } from 'lucide-react'
 import type { SerializedMarche } from '@/types/serialized'
 
@@ -155,6 +156,11 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
   // Watch le statut pour afficher les champs dynamiques
   const currentStatut = form.watch('statut')
   const statutSpecificFields = getStatutSpecificFields(currentStatut as StatutMarche)
+
+  // Workflow statuts : calcul des options disponibles en mode édition
+  const initialStatut = marche?.statut as StatutMarche | undefined
+  const isTerminalStatut = isEditing && initialStatut ? isTerminal(initialStatut) : false
+  const availableStatuts = isEditing && initialStatut ? getAvailableStatuts(initialStatut) : null
 
   // Vérifier les avertissements pour les statuts de terminaison
   const checkTerminationWarnings = (data: any): boolean => {
@@ -336,7 +342,11 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Statut *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      disabled={isTerminalStatut}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Sélectionner un statut" />
@@ -345,7 +355,11 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
                       <SelectContent>
                         {/* Statuts actifs */}
                         {Object.entries(STATUT_LABELS)
-                          .filter(([value]) => !['RESILIE', 'ANNULE', 'INFRUCTUEUX'].includes(value))
+                          .filter(([value]) => {
+                            if (['RESILIE', 'ANNULE', 'INFRUCTUEUX', 'CLOTURE'].includes(value)) return false
+                            if (availableStatuts) return availableStatuts.includes(value as StatutMarche)
+                            return true
+                          })
                           .map(([value, label]) => (
                             <SelectItem key={value} value={value}>
                               {label}
@@ -353,18 +367,32 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
                           ))}
 
                         {/* Groupe Terminés */}
-                        <SelectGroup>
-                          <SelectLabel>Terminés</SelectLabel>
-                          {['RESILIE', 'ANNULE', 'INFRUCTUEUX']
-                            .filter(value => STATUT_LABELS[value as keyof typeof STATUT_LABELS])
-                            .map((value) => (
-                              <SelectItem key={value} value={value}>
-                                {STATUT_LABELS[value as keyof typeof STATUT_LABELS]}
-                              </SelectItem>
-                            ))}
-                        </SelectGroup>
+                        {(['RESILIE', 'ANNULE', 'INFRUCTUEUX', 'CLOTURE'] as StatutMarche[]).some(
+                          (v) => !availableStatuts || availableStatuts.includes(v)
+                        ) && (
+                          <SelectGroup>
+                            <SelectLabel>Terminés</SelectLabel>
+                            {(['RESILIE', 'ANNULE', 'INFRUCTUEUX', 'CLOTURE'] as StatutMarche[])
+                              .filter((value) => !availableStatuts || availableStatuts.includes(value))
+                              .map((value) => (
+                                <SelectItem key={value} value={value}>
+                                  {STATUT_LABELS[value]}
+                                </SelectItem>
+                              ))}
+                          </SelectGroup>
+                        )}
                       </SelectContent>
                     </Select>
+                    {isTerminalStatut && (
+                      <p className="text-xs text-muted-foreground">
+                        Statut terminal — aucune transition n&apos;est possible.
+                      </p>
+                    )}
+                    {isEditing && !isTerminalStatut && availableStatuts && (
+                      <p className="text-xs text-muted-foreground">
+                        Seules les transitions autorisées depuis ce statut sont disponibles.
+                      </p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
