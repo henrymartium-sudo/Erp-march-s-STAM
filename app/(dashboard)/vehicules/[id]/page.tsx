@@ -3,6 +3,8 @@ import { getVehiculeById } from '@/lib/actions/vehicules'
 import { VehiculeDetail } from '@/components/vehicules/vehicule-detail'
 import { BreadcrumbNav } from '@/components/shared/breadcrumb-nav'
 import { serializeVehicule } from '@/lib/utils/serialize'
+import { auth } from '@/lib/auth/auth.config'
+import { canWrite } from '@/lib/utils/permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,16 +15,16 @@ interface VehiculePageProps {
 }
 
 export default async function VehiculePage({ params }: VehiculePageProps) {
-  const { id } = await params
+  const [session, { id }] = await Promise.all([auth(), params])
+  const role = (session?.user as { role?: string } | undefined)?.role
+  const userCanWrite = canWrite(role)
 
-  // Récupérer le véhicule avec le marché associé
   const vehicule = await getVehiculeById(id)
 
   if (!vehicule) {
     notFound()
   }
 
-  // Sérialiser le véhicule pour le passage au Client Component
   const serializedVehicule = serializeVehicule(vehicule)
 
   return (
@@ -34,7 +36,7 @@ export default async function VehiculePage({ params }: VehiculePageProps) {
           { label: serializedVehicule.immatriculation },
         ]}
       />
-      <VehiculeDetail vehicule={serializedVehicule} />
+      <VehiculeDetail vehicule={serializedVehicule} canWrite={userCanWrite} />
     </div>
   )
 }

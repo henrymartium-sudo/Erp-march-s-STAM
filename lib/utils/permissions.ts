@@ -45,6 +45,21 @@ export async function requireMarcheWrite() {
 }
 
 /**
+ * Détermine si un rôle peut écrire (créer, modifier, supprimer).
+ * Synchrone — à utiliser dans les composants/pages serveur.
+ */
+export function canWrite(role?: string | null): boolean {
+  return role === 'ADMIN' || role === 'AVANCE'
+}
+
+/**
+ * Détermine si un rôle est EXPLOITATION (accès restreint aux marchés EN_EXECUTION).
+ */
+export function isExploitation(role?: string | null): boolean {
+  return role === 'EXPLOITATION'
+}
+
+/**
  * Vérifie si l'utilisateur peut supprimer des données
  * (ADMIN ou AVANCE uniquement)
  */

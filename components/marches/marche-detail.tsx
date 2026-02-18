@@ -11,6 +11,7 @@ import { Pencil } from 'lucide-react'
 
 interface MarcheDetailProps {
   marche: SerializedMarche
+  canWrite?: boolean
 }
 
 const TYPE_LABELS = {
@@ -20,7 +21,7 @@ const TYPE_LABELS = {
   PRESTATIONS_INTELLECTUELLES: 'Prestations intellectuelles',
 }
 
-export function MarcheDetail({ marche }: MarcheDetailProps) {
+export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
   return (
     <div className="space-y-6">
       {/* Header 2 colonnes : identité + statut/actions */}
@@ -38,17 +39,21 @@ export function MarcheDetail({ marche }: MarcheDetailProps) {
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <StatutBadge statut={marche.statut} size="lg" />
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/marches/${marche.id}/edit`}>
-              <Pencil className="h-4 w-4 mr-1.5" />
-              Modifier
-            </Link>
-          </Button>
-          <DeleteMarcheDialog
-            marcheId={marche.id}
-            marcheNumero={marche.numero}
-            marcheObjet={marche.objet}
-          />
+          {canWrite && (
+            <>
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/marches/${marche.id}/edit`}>
+                  <Pencil className="h-4 w-4 mr-1.5" />
+                  Modifier
+                </Link>
+              </Button>
+              <DeleteMarcheDialog
+                marcheId={marche.id}
+                marcheNumero={marche.numero}
+                marcheObjet={marche.objet}
+              />
+            </>
+          )}
         </div>
       </div>
 

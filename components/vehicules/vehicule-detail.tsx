@@ -9,9 +9,10 @@ import type { SerializedVehicule } from '@/types/serialized'
 
 interface VehiculeDetailProps {
   vehicule: SerializedVehicule
+  canWrite?: boolean
 }
 
-export function VehiculeDetail({ vehicule }: VehiculeDetailProps) {
+export function VehiculeDetail({ vehicule, canWrite = true }: VehiculeDetailProps) {
   return (
     <div className="space-y-6">
       {/* Header 2 colonnes : identité + statut/actions */}
@@ -27,13 +28,17 @@ export function VehiculeDetail({ vehicule }: VehiculeDetailProps) {
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <StatutBadge statut={vehicule.statut} size="lg" />
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/vehicules/${vehicule.id}/edit`}>
-              <Pencil className="h-4 w-4 mr-1.5" />
-              Modifier
-            </Link>
-          </Button>
-          <DeleteVehiculeDialog vehiculeId={vehicule.id} vehiculeImmat={vehicule.immatriculation} />
+          {canWrite && (
+            <>
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/vehicules/${vehicule.id}/edit`}>
+                  <Pencil className="h-4 w-4 mr-1.5" />
+                  Modifier
+                </Link>
+              </Button>
+              <DeleteVehiculeDialog vehiculeId={vehicule.id} vehiculeImmat={vehicule.immatriculation} />
+            </>
+          )}
         </div>
       </div>
 
