@@ -16,7 +16,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Trash2, Loader2 } from 'lucide-react'
 import { deleteVehicule } from '@/lib/actions/vehicules'
-import { toast } from 'sonner'
+import { toast } from '@/lib/utils/toast'
 
 interface DeleteVehiculeDialogProps {
   vehiculeId: string

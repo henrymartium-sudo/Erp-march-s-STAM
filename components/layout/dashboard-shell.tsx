@@ -17,6 +17,28 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
+
+type BadgeVariant = 'success' | 'warning' | 'info' | 'muted'
+
+function getRoleVariant(role?: string | null): BadgeVariant {
+  switch (role) {
+    case 'ADMIN':       return 'success'
+    case 'AVANCE':      return 'warning'
+    case 'EXPLOITATION': return 'info'
+    default:            return 'muted'
+  }
+}
+
+function getRoleLabel(role?: string | null): string {
+  switch (role) {
+    case 'ADMIN':       return 'Admin'
+    case 'AVANCE':      return 'Avancé'
+    case 'EXPLOITATION': return 'Exploitation'
+    case 'VISITEUR':    return 'Visiteur'
+    default:            return role ?? 'Visiteur'
+  }
+}
 
 /* ── Navigation items ─────────────────────────────────────────────── */
 const navItems = [
@@ -183,11 +205,13 @@ function SidebarContent({ userName, userRole, onClose, forceExpanded = false }: 
             <div className="text-white text-[13px] font-medium truncate leading-tight">
               {userName ?? 'Utilisateur'}
             </div>
-            <div
-              className="text-[11px] truncate leading-tight mt-0.5"
-              style={{ color: 'hsl(var(--sidebar-muted))' }}
-            >
-              {userRole ?? 'VISITEUR'}
+            <div className="mt-1">
+              <Badge
+                variant={getRoleVariant(userRole)}
+                className="text-[10px] px-1.5 py-0 h-4 leading-none"
+              >
+                {getRoleLabel(userRole)}
+              </Badge>
             </div>
           </div>
         </div>
@@ -300,13 +324,16 @@ export function DashboardShell({ children, userName, userRole }: DashboardShellP
 
           {/* Avatar + infos utilisateur */}
           <div className="flex items-center gap-3">
-            <div className="hidden sm:block text-right leading-none">
+            <div className="hidden sm:flex flex-col items-end gap-0.5 leading-none">
               <div className="text-[13px] font-medium text-foreground">
                 {userName ?? 'Utilisateur'}
               </div>
-              <div className="text-[11px] text-muted-foreground mt-0.5">
-                {userRole ?? 'VISITEUR'}
-              </div>
+              <Badge
+                variant={getRoleVariant(userRole)}
+                className="text-[10px] px-1.5 py-0 h-4 leading-none"
+              >
+                {getRoleLabel(userRole)}
+              </Badge>
             </div>
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-bold select-none"

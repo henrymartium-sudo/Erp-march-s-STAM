@@ -6,6 +6,7 @@ import { signIn } from 'next-auth/react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -98,7 +99,16 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Mot de passe</FormLabel>
+              <div className="flex items-center justify-between">
+                <FormLabel>Mot de passe</FormLabel>
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  Mot de passe oublié ?
+                </Link>
+              </div>
               <FormControl>
                 <Input
                   type="password"

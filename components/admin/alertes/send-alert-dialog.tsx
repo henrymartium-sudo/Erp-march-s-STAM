@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Send, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { sendAlertEmailManual } from "@/lib/actions/alertes-manuelles";
-import { toast } from "sonner";
+import { toast } from '@/lib/utils/toast';
 
 type SendAlertDialogProps = {
   open: boolean;

@@ -20,7 +20,7 @@ import { ALLOWED_FILE_EXTENSIONS, MAX_FILE_SIZE } from '@/lib/validations/docume
 import { Upload, FileText, X, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { uploadDocument } from '@/lib/actions/documents'
-import { toast } from 'sonner'
+import { toast } from '@/lib/utils/toast'
 
 interface DocumentUploadProps {
   marcheId?: string
