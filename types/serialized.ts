@@ -8,7 +8,7 @@
  * Ces types représentent les données APRÈS sérialisation.
  */
 
-import type { TypeCaution, StatutCaution, TypeMarche, StatutMarche, StatutVehicule } from '@prisma/client'
+import type { TypeCaution, StatutCaution, TypeMarche, StatutMarche, StatutVehicule, StatutSAV, TypeIntervention, StatutIntervention } from '@prisma/client'
 
 // ============================================================================
 // CAUTION SÉRIALISÉE
@@ -106,6 +106,11 @@ export interface SerializedVehicule {
   dateReceptionDefinitive: string | null // Date -> ISO string
   reservesReception: string | null
   statut: StatutVehicule
+  // SAV
+  dateFinGarantie: string | null     // Date -> ISO string
+  kilometrageGarantie: number | null
+  statutSAV: StatutSAV
+  interventions?: SerializedIntervention[]
   createdAt: string // Date -> ISO string
   updatedAt: string // Date -> ISO string
   // Marchés associés (via table de jonction many-to-many)
@@ -115,6 +120,32 @@ export interface SerializedVehicule {
     objet: string
     statut: string
   }>
+}
+
+// ============================================================================
+// INTERVENTION SÉRIALISÉE
+// ============================================================================
+
+export interface SerializedIntervention {
+  id: string
+  vehiculeId: string
+  type: TypeIntervention
+  statut: StatutIntervention
+  sousGarantie: boolean
+  signaleAt: string           // Date -> ISO string
+  immobiliseAt: string | null // Date -> ISO string
+  resolveAt: string | null    // Date -> ISO string
+  cout: number | null         // Decimal -> number
+  description: string | null
+  commentaireContractuel: string | null
+  createdAt: string           // Date -> ISO string
+  updatedAt: string           // Date -> ISO string
+  vehicule?: {
+    id: string
+    immatriculation: string
+    marque: string
+    modele: string
+  }
 }
 
 // ============================================================================
