@@ -114,12 +114,12 @@ export default async function SAVPage() {
                   <div className="flex items-center gap-3 min-w-0">
                     <StatutInterventionBadge statut={intervention.statut} size="sm" />
                     <div className="min-w-0">
-                      <p className="text-sm font-medium">
+                      <div className="text-sm font-medium flex items-center gap-2 flex-wrap">
                         {TYPE_INTERVENTION_LABELS[intervention.type]}
                         {intervention.sousGarantie && (
-                          <Badge variant="default" className="ml-2 text-xs">Garantie</Badge>
+                          <Badge variant="default" className="text-xs">Garantie</Badge>
                         )}
-                      </p>
+                      </div>
                       <p className="text-xs text-muted-foreground truncate">
                         {intervention.vehicule?.immatriculation} —{' '}
                         {intervention.vehicule?.marque} {intervention.vehicule?.modele}
