@@ -111,7 +111,7 @@ export function InterventionsTable({ interventions, canWrite, canDelete }: Inter
                 </Badge>
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
-                {formatDateLong(intervention.signaleAt.toISOString())}
+                {formatDateLong(intervention.signaleAt)}
               </TableCell>
               <TableCell className="text-sm max-w-[200px] truncate">
                 {intervention.description || '—'}
