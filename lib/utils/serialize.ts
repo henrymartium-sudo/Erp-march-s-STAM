@@ -82,6 +82,11 @@ export function serializeMarche(marche: any): SerializedMarche {
       : marche.dateReceptionProvisoirePrevue
         ? String(marche.dateReceptionProvisoirePrevue)
         : null,
+    dateReceptionDefinitive: marche.dateReceptionDefinitive instanceof Date
+      ? marche.dateReceptionDefinitive.toISOString()
+      : marche.dateReceptionDefinitive
+        ? String(marche.dateReceptionDefinitive)
+        : null,
     dateClotureAdministrative: marche.dateClotureAdministrative instanceof Date
       ? marche.dateClotureAdministrative.toISOString()
       : marche.dateClotureAdministrative
@@ -102,6 +107,10 @@ export function serializeMarche(marche: any): SerializedMarche {
       : marche.dateInfructueux
         ? String(marche.dateInfructueux)
         : null,
+    // Véhicules aplatis depuis marcheVehicules
+    vehicules: marche.marcheVehicules
+      ? marche.marcheVehicules.map((mv: any) => mv.vehicule).filter(Boolean)
+      : undefined,
   }
 }
 
@@ -141,8 +150,10 @@ export function serializeCaution(caution: any): SerializedCaution {
  * Convertit les Date en string ISO.
  */
 export function serializeVehicule(vehicule: any): SerializedVehicule {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { marcheId: _ignored, marche: _ignoredMarche, ...rest } = vehicule
   return {
-    ...vehicule,
+    ...rest,
     dateLivraison: vehicule.dateLivraison instanceof Date
       ? vehicule.dateLivraison.toISOString()
       : vehicule.dateLivraison
@@ -164,6 +175,9 @@ export function serializeVehicule(vehicule: any): SerializedVehicule {
     updatedAt: vehicule.updatedAt instanceof Date
       ? vehicule.updatedAt.toISOString()
       : String(vehicule.updatedAt),
-    marche: vehicule.marche || null,
+    // Marchés aplatis depuis marcheVehicules
+    marches: vehicule.marcheVehicules
+      ? vehicule.marcheVehicules.map((mv: any) => mv.marche).filter(Boolean)
+      : undefined,
   }
 }

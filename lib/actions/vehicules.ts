@@ -25,12 +25,12 @@ import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
 // ============================================================================
 
 export interface VehiculeWithRelations extends Vehicule {
-  marche?: {
+  marches?: Array<{
     id: string
     numero: string
     objet: string
     statut: string
-  } | null
+  }>
 }
 
 // ============================================================================
@@ -54,9 +54,6 @@ export async function createVehicule(
 
     // 4. Revalidation du cache Next.js
     revalidatePath('/vehicules')
-    if (validatedData.marcheId) {
-      revalidatePath(`/marches/${validatedData.marcheId}`)
-    }
 
     // 5. Retour succès
     return { success: true, data: vehicule }
@@ -142,9 +139,6 @@ export async function updateVehicule(
     // 4. Revalidation du cache
     revalidatePath('/vehicules')
     revalidatePath(`/vehicules/${id}`)
-    if (vehicule.marcheId) {
-      revalidatePath(`/marches/${vehicule.marcheId}`)
-    }
 
     return { success: true, data: vehicule }
   } catch (error) {
@@ -214,22 +208,13 @@ export async function deleteVehicule(id: string): Promise<ActionResult> {
     // 1. Vérification d'authentification et de permissions (ADMIN ou AVANCE uniquement)
     await requireDelete()
 
-    // 2. Récupérer le véhicule pour avoir le marcheId pour revalidation
-    const vehicule = await prisma.vehicule.findUnique({
-      where: { id },
-      select: { marcheId: true },
-    })
-
-    // 3. Suppression dans Prisma
+    // 2. Suppression dans Prisma (marcheVehicules supprimées en CASCADE)
     await prisma.vehicule.delete({
       where: { id },
     })
 
-    // 4. Revalidation du cache
+    // 3. Revalidation du cache
     revalidatePath('/vehicules')
-    if (vehicule?.marcheId) {
-      revalidatePath(`/marches/${vehicule.marcheId}`)
-    }
 
     return { success: true, data: undefined }
   } catch (error) {
@@ -281,18 +266,28 @@ export async function getVehiculeById(
     const vehicule = await prisma.vehicule.findUnique({
       where: { id },
       include: {
-        marche: {
-          select: {
-            id: true,
-            numero: true,
-            objet: true,
-            statut: true,
+        marcheVehicules: {
+          include: {
+            marche: {
+              select: {
+                id: true,
+                numero: true,
+                objet: true,
+                statut: true,
+              },
+            },
           },
         },
       },
     })
 
-    return vehicule
+    if (!vehicule) return null
+
+    // Aplatir marcheVehicules → marches
+    return {
+      ...vehicule,
+      marches: vehicule.marcheVehicules.map((mv) => mv.marche),
+    } as VehiculeWithRelations
   } catch (error) {
     console.error('Erreur lors de la récupération du véhicule:', error)
     return null
@@ -316,7 +311,6 @@ export async function getVehicules(
       search,
       marque,
       statut,
-      marcheId,
       annee,
       page,
       limit,
@@ -339,21 +333,24 @@ export async function getVehicules(
       }),
       ...(marque && { marque: { contains: marque, mode: 'insensitive' } }),
       ...(statut && { statut }),
-      ...(marcheId && { marcheId }),
       ...(annee && { annee }),
     }
 
     // Exécution parallèle : données + count
-    const [vehicules, total] = await Promise.all([
+    const [vehiculesRaw, total] = await Promise.all([
       prisma.vehicule.findMany({
         where,
         include: {
-          marche: {
-            select: {
-              id: true,
-              numero: true,
-              objet: true,
-              statut: true,
+          marcheVehicules: {
+            include: {
+              marche: {
+                select: {
+                  id: true,
+                  numero: true,
+                  objet: true,
+                  statut: true,
+                },
+              },
             },
           },
         },
@@ -365,6 +362,12 @@ export async function getVehicules(
       }),
       prisma.vehicule.count({ where }),
     ])
+
+    // Aplatir marcheVehicules → marches
+    const vehicules = vehiculesRaw.map((v) => ({
+      ...v,
+      marches: v.marcheVehicules.map((mv) => mv.marche),
+    })) as VehiculeWithRelations[]
 
     // Calcul métadonnées pagination
     const pagination = calculatePagination(total, page, limit)
@@ -481,7 +484,9 @@ export async function getVehiculesByMarcheId(
     await requireAuth()
 
     const vehicules = await prisma.vehicule.findMany({
-      where: { marcheId },
+      where: {
+        marcheVehicules: { some: { marcheId } },
+      },
       orderBy: { createdAt: 'desc' },
     })
 

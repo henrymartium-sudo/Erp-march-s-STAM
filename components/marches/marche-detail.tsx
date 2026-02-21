@@ -2,12 +2,13 @@ import Link from 'next/link'
 import type { SerializedMarche } from '@/types/serialized'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { StatutBadge } from './statut-badge'
 import { DeleteMarcheDialog } from './delete-marche-dialog'
 import { MarcheDocumentsSection } from './marche-documents-section'
 import { MarcheCautionsSection } from './marche-cautions-section'
 import { formatMontant, formatDateLong, formatDelai } from '@/lib/utils/format'
-import { Pencil } from 'lucide-react'
+import { Pencil, Truck } from 'lucide-react'
 
 interface MarcheDetailProps {
   marche: SerializedMarche
@@ -186,6 +187,7 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
         marche.dateLivraisonPrevue ||
         marche.dureeLivraisonPrevue ||
         marche.dateReceptionProvisoirePrevue ||
+        marche.dateReceptionDefinitive ||
         marche.garantiesLiberees ||
         marche.dateClotureAdministrative ||
         marche.dateResiliation ||
@@ -310,6 +312,17 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
                 </div>
               )}
 
+              {marche.dateReceptionDefinitive && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Date de réception définitive
+                  </p>
+                  <p className="text-sm mt-1">
+                    {formatDateLong(marche.dateReceptionDefinitive)}
+                  </p>
+                </div>
+              )}
+
               {/* EXECUTE_ATTENTE_GARANTIES */}
               {marche.garantiesLiberees !== null && (
                 <div>
@@ -420,6 +433,43 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
                 </p>
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Section Véhicules associés */}
+      {marche.vehicules && marche.vehicules.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Truck className="h-5 w-5 text-muted-foreground" />
+              Véhicules associés ({marche.vehicules.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {marche.vehicules.map((vehicule) => (
+                <Link
+                  key={vehicule.id}
+                  href={`/vehicules/${vehicule.id}`}
+                  className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50/50 hover:bg-gray-100 transition-colors"
+                >
+                  <Truck className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-mono font-semibold text-stam-accent truncate">
+                      {vehicule.immatriculation}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {vehicule.marque} {vehicule.modele}
+                      {vehicule.annee ? ` • ${vehicule.annee}` : ''}
+                    </p>
+                    <Badge variant="outline" className="text-[10px] mt-1">
+                      {vehicule.statut.replace(/_/g, ' ')}
+                    </Badge>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}

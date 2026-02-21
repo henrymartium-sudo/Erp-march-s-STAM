@@ -40,3 +40,9 @@ export interface MontantMensuel {
   mois: string
   montant: number
 }
+
+export interface CAEffectifPoint {
+  label: string  // mois ISO "YYYY-MM" pour agréger côté client
+  moisLabel: string  // "janv. 2026"
+  montant: number
+}

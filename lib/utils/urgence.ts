@@ -1,0 +1,66 @@
+/**
+ * Utilitaire d'indicateurs d'urgence basé sur la date de fin prévue
+ */
+
+export type UrgencyLevel = 'green' | 'orange' | 'red' | 'overdue'
+
+export interface UrgencyInfo {
+  level: UrgencyLevel
+  daysRemaining: number
+  label: string
+}
+
+/**
+ * Calcule le niveau d'urgence selon la date de fin prévue.
+ *
+ * Règles :
+ * - dépassé  → overdue  (slate foncé)
+ * - < 15 j   → red      (rouge)
+ * - 15–30 j  → orange   (orange)
+ * - > 30 j   → green    (vert)
+ */
+export function getUrgency(deadline: Date): UrgencyInfo {
+  const now = new Date()
+  const diffMs = deadline.getTime() - now.getTime()
+  const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+
+  if (daysRemaining < 0) {
+    return {
+      level: 'overdue',
+      daysRemaining,
+      label: `Dépassé de ${Math.abs(daysRemaining)} j`,
+    }
+  }
+
+  if (daysRemaining < 15) {
+    return {
+      level: 'red',
+      daysRemaining,
+      label: `${daysRemaining} j restants`,
+    }
+  }
+
+  if (daysRemaining <= 30) {
+    return {
+      level: 'orange',
+      daysRemaining,
+      label: `${daysRemaining} j restants`,
+    }
+  }
+
+  return {
+    level: 'green',
+    daysRemaining,
+    label: `${daysRemaining} j restants`,
+  }
+}
+
+/**
+ * Classes CSS Tailwind pour chaque niveau d'urgence
+ */
+export const URGENCY_STYLES: Record<UrgencyLevel, string> = {
+  green: 'bg-green-100 text-green-700 border-green-200',
+  orange: 'bg-orange-100 text-orange-700 border-orange-200',
+  red: 'bg-red-100 text-red-700 border-red-200',
+  overdue: 'bg-slate-100 text-slate-600 border-slate-300',
+}

@@ -62,11 +62,13 @@ export function VehiculeCard({ vehicule }: VehiculeCardProps) {
             </div>
           )}
 
-          {vehicule.marche && (
+          {vehicule.marches && vehicule.marches.length > 0 && (
             <div className="flex items-center gap-2 text-sm">
               <Truck className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
               <span className="text-muted-foreground truncate max-w-[55%]">
-                Marché {vehicule.marche.numero}
+                {vehicule.marches.length === 1
+                  ? `Marché ${vehicule.marches[0]?.numero ?? ''}`
+                  : `${vehicule.marches.length} marchés`}
               </span>
             </div>
           )}

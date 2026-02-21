@@ -126,8 +126,9 @@ const baseMarcheSchema = z.object({
   dateLivraisonPrevue: z.date().optional().nullable(),
   dureeLivraisonPrevue: z.number().int().positive().optional().nullable(),
 
-  // EN_EXECUTION
+  // EN_EXECUTION / EXECUTE_ATTENTE_GARANTIES
   dateReceptionProvisoirePrevue: z.date().optional().nullable(),
+  dateReceptionDefinitive: z.date().optional().nullable(),
 
   // EXECUTE_ATTENTE_GARANTIES
   garantiesLiberees: z.boolean().optional().nullable(),
@@ -148,6 +149,9 @@ const baseMarcheSchema = z.object({
   motifsInfructueux: z.string().optional().nullable(),
   concurrentGagnant: z.string().optional().nullable(),
   montantOffreConcurrent: z.number().positive().optional().nullable(),
+
+  // Véhicules associés (many-to-many)
+  vehiculeIds: z.array(z.string()).optional(),
 })
 
 // Schéma avec refinements pour la validation complète
@@ -220,6 +224,7 @@ const preprocessedDateFields = {
   dateAttributionDefinitive: z.preprocess(preprocessDate, z.date().optional().nullable()),
   dateLivraisonPrevue: z.preprocess(preprocessDate, z.date().optional().nullable()),
   dateReceptionProvisoirePrevue: z.preprocess(preprocessDate, z.date().optional().nullable()),
+  dateReceptionDefinitive: z.preprocess(preprocessDate, z.date().optional().nullable()),
   dateClotureAdministrative: z.preprocess(preprocessDate, z.date().optional().nullable()),
   dateResiliation: z.preprocess(preprocessDate, z.date().optional().nullable()),
   dateAnnulation: z.preprocess(preprocessDate, z.date().optional().nullable()),
