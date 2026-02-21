@@ -60,6 +60,22 @@ export function isExploitation(role?: string | null): boolean {
 }
 
 /**
+ * Détermine si un rôle peut créer/modifier des interventions SAV.
+ * ADMIN, AVANCE et EXPLOITATION peuvent écrire dans le SAV.
+ */
+export function canWriteSAV(role?: string | null): boolean {
+  return role === 'ADMIN' || role === 'AVANCE' || role === 'EXPLOITATION'
+}
+
+/**
+ * Détermine si un rôle peut ajouter un commentaire contractuel sur une intervention.
+ * Réservé à ADMIN et AVANCE.
+ */
+export function canWriteCommentaireContractuel(role?: string | null): boolean {
+  return role === 'ADMIN' || role === 'AVANCE'
+}
+
+/**
  * Vérifie si l'utilisateur peut supprimer des données
  * (ADMIN ou AVANCE uniquement)
  */

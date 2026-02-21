@@ -278,6 +278,9 @@ export async function getVehiculeById(
             },
           },
         },
+        interventions: {
+          orderBy: { signaleAt: 'desc' },
+        },
       },
     })
 
@@ -287,6 +290,7 @@ export async function getVehiculeById(
     return {
       ...vehicule,
       marches: vehicule.marcheVehicules.map((mv) => mv.marche),
+      interventions: vehicule.interventions,
     } as VehiculeWithRelations
   } catch (error) {
     console.error('Erreur lors de la récupération du véhicule:', error)

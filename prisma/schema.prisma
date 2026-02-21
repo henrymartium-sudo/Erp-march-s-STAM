@@ -261,6 +261,14 @@ model Vehicule {
   reservesReception       String?       @db.Text
   statut                  StatutVehicule @default(EN_ATTENTE_LIVRAISON)
 
+  // SAV — champs garantie et statut opérationnel
+  dateFinGarantie     DateTime?
+  kilometrageGarantie Int?
+  statutSAV           StatutSAV @default(EN_SERVICE)
+
+  // SAV — interventions
+  interventions       Intervention[]
+
   // Relations
   marcheVehicules MarcheVehicule[]
 
@@ -282,6 +290,12 @@ enum StatutVehicule {
   HORS_SERVICE
 }
 
+enum StatutSAV {
+  EN_SERVICE    // Opérationnel
+  IMMOBILISE    // Immobilisé pour intervention SAV
+  HORS_SERVICE  // Retiré du parc définitivement
+}
+
 // Table de jonction many-to-many Marché ↔ Véhicule
 model MarcheVehicule {
   id         String   @id @default(cuid())
@@ -292,6 +306,47 @@ model MarcheVehicule {
 
   @@unique([marcheId, vehiculeId])
   @@map("marche_vehicules")
+}
+
+// ============================================
+// SAV — INTERVENTIONS
+// ============================================
+
+model Intervention {
+  id                     String             @id @default(cuid())
+  vehiculeId             String
+  type                   TypeIntervention
+  statut                 StatutIntervention @default(SIGNALE)
+  sousGarantie           Boolean            @default(true)
+  signaleAt              DateTime           @default(now())
+  immobiliseAt           DateTime?
+  resolveAt              DateTime?
+  cout                   Decimal?           @db.Decimal(10, 2)
+  description            String?            @db.Text
+  commentaireContractuel String?            @db.Text
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  vehicule Vehicule @relation(fields: [vehiculeId], references: [id], onDelete: Cascade)
+
+  @@map("interventions")
+  @@index([vehiculeId])
+  @@index([statut])
+  @@index([type])
+}
+
+enum TypeIntervention {
+  PANNE
+  ENTRETIEN
+  RAPPEL
+}
+
+enum StatutIntervention {
+  SIGNALE
+  DIAGNOSTIC
+  EN_COURS
+  RESOLU
+  CLOS
 }
 
 // ============================================
