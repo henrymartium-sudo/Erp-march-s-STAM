@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { StatutVehicule } from "@prisma/client";
+import { StatutVehicule, StatutSAV } from "@prisma/client";
 
 /**
  * Validation de l'immatriculation française
@@ -63,6 +63,17 @@ export const createVehiculeSchema = z.object({
     .nativeEnum(StatutVehicule)
     .default(StatutVehicule.EN_ATTENTE_LIVRAISON)
     .optional(),
+
+  // SAV
+  dateFinGarantie: z.date().optional().nullable(),
+  kilometrageGarantie: z
+    .number()
+    .int()
+    .min(0, "Le kilométrage doit être positif")
+    .max(9999999)
+    .optional()
+    .nullable(),
+  statutSAV: z.nativeEnum(StatutSAV).default(StatutSAV.EN_SERVICE).optional(),
 });
 
 /**

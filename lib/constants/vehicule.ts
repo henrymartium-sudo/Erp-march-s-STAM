@@ -1,4 +1,4 @@
-import { StatutVehicule } from "@prisma/client";
+import { StatutVehicule, StatutSAV } from "@prisma/client";
 
 /**
  * Libellés des statuts de véhicules
@@ -64,6 +64,24 @@ export const ANNEES_VEHICULES = Array.from(
  * Alias pour ANNEES_VEHICULES (rétrocompatibilité)
  */
 export const ANNEES_DISPONIBLES = ANNEES_VEHICULES;
+
+/**
+ * Libellés des statuts SAV
+ */
+export const STATUT_SAV_LABELS: Record<StatutSAV, string> = {
+  EN_SERVICE: "En service",
+  IMMOBILISE: "Immobilisé",
+  HORS_SERVICE: "Hors service",
+};
+
+/**
+ * Couleurs des statuts SAV
+ */
+export const STATUT_SAV_COLORS: Record<StatutSAV, "success" | "warning" | "destructive"> = {
+  EN_SERVICE: "success",
+  IMMOBILISE: "warning",
+  HORS_SERVICE: "destructive",
+};
 
 /**
  * Couleurs simplifiées pour les graphiques (barres de progression)

@@ -16,6 +16,7 @@ import {
   X,
   ChevronRight,
   UserCircle,
+  Wrench,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -47,6 +48,7 @@ const navItems = [
   { href: '/marches',       label: 'Marchés',    icon: FileText },
   { href: '/cautions',      label: 'Cautions',   icon: Shield },
   { href: '/vehicules',     label: 'Véhicules',  icon: Car },
+  { href: '/vehicules/sav', label: 'SAV',        icon: Wrench },
   { href: '/documents',     label: 'Documents',  icon: FolderOpen },
   { href: '/admin/alertes', label: 'Alertes',    icon: Bell },
 ]
@@ -56,6 +58,7 @@ const pageTitles: Record<string, string> = {
   '/marches':       'Marchés publics',
   '/cautions':      'Cautions & Garanties',
   '/vehicules':     'Véhicules',
+  '/vehicules/sav': 'SAV — Vue globale',
   '/documents':     'Documents',
   '/admin/alertes': 'Alertes & Notifications',
   '/profil':        'Mon profil',
