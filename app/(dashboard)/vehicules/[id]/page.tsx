@@ -4,7 +4,7 @@ import { VehiculeDetail } from '@/components/vehicules/vehicule-detail'
 import { BreadcrumbNav } from '@/components/shared/breadcrumb-nav'
 import { serializeVehicule } from '@/lib/utils/serialize'
 import { auth } from '@/lib/auth/auth.config'
-import { canWrite } from '@/lib/utils/permissions'
+import { canWrite, canWriteSAV, canWriteCommentaireContractuel } from '@/lib/utils/permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +18,8 @@ export default async function VehiculePage({ params }: VehiculePageProps) {
   const [session, { id }] = await Promise.all([auth(), params])
   const role = (session?.user as { role?: string } | undefined)?.role
   const userCanWrite = canWrite(role)
+  const userCanWriteSAV = canWriteSAV(role)
+  const userCanWriteCommentaire = canWriteCommentaireContractuel(role)
 
   const vehicule = await getVehiculeById(id)
 
@@ -36,7 +38,12 @@ export default async function VehiculePage({ params }: VehiculePageProps) {
           { label: serializedVehicule.immatriculation },
         ]}
       />
-      <VehiculeDetail vehicule={serializedVehicule} canWrite={userCanWrite} />
+      <VehiculeDetail
+        vehicule={serializedVehicule}
+        canWrite={userCanWrite}
+        canWriteSAV={userCanWriteSAV}
+        canWriteCommentaire={userCanWriteCommentaire}
+      />
     </div>
   )
 }
