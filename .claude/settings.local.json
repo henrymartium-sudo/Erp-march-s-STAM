@@ -112,7 +112,25 @@
       "Bash(wc:*)",
       "Bash(tsx scripts/inspect-excel.ts:*)",
       "Bash(git -C \"C:\\\\Users\\\\HP\\\\Documents\\\\claude projets\\\\projet ERP marchés\\\\ERP Marchés STAM Final\" log --oneline -5)",
-      "Bash(git -C \"C:\\\\Users\\\\HP\\\\Documents\\\\claude projets\\\\projet ERP marchés\\\\ERP Marchés STAM Final\" status --short)"
+      "Bash(git -C \"C:\\\\Users\\\\HP\\\\Documents\\\\claude projets\\\\projet ERP marchés\\\\ERP Marchés STAM Final\" status --short)",
+      "Bash(test:*)",
+      "Bash(PLAYWRIGHT_BASE_URL=https://erp-marches-stam.vercel.app npx playwright test:*)",
+      "Bash(\"scripts/create-test-users.sql\":*)",
+      "Bash(\"C:\\\\Users\\\\HP\\\\Documents\\\\claude projets\\\\projet:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres.awsvkjdziwzknnvkpuyq:thewiseone1990@aws-1-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=no-verify\" npx prisma db execute:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres.awsvkjdziwzknnvkpuyq:thewiseone1990@db.awsvkjdziwzknnvkpuyq.supabase.co:5432/postgres?sslmode=no-verify\" npx prisma db execute:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:thewiseone1990@db.awsvkjdziwzknnvkpuyq.supabase.co:5432/postgres?sslmode=no-verify\" npx prisma db execute:*)",
+      "Bash(npx jsonlint-cli:*)",
+      "Bash(SESSION.md:*)",
+      "Bash(cat:*)",
+      "mcp__ide__getDiagnostics",
+      "mcp__plugin_supabase_supabase__apply_migration",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Select-Object State, OwningProcess\")",
+      "Bash(powershell -Command \"Get-Process -Id 8412 | Select-Object Name, MainWindowTitle\")",
+      "Bash(Select-String -NotMatch \"tests/\")",
+      "Bash(Select-String -NotMatch \"tests\\\\\")",
+      "Bash(echo:*)",
+      "Skill(commit-commands:commit-push-pr)"
     ]
   }
 }

@@ -102,13 +102,15 @@ When implementing dashboard with charts (Recharts):
 
 ## Notes on This Project
 
-- MVP is 99% complete, production-ready with Dashboard enrichi deployed
+- MVP 100% complet + Refonte Frontend UI/UX déployée (2026-02-17)
 - Real production data exists (50 marchés, 7 cautions)
-- Dashboard enrichi Phases 1-3 deployed and functional in production
+- Dashboard enrichi + Refonte STAM design system deployed and functional in production
 - Always verify against real data counts in production
 - Planning documents are valuable artifacts to preserve
 - Vercel deployments are automatic from `main` branch
 - Fast-forward merge preferred for clean git history
+- Améliorations MVP: 7/10 features terminées (F1-F7) — PROCHAIN: F8 Brouillons Auto-Save (4h)
+- Plan complet: `memory/plan-ameliorations.md` — `memory/checkpoint-souviens-toi.md` pour reprise rapide
 
 ## Session History
 
@@ -131,6 +133,49 @@ When implementing dashboard with charts (Recharts):
 - **Time**: 4h15 (vs 3h30 estimated, +20% overhead documentation/testing)
 - **Status**: ✅ PRODUCTION READY at https://erp-marches-stam.vercel.app
 
+### 2026-02-16: Tests E2E Configuration + DB Connection Fix
+- **Problem**: 77/78 tests E2E échouaient avec erreurs connexion DB (PgBouncer)
+- **Root Cause**: PgBouncer (port 6543) + 2 workers Playwright = pool exhaustion
+- **Solution**: Connexion directe PostgreSQL (port 5432) via .env.test + workers: 1
+- **Artifacts**:
+  - `.env.test` (connexion directe DB)
+  - `scripts/create-test-users.sql` (script SQL utilisateurs test)
+  - `GUIDE_EXECUTION_SECURISEE.md` (guide 3 phases création utilisateurs)
+- **Scripts**: manage-test-users.js, check-test-users.js (Node.js alternatives)
+- **Snapshot**: SESSION_SNAPSHOT_E2E_CONFIG_2026-02-16.md
+- **Resolution**: Erreurs connexion DB → 0, utilisateurs test prêts à créer
+- **Blocker**: Tests validés après création manuelle utilisateurs (Supabase SQL Editor)
+
+### 2026-02-17: Refonte Frontend Déployée + Plan Améliorations MVP
+- **Commits pushés**: `96d4749` (feat refonte, 46 fichiers +2328/-1404) + `6d882da` (docs checkpoint)
+- **Tests Playwright prod**: Login split-screen validée. Auth E2E échoue car users test non seedés prod
+- **Tests manuels**: Paliers 1-8 validés par l'utilisateur
+- **Plan créé**: 10 features (~29h) dans `memory/plan-ameliorations.md`
+- **État**: Prêt à démarrer Groupe 1 — Error boundaries en premier
+
+### 2026-02-18 Matin: Améliorations MVP F1-F6 complètes
+- **Commit**: `9b816fd` — feat(ameliorations): F5 Page Profil + F6 Permissions EXPLOITATION
+- **F1-F4**: Error Boundaries + Badge Rôle + Toast wrapper + Récupération MDP (commit `d5e6a9a`)
+- **F5 Page Profil**: `app/(dashboard)/profil/page.tsx` + `ProfilClient.tsx` + `lib/actions/auth/change-password.ts`
+- **F6 Permissions**: `canWrite(role)` + `isExploitation(role)` dans `lib/utils/permissions.ts` — 8 fichiers touchés
+
+### 2026-02-18 Après-midi: F7 Workflow Statuts + fix Suspense
+- **Commit**: `589d2d5` — feat(ameliorations): F7 Workflow Statuts + fix Suspense reset-password
+- **Créé**: `lib/utils/workflow-statuts.ts` (isTransitionValid + getAvailableStatuts + isTerminal)
+- **Modifié**: `lib/actions/marches.ts` — validation transition avant updateMarche()
+- **Modifié**: `components/marches/marche-form.tsx` — Select filtré + désactivé si terminal
+- **Fix build**: `app/(auth)/reset-password/` scindé en page.tsx + ResetPasswordContent.tsx (Suspense)
+- **Progression**: 7/10 features (70%) — PROCHAIN: F8 Brouillons Auto-Save (4h)
+- **Checkpoint**: `memory/checkpoint-souviens-toi.md` + `memory/session-2026-02-18-F7.md`
+
 ## Links to Detailed Topics
 
-*No additional topic files created yet*
+### Testing Patterns
+See `testing-e2e-patterns.md` for detailed Playwright + PostgreSQL patterns
+
+### Documentation Navigation
+See `INDEX_DOCUMENTATION_SESSIONS.md` (project root) for complete documentation index with:
+- All snapshots chronologically organized
+- Guides by use case (reprise, execution, planning)
+- Navigation by role (developer, QA, devops, product owner)
+- Quick links to critical documents
