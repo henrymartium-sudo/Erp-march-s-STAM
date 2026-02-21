@@ -15,14 +15,15 @@ import {
 } from '@/components/ui/form'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from '@/lib/utils/toast'
 import { createIntervention } from '@/lib/actions/interventions'
 import { TYPE_INTERVENTION_LABELS } from '@/lib/constants/intervention'
 
+// sousGarantie sans .default() pour éviter l'incompatibilité de types react-hook-form
 const schema = z.object({
   type: z.nativeEnum(TypeIntervention),
-  sousGarantie: z.boolean().default(true),
+  sousGarantie: z.boolean(),
   description: z.string().max(2000).optional(),
 })
 
@@ -39,7 +40,11 @@ export function CreateInterventionDialog({ vehiculeId, vehiculeImmat }: CreateIn
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { type: TypeIntervention.PANNE, sousGarantie: true },
+    defaultValues: {
+      type: TypeIntervention.PANNE,
+      sousGarantie: true,
+      description: undefined,
+    },
   })
 
   async function onSubmit(values: FormValues) {
@@ -101,11 +106,14 @@ export function CreateInterventionDialog({ vehiculeId, vehiculeImmat }: CreateIn
               control={form.control}
               name="sousGarantie"
               render={({ field }) => (
-                <FormItem className="flex items-center justify-between">
-                  <FormLabel>Sous garantie</FormLabel>
+                <FormItem className="flex items-center gap-2">
                   <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
                   </FormControl>
+                  <FormLabel className="!mt-0 cursor-pointer">Sous garantie</FormLabel>
                 </FormItem>
               )}
             />
