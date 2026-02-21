@@ -66,6 +66,8 @@ export function VehiculeForm({ vehicule, onSuccess }: VehiculeFormProps) {
           dateReceptionDefinitive: vehicule.dateReceptionDefinitive || undefined,
           reservesReception: vehicule.reservesReception || undefined,
           statut: vehicule.statut,
+          dateFinGarantie: (vehicule as any).dateFinGarantie || undefined,
+          kilometrageGarantie: (vehicule as any).kilometrageGarantie ?? undefined,
         }
       : {
           immatriculation: '',
@@ -435,6 +437,78 @@ export function VehiculeForm({ vehicule, onSuccess }: VehiculeFormProps) {
                         />
                       </PopoverContent>
                     </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Garantie SAV */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Garantie SAV</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Date fin de garantie */}
+              <FormField
+                control={form.control}
+                name="dateFinGarantie"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Date de fin de garantie</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              'w-full pl-3 text-left font-normal',
+                              !field.value && 'text-muted-foreground'
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, 'PPP', { locale: fr })
+                            ) : (
+                              <span>Sélectionner une date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value || undefined}
+                          onSelect={field.onChange}
+                          initialFocus
+                          locale={fr}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Kilométrage garantie */}
+              <FormField
+                control={form.control}
+                name="kilometrageGarantie"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Kilométrage garantie (km)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="Ex: 100000"
+                        {...field}
+                        value={field.value ?? ''}
+                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
