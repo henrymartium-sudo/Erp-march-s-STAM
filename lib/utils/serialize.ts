@@ -6,7 +6,7 @@
  * - Date -> converti en string ISO
  */
 
-import type { SerializedMarche, SerializedCaution, SerializedVehicule } from '@/types/serialized'
+import type { SerializedMarche, SerializedCaution, SerializedVehicule, SerializedIntervention } from '@/types/serialized'
 
 /**
  * Sérialise un marché Prisma en objet plain pour le passage aux Client Components.
@@ -169,6 +169,16 @@ export function serializeVehicule(vehicule: any): SerializedVehicule {
       : vehicule.dateReceptionDefinitive
         ? String(vehicule.dateReceptionDefinitive)
         : null,
+    dateFinGarantie: vehicule.dateFinGarantie instanceof Date
+      ? vehicule.dateFinGarantie.toISOString()
+      : vehicule.dateFinGarantie
+        ? String(vehicule.dateFinGarantie)
+        : null,
+    kilometrageGarantie: vehicule.kilometrageGarantie ?? null,
+    statutSAV: vehicule.statutSAV ?? 'EN_SERVICE',
+    interventions: vehicule.interventions
+      ? vehicule.interventions.map((i: any) => serializeIntervention(i))
+      : undefined,
     createdAt: vehicule.createdAt instanceof Date
       ? vehicule.createdAt.toISOString()
       : String(vehicule.createdAt),
@@ -179,5 +189,32 @@ export function serializeVehicule(vehicule: any): SerializedVehicule {
     marches: vehicule.marcheVehicules
       ? vehicule.marcheVehicules.map((mv: any) => mv.marche).filter(Boolean)
       : undefined,
+  }
+}
+
+/**
+ * Sérialise une intervention Prisma en objet plain pour le passage aux Client Components.
+ */
+export function serializeIntervention(intervention: any): SerializedIntervention {
+  return {
+    ...intervention,
+    cout: intervention.cout != null
+      ? (typeof intervention.cout === 'number' ? intervention.cout : Number(intervention.cout))
+      : null,
+    signaleAt: intervention.signaleAt instanceof Date
+      ? intervention.signaleAt.toISOString()
+      : String(intervention.signaleAt),
+    immobiliseAt: intervention.immobiliseAt instanceof Date
+      ? intervention.immobiliseAt.toISOString()
+      : intervention.immobiliseAt ? String(intervention.immobiliseAt) : null,
+    resolveAt: intervention.resolveAt instanceof Date
+      ? intervention.resolveAt.toISOString()
+      : intervention.resolveAt ? String(intervention.resolveAt) : null,
+    createdAt: intervention.createdAt instanceof Date
+      ? intervention.createdAt.toISOString()
+      : String(intervention.createdAt),
+    updatedAt: intervention.updatedAt instanceof Date
+      ? intervention.updatedAt.toISOString()
+      : String(intervention.updatedAt),
   }
 }
