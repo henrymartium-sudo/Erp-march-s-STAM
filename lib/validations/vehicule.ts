@@ -63,9 +63,6 @@ export const createVehiculeSchema = z.object({
     .nativeEnum(StatutVehicule)
     .default(StatutVehicule.EN_ATTENTE_LIVRAISON)
     .optional(),
-
-  // Relations
-  marcheId: z.string().cuid("ID de marché invalide").optional().nullable(),
 });
 
 /**
@@ -81,7 +78,6 @@ export const filterVehiculesSchema = z.object({
   search: z.string().optional(),
   marque: z.string().optional(),
   statut: z.nativeEnum(StatutVehicule).optional(),
-  marcheId: z.string().cuid().optional(),
   annee: z.number().int().optional(),
   // Pagination
   page: z.number().int().positive().default(1).optional(),

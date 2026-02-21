@@ -280,7 +280,7 @@ export async function exportVehicules(
       where,
       orderBy: { immatriculation: 'asc' },
       include: {
-        marche: { select: { numero: true, objet: true } },
+        marcheVehicules: { include: { marche: { select: { numero: true, objet: true } } } },
       },
     })
 
@@ -320,8 +320,8 @@ export async function exportVehicules(
       dateReceptionProvisoire: vehicule.dateReceptionProvisoire || '',
       dateReceptionDefinitive: vehicule.dateReceptionDefinitive || '',
       reservesReception: vehicule.reservesReception || '',
-      marcheNumero: vehicule.marche?.numero || '',
-      marcheObjet: vehicule.marche?.objet || '',
+      marcheNumero: vehicule.marcheVehicules?.[0]?.marche?.numero || '',
+      marcheObjet: vehicule.marcheVehicules?.[0]?.marche?.objet || '',
     }))
 
     // Génération du fichier Excel
@@ -862,7 +862,7 @@ export async function exportVehiculesPDF(
       where,
       orderBy: { immatriculation: 'asc' },
       include: {
-        marche: { select: { numero: true, objet: true } },
+        marcheVehicules: { include: { marche: { select: { numero: true, objet: true } } } },
       },
     })
 
@@ -902,7 +902,7 @@ export async function exportVehiculesPDF(
       annee: vehicule.annee || '-',
       statut: formatStatutForExcel(vehicule.statut),
       dateLivraison: vehicule.dateLivraison || null,
-      marcheNumero: vehicule.marche?.numero || '-',
+      marcheNumero: vehicule.marcheVehicules?.[0]?.marche?.numero || '-',
     }))
 
     // Calcul des statistiques

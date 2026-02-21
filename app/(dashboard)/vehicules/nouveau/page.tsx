@@ -1,5 +1,4 @@
 import { VehiculeForm } from '@/components/vehicules/vehicule-form'
-import { getAllMarchesArray } from '@/lib/actions/marches'
 import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -7,9 +6,6 @@ import { Button } from '@/components/ui/button'
 export const dynamic = 'force-dynamic'
 
 export default async function NouveauVehiculePage() {
-  // Récupérer la liste des marchés pour le formulaire
-  const marches = await getAllMarchesArray()
-
   return (
     <div className="space-y-6">
       {/* Navigation */}
@@ -31,7 +27,7 @@ export default async function NouveauVehiculePage() {
       </div>
 
       {/* Formulaire */}
-      <VehiculeForm marches={marches} />
+      <VehiculeForm />
     </div>
   )
 }

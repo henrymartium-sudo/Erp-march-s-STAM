@@ -25,23 +25,36 @@ export async function createMarche(data: unknown): Promise<ActionResult<Marche>>
     // 2. Validation avec Zod
     const validatedData = createMarcheSchema.parse(data)
 
-    // 3. Création dans Prisma avec userId
+    // 3. Extraction des vehiculeIds avant le spread Prisma
+    const { vehiculeIds, ...marcheData } = validatedData
+
+    // 4. Création dans Prisma avec userId
     const marche = await prisma.marche.create({
       data: {
-        ...validatedData,
+        ...marcheData,
         userId: session.user.id,
         // Calcul de dateFinPrevue si dateOrdreService est fournie
         dateFinPrevue:
-          validatedData.dateOrdreService
+          marcheData.dateOrdreService
             ? new Date(
-                validatedData.dateOrdreService.getTime() +
-                  validatedData.delaiExecution * 24 * 60 * 60 * 1000
+                marcheData.dateOrdreService.getTime() +
+                  marcheData.delaiExecution * 24 * 60 * 60 * 1000
               )
             : undefined,
       },
     })
 
-    // 4. Revalidation du cache Next.js
+    // 5. Création des associations véhicules
+    if (vehiculeIds && vehiculeIds.length > 0) {
+      await prisma.marcheVehicule.createMany({
+        data: vehiculeIds.map((vehiculeId) => ({
+          marcheId: marche.id,
+          vehiculeId,
+        })),
+      })
+    }
+
+    // 6. Revalidation du cache Next.js
     revalidatePath('/marches')
 
     // 5. Retour succès
@@ -97,7 +110,7 @@ export async function updateMarche(data: unknown): Promise<ActionResult<Marche>>
 
     // 2. Validation avec Zod
     const validatedData = updateMarcheSchema.parse(data)
-    const { id, ...updateData } = validatedData
+    const { id, vehiculeIds, ...updateData } = validatedData
 
     // 3. Validation du workflow de statut
     if (updateData.statut) {
@@ -133,7 +146,20 @@ export async function updateMarche(data: unknown): Promise<ActionResult<Marche>>
       },
     })
 
-    // 5. Revalidation du cache
+    // 6. Mise à jour des associations véhicules (si vehiculeIds fourni)
+    if (vehiculeIds !== undefined) {
+      await prisma.marcheVehicule.deleteMany({ where: { marcheId: id } })
+      if (vehiculeIds.length > 0) {
+        await prisma.marcheVehicule.createMany({
+          data: vehiculeIds.map((vehiculeId) => ({
+            marcheId: id,
+            vehiculeId,
+          })),
+        })
+      }
+    }
+
+    // 7. Revalidation du cache
     revalidatePath('/marches')
     revalidatePath(`/marches/${id}`)
 
@@ -252,6 +278,20 @@ export async function getMarcheById(id: string): Promise<Marche | null> {
             name: true,
             email: true,
             role: true,
+          },
+        },
+        marcheVehicules: {
+          include: {
+            vehicule: {
+              select: {
+                id: true,
+                immatriculation: true,
+                marque: true,
+                modele: true,
+                annee: true,
+                statut: true,
+              },
+            },
           },
         },
       },

@@ -145,31 +145,33 @@ export function VehiculeDetail({ vehicule, canWrite = true }: VehiculeDetailProp
         </Card>
       )}
 
-      {/* Marché associé */}
-      {vehicule.marche && (
+      {/* Marchés associés */}
+      {vehicule.marches && vehicule.marches.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Truck className="h-5 w-5" />
-              Marché associé
+              Marchés associés ({vehicule.marches.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1">
-                  <p className="font-semibold">{vehicule.marche.numero}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {vehicule.marche.objet}
-                  </p>
+              {vehicule.marches.map((marche) => (
+                <div key={marche.id} className="flex items-start justify-between gap-4">
+                  <div className="space-y-1 min-w-0">
+                    <p className="font-semibold">{marche.numero}</p>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {marche.objet}
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" asChild className="flex-shrink-0">
+                    <Link href={`/marches/${marche.id}`}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Voir
+                    </Link>
+                  </Button>
                 </div>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/marches/${vehicule.marche.id}`}>
-                    <FileText className="h-4 w-4 mr-2" />
-                    Voir le marché
-                  </Link>
-                </Button>
-              </div>
+              ))}
             </div>
           </CardContent>
         </Card>

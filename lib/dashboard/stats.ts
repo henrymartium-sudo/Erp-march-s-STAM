@@ -4,9 +4,9 @@
 
 import { prisma } from '@/lib/db/prisma'
 import { StatutMarche } from '@prisma/client'
-import { differenceInDays, format, startOfMonth, endOfMonth } from 'date-fns'
+import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import type { StatutCount, MontantMensuel } from './types'
+import type { StatutCount, MontantMensuel, CAEffectifPoint } from './types'
 
 // Mapping des labels de statuts (réutiliser les constantes existantes)
 import { STATUT_MARCHE_LABELS } from '@/lib/constants/marche'
@@ -98,6 +98,53 @@ export async function getMontantsMensuels(): Promise<MontantMensuel[]> {
     return months
   } catch (error) {
     console.error('Erreur lors du calcul des montants mensuels:', error)
+    return []
+  }
+}
+
+/**
+ * Récupère le CA effectif (marchés EN_EXECUTION + EXECUTE_ATTENTE_GARANTIES + CLOTURE)
+ * sur les 12 derniers mois, basé sur dateNotification.
+ */
+export async function getCAEffectif(): Promise<CAEffectifPoint[]> {
+  try {
+    const now = new Date()
+    const months: CAEffectifPoint[] = []
+
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const start = startOfMonth(date)
+      const end = endOfMonth(date)
+
+      const result = await prisma.marche.aggregate({
+        where: {
+          dateNotification: {
+            gte: start,
+            lte: end,
+          },
+          statut: {
+            in: [
+              StatutMarche.EN_EXECUTION,
+              StatutMarche.EXECUTE_ATTENTE_GARANTIES,
+              StatutMarche.CLOTURE,
+            ],
+          },
+        },
+        _sum: {
+          montant: true,
+        },
+      })
+
+      months.push({
+        label: format(date, 'yyyy-MM'),
+        moisLabel: format(date, 'MMM yyyy', { locale: fr }),
+        montant: Number(result._sum.montant || 0),
+      })
+    }
+
+    return months
+  } catch (error) {
+    console.error('Erreur lors du calcul du CA effectif:', error)
     return []
   }
 }

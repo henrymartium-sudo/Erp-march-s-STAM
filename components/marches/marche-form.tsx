@@ -37,6 +37,8 @@ import { loadDraft, useDraftSave, formatDraftAge } from '@/hooks/use-draft-save'
 import { toast } from '@/lib/utils/toast'
 import { Loader2, Save } from 'lucide-react'
 import type { SerializedMarche } from '@/types/serialized'
+import { VehicleMultiSelect, type VehiculeSummary } from '@/components/shared/VehicleMultiSelect'
+import { getVehiculesArray } from '@/lib/actions/vehicules'
 
 interface MarcheFormProps {
   marche?: SerializedMarche
@@ -61,6 +63,7 @@ type StatutSpecificField =
   | 'dateLivraisonPrevue'
   | 'dureeLivraisonPrevue'
   | 'dateReceptionProvisoirePrevue'
+  | 'dateReceptionDefinitive'
   | 'garantiesLiberees'
   | 'dateClotureAdministrative'
   | 'dateResiliation'
@@ -83,8 +86,8 @@ function getStatutSpecificFields(statut: StatutMarche | undefined): StatutSpecif
     ATTRIBUE_PROVISOIREMENT: ['dateAttributionProvisoire'],
     ATTRIBUE_DEFINITIVEMENT: ['dateAttributionDefinitive'],
     EN_ATTENTE_LIVRAISON_OS: ['dateLivraisonPrevue', 'dureeLivraisonPrevue'],
-    EN_EXECUTION: ['dateReceptionProvisoirePrevue'],
-    EXECUTE_ATTENTE_GARANTIES: ['garantiesLiberees'],
+    EN_EXECUTION: ['dateReceptionProvisoirePrevue', 'dateReceptionDefinitive'],
+    EXECUTE_ATTENTE_GARANTIES: ['garantiesLiberees', 'dateReceptionDefinitive'],
     CLOTURE: ['dateClotureAdministrative'],
     RESILIE: ['dateResiliation', 'motifsResiliation'],
     ANNULE: ['dateAnnulation', 'motifsAnnulation'],
@@ -100,6 +103,7 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [warning, setWarning] = useState<string | null>(null)
+  const [allVehicules, setAllVehicules] = useState<VehiculeSummary[]>([])
 
   const isEditing = !!marche
 
@@ -132,6 +136,7 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
           dateLivraisonPrevue: marche.dateLivraisonPrevue ? new Date(marche.dateLivraisonPrevue) : undefined,
           dureeLivraisonPrevue: marche.dureeLivraisonPrevue || undefined,
           dateReceptionProvisoirePrevue: marche.dateReceptionProvisoirePrevue ? new Date(marche.dateReceptionProvisoirePrevue) : undefined,
+          dateReceptionDefinitive: marche.dateReceptionDefinitive ? new Date(marche.dateReceptionDefinitive) : undefined,
           garantiesLiberees: marche.garantiesLiberees || undefined,
           dateClotureAdministrative: marche.dateClotureAdministrative ? new Date(marche.dateClotureAdministrative) : undefined,
           dateResiliation: marche.dateResiliation ? new Date(marche.dateResiliation) : undefined,
@@ -142,6 +147,7 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
           motifsInfructueux: marche.motifsInfructueux || undefined,
           concurrentGagnant: marche.concurrentGagnant || undefined,
           montantOffreConcurrent: marche.montantOffreConcurrent || undefined,
+          vehiculeIds: marche.vehicules?.map((v) => v.id) ?? [],
         }
       : {
           numero: '',
@@ -166,6 +172,22 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
 
   // --- Brouillons Auto-Save (create mode uniquement) ---
   const DRAFT_KEY = 'draft:marche:new'
+
+  // Chargement des véhicules pour le multi-select
+  useEffect(() => {
+    getVehiculesArray().then((vehicules) => {
+      setAllVehicules(
+        vehicules.map((v) => ({
+          id: v.id,
+          immatriculation: v.immatriculation,
+          marque: v.marque,
+          modele: v.modele,
+          annee: v.annee ?? null,
+        }))
+      )
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Restauration du brouillon au montage (client uniquement)
   useEffect(() => {
@@ -790,6 +812,35 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
                     />
                   )}
 
+                  {/* EN_EXECUTION + EXECUTE_ATTENTE_GARANTIES — date de réception définitive */}
+                  {statutSpecificFields.includes('dateReceptionDefinitive') && (
+                    <FormField
+                      control={form.control}
+                      name="dateReceptionDefinitive"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Date de réception définitive</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="date"
+                              value={
+                                field.value
+                                  ? new Date(field.value).toISOString().split('T')[0]
+                                  : ''
+                              }
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.value ? new Date(e.target.value) : null
+                                )
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
                   {/* EXECUTE_ATTENTE_GARANTIES */}
                   {statutSpecificFields.includes('garantiesLiberees') && (
                     <FormField
@@ -1050,6 +1101,31 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
               </CardContent>
             </Card>
           )}
+
+          {/* Section : Véhicules associés */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Véhicules associés</h3>
+            <FormField
+              control={form.control}
+              name="vehiculeIds"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Véhicules liés à ce marché</FormLabel>
+                  <FormControl>
+                    <VehicleMultiSelect
+                      vehicules={allVehicules}
+                      value={field.value ?? []}
+                      onChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Sélectionnez les véhicules livrés dans le cadre de ce marché.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           {/* Section : Autorité contractante */}
           <div className="space-y-4">

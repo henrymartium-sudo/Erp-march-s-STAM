@@ -3,10 +3,11 @@ import { auth } from '@/lib/auth/auth.config'
 import { getMarchesStats } from '@/lib/actions/marches'
 import { getCautionsStats } from '@/lib/actions/cautions'
 import { getVehiculesStats } from '@/lib/actions/vehicules'
-import { getStatutDistribution, getMontantsMensuels } from '@/lib/dashboard/stats'
+import { getStatutDistribution, getMontantsMensuels, getCAEffectif } from '@/lib/dashboard/stats'
 import { KPICards } from '@/components/dashboard/kpi-cards'
 import { StatusCharts } from '@/components/dashboard/status-charts'
 import { MontantsChart } from '@/components/dashboard/montants-chart'
+import { EffectiveRevenueChart } from '@/components/dashboard/effective-revenue-chart'
 import { AlertsSection } from '@/components/dashboard/alerts-section'
 import { RecentActivity } from '@/components/dashboard/recent-activity'
 import { QuickActions } from '@/components/dashboard/quick-actions'
@@ -26,12 +27,14 @@ export default async function DashboardPage() {
     vehiculesStatsResult,
     statutDistribution,
     montantsMensuels,
+    caEffectif,
   ] = await Promise.all([
     getMarchesStats(),
     getCautionsStats(),
     getVehiculesStats(),
     getStatutDistribution(),
     getMontantsMensuels(),
+    getCAEffectif(),
   ])
 
   // Gérer les erreurs de récupération
@@ -120,6 +123,9 @@ export default async function DashboardPage() {
 
       {/* Montants mensuels */}
       <MontantsChart data={montantsMensuels} />
+
+      {/* CA Effectif avec filtre période */}
+      <EffectiveRevenueChart data={caEffectif} />
 
       {/* Activité récente */}
       <RecentActivity />

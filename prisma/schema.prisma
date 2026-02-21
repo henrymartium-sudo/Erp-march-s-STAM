@@ -81,6 +81,7 @@ model Marche {
   dateLivraisonPrevue           DateTime?
   dureeLivraisonPrevue          Int?
   dateReceptionProvisoirePrevue DateTime?
+  dateReceptionDefinitive       DateTime?
   garantiesLiberees             Boolean?     @default(false)
   dateClotureAdministrative     DateTime?
   dateResiliation               DateTime?
@@ -98,7 +99,7 @@ model Marche {
 
   cautions            Caution[]
   documents           Document[]
-  vehicules           Vehicule[]
+  marcheVehicules     MarcheVehicule[]
 
   @@map("marches")
   @@index([dateFinPrevue])
@@ -261,14 +262,12 @@ model Vehicule {
   statut                  StatutVehicule @default(EN_ATTENTE_LIVRAISON)
 
   // Relations
-  marcheId        String?
-  marche          Marche?  @relation(fields: [marcheId], references: [id], onDelete: SetNull)
+  marcheVehicules MarcheVehicule[]
 
   // Timestamps
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  @@index([marcheId])
   @@index([statut])
   @@index([immatriculation])
   @@map("vehicules")
@@ -281,6 +280,18 @@ enum StatutVehicule {
   RECEPTION_DEFINITIVE
   GARANTIE
   HORS_SERVICE
+}
+
+// Table de jonction many-to-many Marché ↔ Véhicule
+model MarcheVehicule {
+  id         String   @id @default(cuid())
+  marcheId   String
+  vehiculeId String
+  marche     Marche   @relation(fields: [marcheId], references: [id], onDelete: Cascade)
+  vehicule   Vehicule @relation(fields: [vehiculeId], references: [id], onDelete: Cascade)
+
+  @@unique([marcheId, vehiculeId])
+  @@map("marche_vehicules")
 }
 
 // ============================================

@@ -67,6 +67,7 @@ export interface SerializedMarche {
   dateLivraisonPrevue: string | null
   dureeLivraisonPrevue: number | null
   dateReceptionProvisoirePrevue: string | null
+  dateReceptionDefinitive: string | null
   garantiesLiberees: boolean | null
   dateClotureAdministrative: string | null
   dateResiliation: string | null
@@ -78,6 +79,15 @@ export interface SerializedMarche {
   concurrentGagnant: string | null
   montantOffreConcurrent: number | null // Decimal -> number
   userId: string
+  // Véhicules associés (via table de jonction)
+  vehicules?: Array<{
+    id: string
+    immatriculation: string
+    marque: string
+    modele: string
+    annee: number | null
+    statut: string
+  }>
 }
 
 // ============================================================================
@@ -96,15 +106,15 @@ export interface SerializedVehicule {
   dateReceptionDefinitive: string | null // Date -> ISO string
   reservesReception: string | null
   statut: StatutVehicule
-  marcheId: string | null
   createdAt: string // Date -> ISO string
   updatedAt: string // Date -> ISO string
-  marche?: {
+  // Marchés associés (via table de jonction many-to-many)
+  marches?: Array<{
     id: string
     numero: string
     objet: string
     statut: string
-  } | null
+  }>
 }
 
 // ============================================================================
@@ -152,10 +162,15 @@ export function serializeMarche(marche: any): SerializedMarche {
     dateAttributionDefinitive: serializeDate(marche.dateAttributionDefinitive),
     dateLivraisonPrevue: serializeDate(marche.dateLivraisonPrevue),
     dateReceptionProvisoirePrevue: serializeDate(marche.dateReceptionProvisoirePrevue),
+    dateReceptionDefinitive: serializeDate(marche.dateReceptionDefinitive),
     dateClotureAdministrative: serializeDate(marche.dateClotureAdministrative),
     dateResiliation: serializeDate(marche.dateResiliation),
     dateAnnulation: serializeDate(marche.dateAnnulation),
     dateInfructueux: serializeDate(marche.dateInfructueux),
+    // Véhicules aplatis depuis marcheVehicules
+    vehicules: marche.marcheVehicules
+      ? marche.marcheVehicules.map((mv: any) => mv.vehicule).filter(Boolean)
+      : undefined,
   }
 }
 
@@ -181,12 +196,18 @@ export function serializeCaution(caution: any): SerializedCaution {
  * Sérialise un véhicule Prisma vers SerializedVehicule
  */
 export function serializeVehicule(vehicule: any): SerializedVehicule {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { marcheId: _ignored, marche: _ignoredMarche, ...rest } = vehicule
   return {
-    ...vehicule,
+    ...rest,
     dateLivraison: serializeDate(vehicule.dateLivraison),
     dateReceptionProvisoire: serializeDate(vehicule.dateReceptionProvisoire),
     dateReceptionDefinitive: serializeDate(vehicule.dateReceptionDefinitive),
     createdAt: serializeDate(vehicule.createdAt) || '',
     updatedAt: serializeDate(vehicule.updatedAt) || '',
+    // Marchés aplatis depuis marcheVehicules
+    marches: vehicule.marcheVehicules
+      ? vehicule.marcheVehicules.map((mv: any) => mv.marche).filter(Boolean)
+      : undefined,
   }
 }

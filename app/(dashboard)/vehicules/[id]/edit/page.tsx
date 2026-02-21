@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation'
 import { VehiculeForm } from '@/components/vehicules/vehicule-form'
 import { getVehiculeById } from '@/lib/actions/vehicules'
-import { getAllMarchesArray } from '@/lib/actions/marches'
 import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -17,15 +16,11 @@ interface EditVehiculePageProps {
 export default async function EditVehiculePage({ params }: EditVehiculePageProps) {
   const { id } = await params
 
-  // Récupérer le véhicule
   const vehicule = await getVehiculeById(id)
 
   if (!vehicule) {
     notFound()
   }
-
-  // Récupérer la liste des marchés pour le formulaire
-  const marches = await getAllMarchesArray()
 
   return (
     <div className="space-y-6">
@@ -48,7 +43,7 @@ export default async function EditVehiculePage({ params }: EditVehiculePageProps
       </div>
 
       {/* Formulaire */}
-      <VehiculeForm vehicule={vehicule} marches={marches} />
+      <VehiculeForm vehicule={vehicule} />
     </div>
   )
 }

@@ -4,10 +4,9 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Vehicule, Marche, StatutVehicule } from '@prisma/client'
+import { Vehicule, StatutVehicule } from '@prisma/client'
 import { createVehiculeSchema, type CreateVehiculeInput } from '@/lib/validations/vehicule'
 import { createVehicule, updateVehicule, checkImmatriculationExists } from '@/lib/actions/vehicules'
-import { getAllMarchesArray } from '@/lib/actions/marches'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -41,27 +40,16 @@ import { useEffect } from 'react'
 
 interface VehiculeFormProps {
   vehicule?: Vehicule
-  marches?: Marche[]
   onSuccess?: () => void
 }
 
-export function VehiculeForm({ vehicule, marches: initialMarches, onSuccess }: VehiculeFormProps) {
+export function VehiculeForm({ vehicule, onSuccess }: VehiculeFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [marches, setMarches] = useState<Marche[]>(initialMarches || [])
 
   const isEditing = !!vehicule
-
-  // Charger les marchés si non fournis
-  useEffect(() => {
-    if (!initialMarches) {
-      getAllMarchesArray().then((data) => {
-        setMarches(data)
-      })
-    }
-  }, [initialMarches])
 
   // Configuration du formulaire avec React Hook Form + Zod
   const form = useForm<CreateVehiculeInput>({
@@ -78,7 +66,6 @@ export function VehiculeForm({ vehicule, marches: initialMarches, onSuccess }: V
           dateReceptionDefinitive: vehicule.dateReceptionDefinitive || undefined,
           reservesReception: vehicule.reservesReception || undefined,
           statut: vehicule.statut,
-          marcheId: vehicule.marcheId || undefined,
         }
       : {
           immatriculation: '',
@@ -299,39 +286,7 @@ export function VehiculeForm({ vehicule, marches: initialMarches, onSuccess }: V
               />
             </div>
 
-            {/* Marché associé */}
-            <FormField
-              control={form.control}
-              name="marcheId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Marché associé</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value || undefined}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Aucun marché associé" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">Aucun marché</SelectItem>
-                      {marches.map((marche) => (
-                        <SelectItem key={marche.id} value={marche.id}>
-                          {marche.numero} - {marche.objet.substring(0, 50)}
-                          {marche.objet.length > 50 ? '...' : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    Optionnel : Lier ce véhicule à un marché public
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Note : l'association véhicule ↔ marché se gère depuis le formulaire de marché */}
           </CardContent>
         </Card>
 
