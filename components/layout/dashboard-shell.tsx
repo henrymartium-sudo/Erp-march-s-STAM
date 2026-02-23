@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { NotificationBell } from '@/components/admin/alertes/notifications/notification-bell'
 
 type BadgeVariant = 'success' | 'warning' | 'info' | 'muted'
 
@@ -351,6 +352,9 @@ export function DashboardShell({ children, userName, userRole }: DashboardShellP
               {pageTitle}
             </h1>
           </div>
+
+          {/* Cloche notifications in-app */}
+          <NotificationBell />
 
           {/* Avatar + infos utilisateur */}
           <div className="flex items-center gap-3">
