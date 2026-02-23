@@ -117,8 +117,9 @@ test.describe('Test 3 — Formulaire édition : pré-sélection véhicules', () 
     await page.waitForTimeout(4000);
 
     // Les badges avec les immatriculations doivent être visibles (via le composant VehicleMultiSelect)
+    // Le Badge shadcn/ui est un div — on utilise un sélecteur générique
     for (const immat of MARCHE_AVEC_VEHICULES.vehicules) {
-      await expect(page.locator(`span:has-text("${immat}"), p:has-text("${immat}")`).first()).toBeVisible({ timeout: 10000 });
+      await expect(page.locator(`text="${immat}"`).first()).toBeVisible({ timeout: 10000 });
     }
   });
 });
@@ -187,18 +188,21 @@ test.describe('Test 4 — Liaison effective : ajout et persistance', () => {
 
     // Ouvrir le popover et décocher STAM-09
     await page.locator('button:has-text("1 véhicule sélectionné")').first().click();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1500);
 
-    const vehiculeRow = page.locator(`text=${VEHICULE_NON_LIE.immatriculation}`).first();
+    // Cibler la ligne dans le popover (pas le badge en dehors du popover)
+    const popoverContent = page.locator('[data-radix-popper-content-wrapper]').first();
+    await expect(popoverContent).toBeVisible({ timeout: 5000 });
+    const vehiculeRow = popoverContent.locator(`text=${VEHICULE_NON_LIE.immatriculation}`).first();
     await vehiculeRow.click();
 
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(800);
 
     // Vérifier retour à 0 sélections
     await expect(
       page.locator('button:has-text("Sélectionner des véhicules")').first()
-    ).toBeVisible({ timeout: 5000 });
+    ).toBeVisible({ timeout: 10000 });
 
     // Sauvegarder
     await page.locator('button[type="submit"]').last().click();
