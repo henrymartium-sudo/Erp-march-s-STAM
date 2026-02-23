@@ -120,7 +120,6 @@ export async function getCAEffectif(): Promise<CAEffectifPoint[]> {
             StatutMarche.CLOTURE,
           ],
         },
-        dateNotification: { not: null as unknown as Date },
       },
       select: { dateNotification: true, montant: true },
     })
