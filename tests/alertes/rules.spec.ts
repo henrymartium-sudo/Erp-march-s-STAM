@@ -210,4 +210,73 @@ test.describe('Module Alertes — Rule Builder', () => {
 
     await expect(page.getByText('Historique des notifications')).toBeVisible();
   });
+
+  // ─── Test 7 : ConditionEditor — select enum pour nouveauStatut ───────────
+
+  test('ConditionEditor — select enum pour nouveauStatut', async ({ page }) => {
+    await page.goto('/admin/alertes/rules/new');
+    await page.waitForLoadState('networkidle');
+
+    // Sélectionner MARCHE_STATUS_CHANGED
+    await page.locator('[role="combobox"]').first().click();
+    await page.waitForTimeout(300);
+    await page.getByRole('option', { name: /Changement de statut marché/i }).click();
+    await page.waitForTimeout(300);
+
+    // Ajouter une condition
+    await page.getByRole('button', { name: 'Ajouter une condition' }).click();
+    await page.waitForTimeout(200);
+
+    // La première condition doit avoir un select "Ancien statut" par défaut
+    // Changer pour "Nouveau statut"
+    const conditionRows = page.locator('.rounded-lg.border.p-2');
+    const firstRow = conditionRows.first();
+    await firstRow.locator('[role="combobox"]').first().click();
+    await page.waitForTimeout(300);
+    await page.getByRole('option', { name: 'Nouveau statut' }).click();
+    await page.waitForTimeout(200);
+
+    // Vérifier qu'un select enum de valeur est apparu (pas un input texte)
+    const valueComboboxes = firstRow.locator('[role="combobox"]');
+    const count = await valueComboboxes.count();
+    expect(count).toBeGreaterThanOrEqual(2); // champ + opérateur + select valeur
+
+    // Cliquer sur le select de valeur (le dernier combobox de la ligne)
+    await valueComboboxes.last().click();
+    await page.waitForTimeout(300);
+
+    // "Attribué" doit apparaître dans les options
+    const attribueOption = page.getByRole('option', { name: 'Attribué' });
+    await expect(attribueOption).toBeVisible({ timeout: 3000 });
+    await attribueOption.click();
+
+    // Vérifier que la valeur sélectionnée s'affiche
+    await expect(valueComboboxes.last()).toContainText('Attribué');
+  });
+
+  // ─── Test 8 : Panel d'aide — affichage et recette prête à emploi ─────────
+
+  test('Panel aide — affichage et recette Caution critique', async ({ page }) => {
+    await page.goto('/admin/alertes/rules/new');
+    await page.waitForLoadState('networkidle');
+
+    // Panel visible par défaut avec le guide
+    await expect(page.getByText("Guide d'utilisation")).toBeVisible();
+    await expect(page.getByText(/Recettes prêtes/i)).toBeVisible();
+
+    // La recette "Caution critique" est visible
+    await expect(page.getByText(/Caution critique/i).first()).toBeVisible();
+
+    // Cliquer sur "Utiliser ce modèle" (premier bouton de recette)
+    await page.getByRole('button', { name: 'Utiliser ce modèle' }).first().click();
+    await page.waitForTimeout(300);
+
+    // Le formulaire doit être pré-rempli avec le nom de la recette
+    await expect(page.locator('input[id="name"]')).toHaveValue(/Caution critique/i);
+
+    // Focus sur le champ cooldown → le panel doit changer de contenu
+    await page.locator('input[id="cooldown"]').click();
+    await page.waitForTimeout(200);
+    await expect(page.getByText(/Cooldown/i).first()).toBeVisible();
+  });
 });
