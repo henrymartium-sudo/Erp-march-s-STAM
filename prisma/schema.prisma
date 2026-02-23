@@ -20,10 +20,11 @@ model User {
   updatedAt     DateTime        @updatedAt
 
   // Relations
-  marches         Marche[]
-  cautions        Caution[]
-  documents       Document[]
-  passwordResets  PasswordReset[]
+  marches              Marche[]
+  cautions             Caution[]
+  documents            Document[]
+  passwordResets       PasswordReset[]
+  alertNotifications   AlertNotification[]
 
   @@map("users")
 }
@@ -362,4 +363,67 @@ model AlerteDestinataire {
   updatedAt DateTime @updatedAt
 
   @@map("alerte_destinataires")
+}
+
+// ============================================
+// ALERTES EVENT-DRIVEN (v2)
+// ============================================
+
+model AlertEvent {
+  id           String    @id @default(cuid())
+  type         String
+  sourceModule String
+  referenceId  String
+  payload      Json
+  processedAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  notifications AlertNotification[]
+
+  @@index([type, processedAt])
+  @@map("alert_events")
+}
+
+model AlertRule {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  eventType       String
+  conditions      Json
+  channels        String[]
+  targetRoles     String[]
+  targetUserIds   String[]
+  webhookUrl      String?
+  priority        Int      @default(1)
+  cooldownMinutes Int      @default(1440)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  notifications AlertNotification[]
+
+  @@index([eventType, isActive])
+  @@map("alert_rules")
+}
+
+model AlertNotification {
+  id               String    @id @default(cuid())
+  eventId          String
+  ruleId           String
+  channel          String
+  recipientEmail   String?
+  recipientUserId  String?
+  status           String    @default("PENDING")
+  deduplicationKey String    @unique
+  sentAt           DateTime?
+  readAt           DateTime?
+  deliveryLog      String?
+  createdAt        DateTime  @default(now())
+
+  event AlertEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  rule  AlertRule  @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  user  User?      @relation(fields: [recipientUserId], references: [id], onDelete: SetNull)
+
+  @@index([recipientUserId, status])
+  @@map("alert_notifications")
 }
