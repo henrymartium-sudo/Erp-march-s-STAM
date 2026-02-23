@@ -92,7 +92,7 @@ export const filterVehiculesSchema = z.object({
   annee: z.number().int().optional(),
   // Pagination
   page: z.number().int().positive().default(1).optional(),
-  limit: z.number().int().positive().max(100).default(50).optional(),
+  limit: z.number().int().positive().max(10000).default(50).optional(),
   // Tri
   sortBy: z
     .enum([
