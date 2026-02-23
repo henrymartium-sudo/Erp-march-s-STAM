@@ -16,7 +16,7 @@
  * - ALERT_EMAIL_TO : Destinataires des alertes (séparés par virgule)
  */
 
-import { sendDailyAlertsEmail } from "@/lib/actions/alertes";
+import { runDailyAlertsCron } from "@/lib/alertes/engine/cron-processor";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -55,48 +55,36 @@ export async function GET(request: NextRequest) {
     console.log("🔔 Démarrage du cron job quotidien d'alertes...");
     const startTime = Date.now();
 
-    const result = await sendDailyAlertsEmail();
+    const data = await runDailyAlertsCron();
+    const result = { success: true, data };
 
     const duration = Date.now() - startTime;
 
     // 3. Logger le résultat
-    if (result.success) {
-      console.log(
-        `✅ Cron job terminé avec succès en ${duration}ms`
-      );
-      console.log(
-        `   - ${result.data?.cautionsCount || 0} caution(s) alertée(s)`
-      );
-      console.log(
-        `   - ${result.data?.marchesCount || 0} marché(s) alerté(s)`
-      );
+    console.log(
+      `✅ Cron job terminé avec succès en ${duration}ms`
+    );
+    console.log(
+      `   - ${data.cautionsCount} caution(s) alertée(s)`
+    );
+    console.log(
+      `   - ${data.marchesCount} marché(s) alerté(s)`
+    );
 
-      return NextResponse.json(
-        {
-          success: true,
-          message: "Alertes quotidiennes envoyées",
-          data: {
-            cautionsCount: result.data?.cautionsCount || 0,
-            marchesCount: result.data?.marchesCount || 0,
-            duration: `${duration}ms`,
-            timestamp: new Date().toISOString(),
-          },
-        },
-        { status: 200 }
-      );
-    } else {
-      console.error(`❌ Échec du cron job : ${result.error}`);
-
-      return NextResponse.json(
-        {
-          success: false,
-          error: result.error || "Erreur lors de l'envoi des alertes",
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Alertes quotidiennes traitées via moteur événementiel",
+        data: {
+          cautionsCount: data.cautionsCount,
+          marchesCount: data.marchesCount,
+          documentsCount: data.documentsCount,
           duration: `${duration}ms`,
           timestamp: new Date().toISOString(),
         },
-        { status: 500 }
-      );
-    }
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("❌ Erreur critique dans le cron job :", error);
 
