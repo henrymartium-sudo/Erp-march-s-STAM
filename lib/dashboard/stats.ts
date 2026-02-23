@@ -109,40 +109,45 @@ export async function getMontantsMensuels(): Promise<MontantMensuel[]> {
 export async function getCAEffectif(): Promise<CAEffectifPoint[]> {
   try {
     const now = new Date()
-    const months: CAEffectifPoint[] = []
 
+    // 1. Récupérer tous les marchés dans les statuts effectifs (sans filtre de date)
+    const marches = await prisma.marche.findMany({
+      where: {
+        statut: {
+          in: [
+            StatutMarche.EN_EXECUTION,
+            StatutMarche.EXECUTE_ATTENTE_GARANTIES,
+            StatutMarche.CLOTURE,
+          ],
+        },
+        dateNotification: { not: null },
+      },
+      select: { dateNotification: true, montant: true },
+    })
+
+    // 2. Initialiser les 12 derniers mois à 0
+    const monthMap = new Map<string, CAEffectifPoint>()
     for (let i = 11; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const start = startOfMonth(date)
-      const end = endOfMonth(date)
-
-      const result = await prisma.marche.aggregate({
-        where: {
-          dateNotification: {
-            gte: start,
-            lte: end,
-          },
-          statut: {
-            in: [
-              StatutMarche.EN_EXECUTION,
-              StatutMarche.EXECUTE_ATTENTE_GARANTIES,
-              StatutMarche.CLOTURE,
-            ],
-          },
-        },
-        _sum: {
-          montant: true,
-        },
-      })
-
-      months.push({
-        label: format(date, 'yyyy-MM'),
+      const key = format(date, 'yyyy-MM')
+      monthMap.set(key, {
+        label: key,
         moisLabel: format(date, 'MMM yyyy', { locale: fr }),
-        montant: Number(result._sum.montant || 0),
+        montant: 0,
       })
     }
 
-    return months
+    // 3. Sommer les montants par mois de dateNotification
+    for (const marche of marches) {
+      if (!marche.dateNotification) continue
+      const key = format(marche.dateNotification, 'yyyy-MM')
+      const entry = monthMap.get(key)
+      if (entry) {
+        entry.montant += Number(marche.montant)
+      }
+    }
+
+    return Array.from(monthMap.values())
   } catch (error) {
     console.error('Erreur lors du calcul du CA effectif:', error)
     return []
