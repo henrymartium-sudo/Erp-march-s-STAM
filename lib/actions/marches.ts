@@ -12,6 +12,8 @@ import { Prisma } from '@prisma/client'
 import { ZodError } from 'zod'
 import type { PaginatedResponse } from '@/types/pagination'
 import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
+import { publishEvent } from '@/lib/alertes/engine/publish-event'
+import { ALERT_EVENT_TYPES } from '@/lib/alertes/types'
 
 // ============================================================================
 // CREATE
@@ -113,6 +115,7 @@ export async function updateMarche(data: unknown): Promise<ActionResult<Marche>>
     const { id, vehiculeIds, ...updateData } = validatedData
 
     // 3. Validation du workflow de statut
+    let ancienStatut: StatutMarche | undefined
     if (updateData.statut) {
       const currentMarche = await prisma.marche.findUnique({
         where: { id },
@@ -125,6 +128,7 @@ export async function updateMarche(data: unknown): Promise<ActionResult<Marche>>
             error: `Transition de statut invalide : "${STATUT_LABELS[currentMarche.statut]}" → "${STATUT_LABELS[updateData.statut]}" n'est pas autorisée.`,
           }
         }
+        ancienStatut = currentMarche.statut
       }
     }
 
@@ -162,6 +166,16 @@ export async function updateMarche(data: unknown): Promise<ActionResult<Marche>>
     // 7. Revalidation du cache
     revalidatePath('/marches')
     revalidatePath(`/marches/${id}`)
+
+    // 8. Publier l'événement si le statut a changé
+    if (ancienStatut && updateData.statut && ancienStatut !== updateData.statut) {
+      await publishEvent(ALERT_EVENT_TYPES.MARCHE_STATUS_CHANGED, 'marches', marche.id, {
+        ancienStatut,
+        nouveauStatut: marche.statut,
+        numero: marche.numero,
+        objet: marche.objet,
+      })
+    }
 
     // 6. Retour succès
     return { success: true, data: marche }
