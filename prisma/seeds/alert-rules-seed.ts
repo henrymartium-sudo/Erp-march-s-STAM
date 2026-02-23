@@ -127,6 +127,7 @@ export async function seedAlertRules(prisma: PrismaClient) {
       update: {},
       create: {
         ...rule,
+        conditions: rule.conditions as unknown as import('@prisma/client').Prisma.InputJsonValue,
         targetUserIds: [],
       },
     })
