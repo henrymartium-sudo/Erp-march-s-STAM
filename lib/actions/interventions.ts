@@ -22,6 +22,8 @@ import { Prisma } from '@prisma/client'
 import { ZodError } from 'zod'
 import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
 import type { PaginatedResponse } from '@/types/pagination'
+import { publishEvent } from '@/lib/alertes/engine/publish-event'
+import { ALERT_EVENT_TYPES } from '@/lib/alertes/types'
 
 // ============================================================================
 // Types
@@ -72,6 +74,14 @@ export async function createIntervention(data: unknown): Promise<ActionResult<In
     revalidatePath(`/vehicules/${validated.vehiculeId}`)
     revalidatePath('/vehicules/sav')
 
+    // Publier l'événement SAV_TICKET_CREATED (fire-and-forget, ne bloque pas)
+    await publishEvent(ALERT_EVENT_TYPES.SAV_TICKET_CREATED, 'sav', intervention.id, {
+      vehiculeId: intervention.vehiculeId,
+      type: intervention.type,
+      statut: intervention.statut,
+      sousGarantie: intervention.sousGarantie,
+    })
+
     return { success: true, data: intervention }
   } catch (error) {
     if (error instanceof ZodError) {
@@ -121,6 +131,15 @@ export async function updateInterventionStatut(data: unknown): Promise<ActionRes
         resolveAt: validated.resolveAt ?? undefined,
       },
     })
+
+    // Publier l'événement d'escalade si passage à EN_COURS (véhicule immobilisé)
+    if (validated.statut === 'EN_COURS' && current.statut !== 'EN_COURS') {
+      await publishEvent(ALERT_EVENT_TYPES.SAV_TICKET_ESCALATED, 'sav', intervention.id, {
+        vehiculeId: current.vehiculeId,
+        ancienStatut: current.statut,
+        nouveauStatut: validated.statut,
+      })
+    }
 
     // Mettre à jour statutSAV du véhicule selon le nouveau statut
     if (validated.statut === 'EN_COURS') {
