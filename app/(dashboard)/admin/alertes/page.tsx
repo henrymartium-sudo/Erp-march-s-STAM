@@ -1,23 +1,26 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { requireRole } from "@/lib/utils/permissions";
 import {
   getAlertesActuelles,
   getDestinataires,
 } from "@/lib/actions/alertes-manuelles";
+import { getAlertRules } from "@/lib/actions/alert-rules";
 import { AlertesDashboard } from "@/components/admin/alertes/alertes-dashboard";
 import { AlertesTimeline } from "@/components/admin/alertes/alertes-timeline";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Settings2, History } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function AlertesPage() {
   await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION']);
 
-  const [alertesResult, destinatairesResult] = await Promise.all([
+  const [alertesResult, destinatairesResult, rules] = await Promise.all([
     getAlertesActuelles(),
     getDestinataires(),
+    getAlertRules(),
   ]);
 
   const alertes = alertesResult.success ? alertesResult.data : null;
@@ -57,6 +60,39 @@ export default async function AlertesPage() {
         description="Surveillance en temps réel — marchés et cautions proches échéance"
         count={totalAlertes > 0 ? totalAlertes : undefined}
       />
+
+      {/* Navigation rapide vers les sous-sections */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Link
+          href="/admin/alertes/rules"
+          className="flex items-center gap-3 rounded-lg border bg-white px-4 py-3 hover:bg-gray-50 transition-colors"
+        >
+          <div className="rounded-md bg-primary/10 p-2">
+            <Settings2 className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <div className="font-medium text-sm">Règles d'alerte</div>
+            <div className="text-xs text-muted-foreground">
+              {rules.length} règle(s) configurée(s)
+            </div>
+          </div>
+        </Link>
+
+        <Link
+          href="/admin/alertes/history"
+          className="flex items-center gap-3 rounded-lg border bg-white px-4 py-3 hover:bg-gray-50 transition-colors"
+        >
+          <div className="rounded-md bg-primary/10 p-2">
+            <History className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <div className="font-medium text-sm">Historique</div>
+            <div className="text-xs text-muted-foreground">
+              Consulter toutes les notifications envoyées
+            </div>
+          </div>
+        </Link>
+      </div>
 
       {/* Timeline visuelle rouge / ambre / vert */}
       <section>
