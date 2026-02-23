@@ -53,20 +53,89 @@ export const EVENT_TYPE_LABELS: Record<AlertEventType, string> = {
   DOCUMENT_EXPIRING:     "Document expirant",
 }
 
+// Type pour la définition d'un champ de condition
+export interface FieldDef {
+  field: string
+  label: string
+  type: "number" | "string"
+  enumValues?: string[]
+  enumLabels?: Record<string, string>
+}
+
+// Constantes enum pour les selects
+const STATUT_MARCHE_VALUES = [
+  "OPPORTUNITE_IDENTIFIEE",
+  "EN_COURS_ANALYSE",
+  "SOUMISSION_EN_COURS",
+  "SOUMIS",
+  "EN_ATTENTE_ATTRIBUTION",
+  "ATTRIBUE",
+  "EN_EXECUTION",
+  "EN_ATTENTE_LIVRAISON_OS",
+  "CLOTURE",
+  "INFRUCTUEUX",
+  "ANNULE",
+] as const
+
+const STATUT_MARCHE_LABELS: Record<string, string> = {
+  OPPORTUNITE_IDENTIFIEE:  "Opportunité identifiée",
+  EN_COURS_ANALYSE:        "En cours d'analyse",
+  SOUMISSION_EN_COURS:     "Soumission en cours",
+  SOUMIS:                  "Soumis",
+  EN_ATTENTE_ATTRIBUTION:  "En attente d'attribution",
+  ATTRIBUE:                "Attribué",
+  EN_EXECUTION:            "En exécution",
+  EN_ATTENTE_LIVRAISON_OS: "En attente livraison OS",
+  CLOTURE:                 "Clôturé",
+  INFRUCTUEUX:             "Infructueux",
+  ANNULE:                  "Annulé",
+}
+
+const STATUT_CAUTION_VALUES = ["ACTIVE", "LIBEREE", "APPELEE", "EXPIREE"] as const
+const STATUT_CAUTION_LABELS: Record<string, string> = {
+  ACTIVE:  "Active",
+  LIBEREE: "Libérée",
+  APPELEE: "Appelée",
+  EXPIREE: "Expirée",
+}
+
+const STATUT_MARCHE_ACTIFS = ["EN_EXECUTION", "EN_ATTENTE_LIVRAISON_OS", "ATTRIBUE"] as const
+const STATUT_MARCHE_ACTIFS_LABELS: Record<string, string> = {
+  EN_EXECUTION:            "En exécution",
+  EN_ATTENTE_LIVRAISON_OS: "En attente livraison OS",
+  ATTRIBUE:                "Attribué",
+}
+
 // Champs disponibles par type d'événement (pour le condition builder)
-export const EVENT_FIELDS: Record<AlertEventType, Array<{ field: string; label: string; type: "number" | "string" }>> = {
+export const EVENT_FIELDS: Record<AlertEventType, FieldDef[]> = {
   CAUTION_EXPIRING: [
     { field: "joursRestants", label: "Jours restants", type: "number" },
-    { field: "statut",        label: "Statut",         type: "string" },
-    { field: "montant",       label: "Montant (XOF)",  type: "number" },
+    {
+      field: "statut", label: "Statut", type: "string",
+      enumValues: [...STATUT_CAUTION_VALUES],
+      enumLabels: STATUT_CAUTION_LABELS,
+    },
+    { field: "montant", label: "Montant (XOF)", type: "number" },
   ],
   MARCHE_EXPIRING: [
     { field: "joursRestants", label: "Jours restants", type: "number" },
-    { field: "statut",        label: "Statut",         type: "string" },
+    {
+      field: "statut", label: "Statut", type: "string",
+      enumValues: [...STATUT_MARCHE_ACTIFS],
+      enumLabels: STATUT_MARCHE_ACTIFS_LABELS,
+    },
   ],
   MARCHE_STATUS_CHANGED: [
-    { field: "ancienStatut",  label: "Ancien statut",  type: "string" },
-    { field: "nouveauStatut", label: "Nouveau statut", type: "string" },
+    {
+      field: "ancienStatut", label: "Ancien statut", type: "string",
+      enumValues: [...STATUT_MARCHE_VALUES],
+      enumLabels: STATUT_MARCHE_LABELS,
+    },
+    {
+      field: "nouveauStatut", label: "Nouveau statut", type: "string",
+      enumValues: [...STATUT_MARCHE_VALUES],
+      enumLabels: STATUT_MARCHE_LABELS,
+    },
   ],
   SAV_TICKET_CREATED:   [],
   SAV_TICKET_ESCALATED: [],
