@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db/prisma'
 import { Prisma } from '@prisma/client'
 import { requireRole } from '@/lib/utils/permissions'
+import { logAction } from '@/lib/audit/logAction'
+import { AUDIT_ACTION, AUDIT_ENTITY } from '@/lib/audit/constants'
 import type { ActionResult } from '@/types'
 import { z } from 'zod'
 
@@ -51,7 +53,7 @@ export async function getAlertRule(id: string) {
 
 export async function createAlertRule(input: unknown): Promise<ActionResult<{ id: string }>> {
   try {
-    await requireRole(['ADMIN'])
+    const session = await requireRole(['ADMIN'])
     const data = RuleSchema.parse(input)
     const rule = await prisma.alertRule.create({
       data: {
@@ -62,6 +64,14 @@ export async function createAlertRule(input: unknown): Promise<ActionResult<{ id
       },
     })
     revalidatePath('/admin/alertes/rules')
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.CREATE,
+      entityType: AUDIT_ENTITY.ALERT_RULE,
+      entityId:   rule.id,
+      metadata:   { name: rule.name, eventType: rule.eventType },
+    })
     return { success: true, data: { id: rule.id } }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Erreur' }
@@ -70,9 +80,9 @@ export async function createAlertRule(input: unknown): Promise<ActionResult<{ id
 
 export async function updateAlertRule(id: string, input: unknown): Promise<ActionResult<void>> {
   try {
-    await requireRole(['ADMIN'])
+    const session = await requireRole(['ADMIN'])
     const data = RuleSchema.parse(input)
-    await prisma.alertRule.update({
+    const rule = await prisma.alertRule.update({
       where: { id },
       data: {
         ...data,
@@ -83,6 +93,14 @@ export async function updateAlertRule(id: string, input: unknown): Promise<Actio
     })
     revalidatePath('/admin/alertes/rules')
     revalidatePath(`/admin/alertes/rules/${id}/edit`)
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.UPDATE,
+      entityType: AUDIT_ENTITY.ALERT_RULE,
+      entityId:   rule.id,
+      metadata:   { name: rule.name, isActive: rule.isActive },
+    })
     return { success: true, data: undefined }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Erreur' }
@@ -102,9 +120,16 @@ export async function toggleAlertRule(id: string, isActive: boolean): Promise<Ac
 
 export async function deleteAlertRule(id: string): Promise<ActionResult<void>> {
   try {
-    await requireRole(['ADMIN'])
+    const session = await requireRole(['ADMIN'])
     await prisma.alertRule.delete({ where: { id } })
     revalidatePath('/admin/alertes/rules')
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.DELETE,
+      entityType: AUDIT_ENTITY.ALERT_RULE,
+      entityId:   id,
+    })
     return { success: true, data: undefined }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Erreur' }
