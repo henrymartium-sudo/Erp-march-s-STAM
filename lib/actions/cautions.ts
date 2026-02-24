@@ -8,6 +8,8 @@ import {
   cautionFiltersSchema,
 } from '@/lib/validations/caution'
 import { requireAuth, requireMarcheWrite, requireDelete } from '@/lib/utils/permissions'
+import { logAction } from '@/lib/audit/logAction'
+import { AUDIT_ACTION, AUDIT_ENTITY } from '@/lib/audit/constants'
 import type { ActionResult } from '@/types'
 import type { Caution, TypeCaution, StatutCaution } from '@prisma/client'
 import { Prisma } from '@prisma/client'
@@ -83,6 +85,16 @@ export async function createCaution(data: unknown): Promise<ActionResult<Caution
       revalidatePath(`/marches/${validatedData.marcheId}`)
     }
 
+    // Audit log
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.CREATE,
+      entityType: AUDIT_ENTITY.CAUTION,
+      entityId:   caution.id,
+      metadata:   { reference: caution.reference, type: caution.type, montant: caution.montant?.toString() },
+    })
+
     // 6. Retour succès
     return { success: true, data: caution }
   } catch (error) {
@@ -138,7 +150,7 @@ export async function createCaution(data: unknown): Promise<ActionResult<Caution
 export async function updateCaution(data: unknown): Promise<ActionResult<Caution>> {
   try {
     // 1. Vérification d'authentification et de permissions
-    await requireMarcheWrite()
+    const session = await requireMarcheWrite()
 
     // 2. Validation avec Zod
     const validatedData = updateCautionServerSchema.parse(data)
@@ -183,6 +195,16 @@ export async function updateCaution(data: unknown): Promise<ActionResult<Caution
     if (existingCaution.marcheId !== caution.marcheId) {
       revalidatePath(`/marches/${existingCaution.marcheId}`)
     }
+
+    // Audit log
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.UPDATE,
+      entityType: AUDIT_ENTITY.CAUTION,
+      entityId:   caution.id,
+      metadata:   { reference: caution.reference, statut: caution.statut },
+    })
 
     // 7. Retour succès
     return { success: true, data: caution }
@@ -239,7 +261,7 @@ export async function updateCaution(data: unknown): Promise<ActionResult<Caution
 export async function deleteCaution(id: string): Promise<ActionResult<Caution>> {
   try {
     // 1. Vérification d'authentification et de permissions
-    await requireDelete()
+    const session = await requireDelete()
 
     // 2. Vérification que la caution existe
     const existingCaution = await prisma.caution.findUnique({
@@ -261,6 +283,15 @@ export async function deleteCaution(id: string): Promise<ActionResult<Caution>> 
     // 4. Revalidation du cache Next.js
     revalidatePath('/cautions')
     revalidatePath(`/marches/${caution.marcheId}`)
+
+    // Audit log
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.DELETE,
+      entityType: AUDIT_ENTITY.CAUTION,
+      entityId:   id,
+    })
 
     // 5. Retour succès
     return { success: true, data: caution }
