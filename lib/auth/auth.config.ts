@@ -21,10 +21,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           // Validation avec Zod
           const { email, password } = await loginSchema.parseAsync(credentials)
 
-          // Recherche de l'utilisateur
-          const user = await prisma.user.findUnique({
+          // Recherche de l'utilisateur — email principal ou email secondaire (UserIdentifier)
+          let user = await prisma.user.findUnique({
             where: { email },
           })
+
+          if (!user) {
+            const identifier = await prisma.userIdentifier.findUnique({
+              where: { email },
+              include: { user: true },
+            })
+            if (identifier) {
+              user = identifier.user
+            }
+          }
 
           if (!user) {
             console.log('User not found:', email)
