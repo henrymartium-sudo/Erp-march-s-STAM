@@ -17,6 +17,13 @@ import { z } from 'zod'
 import type { PaginatedResponse } from '@/types/pagination'
 import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
 
+// Extensions autorisées pour l'upload de documents
+const ALLOWED_EXTENSIONS = [
+  'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+  'jpg', 'jpeg', 'png', 'gif', 'webp',
+  'txt', 'csv', 'zip',
+] as const;
+
 /**
  * TYPE DE RÉSULTAT
  */
@@ -149,6 +156,15 @@ export async function getUploadUrl(params: {
 }): Promise<ActionResult<{ signedUrl: string; storagePath: string }>> {
   try {
     await requireMarcheWrite()
+
+    // Validation de l'extension du fichier
+    const ext = params.fileName.split('.').pop()?.toLowerCase() ?? '';
+    if (!ALLOWED_EXTENSIONS.includes(ext as typeof ALLOWED_EXTENSIONS[number])) {
+      return {
+        success: false,
+        error: `Extension de fichier non autorisée : .${ext}`,
+      };
+    }
 
     const storagePath = generateStoragePath(params.type, params.fileName, params.marcheId)
 
