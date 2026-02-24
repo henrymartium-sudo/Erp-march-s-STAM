@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { exportMarchesPDF } from '@/lib/actions/exports'
+import { auth } from '@/lib/auth/auth.config'
 
 export async function GET(request: NextRequest) {
+  const session = await auth()
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+  }
+
   try {
     const searchParams = request.nextUrl.searchParams
 
@@ -35,7 +41,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('[API_EXPORT_MARCHES_PDF]', error)
     return NextResponse.json(
-      { error: error.message || 'Erreur interne du serveur' },
+      { error: 'Erreur lors de la génération du PDF' },
       { status: 500 }
     )
   }
