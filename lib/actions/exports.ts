@@ -29,6 +29,7 @@ interface ExportFilters {
   dateDebut?: string
   dateFin?: string
   search?: string
+  orientation?: 'portrait' | 'landscape' // pour les exports PDF
 }
 
 // ============================================================================
@@ -573,6 +574,7 @@ export async function exportMarchesPDF(
       columns,
       data,
       summary,
+      orientation: filters?.orientation ?? 'portrait',
     })
 
     const filename = `marches_${new Date().toISOString().split('T')[0]}.pdf`
@@ -706,6 +708,7 @@ export async function exportCautionsPDF(
       columns,
       data,
       summary,
+      orientation: filters?.orientation ?? 'portrait',
     })
 
     const filename = `cautions_${new Date().toISOString().split('T')[0]}.pdf`
@@ -822,6 +825,7 @@ export async function exportDocumentsPDF(
       columns,
       data,
       summary,
+      orientation: filters?.orientation ?? 'portrait',
     })
 
     const filename = `documents_${new Date().toISOString().split('T')[0]}.pdf`
@@ -937,6 +941,7 @@ export async function exportVehiculesPDF(
       columns,
       data,
       summary,
+      orientation: filters?.orientation ?? 'portrait',
     })
 
     const filename = `vehicules_${new Date().toISOString().split('T')[0]}.pdf`
