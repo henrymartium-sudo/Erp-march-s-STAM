@@ -7,9 +7,19 @@
  */
 
 import { testAlertsSystem } from "@/lib/actions/alertes";
+import { auth } from "@/lib/auth/auth.config";
 import { NextResponse } from "next/server";
 
 export async function GET() {
+  // Guard ADMIN — route réservée aux admins
+  const session = await auth();
+  if (!session?.user || session.user.role !== "ADMIN") {
+    return NextResponse.json(
+      { success: false, error: "Non autorisé" },
+      { status: 401 }
+    );
+  }
+
   try {
     const result = await testAlertsSystem();
 
