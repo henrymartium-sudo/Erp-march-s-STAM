@@ -25,8 +25,23 @@ model User {
   documents            Document[]
   passwordResets       PasswordReset[]
   alertNotifications   AlertNotification[]
+  identifiers          UserIdentifier[]
 
   @@map("users")
+}
+
+model UserIdentifier {
+  id        String   @id @default(cuid())
+  userId    String
+  email     String   @unique
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([email])
+  @@map("user_identifiers")
 }
 
 model PasswordReset {
