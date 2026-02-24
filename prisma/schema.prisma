@@ -26,6 +26,7 @@ model User {
   passwordResets       PasswordReset[]
   alertNotifications   AlertNotification[]
   identifiers          UserIdentifier[]
+  auditLogs            AuditLog[]
 
   @@map("users")
 }
@@ -443,4 +444,29 @@ model AlertNotification {
 
   @@index([recipientUserId, status])
   @@map("alert_notifications")
+}
+
+// ============================================
+// AUDIT LOG
+// ============================================
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  userEmail   String?
+  action      String
+  entityType  String
+  entityId    String?
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([entityType])
+  @@index([action])
+  @@map("audit_logs")
 }
