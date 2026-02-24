@@ -16,6 +16,7 @@ import { differenceInDays } from "date-fns";
 import { STATUT_LABELS } from "@/lib/constants/marche";
 import { TYPE_CAUTION_LABELS } from "@/lib/constants/caution";
 import type { ActionResult } from "@/types";
+import { requireAuth } from "@/lib/utils/permissions";
 
 /**
  * Récupère les cautions qui arrivent à échéance dans moins de 30 jours
@@ -27,6 +28,7 @@ export async function getAlertsCautionsExpiring(): Promise<
   ActionResult<CautionAlert[]>
 > {
   try {
+    await requireAuth();
     const today = new Date();
     const in30Days = new Date();
     in30Days.setDate(today.getDate() + 30);
@@ -95,6 +97,7 @@ export async function getAlertesMarchesExpiring(): Promise<
   ActionResult<MarcheAlert[]>
 > {
   try {
+    await requireAuth();
     const today = new Date();
     const in60Days = new Date();
     in60Days.setDate(today.getDate() + 60);
@@ -160,6 +163,7 @@ export async function sendDailyAlertsEmail(): Promise<
   ActionResult<{ cautionsCount: number; marchesCount: number }>
 > {
   try {
+    await requireAuth();
     // 1. Récupérer les alertes
     const [cautionsResult, marchesResult] = await Promise.all([
       getAlertsCautionsExpiring(),
@@ -251,6 +255,7 @@ export async function testAlertsSystem(): Promise<
   }>
 > {
   try {
+    await requireAuth();
     const [cautionsResult, marchesResult] = await Promise.all([
       getAlertsCautionsExpiring(),
       getAlertesMarchesExpiring(),
