@@ -35,17 +35,22 @@ export async function runDailyAlertsCron(): Promise<{
     })
   }
 
-  // 2. Marchés en exécution finissant dans 60 jours
+  // 2. Marchés proches de leur fin d'exécution (ou en attente OS sans date fin)
   const marches = await prisma.marche.findMany({
     where: {
-      statut: { in: ["EN_EXECUTION", "EXECUTE_ATTENTE_GARANTIES"] },
-      dateFinPrevue: { gte: today, lte: in60Days },
+      statut: { in: ["EN_EXECUTION", "EXECUTE_ATTENTE_GARANTIES", "EN_ATTENTE_LIVRAISON_OS"] },
+      OR: [
+        { dateFinPrevue: { gte: today, lte: in60Days } },
+        // EN_ATTENTE_LIVRAISON_OS sans dateFinPrevue → signalé tous les jours (filtré par scheduleConfig)
+        { statut: "EN_ATTENTE_LIVRAISON_OS", dateFinPrevue: null },
+      ],
     },
   })
 
   for (const m of marches) {
-    if (!m.dateFinPrevue) continue
-    const joursRestants = Math.ceil((m.dateFinPrevue.getTime() - today.getTime()) / 86400000)
+    const joursRestants = m.dateFinPrevue
+      ? Math.ceil((m.dateFinPrevue.getTime() - today.getTime()) / 86400000)
+      : -1 // -1 = pas de date fin (EN_ATTENTE_LIVRAISON_OS sans deadline)
     await publishEvent(ALERT_EVENT_TYPES.MARCHE_EXPIRING, "marches", m.id, {
       joursRestants,
       statut: m.statut,
