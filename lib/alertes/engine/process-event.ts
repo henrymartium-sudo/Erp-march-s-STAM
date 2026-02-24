@@ -3,10 +3,12 @@
 import { prisma } from "@/lib/db/prisma"
 import { evaluateConditions } from "./rule-evaluator"
 import { resolveRecipients } from "./recipient-resolver"
+import type { Recipient } from "./recipient-resolver"
+import { shouldRunRuleToday } from "./schedule-checker"
 import { sendEmailChannel } from "@/lib/alertes/channels/email-channel"
 import { markInAppReady } from "@/lib/alertes/channels/inapp-channel"
 import { sendWebhookChannel } from "@/lib/alertes/channels/webhook-channel"
-import type { RuleConditions } from "@/lib/alertes/types"
+import type { RuleConditions, ScheduleConfig } from "@/lib/alertes/types"
 
 /**
  * Construit la clé de déduplication basée sur la fenêtre de cooldown.
@@ -38,12 +40,31 @@ export async function processEvent(eventId: string): Promise<void> {
   })
 
   for (const rule of rules) {
-    // 2. Évaluer les conditions
+    // 2. Vérifier la planification de la règle
+    const scheduleConfig = rule.scheduleConfig as ScheduleConfig | null
+    if (!shouldRunRuleToday(scheduleConfig)) continue
+
+    // 3. Évaluer les conditions
     const conditions = rule.conditions as unknown as RuleConditions
     if (!evaluateConditions(conditions, payload)) continue
 
-    // 3. Résoudre les destinataires
-    const recipients = await resolveRecipients(rule.targetRoles, rule.targetUserIds)
+    // 4. Résoudre les destinataires internes (rôles + userIds)
+    const internalRecipients = await resolveRecipients(rule.targetRoles, rule.targetUserIds)
+
+    // 4b. Fusionner avec les emails externes (hors-base)
+    const externalEmails: string[] = (rule.externalEmails ?? []).filter(
+      (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)
+    )
+    const externalRecipients: Recipient[] = externalEmails.map((email) => ({
+      email,
+      role: "EXTERNAL",
+    }))
+
+    // Dédupliquer par email (un email externe peut aussi être un user interne)
+    const seenEmails = new Set(internalRecipients.map((r) => r.email))
+    const uniqueExternal = externalRecipients.filter((r) => !seenEmails.has(r.email))
+    const recipients: Recipient[] = [...internalRecipients, ...uniqueExternal]
+
     if (recipients.length === 0) continue
 
     for (const channel of rule.channels) {
@@ -52,26 +73,26 @@ export async function processEvent(eventId: string): Promise<void> {
           buildDeduplicationKey(event.type, event.referenceId, rule.id, rule.cooldownMinutes) +
           `_${channel}_${recipient.email}`
 
-        // 4. Vérifier l'idempotence
+        // 5. Vérifier l'idempotence
         const existing = await prisma.alertNotification.findUnique({
           where: { deduplicationKey: dedupKey },
         })
         if (existing) continue
 
-        // 5. Créer la notification en PENDING
+        // 6. Créer la notification en PENDING
         const notification = await prisma.alertNotification.create({
           data: {
             eventId: event.id,
             ruleId: rule.id,
             channel,
             recipientEmail: recipient.email,
-            recipientUserId: recipient.userId,
+            recipientUserId: recipient.userId ?? null,
             status: "PENDING",
             deduplicationKey: dedupKey,
           },
         })
 
-        // 6. Dispatcher selon canal
+        // 7. Dispatcher selon canal
         let result: { success: boolean; log: string }
 
         if (channel === "EMAIL") {
@@ -91,7 +112,7 @@ export async function processEvent(eventId: string): Promise<void> {
           continue
         }
 
-        // 7. Mettre à jour le statut
+        // 8. Mettre à jour le statut
         await prisma.alertNotification.update({
           where: { id: notification.id },
           data: {
