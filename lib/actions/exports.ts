@@ -16,6 +16,9 @@ import {
 } from '@/lib/utils/pdf'
 import { formatDateCourt } from '@/lib/utils/format'
 
+// Limite maximale de lignes par export (protection mémoire)
+const EXPORT_MAX_ROWS = 1000;
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -63,6 +66,7 @@ export async function exportMarches(
     // Récupération des marchés
     const marches = await prisma.marche.findMany({
       where,
+      take: EXPORT_MAX_ROWS,
       orderBy: { numero: 'asc' },
       include: {
         user: { select: { name: true } },
@@ -175,6 +179,7 @@ export async function exportCautions(
     // Récupération des cautions
     const cautions = await prisma.caution.findMany({
       where,
+      take: EXPORT_MAX_ROWS,
       orderBy: { reference: 'asc' },
       include: {
         marche: { select: { numero: true, objet: true } },
@@ -278,6 +283,7 @@ export async function exportVehicules(
     // Récupération des véhicules
     const vehicules = await prisma.vehicule.findMany({
       where,
+      take: EXPORT_MAX_ROWS,
       orderBy: { immatriculation: 'asc' },
       include: {
         marcheVehicules: { include: { marche: { select: { numero: true, objet: true } } } },
@@ -382,6 +388,7 @@ export async function exportDocuments(
     // Récupération des documents
     const documents = await prisma.document.findMany({
       where,
+      take: EXPORT_MAX_ROWS,
       orderBy: { createdAt: 'desc' },
       include: {
         marche: { select: { numero: true, objet: true } },
@@ -491,6 +498,7 @@ export async function exportMarchesPDF(
     // Récupération des marchés
     const marches = await prisma.marche.findMany({
       where,
+      take: EXPORT_MAX_ROWS,
       orderBy: { numero: 'asc' },
       include: {
         user: { select: { name: true } },
@@ -617,6 +625,7 @@ export async function exportCautionsPDF(
     // Récupération des cautions
     const cautions = await prisma.caution.findMany({
       where,
+      take: EXPORT_MAX_ROWS,
       orderBy: { reference: 'asc' },
       include: {
         marche: { select: { numero: true, objet: true } },
@@ -747,6 +756,7 @@ export async function exportDocumentsPDF(
     // Récupération des documents
     const documents = await prisma.document.findMany({
       where,
+      take: EXPORT_MAX_ROWS,
       orderBy: { createdAt: 'desc' },
       include: {
         marche: { select: { numero: true, objet: true } },
@@ -860,6 +870,7 @@ export async function exportVehiculesPDF(
     // Récupération des véhicules
     const vehicules = await prisma.vehicule.findMany({
       where,
+      take: EXPORT_MAX_ROWS,
       orderBy: { immatriculation: 'asc' },
       include: {
         marcheVehicules: { include: { marche: { select: { numero: true, objet: true } } } },
