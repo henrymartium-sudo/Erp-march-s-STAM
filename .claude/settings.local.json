@@ -130,7 +130,10 @@
       "Bash(Select-String -NotMatch \"tests/\")",
       "Bash(Select-String -NotMatch \"tests\\\\\")",
       "Bash(echo:*)",
-      "Skill(commit-commands:commit-push-pr)"
+      "Skill(commit-commands:commit-push-pr)",
+      "Bash(cd \"C:\\\\Users\\\\HP\\\\Documents\\\\claude projets\\\\projet ERP marchés\\\\ERP Marchés STAM Final\" && git worktree remove .worktrees/sav-module 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\HP\\\\Documents\\\\claude projets\\\\projet ERP marchés\\\\ERP Marchés STAM Final\" && git worktree remove --force .worktrees/sav-module 2>&1 && git branch -d feat/sav-vehicules-360 2>&1)",
+      "mcp__plugin_playwright_playwright__browser_handle_dialog"
     ]
   }
 }

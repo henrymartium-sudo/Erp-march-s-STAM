@@ -49,8 +49,9 @@ export async function login(page: Page, user: TestUser) {
   // Cliquer sur le bouton de soumission
   await page.click('button[type="submit"]');
 
-  // Attendre la redirection vers le dashboard (avec timeout augmenté)
-  await page.waitForURL('/', { timeout: 30000 });
+  // Attendre la redirection vers le dashboard
+  // On accepte toute URL hors /login (gère les cas ?callbackUrl=... ou latence)
+  await page.waitForURL((url) => !url.toString().includes('/login'), { timeout: 30000 });
 }
 
 /**
