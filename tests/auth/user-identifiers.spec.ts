@@ -98,8 +98,8 @@ test.describe('UserIdentifier — Admin Page & Login Secondaire', () => {
     await page.goto('/admin/utilisateurs');
     await page.waitForLoadState('networkidle');
 
-    // Titre H1 "Utilisateurs"
-    await expect(page.getByRole('heading', { name: 'Utilisateurs' })).toBeVisible({ timeout: 15000 });
+    // Titre H1 "Utilisateurs" — exact:true pour éviter l'ambiguïté avec le topbar "Gestion des utilisateurs"
+    await expect(page.getByRole('heading', { name: 'Utilisateurs', exact: true })).toBeVisible({ timeout: 15000 });
 
     // Description présente
     await expect(page.getByText('Gestion des comptes et des identités email secondaires')).toBeVisible();
