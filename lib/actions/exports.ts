@@ -2,6 +2,8 @@
 
 import { prisma } from '@/lib/db/prisma'
 import { requireRole } from '@/lib/utils/permissions'
+import { logAction } from '@/lib/audit/logAction'
+import { AUDIT_ACTION, AUDIT_ENTITY } from '@/lib/audit/constants'
 import type { ActionResult } from '@/types'
 import {
   createExcelFile,
@@ -41,7 +43,7 @@ export async function exportMarches(
 ): Promise<ActionResult<{ buffer: Buffer; filename: string }>> {
   try {
     // Vérification permissions (EXPLOITATION minimum)
-    await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION'])
+    const session = await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION'])
 
     // Construction du filtre Prisma
     const where: any = {}
@@ -132,6 +134,14 @@ export async function exportMarches(
 
     const filename = `marches_${new Date().toISOString().split('T')[0]}.xlsx`
 
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.EXPORT,
+      entityType: AUDIT_ENTITY.EXPORT,
+      metadata:   { format: 'EXCEL', module: 'MARCHE', filters },
+    })
+
     return {
       success: true,
       data: { buffer, filename },
@@ -154,7 +164,7 @@ export async function exportCautions(
 ): Promise<ActionResult<{ buffer: Buffer; filename: string }>> {
   try {
     // Vérification permissions (EXPLOITATION minimum)
-    await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION'])
+    const session = await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION'])
 
     // Construction du filtre Prisma
     const where: any = {}
@@ -240,6 +250,14 @@ export async function exportCautions(
 
     const filename = `cautions_${new Date().toISOString().split('T')[0]}.xlsx`
 
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.EXPORT,
+      entityType: AUDIT_ENTITY.EXPORT,
+      metadata:   { format: 'EXCEL', module: 'CAUTION', filters },
+    })
+
     return {
       success: true,
       data: { buffer, filename },
@@ -262,7 +280,7 @@ export async function exportVehicules(
 ): Promise<ActionResult<{ buffer: Buffer; filename: string }>> {
   try {
     // Vérification permissions (EXPLOITATION minimum)
-    await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION'])
+    const session = await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION'])
 
     // Construction du filtre Prisma
     const where: any = {}
@@ -343,6 +361,14 @@ export async function exportVehicules(
 
     const filename = `vehicules_${new Date().toISOString().split('T')[0]}.xlsx`
 
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.EXPORT,
+      entityType: AUDIT_ENTITY.EXPORT,
+      metadata:   { format: 'EXCEL', module: 'VEHICULE', filters },
+    })
+
     return {
       success: true,
       data: { buffer, filename },
@@ -365,7 +391,7 @@ export async function exportDocuments(
 ): Promise<ActionResult<{ buffer: Buffer; filename: string }>> {
   try {
     // Vérification permissions (EXPLOITATION minimum)
-    await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION'])
+    const session = await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION'])
 
     // Construction du filtre Prisma
     const where: any = {
@@ -451,6 +477,14 @@ export async function exportDocuments(
 
     const filename = `documents_${new Date().toISOString().split('T')[0]}.xlsx`
 
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.EXPORT,
+      entityType: AUDIT_ENTITY.EXPORT,
+      metadata:   { format: 'EXCEL', module: 'DOCUMENT', filters },
+    })
+
     return {
       success: true,
       data: { buffer, filename },
@@ -473,7 +507,7 @@ export async function exportMarchesPDF(
 ): Promise<ActionResult<{ buffer: Buffer; filename: string }>> {
   try {
     // Vérification permissions (EXPLOITATION minimum)
-    await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION'])
+    const session = await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION'])
 
     // Construction du filtre Prisma (même que Excel)
     const where: any = {}
@@ -579,6 +613,14 @@ export async function exportMarchesPDF(
 
     const filename = `marches_${new Date().toISOString().split('T')[0]}.pdf`
 
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.EXPORT,
+      entityType: AUDIT_ENTITY.EXPORT,
+      metadata:   { format: 'PDF', module: 'MARCHE', filters },
+    })
+
     return {
       success: true,
       data: { buffer, filename },
@@ -601,7 +643,7 @@ export async function exportCautionsPDF(
 ): Promise<ActionResult<{ buffer: Buffer; filename: string }>> {
   try {
     // Vérification permissions (EXPLOITATION minimum)
-    await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION'])
+    const session = await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION'])
 
     // Construction du filtre Prisma
     const where: any = {}
@@ -713,6 +755,14 @@ export async function exportCautionsPDF(
 
     const filename = `cautions_${new Date().toISOString().split('T')[0]}.pdf`
 
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.EXPORT,
+      entityType: AUDIT_ENTITY.EXPORT,
+      metadata:   { format: 'PDF', module: 'CAUTION', filters },
+    })
+
     return {
       success: true,
       data: { buffer, filename },
@@ -735,7 +785,7 @@ export async function exportDocumentsPDF(
 ): Promise<ActionResult<{ buffer: Buffer; filename: string }>> {
   try {
     // Vérification permissions (EXPLOITATION minimum)
-    await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION'])
+    const session = await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION'])
 
     // Construction du filtre Prisma
     const where: any = {
@@ -830,6 +880,14 @@ export async function exportDocumentsPDF(
 
     const filename = `documents_${new Date().toISOString().split('T')[0]}.pdf`
 
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.EXPORT,
+      entityType: AUDIT_ENTITY.EXPORT,
+      metadata:   { format: 'PDF', module: 'DOCUMENT', filters },
+    })
+
     return {
       success: true,
       data: { buffer, filename },
@@ -852,7 +910,7 @@ export async function exportVehiculesPDF(
 ): Promise<ActionResult<{ buffer: Buffer; filename: string }>> {
   try {
     // Vérification permissions (EXPLOITATION minimum)
-    await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION'])
+    const session = await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION'])
 
     // Construction du filtre Prisma
     const where: any = {}
@@ -945,6 +1003,14 @@ export async function exportVehiculesPDF(
     })
 
     const filename = `vehicules_${new Date().toISOString().split('T')[0]}.pdf`
+
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.EXPORT,
+      entityType: AUDIT_ENTITY.EXPORT,
+      metadata:   { format: 'PDF', module: 'VEHICULE', filters },
+    })
 
     return {
       success: true,
