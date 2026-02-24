@@ -19,12 +19,14 @@ import { ConditionEditor } from './condition-editor'
 import { ChannelSelector } from './channel-selector'
 import { RecipientPicker } from './recipient-picker'
 import { AlertesHelpPanel } from './help-panel'
+import { FrequencySelector } from './frequency-selector'
+import { ExternalEmailsInput } from './external-emails-input'
 import type { RecipePayload } from './help-panel'
 import { createAlertRule, updateAlertRule } from '@/lib/actions/alert-rules'
 import { toast } from '@/lib/utils/toast'
 import { EVENT_TYPE_LABELS } from '@/lib/alertes/types'
 import type { AlertRule } from '@prisma/client'
-import type { RuleCondition, AlertEventType, RuleConditions } from '@/lib/alertes/types'
+import type { RuleCondition, AlertEventType, RuleConditions, ScheduleConfig } from '@/lib/alertes/types'
 
 interface Props {
   rule?: AlertRule
@@ -51,6 +53,13 @@ export function RuleForm({ rule }: Props) {
   const [priority, setPriority]       = useState(rule?.priority ?? 1)
   const [cooldown, setCooldown]       = useState(rule?.cooldownMinutes ?? 1440)
   const [isActive, setIsActive]       = useState(rule?.isActive ?? true)
+  const [scheduleConfig, setScheduleConfig] = useState<ScheduleConfig | null>(() => {
+    return (rule?.scheduleConfig as ScheduleConfig | null) ?? null
+  })
+  const [externalEmails, setExternalEmails] = useState<string[]>(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (rule as any)?.externalEmails ?? []
+  )
 
   // État pour le panel d'aide contextuel
   const [activeField, setActiveField] = useState<string | null>(null)
@@ -74,6 +83,8 @@ export function RuleForm({ rule }: Props) {
       priority,
       cooldownMinutes: cooldown,
       isActive,
+      scheduleConfig,
+      externalEmails,
     }
 
     const result = rule
@@ -205,6 +216,28 @@ export function RuleForm({ rule }: Props) {
         <div onFocus={() => setActiveField('targetRoles')}>
           <h3 className="font-medium mb-3">Rôles destinataires *</h3>
           <RecipientPicker targetRoles={targetRoles} onRolesChange={setTargetRoles} />
+        </div>
+
+        <Separator />
+
+        {/* Emails externes */}
+        <div onFocus={() => setActiveField(null)}>
+          <h3 className="font-medium mb-3">Emails externes</h3>
+          <ExternalEmailsInput
+            value={externalEmails}
+            onChange={setExternalEmails}
+          />
+        </div>
+
+        <Separator />
+
+        {/* Planification */}
+        <div onFocus={() => setActiveField(null)}>
+          <h3 className="font-medium mb-3">Planification</h3>
+          <FrequencySelector
+            value={scheduleConfig}
+            onChange={setScheduleConfig}
+          />
         </div>
 
         <Separator />
