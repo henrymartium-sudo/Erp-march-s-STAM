@@ -396,6 +396,8 @@ model AlertRule {
   webhookUrl      String?
   priority        Int      @default(1)
   cooldownMinutes Int      @default(1440)
+  externalEmails  String[] @default([])
+  scheduleConfig  Json?
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
