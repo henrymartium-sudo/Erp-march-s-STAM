@@ -24,6 +24,8 @@ import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
 import type { PaginatedResponse } from '@/types/pagination'
 import { publishEvent } from '@/lib/alertes/engine/publish-event'
 import { ALERT_EVENT_TYPES } from '@/lib/alertes/types'
+import { logAction } from '@/lib/audit/logAction'
+import { AUDIT_ACTION, AUDIT_ENTITY } from '@/lib/audit/constants'
 
 // ============================================================================
 // Types
@@ -80,6 +82,16 @@ export async function createIntervention(data: unknown): Promise<ActionResult<In
       type: intervention.type,
       statut: intervention.statut,
       sousGarantie: intervention.sousGarantie,
+    })
+
+    // Audit log
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.CREATE,
+      entityType: AUDIT_ENTITY.INTERVENTION,
+      entityId:   intervention.id,
+      metadata:   { vehiculeId: intervention.vehiculeId, type: intervention.type },
     })
 
     return { success: true, data: intervention }
@@ -166,6 +178,16 @@ export async function updateInterventionStatut(data: unknown): Promise<ActionRes
 
     revalidatePath(`/vehicules/${current.vehiculeId}`)
     revalidatePath('/vehicules/sav')
+
+    // Audit log
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.UPDATE,
+      entityType: AUDIT_ENTITY.INTERVENTION,
+      entityId:   intervention.id,
+      metadata:   { ancienStatut: current.statut, nouveauStatut: intervention.statut },
+    })
 
     return { success: true, data: intervention }
   } catch (error) {
