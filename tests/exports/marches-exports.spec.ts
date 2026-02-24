@@ -51,37 +51,71 @@ test.describe('Marchés - Exports PDF/Excel', () => {
     await expect(page.locator('text=Export Excel réussi')).toBeVisible({ timeout: 5000 });
   });
 
-  test('devrait pouvoir exporter la liste des marchés en PDF', async ({ page }) => {
+  test('devrait pouvoir exporter la liste des marchés en PDF via la modal', async ({ page }) => {
     await page.goto('/marches');
     await wait(1000);
 
-    // Cliquer sur le bouton Exporter
+    // Ouvrir le menu export
     const exportButton = page.locator('button:has-text("Exporter")');
     await exportButton.click();
-
-    // Attendre que le menu dropdown s'affiche
     await wait(500);
 
-    // Vérifier que l'option PDF est visible
+    // Cliquer sur "PDF (.pdf)" — ouvre la modal (plus de téléchargement direct)
     const pdfOption = page.locator('text=PDF (.pdf)');
     await expect(pdfOption).toBeVisible();
-
-    // Écouter l'événement de téléchargement
-    const downloadPromise = page.waitForEvent('download', { timeout: 15000 });
-
-    // Cliquer sur l'option PDF
     await pdfOption.click();
 
-    // Attendre le téléchargement
+    // Vérifier que la modal s'ouvre
+    const modal = page.locator('[role="dialog"]');
+    await expect(modal).toBeVisible({ timeout: 5000 });
+
+    // Vérifier les éléments de la modal
+    await expect(modal.locator('text=Export PDF')).toBeVisible();
+    await expect(modal.locator('input[value="portrait"]')).toBeChecked();
+    await expect(modal.locator('input[value="landscape"]')).toBeVisible();
+    await expect(modal.locator('button:has-text("Prévisualiser")')).toBeVisible();
+    await expect(modal.locator('button:has-text("Télécharger")')).toBeVisible();
+
+    // Tester le téléchargement depuis la modal
+    const downloadPromise = page.waitForEvent('download', { timeout: 30000 });
+    await modal.locator('button:has-text("Télécharger")').click();
     const download = await downloadPromise;
 
-    // Vérifier le nom du fichier
-    const filename = download.suggestedFilename();
-    expect(filename).toBeTruthy();
-    expect(filename).toMatch(/\.pdf$/);
+    expect(download.suggestedFilename()).toMatch(/\.pdf$/);
 
-    // Vérifier le toast de succès
-    await expect(page.locator('text=Export PDF réussi')).toBeVisible({ timeout: 5000 });
+    // Fermer la modal si elle est encore ouverte
+    const cancelBtn = page.locator('button:has-text("Annuler")');
+    if (await cancelBtn.isVisible()) await cancelBtn.click();
+  });
+
+  test('devrait pouvoir prévisualiser le PDF en paysage', async ({ page }) => {
+    await page.goto('/marches');
+    await wait(1000);
+
+    const exportButton = page.locator('button:has-text("Exporter")');
+    await exportButton.click();
+    await wait(500);
+
+    await page.locator('text=PDF (.pdf)').click();
+    await wait(500);
+
+    const modal = page.locator('[role="dialog"]');
+    await expect(modal).toBeVisible({ timeout: 5000 });
+
+    // Sélectionner Paysage
+    await modal.locator('input[value="landscape"]').click();
+    await expect(modal.locator('input[value="landscape"]')).toBeChecked();
+
+    // Prévisualiser
+    await modal.locator('button:has-text("Prévisualiser")').click();
+
+    // Attendre que l'iframe apparaisse (génération PDF peut prendre 5-10s en prod)
+    await expect(modal.locator('iframe[title="Prévisualisation PDF"]')).toBeVisible({
+      timeout: 20000,
+    });
+
+    // Fermer la modal
+    await modal.locator('button:has-text("Annuler")').click();
   });
 
   test('devrait pouvoir exporter avec des filtres actifs', async ({ page }) => {

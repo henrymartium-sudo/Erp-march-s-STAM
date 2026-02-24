@@ -39,7 +39,7 @@ test.describe('Documents - Exports PDF/Excel', () => {
     await expect(page.locator('text=Export Excel réussi')).toBeVisible({ timeout: 5000 });
   });
 
-  test('devrait pouvoir exporter la liste des documents en PDF', async ({ page }) => {
+  test('devrait pouvoir exporter la liste des documents en PDF via la modal', async ({ page }) => {
     await page.goto('/documents');
     await wait(1000);
 
@@ -47,18 +47,28 @@ test.describe('Documents - Exports PDF/Excel', () => {
     await exportButton.click();
     await wait(500);
 
+    // Cliquer sur "PDF (.pdf)" — ouvre la modal
     const pdfOption = page.locator('text=PDF (.pdf)');
     await expect(pdfOption).toBeVisible();
-
-    const downloadPromise = page.waitForEvent('download', { timeout: 15000 });
     await pdfOption.click();
 
-    const download = await downloadPromise;
-    const filename = download.suggestedFilename();
-    expect(filename).toBeTruthy();
-    expect(filename).toMatch(/\.pdf$/);
+    // Vérifier que la modal s'ouvre
+    const modal = page.locator('[role="dialog"]');
+    await expect(modal).toBeVisible({ timeout: 5000 });
 
-    await expect(page.locator('text=Export PDF réussi')).toBeVisible({ timeout: 5000 });
+    await expect(modal.locator('text=Export PDF')).toBeVisible();
+    await expect(modal.locator('input[value="portrait"]')).toBeChecked();
+    await expect(modal.locator('button:has-text("Télécharger")')).toBeVisible();
+
+    // Télécharger depuis la modal
+    const downloadPromise = page.waitForEvent('download', { timeout: 30000 });
+    await modal.locator('button:has-text("Télécharger")').click();
+    const download = await downloadPromise;
+
+    expect(download.suggestedFilename()).toMatch(/\.pdf$/);
+
+    const cancelBtn = page.locator('button:has-text("Annuler")');
+    if (await cancelBtn.isVisible()) await cancelBtn.click();
   });
 
   test('devrait pouvoir exporter avec filtre par type de document', async ({ page }) => {
@@ -107,17 +117,23 @@ test.describe('Documents - Exports PDF/Excel', () => {
       await phaseSelect.selectOption({ index: 1 });
       await wait(1000);
 
-      // Exporter avec le filtre actif
+      // Exporter avec le filtre actif — via la modal PDF
       const exportButton = page.locator('button:has-text("Exporter")');
       await exportButton.click();
       await wait(500);
 
-      const pdfOption = page.locator('text=PDF (.pdf)');
-      const downloadPromise = page.waitForEvent('download', { timeout: 15000 });
-      await pdfOption.click();
+      await page.locator('text=PDF (.pdf)').click();
 
+      const modal = page.locator('[role="dialog"]');
+      await expect(modal).toBeVisible({ timeout: 5000 });
+
+      const downloadPromise = page.waitForEvent('download', { timeout: 30000 });
+      await modal.locator('button:has-text("Télécharger")').click();
       const download = await downloadPromise;
       expect(download.suggestedFilename()).toMatch(/\.pdf$/);
+
+      const cancelBtn = page.locator('button:has-text("Annuler")');
+      if (await cancelBtn.isVisible()) await cancelBtn.click();
     }
   });
 
