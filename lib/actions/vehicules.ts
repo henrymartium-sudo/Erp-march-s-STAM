@@ -19,6 +19,8 @@ import { Prisma } from '@prisma/client'
 import { ZodError } from 'zod'
 import type { PaginatedResponse } from '@/types/pagination'
 import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
+import { logAction } from '@/lib/audit/logAction'
+import { AUDIT_ACTION, AUDIT_ENTITY } from '@/lib/audit/constants'
 
 // ============================================================================
 // Types pour les résultats de lecture
@@ -54,6 +56,16 @@ export async function createVehicule(
 
     // 4. Revalidation du cache Next.js
     revalidatePath('/vehicules')
+
+    // Audit log
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.CREATE,
+      entityType: AUDIT_ENTITY.VEHICULE,
+      entityId:   vehicule.id,
+      metadata:   { immatriculation: vehicule.immatriculation, marque: vehicule.marque, modele: vehicule.modele },
+    })
 
     // 5. Retour succès
     return { success: true, data: vehicule }
@@ -117,7 +129,7 @@ export async function updateVehicule(
 ): Promise<ActionResult<Vehicule>> {
   try {
     // 1. Vérification d'authentification et de permissions
-    await requireMarcheWrite()
+    const session = await requireMarcheWrite()
 
     // 2. Validation avec Zod
     const validatedData = updateVehiculeSchema.parse(data)
@@ -139,6 +151,16 @@ export async function updateVehicule(
     // 4. Revalidation du cache
     revalidatePath('/vehicules')
     revalidatePath(`/vehicules/${id}`)
+
+    // Audit log
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.UPDATE,
+      entityType: AUDIT_ENTITY.VEHICULE,
+      entityId:   vehicule.id,
+      metadata:   { immatriculation: vehicule.immatriculation, statut: vehicule.statut },
+    })
 
     return { success: true, data: vehicule }
   } catch (error) {
@@ -206,7 +228,7 @@ export async function updateVehicule(
 export async function deleteVehicule(id: string): Promise<ActionResult> {
   try {
     // 1. Vérification d'authentification et de permissions (ADMIN ou AVANCE uniquement)
-    await requireDelete()
+    const session = await requireDelete()
 
     // 2. Suppression dans Prisma (marcheVehicules supprimées en CASCADE)
     await prisma.vehicule.delete({
@@ -215,6 +237,15 @@ export async function deleteVehicule(id: string): Promise<ActionResult> {
 
     // 3. Revalidation du cache
     revalidatePath('/vehicules')
+
+    // Audit log
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.DELETE,
+      entityType: AUDIT_ENTITY.VEHICULE,
+      entityId:   id,
+    })
 
     return { success: true, data: undefined }
   } catch (error) {
