@@ -3,6 +3,8 @@ import Credentials from 'next-auth/providers/credentials'
 import { prisma } from '@/lib/db/prisma'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
+import { logAction } from '@/lib/audit/logAction'
+import { AUDIT_ACTION, AUDIT_ENTITY } from '@/lib/audit/constants'
 
 const loginSchema = z.object({
   email: z.string().email('Email invalide'),
@@ -38,6 +40,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           if (!user) {
             console.log('User not found:', email)
+            await logAction({
+              userEmail:  email,
+              action:     AUDIT_ACTION.LOGIN_FAILED,
+              entityType: AUDIT_ENTITY.AUTH,
+              metadata:   { reason: 'user_not_found' },
+            })
             return null
           }
 
@@ -46,8 +54,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           if (!isValidPassword) {
             console.log('Invalid password for user:', email)
+            await logAction({
+              userEmail:  email,
+              action:     AUDIT_ACTION.LOGIN_FAILED,
+              entityType: AUDIT_ENTITY.AUTH,
+              metadata:   { reason: 'invalid_password' },
+            })
             return null
           }
+
+          // Audit log — login réussi
+          await logAction({
+            userId:     user.id,
+            userEmail:  user.email,
+            action:     AUDIT_ACTION.LOGIN,
+            entityType: AUDIT_ENTITY.AUTH,
+          })
 
           // Retour des données utilisateur (sans le mot de passe)
           return {

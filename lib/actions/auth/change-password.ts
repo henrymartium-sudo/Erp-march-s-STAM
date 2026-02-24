@@ -4,6 +4,8 @@ import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { requireAuth } from '@/lib/utils/permissions'
 import { prisma } from '@/lib/db/prisma'
+import { logAction } from '@/lib/audit/logAction'
+import { AUDIT_ACTION, AUDIT_ENTITY } from '@/lib/audit/constants'
 
 const schema = z.object({
   currentPassword: z.string().min(1, 'Mot de passe actuel requis'),
@@ -55,6 +57,13 @@ export async function changePassword(formData: FormData): Promise<ChangePassword
   await prisma.user.update({
     where: { id: user.id },
     data: { password: hashedPassword },
+  })
+
+  await logAction({
+    userId:     session.user.id,
+    userEmail:  session.user.email,
+    action:     AUDIT_ACTION.CHANGE_PASSWORD,
+    entityType: AUDIT_ENTITY.AUTH,
   })
 
   return { success: true }
