@@ -12,12 +12,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
+import { PDFExportModal } from './PDFExportModal'
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-type ExportFormat = 'excel' | 'pdf'
 type ExportType = 'marches' | 'cautions' | 'documents' | 'vehicules'
 
 export interface ExportFilters {
@@ -28,6 +28,14 @@ export interface ExportFilters {
   dateFin?: string
   search?: string
   marcheId?: string
+}
+
+/** Labels affichés dans la modal PDF */
+const MODULE_LABELS: Record<ExportType, string> = {
+  marches: 'Marchés',
+  cautions: 'Cautions',
+  documents: 'Documents',
+  vehicules: 'Véhicules',
 }
 
 interface ExportMenuProps {
@@ -80,15 +88,12 @@ export function ExportMenu({
   disabled = false,
   className,
 }: ExportMenuProps) {
-  const [loading, setLoading] = useState(false)
-  const [currentFormat, setCurrentFormat] = useState<ExportFormat | null>(null)
+  const [loadingExcel, setLoadingExcel] = useState(false)
+  const [pdfModalOpen, setPdfModalOpen] = useState(false)
 
-  /**
-   * Construit l'URL de l'API avec les filtres
-   */
-  const buildApiUrl = (format: ExportFormat): string => {
+  /** Construit l'URL API Excel avec les filtres */
+  const buildExcelUrl = (): string => {
     const params = new URLSearchParams()
-
     if (filters?.statut) params.set('statut', filters.statut)
     if (filters?.type) params.set('type', filters.type)
     if (filters?.phase) params.set('phase', filters.phase)
@@ -96,49 +101,40 @@ export function ExportMenu({
     if (filters?.dateFin) params.set('dateFin', filters.dateFin)
     if (filters?.search) params.set('search', filters.search)
     if (filters?.marcheId) params.set('marcheId', filters.marcheId)
-
-    const baseUrl =
-      format === 'excel' ? `/api/exports/${type}` : `/api/exports-pdf/${type}`
-
-    return `${baseUrl}${params.toString() ? `?${params.toString()}` : ''}`
+    const qs = params.toString()
+    return `/api/exports/${type}${qs ? `?${qs}` : ''}`
   }
 
-  /**
-   * Gère l'export dans le format demandé
-   */
-  const handleExport = async (format: ExportFormat) => {
-    setLoading(true)
-    setCurrentFormat(format)
+  /** Construit l'URL de base pour la modal PDF (sans orientation/preview — ajoutés par la modal) */
+  const buildPdfBaseUrl = (): string => {
+    const params = new URLSearchParams()
+    if (filters?.statut) params.set('statut', filters.statut)
+    if (filters?.type) params.set('type', filters.type)
+    if (filters?.phase) params.set('phase', filters.phase)
+    if (filters?.dateDebut) params.set('dateDebut', filters.dateDebut)
+    if (filters?.dateFin) params.set('dateFin', filters.dateFin)
+    if (filters?.search) params.set('search', filters.search)
+    if (filters?.marcheId) params.set('marcheId', filters.marcheId)
+    const qs = params.toString()
+    return `/api/exports-pdf/${type}${qs ? `?${qs}` : ''}`
+  }
 
+  /** Télécharge l'export Excel */
+  const handleExcelExport = async () => {
+    setLoadingExcel(true)
     try {
-      const url = buildApiUrl(format)
-
-      // Appel de l'API
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-
+      const url = buildExcelUrl()
+      const response = await fetch(url)
       if (!response.ok) {
         const error = await response.json()
         throw new Error(error.error || "Erreur lors de l'export")
       }
-
-      // Récupération du blob
       const blob = await response.blob()
-
-      // Extraction du nom de fichier depuis les headers
       const contentDisposition = response.headers.get('Content-Disposition')
       const filenameMatch =
         contentDisposition?.match(/filename="(.+)"/) ||
         contentDisposition?.match(/filename=([^;]+)/)
-      const fileExtension = format === 'excel' ? 'xlsx' : 'pdf'
-      const filename =
-        filenameMatch?.[1] || `export_${type}_${Date.now()}.${fileExtension}`
-
-      // Création du lien de téléchargement
+      const filename = filenameMatch?.[1] || `export_${type}_${Date.now()}.xlsx`
       const downloadUrl = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = downloadUrl
@@ -146,90 +142,91 @@ export function ExportMenu({
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-
-      // Nettoyage
       window.URL.revokeObjectURL(downloadUrl)
-
-      // Notification succès
-      toast.success(
-        `Export ${format === 'excel' ? 'Excel' : 'PDF'} réussi`,
-        {
-          description: `Le fichier ${filename} a été téléchargé`,
-        }
-      )
+      toast.success('Export Excel réussi', {
+        description: `Le fichier ${filename} a été téléchargé`,
+      })
     } catch (error: any) {
-      console.error('[EXPORT_MENU]', error)
+      console.error('[EXPORT_MENU_EXCEL]', error)
       toast.error("Erreur lors de l'export", {
         description: error.message || 'Une erreur est survenue',
       })
     } finally {
-      setLoading(false)
-      setCurrentFormat(null)
+      setLoadingExcel(false)
     }
   }
 
+  const isLoading = loadingExcel
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant={buttonVariant}
-          size={buttonSize}
-          disabled={disabled || loading}
-          className={className}
-        >
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Export en cours...
-            </>
-          ) : (
-            <>
-              <Download className="mr-2 h-4 w-4" />
-              {buttonText}
-            </>
-          )}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-52">
-        <DropdownMenuLabel>Format d&apos;export</DropdownMenuLabel>
-        <DropdownMenuSeparator />
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant={buttonVariant}
+            size={buttonSize}
+            disabled={disabled || isLoading}
+            className={className}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Export en cours...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                {buttonText}
+              </>
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-52">
+          <DropdownMenuLabel>Format d&apos;export</DropdownMenuLabel>
+          <DropdownMenuSeparator />
 
-        {/* Option Excel */}
-        <DropdownMenuItem
-          onClick={() => handleExport('excel')}
-          disabled={loading}
-          className="cursor-pointer"
-        >
-          <FileSpreadsheet className="mr-2 h-4 w-4 text-green-600" />
-          <div className="flex flex-col">
-            <span className="font-medium">Excel (.xlsx)</span>
-            <span className="text-xs text-muted-foreground">
-              Tableur avec totaux
-            </span>
-          </div>
-          {loading && currentFormat === 'excel' && (
-            <Loader2 className="ml-auto h-4 w-4 animate-spin" />
-          )}
-        </DropdownMenuItem>
+          {/* Option Excel — inchangée */}
+          <DropdownMenuItem
+            onClick={handleExcelExport}
+            disabled={isLoading}
+            className="cursor-pointer"
+          >
+            <FileSpreadsheet className="mr-2 h-4 w-4 text-green-600" />
+            <div className="flex flex-col">
+              <span className="font-medium">Excel (.xlsx)</span>
+              <span className="text-xs text-muted-foreground">
+                Tableur avec totaux
+              </span>
+            </div>
+            {loadingExcel && (
+              <Loader2 className="ml-auto h-4 w-4 animate-spin" />
+            )}
+          </DropdownMenuItem>
 
-        {/* Option PDF */}
-        <DropdownMenuItem
-          onClick={() => handleExport('pdf')}
-          disabled={loading}
-          className="cursor-pointer"
-        >
-          <FileText className="mr-2 h-4 w-4 text-red-600" />
-          <div className="flex flex-col">
-            <span className="font-medium">PDF (.pdf)</span>
-            <span className="text-xs text-muted-foreground">
-              Document imprimable
-            </span>
-          </div>
-          {loading && currentFormat === 'pdf' && (
-            <Loader2 className="ml-auto h-4 w-4 animate-spin" />
-          )}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          {/* Option PDF — ouvre la modal */}
+          <DropdownMenuItem
+            onClick={() => setPdfModalOpen(true)}
+            disabled={isLoading}
+            className="cursor-pointer"
+          >
+            <FileText className="mr-2 h-4 w-4 text-red-600" />
+            <div className="flex flex-col">
+              <span className="font-medium">PDF (.pdf)</span>
+              <span className="text-xs text-muted-foreground">
+                Aperçu + choix orientation
+              </span>
+            </div>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Modal PDF */}
+      <PDFExportModal
+        open={pdfModalOpen}
+        onClose={() => setPdfModalOpen(false)}
+        apiUrl={buildPdfBaseUrl()}
+        moduleName={MODULE_LABELS[type]}
+      />
+    </>
   )
 }
