@@ -331,16 +331,19 @@ const PDFTable: React.FC<PDFTableProps> = ({ columns, data }) => {
       {/* Header du tableau */}
       <View style={pdfStyles.tableHeader}>
         {columns.map((column, index) => (
-          <Text
+          <View
             key={index}
-            style={[
-              pdfStyles.tableHeaderCell,
-              { width: getColumnWidth(column) },
-              getCellAlignStyle(column.align),
-            ]}
+            style={{ width: getColumnWidth(column), overflow: 'hidden' }}
           >
-            {column.header}
-          </Text>
+            <Text
+              style={[
+                pdfStyles.tableHeaderCell,
+                getCellAlignStyle(column.align),
+              ]}
+            >
+              {column.header}
+            </Text>
+          </View>
         ))}
       </View>
 
@@ -355,16 +358,20 @@ const PDFTable: React.FC<PDFTableProps> = ({ columns, data }) => {
           wrap={false} // Empêche la coupure d'une ligne entre deux pages
         >
           {columns.map((column, colIndex) => (
-            <Text
+            // View contraint la largeur — Text seul ne coupe pas le débordement dans @react-pdf
+            <View
               key={colIndex}
-              style={[
-                pdfStyles.tableCell,
-                { width: getColumnWidth(column) },
-                getCellAlignStyle(column.align),
-              ]}
+              style={{ width: getColumnWidth(column), overflow: 'hidden' }}
             >
-              {formatCellValue(row[column.key], column)}
-            </Text>
+              <Text
+                style={[
+                  pdfStyles.tableCell,
+                  getCellAlignStyle(column.align),
+                ]}
+              >
+                {formatCellValue(row[column.key], column)}
+              </Text>
+            </View>
           ))}
         </View>
       ))}
