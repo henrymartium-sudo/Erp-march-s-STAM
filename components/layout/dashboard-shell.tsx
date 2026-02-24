@@ -18,6 +18,7 @@ import {
   UserCircle,
   Wrench,
   Users,
+  ClipboardList,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -54,6 +55,7 @@ const navItems = [
   { href: '/documents',             label: 'Documents',    icon: FolderOpen },
   { href: '/admin/alertes',         label: 'Alertes',      icon: Bell },
   { href: '/admin/utilisateurs',    label: 'Utilisateurs', icon: Users, roles: ['ADMIN'] },
+  { href: '/admin/audit-logs',      label: 'Journal des logs', icon: ClipboardList, roles: ['ADMIN'] },
 ]
 
 const pageTitles: Record<string, string> = {
@@ -65,6 +67,7 @@ const pageTitles: Record<string, string> = {
   '/documents':          'Documents',
   '/admin/alertes':      'Alertes & Notifications',
   '/admin/utilisateurs': 'Gestion des utilisateurs',
+  '/admin/audit-logs':   'Journal des logs',
   '/profil':             'Mon profil',
 }
 
