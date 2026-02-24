@@ -2,7 +2,7 @@
 
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
-import { auth } from '@/lib/auth/auth.config'
+import { requireAuth } from '@/lib/utils/permissions'
 import { prisma } from '@/lib/db/prisma'
 
 const schema = z.object({
@@ -22,9 +22,11 @@ export type ChangePasswordResult =
   | { success: false; error: string }
 
 export async function changePassword(formData: FormData): Promise<ChangePasswordResult> {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return { success: false, error: 'Non authentifié' }
+  let session: Awaited<ReturnType<typeof requireAuth>>;
+  try {
+    session = await requireAuth();
+  } catch {
+    return { success: false, error: 'Non authentifié' };
   }
 
   const result = schema.safeParse({
