@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/db/prisma"
 
 export interface Recipient {
-  userId: string
+  userId?: string  // optionnel — absent pour les emails externes
   email: string
   role: string
 }
