@@ -11,27 +11,34 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
 
+    const rawOrientation = searchParams.get('orientation')
+    const orientation: 'portrait' | 'landscape' =
+      rawOrientation === 'landscape' ? 'landscape' : 'portrait'
+    const isPreview = searchParams.get('preview') === 'true'
+
     const filters = {
       statut: searchParams.get('statut') || undefined,
       dateDebut: searchParams.get('dateDebut') || undefined,
       dateFin: searchParams.get('dateFin') || undefined,
       search: searchParams.get('search') || undefined,
+      orientation,
     }
 
     const result = await exportVehiculesPDF(filters)
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: result.error }, { status: 500 })
     }
+
+    const disposition = isPreview
+      ? `inline; filename="${result.data.filename}"`
+      : `attachment; filename="${result.data.filename}"`
 
     return new NextResponse(new Uint8Array(result.data.buffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${result.data.filename}"`,
+        'Content-Disposition': disposition,
       },
     })
   } catch (error: any) {
