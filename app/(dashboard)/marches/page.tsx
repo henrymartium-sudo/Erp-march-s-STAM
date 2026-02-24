@@ -92,14 +92,16 @@ export default async function MarchesPage({ searchParams }: MarchesPageProps) {
         count={paginationData.totalItems}
         action={
           <>
-            <ExportMenu
-              type="marches"
-              filters={{
-                statut: params.statut,
-                type: params.type,
-                search: params.search,
-              }}
-            />
+            {userCanWrite && (
+              <ExportMenu
+                type="marches"
+                filters={{
+                  statut: params.statut,
+                  type: params.type,
+                  search: params.search,
+                }}
+              />
+            )}
             {userCanWrite && (
               <Button asChild>
                 <Link href="/marches/nouveau">

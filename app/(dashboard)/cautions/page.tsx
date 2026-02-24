@@ -121,14 +121,16 @@ export default async function CautionsPage({ searchParams }: CautionsPageProps) 
         count={pagination.totalItems}
         action={
           <>
-            <ExportMenu
-              type="cautions"
-              filters={{
-                statut: params.statut,
-                type: params.type,
-                search: params.search,
-              }}
-            />
+            {userCanWrite && (
+              <ExportMenu
+                type="cautions"
+                filters={{
+                  statut: params.statut,
+                  type: params.type,
+                  search: params.search,
+                }}
+              />
+            )}
             {userCanWrite && (
               <Button asChild>
                 <Link href="/cautions/nouvelle">

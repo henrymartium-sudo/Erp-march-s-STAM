@@ -71,14 +71,16 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
         count={pagination.totalItems}
         action={
           <>
-            <ExportMenu
-              type="documents"
-              filters={{
-                type: params.type,
-                phase: params.phase,
-                search: params.search,
-              }}
-            />
+            {userCanWrite && (
+              <ExportMenu
+                type="documents"
+                filters={{
+                  type: params.type,
+                  phase: params.phase,
+                  search: params.search,
+                }}
+              />
+            )}
             {userCanWrite && (
               <Button asChild>
                 <Link href="/documents/upload">
@@ -92,7 +94,7 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
       />
 
       {/* Contenu */}
-      <DocumentsContent documents={documents} />
+      <DocumentsContent documents={documents} canWrite={userCanWrite} />
 
       {/* Pagination */}
       {shouldShowPagination(pagination.totalItems) && (

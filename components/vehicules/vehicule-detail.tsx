@@ -19,7 +19,7 @@ interface VehiculeDetailProps {
   canWriteCommentaire?: boolean
 }
 
-export function VehiculeDetail({ vehicule, canWrite = true, canWriteSAV = false, canWriteCommentaire = false }: VehiculeDetailProps) {
+export function VehiculeDetail({ vehicule, canWrite = false, canWriteSAV = false, canWriteCommentaire = false }: VehiculeDetailProps) {
   return (
     <div className="space-y-6">
       {/* Header 2 colonnes : identité + statut/actions */}
