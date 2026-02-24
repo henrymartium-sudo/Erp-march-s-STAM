@@ -146,3 +146,44 @@ export const EVENT_FIELDS: Record<AlertEventType, FieldDef[]> = {
     { field: "joursRestants", label: "Jours restants", type: "number" },
   ],
 }
+
+// ── Types pour la planification flexible des règles ──────────────────────
+
+export type ScheduleType = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'INTERVAL'
+
+export interface ScheduleConfig {
+  /** Type de planification */
+  type: ScheduleType
+  /**
+   * WEEKLY : jours de la semaine actifs
+   * 0 = dimanche, 1 = lundi, 2 = mardi, ..., 6 = samedi
+   * Exemple lundi+vendredi : [1, 5]
+   */
+  daysOfWeek?: number[]
+  /**
+   * MONTHLY : jour du mois (1–31)
+   */
+  dayOfMonth?: number
+  /**
+   * INTERVAL : tous les N jours (à partir du 2024-01-01 comme référence)
+   */
+  intervalDays?: number
+}
+
+/** Labels pour l'UI du FrequencySelector */
+export const SCHEDULE_TYPE_LABELS: Record<ScheduleType, string> = {
+  DAILY:    'Tous les jours',
+  WEEKLY:   'Jours spécifiques de la semaine',
+  MONTHLY:  'Une fois par mois',
+  INTERVAL: 'Intervalle personnalisé',
+}
+
+export const DAY_LABELS: Record<number, string> = {
+  0: 'Dim',
+  1: 'Lun',
+  2: 'Mar',
+  3: 'Mer',
+  4: 'Jeu',
+  5: 'Ven',
+  6: 'Sam',
+}
