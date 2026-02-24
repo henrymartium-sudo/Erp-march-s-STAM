@@ -12,30 +12,37 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
 
     // Extraction des filtres depuis les query params
+    const rawOrientation = searchParams.get('orientation')
+    const orientation: 'portrait' | 'landscape' =
+      rawOrientation === 'landscape' ? 'landscape' : 'portrait'
+    const isPreview = searchParams.get('preview') === 'true'
+
     const filters = {
       statut: searchParams.get('statut') || undefined,
       type: searchParams.get('type') || undefined,
       dateDebut: searchParams.get('dateDebut') || undefined,
       dateFin: searchParams.get('dateFin') || undefined,
       search: searchParams.get('search') || undefined,
+      orientation,
     }
 
     // Appel de la fonction d'export
     const result = await exportMarchesPDF(filters)
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: result.error }, { status: 500 })
     }
 
-    // Retour du PDF avec les bons headers (convertir Buffer en Uint8Array)
+    // inline pour prévisualisation, attachment pour téléchargement
+    const disposition = isPreview
+      ? `inline; filename="${result.data.filename}"`
+      : `attachment; filename="${result.data.filename}"`
+
     return new NextResponse(new Uint8Array(result.data.buffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${result.data.filename}"`,
+        'Content-Disposition': disposition,
       },
     })
   } catch (error: any) {
