@@ -12,6 +12,8 @@ import {
 } from '@/lib/validations/document'
 import { generateStoragePath, generateVersionedFileName } from '@/lib/utils/document'
 import { revalidatePath } from 'next/cache'
+import { logAction } from '@/lib/audit/logAction'
+import { AUDIT_ACTION, AUDIT_ENTITY } from '@/lib/audit/constants'
 import type { Document, TypeDocument, Prisma } from '@prisma/client'
 import { z } from 'zod'
 import type { PaginatedResponse } from '@/types/pagination'
@@ -124,6 +126,15 @@ export async function uploadDocument(
         revalidatePath(`/marches/${marcheId}`)
       }
 
+      await logAction({
+        userId:     session.user.id,
+        userEmail:  session.user.email,
+        action:     AUDIT_ACTION.CREATE,
+        entityType: AUDIT_ENTITY.DOCUMENT,
+        entityId:   document.id,
+        metadata:   { nom: document.nom, type: document.type, taille: document.taille },
+      })
+
       return { success: true, data: document }
     } catch (dbError) {
       // Rollback : supprimer le fichier de Storage si l'insertion DB échoue
@@ -233,6 +244,15 @@ export async function saveDocumentMetadata(params: {
     if (params.marcheId) {
       revalidatePath(`/marches/${params.marcheId}`)
     }
+
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.CREATE,
+      entityType: AUDIT_ENTITY.DOCUMENT,
+      entityId:   document.id,
+      metadata:   { nom: document.nom, type: document.type, taille: document.taille },
+    })
 
     return { success: true, data: document }
   } catch (error) {
@@ -613,7 +633,7 @@ export async function updateDocument(
  */
 export async function deleteDocument(id: string): Promise<ActionResult> {
   try {
-    await requireDelete()
+    const session = await requireDelete()
 
     const document = await prisma.document.findUnique({
       where: { id },
@@ -636,6 +656,14 @@ export async function deleteDocument(id: string): Promise<ActionResult> {
     if (document.marcheId) {
       revalidatePath(`/marches/${document.marcheId}`)
     }
+
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.DELETE,
+      entityType: AUDIT_ENTITY.DOCUMENT,
+      entityId:   id,
+    })
 
     return { success: true, data: undefined }
   } catch (error) {
