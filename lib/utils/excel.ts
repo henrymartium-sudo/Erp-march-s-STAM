@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs'
 import { formatDateCourt, formatMontantSansDevise } from './format'
+import { applyFormula } from '@/lib/exports/excelFormulaEngine'
 
 // ============================================================================
 // TYPES
@@ -10,6 +11,7 @@ export interface ExcelColumn {
   key: string
   width?: number
   style?: Partial<ExcelJS.Style>
+  formula?: string  // ex. "C{row}*1.18" — {row} est remplacé par le numéro de ligne Excel réel
 }
 
 export interface ExcelExportOptions {
@@ -197,12 +199,23 @@ export async function createExcelFile(
 
   options.data.forEach((row) => {
     const dataRow = worksheet.getRow(currentRow)
+    const excelRowIndex = currentRow // numéro de ligne réel dans le worksheet
 
     options.columns.forEach((column, index) => {
       const cell = dataRow.getCell(index + 1)
       const value = formatValueForExcel(row[column.key], column)
 
-      cell.value = value
+      if (column.formula) {
+        // Écriture formule Excel + valeur brute comme résultat de repli
+        const numericValue = typeof value === 'number' ? value : undefined
+        cell.value = {
+          formula: applyFormula(excelRowIndex, column.formula),
+          result: numericValue,
+        } as ExcelJS.CellFormulaValue
+      } else {
+        cell.value = value
+      }
+
       applyCellStyle(cell, column, value)
     })
 
