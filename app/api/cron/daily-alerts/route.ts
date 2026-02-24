@@ -16,6 +16,7 @@
  * - ALERT_EMAIL_TO : Destinataires des alertes (séparés par virgule)
  */
 
+import { timingSafeEqual } from "crypto";
 import { runDailyAlertsCron } from "@/lib/alertes/engine/cron-processor";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -26,27 +27,35 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   try {
     // 1. Vérifier l'authentification (Bearer token)
-    const authHeader = request.headers.get("authorization");
-    const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
-
     if (!process.env.CRON_SECRET) {
       console.error("❌ CRON_SECRET non configuré");
       return NextResponse.json(
-        {
-          success: false,
-          error: "Configuration manquante : CRON_SECRET",
-        },
+        { success: false, error: "Configuration manquante" },
         { status: 500 }
       );
     }
 
-    if (authHeader !== expectedAuth) {
+    // Vérification header Vercel Cron (présent automatiquement sur Vercel)
+    const isVercelCron = request.headers.get("x-vercel-cron") === "1";
+    const authHeader = request.headers.get("authorization") ?? "";
+    const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
+
+    // Comparaison timing-safe pour éviter les timing attacks
+    let authorized = false;
+    try {
+      authorized = timingSafeEqual(
+        Buffer.from(authHeader),
+        Buffer.from(expectedAuth)
+      );
+    } catch {
+      // timingSafeEqual lève si les buffers ont des tailles différentes
+      authorized = false;
+    }
+
+    if (!authorized && !isVercelCron) {
       console.warn("⚠️  Tentative d'accès non autorisée au cron job");
       return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized",
-        },
+        { success: false, error: "Unauthorized" },
         { status: 401 }
       );
     }
