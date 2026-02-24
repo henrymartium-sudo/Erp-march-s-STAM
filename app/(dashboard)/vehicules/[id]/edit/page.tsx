@@ -1,4 +1,5 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
+import { requireAuth, canWrite } from '@/lib/utils/permissions'
 import { VehiculeForm } from '@/components/vehicules/vehicule-form'
 import { getVehiculeById } from '@/lib/actions/vehicules'
 import { ChevronLeft } from 'lucide-react'
@@ -14,7 +15,10 @@ interface EditVehiculePageProps {
 }
 
 export default async function EditVehiculePage({ params }: EditVehiculePageProps) {
-  const { id } = await params
+  const [session, { id }] = await Promise.all([requireAuth(), params])
+  if (!canWrite(session.user?.role)) {
+    redirect(`/vehicules/${id}`)
+  }
 
   const vehicule = await getVehiculeById(id)
 

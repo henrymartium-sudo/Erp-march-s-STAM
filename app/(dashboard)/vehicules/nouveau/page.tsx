@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation'
+import { requireAuth, canWrite } from '@/lib/utils/permissions'
 import { VehiculeForm } from '@/components/vehicules/vehicule-form'
 import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
@@ -6,6 +8,10 @@ import { Button } from '@/components/ui/button'
 export const dynamic = 'force-dynamic'
 
 export default async function NouveauVehiculePage() {
+  const session = await requireAuth()
+  if (!canWrite(session.user?.role)) {
+    redirect('/vehicules')
+  }
   return (
     <div className="space-y-6">
       {/* Navigation */}

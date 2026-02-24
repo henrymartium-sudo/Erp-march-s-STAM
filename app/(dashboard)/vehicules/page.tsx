@@ -75,6 +75,7 @@ export default async function VehiculesPage({ searchParams }: VehiculesPageProps
         count={pagination.totalItems}
         action={
           <>
+            {userCanWrite && (
             <ExportMenu
               type="vehicules"
               filters={{
@@ -82,6 +83,7 @@ export default async function VehiculesPage({ searchParams }: VehiculesPageProps
                 search: params.search,
               }}
             />
+          )}
             {userCanWrite && (
               <Button asChild>
                 <Link href="/vehicules/nouveau">
@@ -101,7 +103,7 @@ export default async function VehiculesPage({ searchParams }: VehiculesPageProps
       />
 
       {/* Liste des véhicules */}
-      <VehiculeList vehicules={vehicules} />
+      <VehiculeList vehicules={vehicules} canWrite={userCanWrite} />
 
       {/* Pagination */}
       {shouldShowPagination(pagination.totalItems) && (

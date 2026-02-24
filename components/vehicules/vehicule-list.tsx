@@ -10,9 +10,10 @@ import type { SerializedVehicule } from '@/types/serialized'
 
 interface VehiculeListProps {
   vehicules: SerializedVehicule[]
+  canWrite?: boolean
 }
 
-export function VehiculeList({ vehicules }: VehiculeListProps) {
+export function VehiculeList({ vehicules, canWrite = false }: VehiculeListProps) {
   const { sortedData, sortConfig, onSort } = useSortable<SerializedVehicule>(
     vehicules,
     { key: 'createdAt', direction: 'desc' }
@@ -27,12 +28,14 @@ export function VehiculeList({ vehicules }: VehiculeListProps) {
           Aucun véhicule ne correspond à vos critères de recherche. Commencez par ajouter
           votre premier véhicule.
         </p>
-        <Button asChild>
-          <Link href="/vehicules/nouveau">
-            <Plus className="h-4 w-4 mr-2" />
-            Ajouter un véhicule
-          </Link>
-        </Button>
+        {canWrite && (
+          <Button asChild>
+            <Link href="/vehicules/nouveau">
+              <Plus className="h-4 w-4 mr-2" />
+              Ajouter un véhicule
+            </Link>
+          </Button>
+        )}
       </div>
     )
   }

@@ -25,6 +25,7 @@ import { Loader2, LayoutGrid, LayoutList } from 'lucide-react'
 
 interface DocumentsContentProps {
   documents: Document[]
+  canWrite?: boolean
 }
 
 type ViewMode = 'list' | 'grid'
@@ -32,7 +33,7 @@ type ViewMode = 'list' | 'grid'
 /**
  * Contenu client de la page documents (filtres, table/grille, dialogs)
  */
-export function DocumentsContent({ documents: initialDocuments }: DocumentsContentProps) {
+export function DocumentsContent({ documents: initialDocuments, canWrite = false }: DocumentsContentProps) {
   const [documents, setDocuments] = useState<Document[]>(initialDocuments)
   const [viewMode, setViewMode] = useState<ViewMode>('list')
 
@@ -143,7 +144,7 @@ export function DocumentsContent({ documents: initialDocuments }: DocumentsConte
                 document={doc}
                 onPreview={handlePreview}
                 onDownload={handleDownload}
-                onDelete={(d) => setDeleteDocumentId(d.id)}
+                onDelete={canWrite ? (d) => setDeleteDocumentId(d.id) : undefined}
                 onViewVersions={handleViewVersions}
               />
             ))}
@@ -154,7 +155,7 @@ export function DocumentsContent({ documents: initialDocuments }: DocumentsConte
           documents={documents}
           onPreview={handlePreview}
           onDownload={handleDownload}
-          onDelete={(doc) => setDeleteDocumentId(doc.id)}
+          onDelete={canWrite ? (doc) => setDeleteDocumentId(doc.id) : undefined}
           onViewVersions={handleViewVersions}
         />
       )}
