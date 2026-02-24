@@ -9,6 +9,7 @@ import {
   Font,
 } from '@react-pdf/renderer'
 import { formatDateCourt, formatMontant } from './format'
+import { getPageLayout, type PDFOrientation } from '@/lib/pdf/layout'
 
 // ============================================================================
 // TYPES
@@ -33,6 +34,7 @@ export interface PDFExportOptions {
   columns: PDFColumn[]
   data: any[]
   summary?: PDFSummaryItem[]
+  orientation?: PDFOrientation // défaut : 'portrait'
 }
 
 // ============================================================================
@@ -403,10 +405,12 @@ const PDFSummary: React.FC<PDFSummaryProps> = ({
 export async function createPDFDocument(
   options: PDFExportOptions
 ): Promise<Buffer> {
+  const orientation = options.orientation ?? 'portrait'
+
   // Composant Document React
   const PDFDoc = () => (
     <Document>
-      <Page size="A4" style={pdfStyles.page}>
+      <Page size="A4" orientation={orientation} style={pdfStyles.page}>
         {/* Header fixe */}
         <PDFHeader title={options.title} subtitle={options.subtitle} />
 
