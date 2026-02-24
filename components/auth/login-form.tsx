@@ -136,15 +136,9 @@ export function LoginForm() {
           )}
         </Button>
 
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
-          <p className="text-xs text-blue-800 font-semibold mb-2">
-            Compte de test par défaut :
-          </p>
-          <p className="text-xs text-blue-700">
-            Email: <span className="font-mono">admin@erp-marches.local</span>
-          </p>
-          <p className="text-xs text-blue-700">
-            Mot de passe: <span className="font-mono">Admin123!</span>
+        <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-md">
+          <p className="text-xs text-muted-foreground text-center">
+            Contactez votre administrateur pour obtenir vos accès.
           </p>
         </div>
       </form>
