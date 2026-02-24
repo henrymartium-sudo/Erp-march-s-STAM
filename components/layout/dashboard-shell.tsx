@@ -17,6 +17,7 @@ import {
   ChevronRight,
   UserCircle,
   Wrench,
+  Users,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -45,24 +46,26 @@ function getRoleLabel(role?: string | null): string {
 
 /* ── Navigation items ─────────────────────────────────────────────── */
 const navItems = [
-  { href: '/',              label: 'Dashboard',  icon: LayoutDashboard },
-  { href: '/marches',       label: 'Marchés',    icon: FileText },
-  { href: '/cautions',      label: 'Cautions',   icon: Shield },
-  { href: '/vehicules',     label: 'Véhicules',  icon: Car },
-  { href: '/vehicules/sav', label: 'SAV',        icon: Wrench },
-  { href: '/documents',     label: 'Documents',  icon: FolderOpen },
-  { href: '/admin/alertes', label: 'Alertes',    icon: Bell },
+  { href: '/',                      label: 'Dashboard',    icon: LayoutDashboard },
+  { href: '/marches',               label: 'Marchés',      icon: FileText },
+  { href: '/cautions',              label: 'Cautions',     icon: Shield },
+  { href: '/vehicules',             label: 'Véhicules',    icon: Car },
+  { href: '/vehicules/sav',         label: 'SAV',          icon: Wrench },
+  { href: '/documents',             label: 'Documents',    icon: FolderOpen },
+  { href: '/admin/alertes',         label: 'Alertes',      icon: Bell },
+  { href: '/admin/utilisateurs',    label: 'Utilisateurs', icon: Users, roles: ['ADMIN'] },
 ]
 
 const pageTitles: Record<string, string> = {
-  '/':              'Tableau de bord',
-  '/marches':       'Marchés publics',
-  '/cautions':      'Cautions & Garanties',
-  '/vehicules':     'Véhicules',
-  '/vehicules/sav': 'SAV — Vue globale',
-  '/documents':     'Documents',
-  '/admin/alertes': 'Alertes & Notifications',
-  '/profil':        'Mon profil',
+  '/':                   'Tableau de bord',
+  '/marches':            'Marchés publics',
+  '/cautions':           'Cautions & Garanties',
+  '/vehicules':          'Véhicules',
+  '/vehicules/sav':      'SAV — Vue globale',
+  '/documents':          'Documents',
+  '/admin/alertes':      'Alertes & Notifications',
+  '/admin/utilisateurs': 'Gestion des utilisateurs',
+  '/profil':             'Mon profil',
 }
 
 function getPageTitle(pathname: string): string {
@@ -141,7 +144,7 @@ function SidebarContent({ userName, userRole, onClose, forceExpanded = false }: 
         'flex-1 py-5 overflow-y-auto space-y-0.5',
         forceExpanded ? 'px-3' : 'px-1.5 lg:px-3'
       )}>
-        {navItems.map((item) => {
+        {navItems.filter(item => !item.roles || (userRole && item.roles.includes(userRole))).map((item) => {
           const Icon = item.icon
           const active = isActive(item.href)
           return (
