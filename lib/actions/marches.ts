@@ -14,6 +14,8 @@ import type { PaginatedResponse } from '@/types/pagination'
 import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
 import { publishEvent } from '@/lib/alertes/engine/publish-event'
 import { ALERT_EVENT_TYPES } from '@/lib/alertes/types'
+import { logAction } from '@/lib/audit/logAction'
+import { AUDIT_ACTION, AUDIT_ENTITY } from '@/lib/audit/constants'
 
 // ============================================================================
 // CREATE
@@ -58,6 +60,16 @@ export async function createMarche(data: unknown): Promise<ActionResult<Marche>>
 
     // 6. Revalidation du cache Next.js
     revalidatePath('/marches')
+
+    // Audit log
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.CREATE,
+      entityType: AUDIT_ENTITY.MARCHE,
+      entityId:   marche.id,
+      metadata:   { numero: marche.numero, objet: marche.objet, montant: marche.montant?.toString() },
+    })
 
     // 5. Retour succès
     return { success: true, data: marche }
@@ -108,7 +120,7 @@ export async function createMarche(data: unknown): Promise<ActionResult<Marche>>
 export async function updateMarche(data: unknown): Promise<ActionResult<Marche>> {
   try {
     // 1. Vérification d'authentification et de permissions
-    await requireMarcheWrite()
+    const session = await requireMarcheWrite()
 
     // 2. Validation avec Zod
     const validatedData = updateMarcheSchema.parse(data)
@@ -166,6 +178,16 @@ export async function updateMarche(data: unknown): Promise<ActionResult<Marche>>
     // 7. Revalidation du cache
     revalidatePath('/marches')
     revalidatePath(`/marches/${id}`)
+
+    // Audit log
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.UPDATE,
+      entityType: AUDIT_ENTITY.MARCHE,
+      entityId:   marche.id,
+      metadata:   { numero: marche.numero, statut: marche.statut },
+    })
 
     // 8. Publier l'événement si le statut a changé
     if (ancienStatut && updateData.statut && ancienStatut !== updateData.statut) {
@@ -232,7 +254,7 @@ export async function updateMarche(data: unknown): Promise<ActionResult<Marche>>
 export async function deleteMarche(id: string): Promise<ActionResult> {
   try {
     // 1. Vérification d'authentification et de permissions (ADMIN ou AVANCE uniquement)
-    await requireDelete()
+    const session = await requireDelete()
 
     // 2. Suppression dans Prisma
     await prisma.marche.delete({
@@ -241,6 +263,15 @@ export async function deleteMarche(id: string): Promise<ActionResult> {
 
     // 3. Revalidation du cache
     revalidatePath('/marches')
+
+    // Audit log
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.DELETE,
+      entityType: AUDIT_ENTITY.MARCHE,
+      entityId:   id,
+    })
 
     return { success: true, data: undefined }
   } catch (error) {
