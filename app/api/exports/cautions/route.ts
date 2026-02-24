@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { exportCautions } from '@/lib/actions/exports'
+import { auth } from '@/lib/auth/auth.config'
 
 // Force dynamic pour éviter le cache
 export const dynamic = 'force-dynamic'
@@ -9,6 +10,12 @@ export const dynamic = 'force-dynamic'
  * GET /api/exports/cautions?statut=...&type=...&dateDebut=...&dateFin=...
  */
 export async function GET(request: NextRequest) {
+  // Guard auth — defense-in-depth (requireRole est aussi dans la server action)
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+  }
+
   try {
     // Récupération des filtres depuis l'URL
     const { searchParams } = new URL(request.url)
