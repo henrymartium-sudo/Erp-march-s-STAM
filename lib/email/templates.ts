@@ -39,6 +39,13 @@ export interface MarcheAlert {
 // TEMPLATE DE BASE — header STAM navy
 // ============================================================
 
+// Largeur du container email en format paysage
+const EMAIL_WIDTH = 800;
+// Padding horizontal total (28px × 2)
+const EMAIL_PADDING_H = 56;
+// Largeur utile pour les tableaux intérieurs
+const TABLE_WIDTH = EMAIL_WIDTH - EMAIL_PADDING_H; // 744px
+
 function baseEmailTemplate(content: string): string {
   return `
 <!DOCTYPE html>
@@ -52,7 +59,7 @@ function baseEmailTemplate(content: string): string {
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 20px 0;">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden;">
+        <table width="${EMAIL_WIDTH}" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden;">
 
           <!-- Header STAM navy -->
           <tr>
@@ -98,6 +105,64 @@ function baseEmailTemplate(content: string): string {
 // SECTION CAUTIONS — tableau HTML
 // ============================================================
 
+// ============================================================
+// COLONNES CAUTIONS — 8 colonnes, total = TABLE_WIDTH (744px)
+// Référence:90 | Banque:100 | Type:100 | Montant:110 | Échéance:82 | J.rest.:62 | Marché:90 | Autorité:110
+// ============================================================
+const CAUTION_COLS = [
+  { label: "Référence",      width: 90,  align: "left",   color: "#ffffff", nowrap: true,  gold: false },
+  { label: "Banque",         width: 100, align: "left",   color: "#ffffff", nowrap: false, gold: false },
+  { label: "Type",           width: 100, align: "left",   color: "#ffffff", nowrap: false, gold: false },
+  { label: "Montant",        width: 110, align: "right",  color: "#ffffff", nowrap: true,  gold: false },
+  { label: "Échéance",       width: 82,  align: "center", color: "#ffffff", nowrap: true,  gold: false },
+  { label: "J. rest.",       width: 62,  align: "center", color: "#C49A1A", nowrap: true,  gold: true  },
+  { label: "Marché",         width: 90,  align: "left",   color: "#ffffff", nowrap: true,  gold: false },
+  { label: "Autorité contr.",width: 110, align: "left",   color: "#ffffff", nowrap: false, gold: false },
+] as const;
+
+// ============================================================
+// COLONNES MARCHÉS — 7 colonnes, total = TABLE_WIDTH (744px)
+// N°:90 | Objet:210 | Autorité:150 | Montant:110 | Fin:82 | J.rest.:62 | Statut:40
+// ============================================================
+const MARCHE_COLS = [
+  { label: "N° Marché",      width: 90,  align: "left",   color: "#ffffff", nowrap: true,  gold: false },
+  { label: "Objet",          width: 210, align: "left",   color: "#ffffff", nowrap: false, gold: false },
+  { label: "Autorité contr.",width: 150, align: "left",   color: "#ffffff", nowrap: false, gold: false },
+  { label: "Montant",        width: 110, align: "right",  color: "#ffffff", nowrap: true,  gold: false },
+  { label: "Fin exéc.",      width: 82,  align: "center", color: "#ffffff", nowrap: true,  gold: false },
+  { label: "J. rest.",       width: 62,  align: "center", color: "#C49A1A", nowrap: true,  gold: true  },
+  { label: "Statut",         width: 40,  align: "left",   color: "#ffffff", nowrap: false, gold: false },
+] as const;
+
+/** Style commun pour une cellule de données */
+function tdStyle(opts: {
+  width: number;
+  align?: string;
+  nowrap?: boolean;
+  bold?: boolean;
+  color?: string;
+  bg: string;
+  borderLeft?: string;
+  isFirst?: boolean;
+}): string {
+  const base = [
+    `width: ${opts.width}px`,
+    `max-width: ${opts.width}px`,
+    `padding: 7px 8px`,
+    `font-size: 11px`,
+    `border-bottom: 1px solid #f0f0f0`,
+    `overflow: hidden`,
+    `text-overflow: ellipsis`,
+    `white-space: nowrap`,
+    `background-color: ${opts.bg}`,
+    `color: ${opts.color ?? "#374151"}`,
+    `text-align: ${opts.align ?? "left"}`,
+  ];
+  if (opts.bold) base.push("font-weight: 600");
+  if (opts.borderLeft) base.push(`border-left: 4px solid ${opts.borderLeft}`);
+  return base.join("; ");
+}
+
 function buildCautionsSection(cautions: CautionAlert[]): string {
   const critiques = cautions.filter(
     (c) => c.niveau === "CRITIQUE" || c.joursRestants <= 7
@@ -107,21 +172,21 @@ function buildCautionsSection(cautions: CautionAlert[]): string {
   const rows = cautions
     .map((c) => {
       const isCritique = c.niveau === "CRITIQUE" || c.joursRestants <= 7;
-      const rowBg = isCritique ? "#fef2f2" : "#fffbeb";
+      const rowBg      = isCritique ? "#fef2f2" : "#fffbeb";
       const borderLeft = isCritique ? "#ef4444" : "#f59e0b";
       const joursColor = isCritique ? "#dc2626" : "#d97706";
       const joursLabel = isCritique ? `🔴 ${c.joursRestants}j` : `🟠 ${c.joursRestants}j`;
 
       return `
-        <tr style="background-color: ${rowBg};">
-          <td style="border-left: 4px solid ${borderLeft}; padding: 7px 9px; font-size: 11px; font-weight: 600; color: #111827; border-bottom: 1px solid #f0f0f0; white-space: nowrap;">${c.reference}</td>
-          <td style="padding: 7px 9px; font-size: 11px; color: #374151; border-bottom: 1px solid #f0f0f0;">${c.banque || "—"}</td>
-          <td style="padding: 7px 9px; font-size: 11px; color: #374151; border-bottom: 1px solid #f0f0f0;">${c.type}</td>
-          <td style="padding: 7px 9px; font-size: 11px; color: #374151; border-bottom: 1px solid #f0f0f0; white-space: nowrap;">${formatMontant(c.montant)}</td>
-          <td style="padding: 7px 9px; font-size: 11px; color: #374151; border-bottom: 1px solid #f0f0f0; white-space: nowrap;">${format(c.dateEcheance, "dd/MM/yyyy")}</td>
-          <td style="padding: 7px 9px; font-size: 11px; font-weight: 700; color: ${joursColor}; border-bottom: 1px solid #f0f0f0; white-space: nowrap; text-align: center;">${joursLabel}</td>
-          <td style="padding: 7px 9px; font-size: 11px; color: #6b7280; border-bottom: 1px solid #f0f0f0; white-space: nowrap;">${c.marcheReference || "—"}</td>
-          <td style="padding: 7px 9px; font-size: 11px; color: #374151; border-bottom: 1px solid #f0f0f0;">${c.autoriteContractante || "—"}</td>
+        <tr>
+          <td style="${tdStyle({ width: CAUTION_COLS[0].width, bg: rowBg, borderLeft, bold: true, color: "#111827" })}">${c.reference}</td>
+          <td style="${tdStyle({ width: CAUTION_COLS[1].width, bg: rowBg })}">${c.banque ?? "—"}</td>
+          <td style="${tdStyle({ width: CAUTION_COLS[2].width, bg: rowBg })}">${c.type}</td>
+          <td style="${tdStyle({ width: CAUTION_COLS[3].width, bg: rowBg, align: "right" })}">${formatMontant(c.montant)}</td>
+          <td style="${tdStyle({ width: CAUTION_COLS[4].width, bg: rowBg, align: "center" })}">${format(c.dateEcheance, "dd/MM/yyyy")}</td>
+          <td style="${tdStyle({ width: CAUTION_COLS[5].width, bg: rowBg, align: "center", bold: true, color: joursColor })}">${joursLabel}</td>
+          <td style="${tdStyle({ width: CAUTION_COLS[6].width, bg: rowBg, color: "#6b7280" })}">${c.marcheReference ?? "—"}</td>
+          <td style="${tdStyle({ width: CAUTION_COLS[7].width, bg: rowBg })}">${c.autoriteContractante ?? "—"}</td>
         </tr>
       `;
     })
@@ -137,6 +202,10 @@ function buildCautionsSection(cautions: CautionAlert[]): string {
     .filter(Boolean)
     .join(" — ");
 
+  const headers = CAUTION_COLS.map(
+    (col) => `<th style="width: ${col.width}px; max-width: ${col.width}px; padding: 8px; text-align: ${col.align}; color: ${col.color}; font-size: 10px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${col.label}</th>`
+  ).join("");
+
   return `
     <div style="margin-bottom: 32px;">
       <h2 style="margin: 0 0 4px 0; color: #111827; font-size: 16px; font-weight: 700;">
@@ -146,27 +215,10 @@ function buildCautionsSection(cautions: CautionAlert[]): string {
         ${subtitle}
       </p>
 
-      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; border: 1px solid #e5e7eb; table-layout: fixed;">
-        <colgroup>
-          <col style="width: 13%;">
-          <col style="width: 14%;">
-          <col style="width: 12%;">
-          <col style="width: 15%;">
-          <col style="width: 11%;">
-          <col style="width: 9%;">
-          <col style="width: 12%;">
-          <col style="width: 14%;">
-        </colgroup>
+      <table width="${TABLE_WIDTH}" cellpadding="0" cellspacing="0" style="border-collapse: collapse; border: 1px solid #e5e7eb; table-layout: fixed;">
         <thead>
           <tr style="background-color: #1E3A5F;">
-            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600; white-space: nowrap;">Référence</th>
-            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600;">Banque</th>
-            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600;">Type</th>
-            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600; white-space: nowrap;">Montant</th>
-            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600; white-space: nowrap;">Échéance</th>
-            <th style="padding: 8px 9px; text-align: center; color: #C49A1A; font-size: 10px; font-weight: 600; white-space: nowrap;">J. rest.</th>
-            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600;">Marché</th>
-            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600;">Autorité contr.</th>
+            ${headers}
           </tr>
         </thead>
         <tbody>
@@ -190,27 +242,29 @@ function buildCautionsSection(cautions: CautionAlert[]): string {
 function buildMarchesSection(marches: MarcheAlert[]): string {
   const rows = marches
     .map((m) => {
-      const isUrgent = m.joursRestants <= 15;
-      const rowBg = isUrgent ? "#fef2f2" : "#fff7ed";
-      const borderLeft = isUrgent ? "#ef4444" : "#f97316";
-      const joursColor = isUrgent ? "#dc2626" : "#ea580c";
-      const joursLabel = isUrgent ? `🔴 ${m.joursRestants}j` : `🟠 ${m.joursRestants}j`;
-      const objetTrunc =
-        m.objet.length > 40 ? m.objet.substring(0, 37) + "..." : m.objet;
+      const isUrgent    = m.joursRestants <= 15;
+      const rowBg       = isUrgent ? "#fef2f2" : "#fff7ed";
+      const borderLeft  = isUrgent ? "#ef4444" : "#f97316";
+      const joursColor  = isUrgent ? "#dc2626" : "#ea580c";
+      const joursLabel  = isUrgent ? `🔴 ${m.joursRestants}j` : `🟠 ${m.joursRestants}j`;
 
       return `
-        <tr style="background-color: ${rowBg};">
-          <td style="border-left: 4px solid ${borderLeft}; padding: 7px 9px; font-size: 11px; font-weight: 600; color: #111827; border-bottom: 1px solid #f0f0f0; white-space: nowrap;">${m.reference}</td>
-          <td style="padding: 7px 9px; font-size: 11px; color: #374151; border-bottom: 1px solid #f0f0f0;" title="${m.objet}">${objetTrunc}</td>
-          <td style="padding: 7px 9px; font-size: 11px; color: #374151; border-bottom: 1px solid #f0f0f0;">${m.autoriteContractante || "—"}</td>
-          <td style="padding: 7px 9px; font-size: 11px; color: #374151; border-bottom: 1px solid #f0f0f0; white-space: nowrap;">${formatMontant(m.montant)}</td>
-          <td style="padding: 7px 9px; font-size: 11px; color: #374151; border-bottom: 1px solid #f0f0f0; white-space: nowrap;">${format(m.dateFinExecution, "dd/MM/yyyy")}</td>
-          <td style="padding: 7px 9px; font-size: 11px; font-weight: 700; color: ${joursColor}; border-bottom: 1px solid #f0f0f0; white-space: nowrap; text-align: center;">${joursLabel}</td>
-          <td style="padding: 7px 9px; font-size: 11px; color: #374151; border-bottom: 1px solid #f0f0f0; white-space: nowrap;">${m.statut}</td>
+        <tr>
+          <td style="${tdStyle({ width: MARCHE_COLS[0].width, bg: rowBg, borderLeft, bold: true, color: "#111827" })}">${m.reference}</td>
+          <td style="${tdStyle({ width: MARCHE_COLS[1].width, bg: rowBg })}" title="${m.objet}">${m.objet}</td>
+          <td style="${tdStyle({ width: MARCHE_COLS[2].width, bg: rowBg })}">${m.autoriteContractante ?? "—"}</td>
+          <td style="${tdStyle({ width: MARCHE_COLS[3].width, bg: rowBg, align: "right" })}">${formatMontant(m.montant)}</td>
+          <td style="${tdStyle({ width: MARCHE_COLS[4].width, bg: rowBg, align: "center" })}">${format(m.dateFinExecution, "dd/MM/yyyy")}</td>
+          <td style="${tdStyle({ width: MARCHE_COLS[5].width, bg: rowBg, align: "center", bold: true, color: joursColor })}">${joursLabel}</td>
+          <td style="${tdStyle({ width: MARCHE_COLS[6].width, bg: rowBg })}">${m.statut}</td>
         </tr>
       `;
     })
     .join("");
+
+  const headers = MARCHE_COLS.map(
+    (col) => `<th style="width: ${col.width}px; max-width: ${col.width}px; padding: 8px; text-align: ${col.align}; color: ${col.color}; font-size: 10px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${col.label}</th>`
+  ).join("");
 
   return `
     <div style="margin-bottom: 32px;">
@@ -221,25 +275,10 @@ function buildMarchesSection(marches: MarcheAlert[]): string {
         ${marches.length} marché${marches.length > 1 ? "s" : ""} arrivant à échéance dans les 60 prochains jours
       </p>
 
-      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; border: 1px solid #e5e7eb; table-layout: fixed;">
-        <colgroup>
-          <col style="width: 12%;">
-          <col style="width: 24%;">
-          <col style="width: 20%;">
-          <col style="width: 15%;">
-          <col style="width: 11%;">
-          <col style="width: 9%;">
-          <col style="width: 9%;">
-        </colgroup>
+      <table width="${TABLE_WIDTH}" cellpadding="0" cellspacing="0" style="border-collapse: collapse; border: 1px solid #e5e7eb; table-layout: fixed;">
         <thead>
           <tr style="background-color: #1E3A5F;">
-            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600; white-space: nowrap;">N° Marché</th>
-            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600;">Objet</th>
-            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600;">Autorité contr.</th>
-            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600; white-space: nowrap;">Montant</th>
-            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600; white-space: nowrap;">Fin exéc.</th>
-            <th style="padding: 8px 9px; text-align: center; color: #C49A1A; font-size: 10px; font-weight: 600; white-space: nowrap;">J. rest.</th>
-            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600;">Statut</th>
+            ${headers}
           </tr>
         </thead>
         <tbody>
