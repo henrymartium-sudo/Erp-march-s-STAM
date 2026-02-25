@@ -30,6 +30,7 @@ export function DataPagination({ pagination }: DataPaginationProps) {
   const handlePageChange = (page: number) => {
     const params = new URLSearchParams(searchParams);
     params.set('page', page.toString());
+    window.scrollTo({ top: 0, behavior: 'instant' });
     router.push(`${pathname}?${params.toString()}`);
   };
 
