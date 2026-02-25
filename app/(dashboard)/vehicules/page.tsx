@@ -9,7 +9,7 @@ import { DataPagination } from '@/components/ui/data-pagination'
 import { getVehicules } from '@/lib/actions/vehicules'
 import { serializeVehicule } from '@/lib/utils/serialize'
 import { shouldShowPagination } from '@/lib/utils/pagination'
-import { canWrite } from '@/lib/utils/permissions'
+import { canWrite, canExport, isExploitation } from '@/lib/utils/permissions'
 import { auth } from '@/lib/auth/auth.config'
 import { Plus } from 'lucide-react'
 import type { StatutVehicule } from '@prisma/client'
@@ -30,6 +30,7 @@ export default async function VehiculesPage({ searchParams }: VehiculesPageProps
   const session = await auth()
   const role = (session?.user as { role?: string } | undefined)?.role
   const userCanWrite = canWrite(role)
+  const userCanExportVehicules = canExport(role) || isExploitation(role)
 
   // Await searchParams (Next.js 15)
   const params = await searchParams
@@ -75,15 +76,15 @@ export default async function VehiculesPage({ searchParams }: VehiculesPageProps
         count={pagination.totalItems}
         action={
           <>
-            {userCanWrite && (
-            <ExportMenu
-              type="vehicules"
-              filters={{
-                statut: params.statut,
-                search: params.search,
-              }}
-            />
-          )}
+            {userCanExportVehicules && (
+              <ExportMenu
+                type="vehicules"
+                filters={{
+                  statut: params.statut,
+                  search: params.search,
+                }}
+              />
+            )}
             {userCanWrite && (
               <Button asChild>
                 <Link href="/vehicules/nouveau">

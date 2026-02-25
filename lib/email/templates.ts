@@ -7,33 +7,38 @@ import { formatMontant } from "@/lib/utils/format";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
-/**
- * Types pour les données des alertes
- */
+// ============================================================
+// TYPES
+// ============================================================
+
 export interface CautionAlert {
   id: string;
   reference: string;
+  banque?: string;
   type: string;
   montant: number;
   dateEcheance: Date;
   joursRestants: number;
   marcheReference?: string;
-  niveau?: "CRITIQUE" | "ATTENTION"; // Ajout niveau de criticité
+  autoriteContractante?: string;
+  niveau?: "CRITIQUE" | "ATTENTION";
 }
 
 export interface MarcheAlert {
   id: string;
   reference: string;
   objet: string;
+  autoriteContractante?: string;
   montant: number;
   dateFinExecution: Date;
   joursRestants: number;
   statut: string;
 }
 
-/**
- * Template de base HTML responsive
- */
+// ============================================================
+// TEMPLATE DE BASE — header STAM navy
+// ============================================================
+
 function baseEmailTemplate(content: string): string {
   return `
 <!DOCTYPE html>
@@ -48,36 +53,38 @@ function baseEmailTemplate(content: string): string {
     <tr>
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden;">
-          <!-- Header -->
+
+          <!-- Header STAM navy -->
           <tr>
-            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px 40px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;">
+            <td style="background-color: #1E3A5F; padding: 28px 40px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 700; letter-spacing: -0.3px;">
                 🔔 Alertes ERP Marchés STAM
               </h1>
-              <p style="margin: 8px 0 0 0; color: #e0e7ff; font-size: 14px;">
+              <p style="margin: 8px 0 0 0; color: #C49A1A; font-size: 13px; font-weight: 500;">
                 ${format(new Date(), "EEEE d MMMM yyyy", { locale: fr })}
               </p>
             </td>
           </tr>
 
-          <!-- Content -->
+          <!-- Contenu -->
           <tr>
-            <td style="padding: 40px;">
+            <td style="padding: 32px 28px;">
               ${content}
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f9fafb; padding: 20px 40px; text-align: center; border-top: 1px solid #e5e7eb;">
+            <td style="background-color: #f9fafb; padding: 18px 28px; text-align: center; border-top: 1px solid #e5e7eb;">
               <p style="margin: 0; color: #6b7280; font-size: 12px;">
                 Cet email est généré automatiquement par ERP Marchés STAM
               </p>
-              <p style="margin: 8px 0 0 0; color: #9ca3af; font-size: 11px;">
+              <p style="margin: 6px 0 0 0; color: #9ca3af; font-size: 11px;">
                 Pour toute question, contactez votre administrateur système
               </p>
             </td>
           </tr>
+
         </table>
       </td>
     </tr>
@@ -86,6 +93,231 @@ function baseEmailTemplate(content: string): string {
 </html>
   `.trim();
 }
+
+// ============================================================
+// SECTION CAUTIONS — tableau HTML
+// ============================================================
+
+function buildCautionsSection(cautions: CautionAlert[]): string {
+  const critiques = cautions.filter(
+    (c) => c.niveau === "CRITIQUE" || c.joursRestants <= 7
+  ).length;
+  const attention = cautions.length - critiques;
+
+  const rows = cautions
+    .map((c) => {
+      const isCritique = c.niveau === "CRITIQUE" || c.joursRestants <= 7;
+      const rowBg = isCritique ? "#fef2f2" : "#fffbeb";
+      const borderLeft = isCritique ? "#ef4444" : "#f59e0b";
+      const joursColor = isCritique ? "#dc2626" : "#d97706";
+      const joursLabel = isCritique ? `🔴 ${c.joursRestants}j` : `🟠 ${c.joursRestants}j`;
+
+      return `
+        <tr style="background-color: ${rowBg};">
+          <td style="border-left: 4px solid ${borderLeft}; padding: 7px 9px; font-size: 11px; font-weight: 600; color: #111827; border-bottom: 1px solid #f0f0f0; white-space: nowrap;">${c.reference}</td>
+          <td style="padding: 7px 9px; font-size: 11px; color: #374151; border-bottom: 1px solid #f0f0f0;">${c.banque || "—"}</td>
+          <td style="padding: 7px 9px; font-size: 11px; color: #374151; border-bottom: 1px solid #f0f0f0;">${c.type}</td>
+          <td style="padding: 7px 9px; font-size: 11px; color: #374151; border-bottom: 1px solid #f0f0f0; white-space: nowrap;">${formatMontant(c.montant)}</td>
+          <td style="padding: 7px 9px; font-size: 11px; color: #374151; border-bottom: 1px solid #f0f0f0; white-space: nowrap;">${format(c.dateEcheance, "dd/MM/yyyy")}</td>
+          <td style="padding: 7px 9px; font-size: 11px; font-weight: 700; color: ${joursColor}; border-bottom: 1px solid #f0f0f0; white-space: nowrap; text-align: center;">${joursLabel}</td>
+          <td style="padding: 7px 9px; font-size: 11px; color: #6b7280; border-bottom: 1px solid #f0f0f0; white-space: nowrap;">${c.marcheReference || "—"}</td>
+          <td style="padding: 7px 9px; font-size: 11px; color: #374151; border-bottom: 1px solid #f0f0f0;">${c.autoriteContractante || "—"}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  const subtitle = [
+    `${cautions.length} caution${cautions.length > 1 ? "s" : ""} à surveiller dans les 30 prochains jours`,
+    critiques > 0
+      ? `<span style="color: #dc2626; font-weight: 600;">${critiques} critique${critiques > 1 ? "s" : ""} (&lt; 7j)</span>`
+      : "",
+    attention > 0 ? `${attention} en attention` : "",
+  ]
+    .filter(Boolean)
+    .join(" — ");
+
+  return `
+    <div style="margin-bottom: 32px;">
+      <h2 style="margin: 0 0 4px 0; color: #111827; font-size: 16px; font-weight: 700;">
+        ⚠️ Cautions proches de l'échéance
+      </h2>
+      <p style="margin: 0 0 14px 0; color: #6b7280; font-size: 12px; line-height: 1.5;">
+        ${subtitle}
+      </p>
+
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; border: 1px solid #e5e7eb; table-layout: fixed;">
+        <colgroup>
+          <col style="width: 13%;">
+          <col style="width: 14%;">
+          <col style="width: 12%;">
+          <col style="width: 15%;">
+          <col style="width: 11%;">
+          <col style="width: 9%;">
+          <col style="width: 12%;">
+          <col style="width: 14%;">
+        </colgroup>
+        <thead>
+          <tr style="background-color: #1E3A5F;">
+            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600; white-space: nowrap;">Référence</th>
+            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600;">Banque</th>
+            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600;">Type</th>
+            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600; white-space: nowrap;">Montant</th>
+            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600; white-space: nowrap;">Échéance</th>
+            <th style="padding: 8px 9px; text-align: center; color: #C49A1A; font-size: 10px; font-weight: 600; white-space: nowrap;">J. rest.</th>
+            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600;">Marché</th>
+            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600;">Autorité contr.</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+
+      <div style="margin-top: 12px; padding: 10px 14px; background-color: #eff6ff; border-left: 3px solid #3b82f6;">
+        <p style="margin: 0; color: #1e40af; font-size: 11px; line-height: 1.5;">
+          💡 <strong>Rappel :</strong> Les cautions doivent être renouvelées ou la mainlevée demandée avant l'échéance pour éviter toute pénalité.
+        </p>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// SECTION MARCHÉS — tableau HTML
+// ============================================================
+
+function buildMarchesSection(marches: MarcheAlert[]): string {
+  const rows = marches
+    .map((m) => {
+      const isUrgent = m.joursRestants <= 15;
+      const rowBg = isUrgent ? "#fef2f2" : "#fff7ed";
+      const borderLeft = isUrgent ? "#ef4444" : "#f97316";
+      const joursColor = isUrgent ? "#dc2626" : "#ea580c";
+      const joursLabel = isUrgent ? `🔴 ${m.joursRestants}j` : `🟠 ${m.joursRestants}j`;
+      const objetTrunc =
+        m.objet.length > 40 ? m.objet.substring(0, 37) + "..." : m.objet;
+
+      return `
+        <tr style="background-color: ${rowBg};">
+          <td style="border-left: 4px solid ${borderLeft}; padding: 7px 9px; font-size: 11px; font-weight: 600; color: #111827; border-bottom: 1px solid #f0f0f0; white-space: nowrap;">${m.reference}</td>
+          <td style="padding: 7px 9px; font-size: 11px; color: #374151; border-bottom: 1px solid #f0f0f0;" title="${m.objet}">${objetTrunc}</td>
+          <td style="padding: 7px 9px; font-size: 11px; color: #374151; border-bottom: 1px solid #f0f0f0;">${m.autoriteContractante || "—"}</td>
+          <td style="padding: 7px 9px; font-size: 11px; color: #374151; border-bottom: 1px solid #f0f0f0; white-space: nowrap;">${formatMontant(m.montant)}</td>
+          <td style="padding: 7px 9px; font-size: 11px; color: #374151; border-bottom: 1px solid #f0f0f0; white-space: nowrap;">${format(m.dateFinExecution, "dd/MM/yyyy")}</td>
+          <td style="padding: 7px 9px; font-size: 11px; font-weight: 700; color: ${joursColor}; border-bottom: 1px solid #f0f0f0; white-space: nowrap; text-align: center;">${joursLabel}</td>
+          <td style="padding: 7px 9px; font-size: 11px; color: #374151; border-bottom: 1px solid #f0f0f0; white-space: nowrap;">${m.statut}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  return `
+    <div style="margin-bottom: 32px;">
+      <h2 style="margin: 0 0 4px 0; color: #111827; font-size: 16px; font-weight: 700;">
+        ⚠️ Marchés en fin d'exécution
+      </h2>
+      <p style="margin: 0 0 14px 0; color: #6b7280; font-size: 12px; line-height: 1.5;">
+        ${marches.length} marché${marches.length > 1 ? "s" : ""} arrivant à échéance dans les 60 prochains jours
+      </p>
+
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; border: 1px solid #e5e7eb; table-layout: fixed;">
+        <colgroup>
+          <col style="width: 12%;">
+          <col style="width: 24%;">
+          <col style="width: 20%;">
+          <col style="width: 15%;">
+          <col style="width: 11%;">
+          <col style="width: 9%;">
+          <col style="width: 9%;">
+        </colgroup>
+        <thead>
+          <tr style="background-color: #1E3A5F;">
+            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600; white-space: nowrap;">N° Marché</th>
+            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600;">Objet</th>
+            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600;">Autorité contr.</th>
+            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600; white-space: nowrap;">Montant</th>
+            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600; white-space: nowrap;">Fin exéc.</th>
+            <th style="padding: 8px 9px; text-align: center; color: #C49A1A; font-size: 10px; font-weight: 600; white-space: nowrap;">J. rest.</th>
+            <th style="padding: 8px 9px; text-align: left; color: #ffffff; font-size: 10px; font-weight: 600;">Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+
+      <div style="margin-top: 12px; padding: 10px 14px; background-color: #eff6ff; border-left: 3px solid #3b82f6;">
+        <p style="margin: 0; color: #1e40af; font-size: 11px; line-height: 1.5;">
+          💡 <strong>Rappel :</strong> Anticiper la préparation des documents de clôture, réception définitive et libération des cautions.
+        </p>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// VERSIONS TEXTE BRUT
+// ============================================================
+
+function buildCautionsText(cautions: CautionAlert[]): string {
+  const lines = [
+    `ALERTES CAUTIONS - ${format(new Date(), "dd/MM/yyyy")}`,
+    `${cautions.length} caution(s) proche(s) de l'échéance (< 30 jours) :`,
+    "",
+    ...cautions.map((c) => {
+      const niveau =
+        c.niveau === "CRITIQUE" || c.joursRestants <= 7
+          ? "CRITIQUE"
+          : "ATTENTION";
+      return [
+        `- ${c.reference} [${niveau}]`,
+        c.banque ? `  Banque : ${c.banque}` : "",
+        `  Type : ${c.type}`,
+        `  Montant : ${formatMontant(c.montant)}`,
+        `  Échéance : ${format(c.dateEcheance, "dd/MM/yyyy")}`,
+        `  Jours restants : ${c.joursRestants}`,
+        c.marcheReference ? `  Marché : ${c.marcheReference}` : "",
+        c.autoriteContractante
+          ? `  Autorité : ${c.autoriteContractante}`
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n");
+    }),
+    "",
+    "Action requise : Renouvellement ou mainlevée à prévoir.",
+  ];
+  return lines.join("\n");
+}
+
+function buildMarchesText(marches: MarcheAlert[]): string {
+  const lines = [
+    `ALERTES MARCHÉS - ${format(new Date(), "dd/MM/yyyy")}`,
+    `${marches.length} marché(s) en fin d'exécution (< 60 jours) :`,
+    "",
+    ...marches.map((m) =>
+      [
+        `- ${m.reference}`,
+        `  Objet : ${m.objet}`,
+        m.autoriteContractante ? `  Autorité : ${m.autoriteContractante}` : "",
+        `  Montant : ${formatMontant(m.montant)}`,
+        `  Fin d'exécution : ${format(m.dateFinExecution, "dd/MM/yyyy")}`,
+        `  Jours restants : ${m.joursRestants}`,
+        `  Statut : ${m.statut}`,
+      ]
+        .filter(Boolean)
+        .join("\n")
+    ),
+    "",
+    "Action requise : Préparer clôture et réception définitive.",
+  ];
+  return lines.join("\n");
+}
+
+// ============================================================
+// EXPORTS — templates publics
+// ============================================================
 
 /**
  * Template pour alertes cautions proches échéance
@@ -96,120 +328,16 @@ export function cautionsExpiringEmailTemplate(cautions: CautionAlert[]): {
   text: string;
 } {
   if (cautions.length === 0) {
-    return {
-      subject: "Aucune caution à échéance",
-      html: "",
-      text: "",
-    };
+    return { subject: "Aucune caution à échéance", html: "", text: "" };
   }
 
   const subject = `⚠️ ${cautions.length} caution${cautions.length > 1 ? "s" : ""} proche${cautions.length > 1 ? "s" : ""} de l'échéance`;
 
-  const cautionsHtml = cautions
-    .map(
-      (caution) => {
-        // Couleurs selon niveau de criticité
-        const isCritique = caution.niveau === "CRITIQUE" || caution.joursRestants <= 7;
-        const borderColor = isCritique ? "#ef4444" : "#f59e0b"; // Rouge vs Orange
-        const bgColor = isCritique ? "#fef2f2" : "#fffbeb";
-        const textColor = isCritique ? "#991b1b" : "#92400e";
-        const lightTextColor = isCritique ? "#7f1d1d" : "#78350f";
-        const badgeBg = isCritique ? "#fee2e2" : "#fef3c7";
-        const niveauLabel = isCritique ? "🔴 CRITIQUE" : "🟠 ATTENTION";
-
-        return `
-        <div style="border-left: 4px solid ${borderColor}; background-color: ${bgColor}; padding: 16px; margin-bottom: 16px; border-radius: 4px;">
-          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
-            <div>
-              <h3 style="margin: 0; color: ${textColor}; font-size: 16px; font-weight: 600;">
-                ${caution.reference}
-                <span style="margin-left: 8px; font-size: 11px; font-weight: 500;">${niveauLabel}</span>
-              </h3>
-              <p style="margin: 4px 0 0 0; color: ${lightTextColor}; font-size: 13px;">
-                ${caution.type}
-              </p>
-            </div>
-            <div style="background-color: ${badgeBg}; padding: 4px 12px; border-radius: 12px;">
-              <span style="color: ${textColor}; font-size: 12px; font-weight: 600;">
-                ${caution.joursRestants} jour${caution.joursRestants > 1 ? "s" : ""}
-              </span>
-            </div>
-          </div>
-
-          <div style="background-color: #ffffff; padding: 12px; border-radius: 4px; margin-bottom: 8px;">
-            <p style="margin: 0 0 8px 0; color: #374151; font-size: 13px;">
-              <strong>Montant :</strong> ${formatMontant(caution.montant)}
-            </p>
-            <p style="margin: 0 0 8px 0; color: #374151; font-size: 13px;">
-              <strong>Échéance :</strong> ${format(caution.dateEcheance, "dd/MM/yyyy")}
-            </p>
-            ${
-              caution.marcheReference
-                ? `<p style="margin: 0; color: #374151; font-size: 13px;">
-              <strong>Marché :</strong> ${caution.marcheReference}
-            </p>`
-                : ""
-            }
-          </div>
-
-          <p style="margin: 0; color: ${textColor}; font-size: 12px; font-style: italic;">
-            ⚡ Action ${isCritique ? "URGENTE" : "requise"} : Renouvellement ou mainlevée à prévoir
-          </p>
-        </div>
-      `;
-      }
-    )
-    .join("");
-
-  // Compter les cautions par niveau
-  const critiques = cautions.filter(c => c.niveau === "CRITIQUE" || c.joursRestants <= 7).length;
-  const attention = cautions.length - critiques;
-
-  const content = `
-    <div style="margin-bottom: 24px;">
-      <h2 style="margin: 0 0 16px 0; color: #111827; font-size: 20px; font-weight: 600;">
-        Cautions proches de l'échéance
-      </h2>
-      <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
-        ${cautions.length} caution${cautions.length > 1 ? "s" : ""} arrive${cautions.length > 1 ? "nt" : ""} à échéance dans moins de <strong>30 jours</strong>
-        ${critiques > 0 ? ` (<span style="color: #ef4444; font-weight: 600;">${critiques} critique${critiques > 1 ? "s" : ""} &lt; 7j</span>` : ""}${attention > 0 ? `, ${attention} attention` : ""}).
-        Veuillez prendre les dispositions nécessaires.
-      </p>
-    </div>
-
-    ${cautionsHtml}
-
-    <div style="margin-top: 24px; padding: 16px; background-color: #eff6ff; border-radius: 4px; border-left: 4px solid #3b82f6;">
-      <p style="margin: 0; color: #1e40af; font-size: 13px; line-height: 1.6;">
-        💡 <strong>Rappel :</strong> Les cautions doivent être renouvelées ou la mainlevée doit être demandée avant l'échéance pour éviter toute pénalité.
-      </p>
-    </div>
-  `;
-
-  const html = baseEmailTemplate(content);
-
-  // Version texte brut
-  const text = `
-ALERTES CAUTIONS - ${format(new Date(), "dd/MM/yyyy")}
-
-${cautions.length} caution(s) proche(s) de l'échéance (< 30 jours) :
-
-${cautions
-  .map(
-    (c) => `
-- ${c.reference} (${c.type})
-  Montant : ${formatMontant(c.montant)}
-  Échéance : ${format(c.dateEcheance, "dd/MM/yyyy")}
-  Jours restants : ${c.joursRestants}
-  ${c.marcheReference ? `Marché : ${c.marcheReference}` : ""}
-`
-  )
-  .join("\n")}
-
-Action requise : Renouvellement ou mainlevée à prévoir.
-  `.trim();
-
-  return { subject, html, text };
+  return {
+    subject,
+    html: baseEmailTemplate(buildCautionsSection(cautions)),
+    text: buildCautionsText(cautions),
+  };
 }
 
 /**
@@ -230,95 +358,15 @@ export function marchesExpiringEmailTemplate(marches: MarcheAlert[]): {
 
   const subject = `⚠️ ${marches.length} marché${marches.length > 1 ? "s" : ""} en fin d'exécution`;
 
-  const marchesHtml = marches
-    .map(
-      (marche) => `
-        <div style="border-left: 4px solid #ef4444; background-color: #fef2f2; padding: 16px; margin-bottom: 16px; border-radius: 4px;">
-          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
-            <div>
-              <h3 style="margin: 0; color: #991b1b; font-size: 16px; font-weight: 600;">
-                ${marche.reference}
-              </h3>
-              <p style="margin: 4px 0 0 0; color: #7f1d1d; font-size: 13px;">
-                ${marche.objet.length > 80 ? marche.objet.substring(0, 77) + "..." : marche.objet}
-              </p>
-            </div>
-            <div style="background-color: #fee2e2; padding: 4px 12px; border-radius: 12px;">
-              <span style="color: #991b1b; font-size: 12px; font-weight: 600;">
-                ${marche.joursRestants} jour${marche.joursRestants > 1 ? "s" : ""}
-              </span>
-            </div>
-          </div>
-
-          <div style="background-color: #ffffff; padding: 12px; border-radius: 4px; margin-bottom: 8px;">
-            <p style="margin: 0 0 8px 0; color: #374151; font-size: 13px;">
-              <strong>Montant :</strong> ${formatMontant(marche.montant)}
-            </p>
-            <p style="margin: 0 0 8px 0; color: #374151; font-size: 13px;">
-              <strong>Fin d'exécution :</strong> ${format(marche.dateFinExecution, "dd/MM/yyyy")}
-            </p>
-            <p style="margin: 0; color: #374151; font-size: 13px;">
-              <strong>Statut :</strong> ${marche.statut}
-            </p>
-          </div>
-
-          <p style="margin: 0; color: #991b1b; font-size: 12px; font-style: italic;">
-            ⚡ Action requise : Préparer clôture et réception définitive
-          </p>
-        </div>
-      `
-    )
-    .join("");
-
-  const content = `
-    <div style="margin-bottom: 24px;">
-      <h2 style="margin: 0 0 16px 0; color: #111827; font-size: 20px; font-weight: 600;">
-        Marchés en fin d'exécution
-      </h2>
-      <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
-        ${marches.length} marché${marches.length > 1 ? "s" : ""} arrive${marches.length > 1 ? "nt" : ""} en fin d'exécution dans moins de <strong>60 jours</strong>.
-        Veuillez préparer les procédures de clôture.
-      </p>
-    </div>
-
-    ${marchesHtml}
-
-    <div style="margin-top: 24px; padding: 16px; background-color: #eff6ff; border-radius: 4px; border-left: 4px solid #3b82f6;">
-      <p style="margin: 0; color: #1e40af; font-size: 13px; line-height: 1.6;">
-        💡 <strong>Rappel :</strong> Anticiper la préparation des documents de clôture, réception définitive, et libération des cautions.
-      </p>
-    </div>
-  `;
-
-  const html = baseEmailTemplate(content);
-
-  // Version texte brut
-  const text = `
-ALERTES MARCHÉS - ${format(new Date(), "dd/MM/yyyy")}
-
-${marches.length} marché(s) en fin d'exécution (< 60 jours) :
-
-${marches
-  .map(
-    (m) => `
-- ${m.reference}
-  Objet : ${m.objet}
-  Montant : ${formatMontant(m.montant)}
-  Fin d'exécution : ${format(m.dateFinExecution, "dd/MM/yyyy")}
-  Jours restants : ${m.joursRestants}
-  Statut : ${m.statut}
-`
-  )
-  .join("\n")}
-
-Action requise : Préparer clôture et réception définitive.
-  `.trim();
-
-  return { subject, html, text };
+  return {
+    subject,
+    html: baseEmailTemplate(buildMarchesSection(marches)),
+    text: buildMarchesText(marches),
+  };
 }
 
 /**
- * Template pour email récapitulatif (cautions + marchés)
+ * Template pour email récapitulatif quotidien (cautions + marchés)
  */
 export function dailyAlertsEmailTemplate(
   cautions: CautionAlert[],
@@ -328,76 +376,55 @@ export function dailyAlertsEmailTemplate(
   html: string;
   text: string;
 } {
-  // Si aucune alerte, ne pas envoyer d'email
   if (cautions.length === 0 && marches.length === 0) {
-    return {
-      subject: "Aucune alerte",
-      html: "",
-      text: "",
-    };
+    return { subject: "Aucune alerte", html: "", text: "" };
   }
 
   const subject = `🔔 Rapport quotidien : ${cautions.length} caution(s) + ${marches.length} marché(s) à surveiller`;
 
   let content = `
-    <div style="margin-bottom: 32px;">
-      <h2 style="margin: 0 0 8px 0; color: #111827; font-size: 20px; font-weight: 600;">
+    <div style="margin-bottom: 28px;">
+      <h2 style="margin: 0 0 4px 0; color: #111827; font-size: 18px; font-weight: 700;">
         Rapport quotidien des alertes
       </h2>
-      <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
-        Voici le récapitulatif des échéances importantes nécessitant votre attention.
+      <p style="margin: 0; color: #6b7280; font-size: 13px; line-height: 1.6;">
+        Récapitulatif des échéances importantes nécessitant votre attention.
       </p>
     </div>
   `;
 
-  // Section cautions
   if (cautions.length > 0) {
-    const cautionsTemplate = cautionsExpiringEmailTemplate(cautions);
-    // Extraire le contenu entre les balises body (sans header/footer)
-    const cautionsContent = cautionsTemplate.html
-      .split('<td style="padding: 40px;">')[1]
-      ?.split("</td>")[0];
-    content += `<div style="margin-bottom: 32px;">${cautionsContent}</div>`;
+    content += buildCautionsSection(cautions);
   }
 
-  // Section marchés
   if (marches.length > 0) {
-    const marchesTemplate = marchesExpiringEmailTemplate(marches);
-    const marchesContent = marchesTemplate.html
-      .split('<td style="padding: 40px;">')[1]
-      ?.split("</td>")[0];
-    content += `<div style="margin-bottom: 32px;">${marchesContent}</div>`;
+    content += buildMarchesSection(marches);
   }
 
-  // Résumé final
   content += `
-    <div style="margin-top: 32px; padding: 20px; background-color: #f9fafb; border-radius: 4px; text-align: center;">
-      <p style="margin: 0; color: #374151; font-size: 14px; font-weight: 600;">
+    <div style="margin-top: 24px; padding: 14px 18px; background-color: #f9fafb; text-align: center; border: 1px solid #e5e7eb; border-radius: 4px;">
+      <p style="margin: 0; color: #374151; font-size: 13px; font-weight: 600;">
         📊 Résumé : ${cautions.length} caution(s) • ${marches.length} marché(s)
       </p>
-      <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 12px;">
+      <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 11px;">
         Consultez l'application pour plus de détails
       </p>
     </div>
   `;
 
-  const html = baseEmailTemplate(content);
+  const textParts = [
+    `RAPPORT QUOTIDIEN - ${format(new Date(), "dd/MM/yyyy")}`,
+    "",
+    cautions.length > 0 ? buildCautionsText(cautions) : null,
+    marches.length > 0 ? buildMarchesText(marches) : null,
+    `Résumé : ${cautions.length} caution(s) • ${marches.length} marché(s)`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
-  // Version texte brut
-  const cautionsText =
-    cautions.length > 0 ? cautionsExpiringEmailTemplate(cautions).text : "";
-  const marchesText =
-    marches.length > 0 ? marchesExpiringEmailTemplate(marches).text : "";
-
-  const text = `
-RAPPORT QUOTIDIEN - ${format(new Date(), "dd/MM/yyyy")}
-
-${cautionsText}
-
-${marchesText}
-
-Résumé : ${cautions.length} caution(s) • ${marches.length} marché(s)
-  `.trim();
-
-  return { subject, html, text };
+  return {
+    subject,
+    html: baseEmailTemplate(content),
+    text: textParts.trim(),
+  };
 }

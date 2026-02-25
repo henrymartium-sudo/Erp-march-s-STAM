@@ -47,6 +47,7 @@ export async function getAlertsCautionsExpiring(): Promise<
         marche: {
           select: {
             numero: true,
+            autoriteContractanteNom: true,
           },
         },
       },
@@ -65,12 +66,14 @@ export async function getAlertsCautionsExpiring(): Promise<
       return {
         id: caution.id,
         reference: caution.reference,
+        banque: caution.banqueNom,
         type: TYPE_CAUTION_LABELS[caution.type] || caution.type,
         montant: Number(caution.montant),
         dateEcheance: caution.dateEcheance,
         joursRestants,
         marcheReference: caution.marche?.numero,
-        niveau, // Ajout du niveau de criticité
+        autoriteContractante: caution.marche?.autoriteContractanteNom ?? undefined,
+        niveau,
       };
     });
 
@@ -133,6 +136,7 @@ export async function getAlertesMarchesExpiring(): Promise<
         id: marche.id,
         reference: marche.numero,
         objet: marche.objet,
+        autoriteContractante: marche.autoriteContractanteNom,
         montant: Number(marche.montant || 0),
         dateFinExecution: dateFinPrevue,
         joursRestants,
