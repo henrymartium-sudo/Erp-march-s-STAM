@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
-import { requireAuth, canWrite } from "@/lib/utils/permissions";
+import { requireAuth, canWrite, canExport } from "@/lib/utils/permissions";
 import { getCautions } from "@/lib/actions/cautions";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,6 +63,7 @@ export default async function CautionsPage({ searchParams }: CautionsPageProps) 
   const session = await requireAuth();
   const role = (session.user as { role?: string } | undefined)?.role;
   const userCanWrite = canWrite(role);
+  const userCanExport = canExport(role);
   const params = await searchParams;
 
   // Parse page number
@@ -121,7 +122,7 @@ export default async function CautionsPage({ searchParams }: CautionsPageProps) 
         count={pagination.totalItems}
         action={
           <>
-            {userCanWrite && (
+            {userCanExport && (
               <ExportMenu
                 type="cautions"
                 filters={{

@@ -9,7 +9,7 @@ import { getAllMarches } from '@/lib/actions/marches'
 import { searchInFields } from '@/lib/utils/search'
 import { serializeMarche } from '@/lib/utils/serialize'
 import { shouldShowPagination, formatPaginationMessage } from '@/lib/utils/pagination'
-import { canWrite, isExploitation } from '@/lib/utils/permissions'
+import { canWrite, canExport, isExploitation } from '@/lib/utils/permissions'
 import { auth } from '@/lib/auth/auth.config'
 import { Plus } from 'lucide-react'
 import type { StatutMarche, TypeMarche } from '@prisma/client'
@@ -30,6 +30,7 @@ export default async function MarchesPage({ searchParams }: MarchesPageProps) {
   const session = await auth()
   const role = (session?.user as { role?: string } | undefined)?.role
   const userCanWrite = canWrite(role)
+  const userCanExport = canExport(role)
   const userIsExploitation = isExploitation(role)
 
   // Await searchParams (Next.js 15)
@@ -92,7 +93,7 @@ export default async function MarchesPage({ searchParams }: MarchesPageProps) {
         count={paginationData.totalItems}
         action={
           <>
-            {userCanWrite && (
+            {userCanExport && (
               <ExportMenu
                 type="marches"
                 filters={{

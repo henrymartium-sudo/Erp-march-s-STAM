@@ -60,6 +60,15 @@ export function isExploitation(role?: string | null): boolean {
 }
 
 /**
+ * Détermine si un rôle peut exporter des données (PDF / Excel).
+ * ADMIN, AVANCE et VISITEUR peuvent exporter tous les modules.
+ * EXPLOITATION peut uniquement exporter les véhicules (géré au niveau de la page).
+ */
+export function canExport(role?: string | null): boolean {
+  return role === 'ADMIN' || role === 'AVANCE' || role === 'VISITEUR'
+}
+
+/**
  * Détermine si un rôle peut créer/modifier des interventions SAV.
  * ADMIN, AVANCE et EXPLOITATION peuvent écrire dans le SAV.
  */

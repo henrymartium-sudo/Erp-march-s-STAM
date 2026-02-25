@@ -4,7 +4,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/ca
 import { PageHeader } from '@/components/shared/page-header'
 import { DataPagination } from '@/components/ui/data-pagination'
 import { Plus } from 'lucide-react'
-import { requireAuth, canWrite } from '@/lib/utils/permissions'
+import { requireAuth, canWrite, canExport } from '@/lib/utils/permissions'
 import { getAllDocuments } from '@/lib/actions/documents'
 import { shouldShowPagination } from '@/lib/utils/pagination'
 import { DocumentsContent } from './_components/documents-content'
@@ -28,6 +28,7 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
   const session = await requireAuth()
   const role = (session.user as { role?: string } | undefined)?.role
   const userCanWrite = canWrite(role)
+  const userCanExport = canExport(role)
 
   // Await searchParams (Next.js 15)
   const params = await searchParams
@@ -71,7 +72,7 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
         count={pagination.totalItems}
         action={
           <>
-            {userCanWrite && (
+            {userCanExport && (
               <ExportMenu
                 type="documents"
                 filters={{

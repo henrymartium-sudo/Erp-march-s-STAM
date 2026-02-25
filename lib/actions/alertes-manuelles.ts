@@ -18,18 +18,21 @@ import type {
 export type CautionAlert = {
   id: string;
   reference: string;
+  banque?: string;
   type: string;
   montant: number;
   dateEcheance: Date;
   joursRestants: number;
   marcheNumero: string;
   marcheObjet: string;
+  autoriteContractante?: string;
 };
 
 export type MarcheAlert = {
   id: string;
   numero: string;
   objet: string;
+  autoriteContractante?: string;
   montant: number;
   dateFinPrevue: Date;
   joursRestants: number;
@@ -79,6 +82,7 @@ export async function getAlertesActuelles(): Promise<
           select: {
             numero: true,
             objet: true,
+            autoriteContractanteNom: true,
           },
         },
       },
@@ -108,12 +112,14 @@ export async function getAlertesActuelles(): Promise<
       return {
         id: caution.id,
         reference: caution.reference,
+        banque: caution.banqueNom,
         type: caution.type,
         montant: Number(caution.montant),
         dateEcheance: caution.dateEcheance,
         joursRestants,
         marcheNumero: caution.marche?.numero || 'N/A',
         marcheObjet: caution.marche?.objet || 'Aucun marché associé',
+        autoriteContractante: caution.marche?.autoriteContractanteNom ?? undefined,
       };
     });
 
@@ -128,6 +134,7 @@ export async function getAlertesActuelles(): Promise<
         id: marche.id,
         numero: marche.numero,
         objet: marche.objet,
+        autoriteContractante: marche.autoriteContractanteNom,
         montant: Number(marche.montant),
         dateFinPrevue: marche.dateFinPrevue!,
         joursRestants,

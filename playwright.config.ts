@@ -91,8 +91,8 @@ export default defineConfig({
     },
   ],
 
-  // Serveur de développement
-  webServer: {
+  // Serveur de développement (ignoré si on cible une URL distante)
+  webServer: process.env.PLAYWRIGHT_BASE_URL?.startsWith('https://') ? undefined : {
     command: 'npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
