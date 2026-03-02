@@ -31,6 +31,42 @@ const DIGEST_EVENT_TYPES = [
 ] as const
 
 // ============================================================
+// HELPERS
+// ============================================================
+
+/**
+ * Calcule la date d'échéance pertinente selon le statut du marché.
+ *
+ * Pour EN_ATTENTE_LIVRAISON_OS :
+ *   1. dateLivraisonPrevue si renseignée
+ *   2. sinon dateOrdreService + delaiExecution jours
+ *
+ * Pour les autres statuts :
+ *   - dateFinPrevue
+ */
+function getEcheanceLivraison(
+  m: {
+    statut: string
+    dateLivraisonPrevue: Date | null
+    dateOrdreService: Date | null
+    delaiExecution: number
+    dateFinPrevue: Date | null
+  },
+  today: Date
+): Date | null {
+  if (m.statut === "EN_ATTENTE_LIVRAISON_OS") {
+    if (m.dateLivraisonPrevue) return m.dateLivraisonPrevue
+    if (m.dateOrdreService) {
+      const echeance = new Date(m.dateOrdreService)
+      echeance.setDate(echeance.getDate() + m.delaiExecution)
+      return echeance
+    }
+    return null
+  }
+  return m.dateFinPrevue
+}
+
+// ============================================================
 // MAIN EXPORT
 // ============================================================
 
@@ -74,7 +110,21 @@ export async function runDailyAlertsCron(): Promise<{
       OR: [
         { dateFinPrevue: { gte: today, lte: in60Days } },
         { statut: "EN_ATTENTE_LIVRAISON_OS", dateFinPrevue: null },
+        // EN_ATTENTE_LIVRAISON_OS avec dateLivraisonPrevue dans la fenêtre
+        { statut: "EN_ATTENTE_LIVRAISON_OS", dateLivraisonPrevue: { gte: today, lte: in60Days } },
       ],
+    },
+    select: {
+      id: true,
+      numero: true,
+      objet: true,
+      autoriteContractanteNom: true,
+      montant: true,
+      statut: true,
+      dateFinPrevue: true,
+      dateLivraisonPrevue: true,
+      dateOrdreService: true,
+      delaiExecution: true,
     },
   })
 
@@ -93,18 +143,23 @@ export async function runDailyAlertsCron(): Promise<{
     autoriteContractanteNom: c.marche?.autoriteContractanteNom ?? null,
   }))
 
-  const rawMarches: RawMarcheForDigest[] = marchesDb.map((m) => ({
-    id: m.id,
-    reference: m.numero,
-    objet: m.objet,
-    autoriteContractante: m.autoriteContractanteNom ?? null,
-    montant: Number(m.montant),
-    dateFinExecution: m.dateFinPrevue ?? today,
-    joursRestants: m.dateFinPrevue
-      ? Math.ceil((m.dateFinPrevue.getTime() - today.getTime()) / 86400000)
-      : -1,
-    statut: m.statut,
-  }))
+  const rawMarches: RawMarcheForDigest[] = marchesDb.map((m) => {
+    const echeance = getEcheanceLivraison(m, today)
+    const joursRestants = echeance
+      ? Math.ceil((echeance.getTime() - today.getTime()) / 86400000)
+      : null
+    return {
+      id: m.id,
+      reference: m.numero,
+      objet: m.objet,
+      autoriteContractante: m.autoriteContractanteNom ?? null,
+      montant: Number(m.montant),
+      dateFinExecution: echeance ?? today,
+      joursRestants: joursRestants ?? -1,
+      statut: m.statut,
+      echeanceConnue: echeance !== null,
+    }
+  })
 
   // 4. Envoyer le digest consolidé (une seule fois par destinataire)
   await sendConsolidatedDigest(rawCautions, rawMarches)

@@ -36,6 +36,8 @@ export interface RawMarcheForDigest {
   dateFinExecution: Date
   joursRestants: number
   statut: string
+  /** false si aucune échéance n'a pu être calculée (pas de dateLivraisonPrevue ni d'OS) */
+  echeanceConnue?: boolean
 }
 
 // ============================================================
@@ -96,6 +98,7 @@ export function groupAlerts(
       dateFinExecution: m.dateFinExecution,
       joursRestants: m.joursRestants,
       statut: m.statut,
+      echeanceConnue: m.echeanceConnue !== false,
     }))
     .sort((a, b) => a.joursRestants - b.joursRestants)
 

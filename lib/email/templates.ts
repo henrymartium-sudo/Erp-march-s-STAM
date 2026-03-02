@@ -33,6 +33,8 @@ export interface MarcheAlert {
   dateFinExecution: Date;
   joursRestants: number;
   statut: string;
+  /** false = pas d'échéance calculable (affiche "—" dans le tableau) */
+  echeanceConnue?: boolean;
 }
 
 // ============================================================
@@ -242,11 +244,19 @@ function buildCautionsSection(cautions: CautionAlert[]): string {
 function buildMarchesSection(marches: MarcheAlert[]): string {
   const rows = marches
     .map((m) => {
-      const isUrgent    = m.joursRestants <= 15;
+      const echeanceConnue = m.echeanceConnue !== false;
+      const isUrgent    = echeanceConnue && m.joursRestants <= 15;
       const rowBg       = isUrgent ? "#fef2f2" : "#fff7ed";
       const borderLeft  = isUrgent ? "#ef4444" : "#f97316";
       const joursColor  = isUrgent ? "#dc2626" : "#ea580c";
-      const joursLabel  = isUrgent ? `🔴 ${m.joursRestants}j` : `🟠 ${m.joursRestants}j`;
+      const joursLabel  = !echeanceConnue
+        ? "—"
+        : isUrgent
+          ? `🔴 ${m.joursRestants}j`
+          : `🟠 ${m.joursRestants}j`;
+      const dateLabel   = echeanceConnue
+        ? format(m.dateFinExecution, "dd/MM/yyyy")
+        : "—";
 
       return `
         <tr>
@@ -254,7 +264,7 @@ function buildMarchesSection(marches: MarcheAlert[]): string {
           <td style="${tdStyle({ width: MARCHE_COLS[1].width, bg: rowBg })}" title="${m.objet}">${m.objet}</td>
           <td style="${tdStyle({ width: MARCHE_COLS[2].width, bg: rowBg })}">${m.autoriteContractante ?? "—"}</td>
           <td style="${tdStyle({ width: MARCHE_COLS[3].width, bg: rowBg, align: "right" })}">${formatMontant(m.montant)}</td>
-          <td style="${tdStyle({ width: MARCHE_COLS[4].width, bg: rowBg, align: "center" })}">${format(m.dateFinExecution, "dd/MM/yyyy")}</td>
+          <td style="${tdStyle({ width: MARCHE_COLS[4].width, bg: rowBg, align: "center" })}">${dateLabel}</td>
           <td style="${tdStyle({ width: MARCHE_COLS[5].width, bg: rowBg, align: "center", bold: true, color: joursColor })}">${joursLabel}</td>
           <td style="${tdStyle({ width: MARCHE_COLS[6].width, bg: rowBg })}">${m.statut}</td>
         </tr>
