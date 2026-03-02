@@ -96,9 +96,18 @@ export async function processEvent(eventId: string): Promise<void> {
         let result: { success: boolean; log: string }
 
         if (channel === "EMAIL") {
-          const subject = `[ERP Marchés] ${rule.name}`
-          const html = buildSimpleEmailHtml(rule.name, event.type, payload)
-          result = await sendEmailChannel({ to: recipient.email, subject, html })
+          // Si le digest consolidé a déjà traité cet événement côté cron,
+          // on ignore le canal EMAIL pour éviter les doublons.
+          // Les canaux IN_APP et WEBHOOK continuent normalement (fallback intact).
+          if (payload._skipEmail === true) {
+            result = { success: true, log: "skipped:digest_email_sent" }
+          } else {
+            // Fallback : template générique pour les événements non-digest
+            // (ex : MARCHE_STATUS_CHANGED, SAV_TICKET_CREATED, etc.)
+            const subject = `[ERP Marchés] ${rule.name}`
+            const html = buildSimpleEmailHtml(rule.name, event.type, payload)
+            result = await sendEmailChannel({ to: recipient.email, subject, html })
+          }
         } else if (channel === "IN_APP") {
           result = markInAppReady()
         } else if (channel === "WEBHOOK" && rule.webhookUrl) {
