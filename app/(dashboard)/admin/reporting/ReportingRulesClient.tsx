@@ -657,8 +657,9 @@ export function ReportingRulesClient({
         </div>
       )}
 
-      {/* Dialog création/édition */}
+      {/* Dialog création/édition — key force le re-mount lors du switch create↔edit */}
       <ReportingRuleDialog
+        key={editingRule?.id ?? 'new'}
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         rule={editingRule}
