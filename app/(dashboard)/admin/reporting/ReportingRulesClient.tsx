@@ -47,9 +47,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
 import { Plus, Send, Pencil, Trash2, Power } from "lucide-react"
-import { PageHeader } from "@/components/shared/PageHeader"
+import { PageHeader } from "@/components/shared/page-header"
 
 // ============================================================
 // TYPES
@@ -472,12 +471,13 @@ function ReportingRuleDialog({
           </div>
 
           {/* Actif */}
-          <div className="flex items-center gap-3">
-            <Switch
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="isActive"
               checked={form.isActive}
-              onCheckedChange={(v) => patch({ isActive: v })}
+              onCheckedChange={(checked) => patch({ isActive: checked === true })}
             />
-            <Label>Règle active</Label>
+            <Label htmlFor="isActive">Règle active</Label>
           </div>
 
           <DialogFooter>
