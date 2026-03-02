@@ -470,3 +470,21 @@ model AuditLog {
   @@index([action])
   @@map("audit_logs")
 }
+
+// ============================================
+// REPORTING — RÈGLES DE REPORTING EMAIL
+// ============================================
+
+model ReportingRule {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  statutGroups    String[]   // StatutMarche[] — statuts inclus dans cette règle
+  recipientEmails String[]   // Emails destinataires
+  scheduleConfig  Json?      // ReportingScheduleConfig | null (null = MANUAL)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("reporting_rules")
+}
