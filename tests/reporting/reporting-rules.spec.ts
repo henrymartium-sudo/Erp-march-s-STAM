@@ -371,7 +371,7 @@ test.describe('Reporting — CRUD', () => {
     await page.locator('[role="dialog"] button[type="submit"]').click();
 
     // Toast succès
-    await expect(page.locator('[data-sonner-toast]').first().or(page.getByText('Règle créée').first())).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-sonner-toast]').first()).toBeVisible({ timeout: 10000 });
 
     // Règle dans la liste
     await page.waitForLoadState('networkidle');
@@ -407,7 +407,7 @@ test.describe('Reporting — CRUD', () => {
 
     // Soumettre
     await page.locator('[role="dialog"] button[type="submit"]').click();
-    await expect(page.getByText('Règle créée').first().or(page.locator('[data-sonner-toast]').first())).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-sonner-toast]').first()).toBeVisible({ timeout: 10000 });
 
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(500);
@@ -441,7 +441,7 @@ test.describe('Reporting — CRUD', () => {
 
     // Soumettre
     await page.locator('[role="dialog"] button[type="submit"]').click();
-    await expect(page.getByText('Règle mise à jour').first().or(page.locator('[data-sonner-toast]').first())).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-sonner-toast]').first()).toBeVisible({ timeout: 10000 });
 
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(500);
@@ -554,7 +554,7 @@ test.describe('Reporting — CRUD', () => {
     await page.locator('[role="alertdialog"]').getByRole('button', { name: 'Supprimer', exact: true }).click();
 
     // Toast
-    await expect(page.getByText('Règle supprimée').first().or(page.locator('[data-sonner-toast]').first())).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-sonner-toast]').first()).toBeVisible({ timeout: 10000 });
 
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(500);
