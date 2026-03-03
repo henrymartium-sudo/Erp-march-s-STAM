@@ -20,6 +20,7 @@ export const AUDIT_ENTITY = {
   AUTH:         'AUTH',
   EXPORT:       'EXPORT',
   FACTURE:      'FACTURE',
+  OPPORTUNITE:  'OPPORTUNITE',
 } as const
 
 export type AuditEntity = typeof AUDIT_ENTITY[keyof typeof AUDIT_ENTITY]
@@ -34,6 +35,7 @@ export const ENTITY_LABELS: Record<string, string> = {
   AUTH:         'Authentification',
   EXPORT:       'Export',
   FACTURE:      'Facture',
+  OPPORTUNITE:  'Opportunité',
 }
 
 export const ACTION_LABELS: Record<string, string> = {

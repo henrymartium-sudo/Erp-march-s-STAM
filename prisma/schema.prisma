@@ -29,6 +29,7 @@ model User {
   auditLogs            AuditLog[]
   historiqueStatuts    HistoriqueStatut[]
   savedFilters         SavedFilter[]
+  opportunites         Opportunite[]
 
   @@map("users")
 }
@@ -121,6 +122,7 @@ model Marche {
   marcheVehicules     MarcheVehicule[]
   historiqueStatuts   HistoriqueStatut[]
   factures            Facture[]
+  opportunites        Opportunite[]
 
   @@map("marches")
   @@index([dateFinPrevue])
@@ -560,4 +562,42 @@ model SavedFilter {
 
   @@index([userId, module])
   @@map("saved_filters")
+}
+
+// ============================================
+// OPPORTUNITÉS (VEILLE MARCHÉS)
+// ============================================
+
+enum StatutOpportunite {
+  IDENTIFIEE
+  EN_ANALYSE
+  GO
+  NO_GO
+  SOUMISE
+  GAGNEE
+  PERDUE
+}
+
+model Opportunite {
+  id                   String            @id @default(cuid())
+  reference            String?
+  objet                String
+  autoriteContractante String
+  montantEstime        Decimal?          @db.Decimal(15, 2)
+  datePublication      DateTime?
+  dateLimite           DateTime?
+  statut               StatutOpportunite @default(IDENTIFIEE)
+  probabiliteGain      Int?              // 0-100
+  notes                String?           @db.Text
+  marcheId             String?
+  marche               Marche?           @relation(fields: [marcheId], references: [id], onDelete: SetNull)
+  userId               String
+  user                 User              @relation(fields: [userId], references: [id])
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  @@index([statut])
+  @@index([dateLimite])
+  @@index([userId])
+  @@map("opportunites")
 }
