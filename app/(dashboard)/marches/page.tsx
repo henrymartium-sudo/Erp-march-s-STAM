@@ -6,13 +6,11 @@ import { MarcheFilters } from '@/components/marches/marche-filters'
 import { MarchePagination } from '@/components/marches/marche-pagination'
 import { ExportMenu } from '@/components/exports'
 import { getAllMarches } from '@/lib/actions/marches'
-import { searchInFields } from '@/lib/utils/search'
 import { serializeMarche } from '@/lib/utils/serialize'
-import { shouldShowPagination, formatPaginationMessage } from '@/lib/utils/pagination'
+import { shouldShowPagination } from '@/lib/utils/pagination'
 import { canWrite, canExport, isExploitation } from '@/lib/utils/permissions'
 import { auth } from '@/lib/auth/auth.config'
 import { Plus } from 'lucide-react'
-import type { StatutMarche, TypeMarche } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,6 +19,10 @@ interface MarchesPageProps {
     statut?: string
     type?: string
     search?: string
+    montantMin?: string
+    montantMax?: string
+    dateCreationDebut?: string
+    dateCreationFin?: string
     page?: string
   }>
 }
@@ -40,49 +42,25 @@ export default async function MarchesPage({ searchParams }: MarchesPageProps) {
   const currentPage = Number(params.page) || 1
 
   // EXPLOITATION : forcer le filtre EN_EXECUTION
-  const statutFilter = userIsExploitation
-    ? 'EN_EXECUTION'
-    : (params.statut as StatutMarche | undefined)
+  const statutFilter = userIsExploitation ? 'EN_EXECUTION' : params.statut
 
-  // Récupérer les marchés avec pagination (backend)
+  // Récupérer les marchés avec tous les filtres (backend)
   const marchesResponse = await getAllMarches({
-    statut: statutFilter as StatutMarche | undefined,
-    type: params.type as TypeMarche | undefined,
+    statut: statutFilter,
+    type: params.type,
+    search: params.search,
+    montantMin: params.montantMin,
+    montantMax: params.montantMax,
+    dateCreationDebut: params.dateCreationDebut,
+    dateCreationFin: params.dateCreationFin,
     page: currentPage,
   })
 
   // Sérialiser les marchés pour les Client Components
-  let marchesFiltres = marchesResponse.data.map(serializeMarche)
+  const marchesFiltres = marchesResponse.data.map(serializeMarche)
 
-  // Appliquer la recherche textuelle côté client (fonctionnalité existante à préserver)
-  // Note: La recherche côté client désactive la pagination backend
-  if (params.search) {
-    // Récupérer TOUS les marchés pour la recherche
-    const allMarchesResponse = await getAllMarches({
-      statut: statutFilter as StatutMarche | undefined,
-      type: params.type as TypeMarche | undefined,
-      limit: 10000, // Récupérer tout
-    })
-
-    marchesFiltres = allMarchesResponse.data
-      .map(serializeMarche)
-      .filter((marche) =>
-        searchInFields(
-          marche,
-          ['numero', 'objet', 'autoriteContractanteNom'],
-          params.search!
-        )
-      )
-  }
-
-  // Pagination metadata (ajustée si recherche active)
-  const paginationData = params.search
-    ? {
-        ...marchesResponse.pagination,
-        totalItems: marchesFiltres.length,
-        totalPages: Math.ceil(marchesFiltres.length / marchesResponse.pagination.itemsPerPage),
-      }
-    : marchesResponse.pagination
+  // Pagination metadata (toujours depuis le backend)
+  const paginationData = marchesResponse.pagination
 
   return (
     <div className="space-y-6">

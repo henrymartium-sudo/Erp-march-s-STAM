@@ -27,6 +27,9 @@ model User {
   alertNotifications   AlertNotification[]
   identifiers          UserIdentifier[]
   auditLogs            AuditLog[]
+  historiqueStatuts    HistoriqueStatut[]
+  savedFilters         SavedFilter[]
+  opportunites         Opportunite[]
 
   @@map("users")
 }
@@ -117,6 +120,10 @@ model Marche {
   cautions            Caution[]
   documents           Document[]
   marcheVehicules     MarcheVehicule[]
+  historiqueStatuts   HistoriqueStatut[]
+  factures            Facture[]
+  opportunites        Opportunite[]
+  dossiers            DossierOffre[]
 
   @@map("marches")
   @@index([dateFinPrevue])
@@ -145,6 +152,22 @@ enum TypeMarche {
   FOURNITURES
   SERVICES
   PRESTATIONS_INTELLECTUELLES
+}
+
+model HistoriqueStatut {
+  id            String       @id @default(cuid())
+  marcheId      String
+  marche        Marche       @relation(fields: [marcheId], references: [id], onDelete: Cascade)
+  ancienStatut  StatutMarche
+  nouveauStatut StatutMarche
+  commentaire   String?      @db.Text
+  userId        String
+  user          User         @relation(fields: [userId], references: [id])
+  createdAt     DateTime     @default(now())
+
+  @@index([marcheId])
+  @@index([createdAt])
+  @@map("historique_statuts")
 }
 
 model Caution {
@@ -487,4 +510,144 @@ model ReportingRule {
   updatedAt       DateTime @updatedAt
 
   @@map("reporting_rules")
+}
+
+// ============================================
+// FACTURATION
+// ============================================
+
+enum StatutFacture {
+  BROUILLON
+  EMISE
+  EN_ATTENTE
+  PAYEE
+  REJETEE
+  ANNULEE
+}
+
+model Facture {
+  id            String        @id @default(cuid())
+  numero        String        @unique
+  marcheId      String
+  marche        Marche        @relation(fields: [marcheId], references: [id], onDelete: Cascade)
+  montantHT     Decimal       @db.Decimal(15, 2)
+  tva           Decimal       @default(18) @db.Decimal(5, 2)
+  montantTTC    Decimal       @db.Decimal(15, 2)
+  statut        StatutFacture @default(BROUILLON)
+  dateEmission  DateTime?
+  dateEcheance  DateTime?
+  datePaiement  DateTime?
+  reference     String?       // Référence bon de commande ou autre
+  notes         String?       @db.Text
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([marcheId])
+  @@index([statut])
+  @@index([dateEcheance])
+  @@map("factures")
+}
+
+// ============================================
+// FILTRES AVANCÉS SAUVEGARDÉS
+// ============================================
+
+model SavedFilter {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nom       String
+  module    String   // "marches" | "cautions" | "vehicules"
+  filtres   Json     // Objet JSON des paramètres de filtre
+  createdAt DateTime @default(now())
+
+  @@index([userId, module])
+  @@map("saved_filters")
+}
+
+// ============================================
+// OPPORTUNITÉS (VEILLE MARCHÉS)
+// ============================================
+
+enum StatutOpportunite {
+  IDENTIFIEE
+  EN_ANALYSE
+  GO
+  NO_GO
+  SOUMISE
+  GAGNEE
+  PERDUE
+}
+
+model Opportunite {
+  id                   String            @id @default(cuid())
+  reference            String?
+  objet                String
+  autoriteContractante String
+  montantEstime        Decimal?          @db.Decimal(15, 2)
+  datePublication      DateTime?
+  dateLimite           DateTime?
+  statut               StatutOpportunite @default(IDENTIFIEE)
+  probabiliteGain      Int?              // 0-100
+  notes                String?           @db.Text
+  marcheId             String?
+  marche               Marche?           @relation(fields: [marcheId], references: [id], onDelete: SetNull)
+  userId               String
+  user                 User              @relation(fields: [userId], references: [id])
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  dossiers             DossierOffre[]
+
+  @@index([statut])
+  @@index([dateLimite])
+  @@index([userId])
+  @@map("opportunites")
+}
+
+// ============================================
+// MONTAGE DE L'OFFRE
+// ============================================
+
+enum StatutPiece {
+  ABSENT
+  INCOMPLET
+  COMPLET
+  VALIDE
+}
+
+model DossierOffre {
+  id            String       @id @default(cuid())
+  titre         String
+  opportuniteId String?
+  marcheId      String?
+  dateDepot     DateTime?
+  statut        String       @default("EN_COURS") // EN_COURS | SOUMIS | ARCHIVE
+  progression   Int          @default(0)          // 0-100, calculé et mis à jour à chaque modif pièce
+  notes         String?      @db.Text
+  pieces        PieceOffre[]
+  opportunite   Opportunite? @relation(fields: [opportuniteId], references: [id], onDelete: SetNull)
+  marche        Marche?      @relation(fields: [marcheId], references: [id], onDelete: SetNull)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([opportuniteId])
+  @@index([marcheId])
+  @@map("dossiers_offre")
+}
+
+model PieceOffre {
+  id          String       @id @default(cuid())
+  dossierId   String
+  dossier     DossierOffre @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  nom         String
+  description String?
+  statut      StatutPiece  @default(ABSENT)
+  obligatoire Boolean      @default(true)
+  ordre       Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([dossierId])
+  @@map("pieces_offre")
 }

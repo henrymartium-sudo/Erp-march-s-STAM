@@ -13,6 +13,7 @@ import { ZodError } from 'zod'
 import type { PaginatedResponse } from '@/types/pagination'
 import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
 import { publishEvent } from '@/lib/alertes/engine/publish-event'
+import { buildMarcheWhere, type MarcheFilterParams } from '@/lib/utils/filters'
 import { ALERT_EVENT_TYPES } from '@/lib/alertes/types'
 import { logAction } from '@/lib/audit/logAction'
 import { AUDIT_ACTION, AUDIT_ENTITY } from '@/lib/audit/constants'
@@ -124,7 +125,7 @@ export async function updateMarche(data: unknown): Promise<ActionResult<Marche>>
 
     // 2. Validation avec Zod
     const validatedData = updateMarcheSchema.parse(data)
-    const { id, vehiculeIds, ...updateData } = validatedData
+    const { id, vehiculeIds, commentaireStatut, ...updateData } = validatedData
 
     // 3. Validation du workflow de statut
     let ancienStatut: StatutMarche | undefined
@@ -189,7 +190,20 @@ export async function updateMarche(data: unknown): Promise<ActionResult<Marche>>
       metadata:   { numero: marche.numero, statut: marche.statut },
     })
 
-    // 8. Publier l'événement si le statut a changé
+    // 8. Enregistrer l'historique du statut si changement
+    if (ancienStatut && updateData.statut && ancienStatut !== updateData.statut) {
+      await prisma.historiqueStatut.create({
+        data: {
+          marcheId: id,
+          ancienStatut,
+          nouveauStatut: updateData.statut,
+          commentaire: commentaireStatut || null,
+          userId: session.user.id,
+        },
+      })
+    }
+
+    // 9. Publier l'événement si le statut a changé
     if (ancienStatut && updateData.statut && ancienStatut !== updateData.statut) {
       await publishEvent(ALERT_EVENT_TYPES.MARCHE_STATUS_CHANGED, 'marches', marche.id, {
         ancienStatut,
@@ -352,11 +366,12 @@ export async function getMarcheById(id: string): Promise<Marche | null> {
 // READ (Multiple with filters)
 // ============================================================================
 
-export interface GetMarchesOptions {
-  statut?: StatutMarche
-  type?: TypeMarche
+export interface GetMarchesOptions extends MarcheFilterParams {
   page?: number
   limit?: number
+  // Compatibilité : accepte aussi les enum directement (pour appels internes)
+  statut?: StatutMarche | string
+  type?: TypeMarche | string
 }
 
 export async function getAllMarches(
@@ -366,16 +381,13 @@ export async function getAllMarches(
     // Vérification d'authentification (lecture accessible à tous les utilisateurs connectés)
     await requireAuth()
 
-    const { statut, type, page, limit } = options
+    const { page, limit, ...filterParams } = options
 
     // Calcul skip/take pour Prisma
     const { skip, take } = getPrismaSkipTake({ page, limit })
 
-    // Construction des filtres
-    const where = {
-      ...(statut && { statut }),
-      ...(type && { type }),
-    }
+    // Construction des filtres via buildMarcheWhere
+    const where = buildMarcheWhere(filterParams as MarcheFilterParams)
 
     // Exécution parallèle : données + count
     const [marches, total] = await Promise.all([
@@ -505,5 +517,39 @@ export async function getMarchesStats(): Promise<ActionResult<MarchesStats>> {
       success: false,
       error: 'Erreur lors de la récupération des statistiques',
     }
+  }
+}
+
+// ============================================================================
+// HISTORIQUE STATUTS
+// ============================================================================
+
+export type HistoriqueStatutWithUser = {
+  id: string
+  marcheId: string
+  ancienStatut: StatutMarche
+  nouveauStatut: StatutMarche
+  commentaire: string | null
+  userId: string
+  createdAt: Date
+  user: { name: string; email: string }
+}
+
+export async function getHistoriqueStatuts(marcheId: string): Promise<HistoriqueStatutWithUser[]> {
+  try {
+    await requireAuth()
+    const historique = await prisma.historiqueStatut.findMany({
+      where: { marcheId },
+      include: {
+        user: {
+          select: { name: true, email: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+    return historique as HistoriqueStatutWithUser[]
+  } catch (error) {
+    console.error('Erreur lors de la récupération de l\'historique:', error)
+    return []
   }
 }

@@ -11,6 +11,8 @@ import { EffectiveRevenueChart } from '@/components/dashboard/effective-revenue-
 import { AlertsSection } from '@/components/dashboard/alerts-section'
 import { RecentActivity } from '@/components/dashboard/recent-activity'
 import { QuickActions } from '@/components/dashboard/quick-actions'
+import { getOpportunitesStats } from '@/lib/actions/opportunites'
+import { OpportunitesWidget } from '@/components/dashboard/opportunites-widget'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,6 +30,7 @@ export default async function DashboardPage() {
     statutDistribution,
     montantsMensuels,
     caEffectif,
+    opportunitesStatsResult,
   ] = await Promise.all([
     getMarchesStats(),
     getCautionsStats(),
@@ -35,6 +38,7 @@ export default async function DashboardPage() {
     getStatutDistribution(),
     getMontantsMensuels(),
     getCAEffectif(),
+    getOpportunitesStats(),
   ])
 
   // Gérer les erreurs de récupération
@@ -98,6 +102,10 @@ export default async function DashboardPage() {
         enService: 0,
       }
 
+  const opportunitesStats = opportunitesStatsResult.success
+    ? opportunitesStatsResult.data
+    : { total: 0, parStatut: {} }
+
   return (
     <div className="space-y-6">
       {/* KPIs principaux */}
@@ -112,6 +120,9 @@ export default async function DashboardPage() {
 
       {/* Actions rapides */}
       <QuickActions />
+
+      {/* Pipeline Opportunités */}
+      <OpportunitesWidget total={opportunitesStats.total} parStatut={opportunitesStats.parStatut} />
 
       {/* Graphiques de répartition */}
       <StatusCharts
