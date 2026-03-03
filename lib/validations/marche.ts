@@ -152,6 +152,9 @@ const baseMarcheSchema = z.object({
 
   // Véhicules associés (many-to-many)
   vehiculeIds: z.array(z.string()).optional(),
+
+  // Commentaire optionnel lors d'un changement de statut
+  commentaireStatut: z.string().optional().nullable(),
 })
 
 // Schéma avec refinements pour la validation complète
