@@ -439,6 +439,29 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
                 )}
               />
             </div>
+
+            {/* Commentaire de changement de statut (mode édition seulement, quand statut change) */}
+            {isEditing && currentStatut !== initialStatut && (
+              <FormField
+                control={form.control}
+                name="commentaireStatut"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Commentaire du changement de statut <span className="text-muted-foreground font-normal">(optionnel)</span></FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Motif ou contexte du changement de statut..."
+                        className="resize-none"
+                        rows={2}
+                        {...field}
+                        value={field.value ?? ''}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
           </div>
 
           {/* Section : Dates et délais */}

@@ -27,6 +27,8 @@ model User {
   alertNotifications   AlertNotification[]
   identifiers          UserIdentifier[]
   auditLogs            AuditLog[]
+  historiqueStatuts    HistoriqueStatut[]
+  savedFilters         SavedFilter[]
 
   @@map("users")
 }
@@ -117,6 +119,7 @@ model Marche {
   cautions            Caution[]
   documents           Document[]
   marcheVehicules     MarcheVehicule[]
+  historiqueStatuts   HistoriqueStatut[]
 
   @@map("marches")
   @@index([dateFinPrevue])
@@ -145,6 +148,22 @@ enum TypeMarche {
   FOURNITURES
   SERVICES
   PRESTATIONS_INTELLECTUELLES
+}
+
+model HistoriqueStatut {
+  id            String       @id @default(cuid())
+  marcheId      String
+  marche        Marche       @relation(fields: [marcheId], references: [id], onDelete: Cascade)
+  ancienStatut  StatutMarche
+  nouveauStatut StatutMarche
+  commentaire   String?      @db.Text
+  userId        String
+  user          User         @relation(fields: [userId], references: [id])
+  createdAt     DateTime     @default(now())
+
+  @@index([marcheId])
+  @@index([createdAt])
+  @@map("historique_statuts")
 }
 
 model Caution {
@@ -487,4 +506,21 @@ model ReportingRule {
   updatedAt       DateTime @updatedAt
 
   @@map("reporting_rules")
+}
+
+// ============================================
+// FILTRES AVANCÉS SAUVEGARDÉS
+// ============================================
+
+model SavedFilter {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nom       String
+  module    String   // "marches" | "cautions" | "vehicules"
+  filtres   Json     // Objet JSON des paramètres de filtre
+  createdAt DateTime @default(now())
+
+  @@index([userId, module])
+  @@map("saved_filters")
 }

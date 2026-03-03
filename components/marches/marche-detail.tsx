@@ -7,6 +7,7 @@ import { StatutBadge } from './statut-badge'
 import { DeleteMarcheDialog } from './delete-marche-dialog'
 import { MarcheDocumentsSection } from './marche-documents-section'
 import { MarcheCautionsSection } from './marche-cautions-section'
+import { MarcheHistoriqueStatuts } from './marche-historique-statuts'
 import { formatMontant, formatDateLong, formatDelai } from '@/lib/utils/format'
 import { Pencil, Truck } from 'lucide-react'
 
@@ -479,6 +480,9 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
 
       {/* Section Cautions */}
       <MarcheCautionsSection marcheId={marche.id} />
+
+      {/* Section Historique Statuts */}
+      <MarcheHistoriqueStatuts marcheId={marche.id} />
 
     </div>
   )
