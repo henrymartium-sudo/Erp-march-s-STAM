@@ -21,6 +21,7 @@ import {
   ClipboardList,
   BarChart2,
   Receipt,
+  Target,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -55,6 +56,7 @@ const navItems = [
   { href: '/vehicules',             label: 'Véhicules',    icon: Car },
   { href: '/vehicules/sav',         label: 'SAV',          icon: Wrench },
   { href: '/factures',              label: 'Facturation',  icon: Receipt },
+  { href: '/opportunites',          label: 'Opportunités', icon: Target },
   { href: '/documents',             label: 'Documents',    icon: FolderOpen },
   { href: '/admin/alertes',         label: 'Alertes',      icon: Bell },
   { href: '/admin/utilisateurs',    label: 'Utilisateurs', icon: Users, roles: ['ADMIN'] },
@@ -69,6 +71,7 @@ const pageTitles: Record<string, string> = {
   '/vehicules':          'Véhicules',
   '/vehicules/sav':      'SAV — Vue globale',
   '/factures':           'Facturation',
+  '/opportunites':       'Opportunités',
   '/documents':          'Documents',
   '/admin/alertes':      'Alertes & Notifications',
   '/admin/utilisateurs': 'Gestion des utilisateurs',
