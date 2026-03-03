@@ -9,6 +9,7 @@ import { MarcheDocumentsSection } from './marche-documents-section'
 import { MarcheCautionsSection } from './marche-cautions-section'
 import { MarcheHistoriqueStatuts } from './marche-historique-statuts'
 import { MarcheFacturesSection } from './marche-factures-section'
+import { MarcheDossiersSection } from './marche-dossiers-section'
 import { formatMontant, formatDateLong, formatDelai } from '@/lib/utils/format'
 import { Pencil, Truck } from 'lucide-react'
 
@@ -481,6 +482,9 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
 
       {/* Section Cautions */}
       <MarcheCautionsSection marcheId={marche.id} />
+
+      {/* Section Dossiers d'offre */}
+      <MarcheDossiersSection marcheId={marche.id} canWrite={canWrite} />
 
       {/* Section Facturation */}
       <MarcheFacturesSection

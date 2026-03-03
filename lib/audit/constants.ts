@@ -19,8 +19,9 @@ export const AUDIT_ENTITY = {
   ALERT_RULE:   'ALERT_RULE',
   AUTH:         'AUTH',
   EXPORT:       'EXPORT',
-  FACTURE:      'FACTURE',
-  OPPORTUNITE:  'OPPORTUNITE',
+  FACTURE:        'FACTURE',
+  OPPORTUNITE:    'OPPORTUNITE',
+  DOSSIER_OFFRE:  'DOSSIER_OFFRE',
 } as const
 
 export type AuditEntity = typeof AUDIT_ENTITY[keyof typeof AUDIT_ENTITY]
@@ -34,8 +35,9 @@ export const ENTITY_LABELS: Record<string, string> = {
   ALERT_RULE:   'Règle d\'alerte',
   AUTH:         'Authentification',
   EXPORT:       'Export',
-  FACTURE:      'Facture',
-  OPPORTUNITE:  'Opportunité',
+  FACTURE:        'Facture',
+  OPPORTUNITE:    'Opportunité',
+  DOSSIER_OFFRE:  'Dossier d\'offre',
 }
 
 export const ACTION_LABELS: Record<string, string> = {
