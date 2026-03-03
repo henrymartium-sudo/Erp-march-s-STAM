@@ -123,6 +123,7 @@ model Marche {
   historiqueStatuts   HistoriqueStatut[]
   factures            Facture[]
   opportunites        Opportunite[]
+  dossiers            DossierOffre[]
 
   @@map("marches")
   @@index([dateFinPrevue])
@@ -596,8 +597,57 @@ model Opportunite {
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
 
+  dossiers             DossierOffre[]
+
   @@index([statut])
   @@index([dateLimite])
   @@index([userId])
   @@map("opportunites")
+}
+
+// ============================================
+// MONTAGE DE L'OFFRE
+// ============================================
+
+enum StatutPiece {
+  ABSENT
+  INCOMPLET
+  COMPLET
+  VALIDE
+}
+
+model DossierOffre {
+  id            String       @id @default(cuid())
+  titre         String
+  opportuniteId String?
+  marcheId      String?
+  dateDepot     DateTime?
+  statut        String       @default("EN_COURS") // EN_COURS | SOUMIS | ARCHIVE
+  progression   Int          @default(0)          // 0-100, calculé et mis à jour à chaque modif pièce
+  notes         String?      @db.Text
+  pieces        PieceOffre[]
+  opportunite   Opportunite? @relation(fields: [opportuniteId], references: [id], onDelete: SetNull)
+  marche        Marche?      @relation(fields: [marcheId], references: [id], onDelete: SetNull)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([opportuniteId])
+  @@index([marcheId])
+  @@map("dossiers_offre")
+}
+
+model PieceOffre {
+  id          String       @id @default(cuid())
+  dossierId   String
+  dossier     DossierOffre @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  nom         String
+  description String?
+  statut      StatutPiece  @default(ABSENT)
+  obligatoire Boolean      @default(true)
+  ordre       Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([dossierId])
+  @@map("pieces_offre")
 }
