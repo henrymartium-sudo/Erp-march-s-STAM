@@ -19,6 +19,7 @@ export const AUDIT_ENTITY = {
   ALERT_RULE:   'ALERT_RULE',
   AUTH:         'AUTH',
   EXPORT:       'EXPORT',
+  FACTURE:      'FACTURE',
 } as const
 
 export type AuditEntity = typeof AUDIT_ENTITY[keyof typeof AUDIT_ENTITY]
@@ -32,6 +33,7 @@ export const ENTITY_LABELS: Record<string, string> = {
   ALERT_RULE:   'Règle d\'alerte',
   AUTH:         'Authentification',
   EXPORT:       'Export',
+  FACTURE:      'Facture',
 }
 
 export const ACTION_LABELS: Record<string, string> = {

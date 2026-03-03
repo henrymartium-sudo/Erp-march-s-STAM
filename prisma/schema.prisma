@@ -120,6 +120,7 @@ model Marche {
   documents           Document[]
   marcheVehicules     MarcheVehicule[]
   historiqueStatuts   HistoriqueStatut[]
+  factures            Facture[]
 
   @@map("marches")
   @@index([dateFinPrevue])
@@ -506,6 +507,42 @@ model ReportingRule {
   updatedAt       DateTime @updatedAt
 
   @@map("reporting_rules")
+}
+
+// ============================================
+// FACTURATION
+// ============================================
+
+enum StatutFacture {
+  BROUILLON
+  EMISE
+  EN_ATTENTE
+  PAYEE
+  REJETEE
+  ANNULEE
+}
+
+model Facture {
+  id            String        @id @default(cuid())
+  numero        String        @unique
+  marcheId      String
+  marche        Marche        @relation(fields: [marcheId], references: [id], onDelete: Cascade)
+  montantHT     Decimal       @db.Decimal(15, 2)
+  tva           Decimal       @default(18) @db.Decimal(5, 2)
+  montantTTC    Decimal       @db.Decimal(15, 2)
+  statut        StatutFacture @default(BROUILLON)
+  dateEmission  DateTime?
+  dateEcheance  DateTime?
+  datePaiement  DateTime?
+  reference     String?       // Référence bon de commande ou autre
+  notes         String?       @db.Text
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([marcheId])
+  @@index([statut])
+  @@index([dateEcheance])
+  @@map("factures")
 }
 
 // ============================================
