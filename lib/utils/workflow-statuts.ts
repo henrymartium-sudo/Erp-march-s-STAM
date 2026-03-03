@@ -44,3 +44,38 @@ export function getAvailableStatuts(from: StatutMarche): StatutMarche[] {
 export function isTerminal(statut: StatutMarche): boolean {
   return TRANSITIONS[statut].length === 0
 }
+
+/**
+ * Statuts nécessitant un commentaire obligatoire lors de la transition.
+ */
+export const COMMENTAIRE_OBLIGATOIRE: StatutMarche[] = [
+  'RESILIE',
+  'ANNULE',
+  'INFRUCTUEUX',
+  'CLOTURE',
+]
+
+/**
+ * Séquence du chemin principal (hors terminaux latéraux).
+ */
+export const CHEMIN_PRINCIPAL: StatutMarche[] = [
+  'OPPORTUNITE_IDENTIFIEE',
+  'DOSSIER_EN_PREPARATION',
+  'OFFRE_DEPOSEE',
+  'EN_ATTENTE_ATTRIBUTION',
+  'ATTRIBUE_PROVISOIREMENT',
+  'ATTRIBUE_DEFINITIVEMENT',
+  'EN_ATTENTE_LIVRAISON_OS',
+  'EN_EXECUTION',
+  'EXECUTE_ATTENTE_GARANTIES',
+  'CLOTURE',
+]
+
+/**
+ * Statuts terminaux "latéraux" (branches hors chemin principal).
+ */
+export const TERMINAUX_LATERAUX: StatutMarche[] = [
+  'RESILIE',
+  'ANNULE',
+  'INFRUCTUEUX',
+]
