@@ -8,6 +8,7 @@ import { DeleteMarcheDialog } from './delete-marche-dialog'
 import { MarcheDocumentsSection } from './marche-documents-section'
 import { MarcheCautionsSection } from './marche-cautions-section'
 import { MarcheHistoriqueStatuts } from './marche-historique-statuts'
+import { MarcheFacturesSection } from './marche-factures-section'
 import { formatMontant, formatDateLong, formatDelai } from '@/lib/utils/format'
 import { Pencil, Truck } from 'lucide-react'
 
@@ -480,6 +481,13 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
 
       {/* Section Cautions */}
       <MarcheCautionsSection marcheId={marche.id} />
+
+      {/* Section Facturation */}
+      <MarcheFacturesSection
+        marcheId={marche.id}
+        marcheNumero={marche.numero}
+        canWrite={canWrite}
+      />
 
       {/* Section Historique Statuts */}
       <MarcheHistoriqueStatuts marcheId={marche.id} />
