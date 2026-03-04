@@ -72,8 +72,8 @@ export const createDossierOffreSchema = z.object({
     .min(1, 'Le titre est requis')
     .max(300, 'Le titre ne peut pas dépasser 300 caractères'),
 
-  opportuniteId: z.string().optional().nullable(),
-  marcheId:      z.string().optional().nullable(),
+  opportuniteId: z.preprocess((val) => (val === '' ? null : val), z.string().optional().nullable()),
+  marcheId:      z.preprocess((val) => (val === '' ? null : val), z.string().optional().nullable()),
   dateDepot:     z.preprocess(preprocessDate, z.date().optional().nullable()),
   statut:        statutDossierEnum.default('EN_COURS'),
   notes:         z.string().optional().nullable(),
