@@ -1,9 +1,14 @@
+'use client'
+
+import { useState } from 'react'
 import Link from 'next/link'
+import { StatutMarche } from '@prisma/client'
 import type { SerializedMarche } from '@/types/serialized'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { StatutBadge } from './statut-badge'
+import { StatutChangerButton } from './statut-changer-button'
 import { DeleteMarcheDialog } from './delete-marche-dialog'
 import { MarcheDocumentsSection } from './marche-documents-section'
 import { MarcheCautionsSection } from './marche-cautions-section'
@@ -26,6 +31,8 @@ const TYPE_LABELS = {
 }
 
 export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
+  const [currentStatut, setCurrentStatut] = useState<StatutMarche>(marche.statut)
+
   return (
     <div className="space-y-6">
       {/* Header 2 colonnes : identité + statut/actions */}
@@ -42,9 +49,14 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <StatutBadge statut={marche.statut} size="lg" />
+          <StatutBadge statut={currentStatut} size="lg" />
           {canWrite && (
             <>
+              <StatutChangerButton
+                marcheId={marche.id}
+                currentStatut={currentStatut}
+                onStatutChanged={setCurrentStatut}
+              />
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/marches/${marche.id}/edit`}>
                   <Pencil className="h-4 w-4 mr-1.5" />
@@ -203,11 +215,11 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
         marche.montantOffreConcurrent) && (
         <Card
           className={
-            marche.statut === 'RESILIE'
+            currentStatut === 'RESILIE'
               ? 'border-red-200 bg-red-50/50'
-              : marche.statut === 'ANNULE'
+              : currentStatut === 'ANNULE'
               ? 'border-gray-300 bg-gray-50/50'
-              : marche.statut === 'INFRUCTUEUX'
+              : currentStatut === 'INFRUCTUEUX'
               ? 'border-orange-200 bg-orange-50/50'
               : ''
           }
