@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -24,6 +25,7 @@ interface DossierDeleteButtonProps {
 
 export function DossierDeleteButton({ id, titre }: DossierDeleteButtonProps) {
   const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
   async function handleDelete() {
     setLoading(true)
@@ -31,6 +33,7 @@ export function DossierDeleteButton({ id, titre }: DossierDeleteButtonProps) {
     setLoading(false)
     if (result.success) {
       toast.success('Dossier supprimé')
+      router.push('/dossiers-offre')
     } else {
       toast.error(result.error ?? 'Erreur lors de la suppression')
     }
@@ -39,7 +42,7 @@ export function DossierDeleteButton({ id, titre }: DossierDeleteButtonProps) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+        <Button variant="ghost" size="icon" aria-label="Supprimer" className="text-destructive hover:text-destructive">
           <Trash2 className="h-4 w-4" />
         </Button>
       </AlertDialogTrigger>
