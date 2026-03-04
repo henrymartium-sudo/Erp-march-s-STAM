@@ -10,7 +10,6 @@ import { DossierDeleteButton } from '@/components/dossiers-offre/dossier-delete-
 import { getDossierOffre } from '@/lib/actions/dossiers-offre'
 import { requireAuth, canWrite } from '@/lib/utils/permissions'
 import { STATUT_DOSSIER_LABELS, STATUT_DOSSIER_COLORS } from '@/lib/validations/dossier-offre'
-import type { PieceOffre } from '@prisma/client'
 import { Pencil } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -83,7 +82,7 @@ export default async function DossierDetailPage({ params }: PageProps) {
           <div>
             <p className="text-xs text-muted-foreground">Pièces complètes</p>
             <p className="text-sm font-medium mt-1">
-              {dossier.pieces.filter((p: PieceOffre) => p.statut === 'COMPLET' || p.statut === 'VALIDE').length}
+              {dossier.pieces.filter((p: { statut: string }) => p.statut === 'COMPLET' || p.statut === 'VALIDE').length}
               /{dossier.pieces.length}
             </p>
           </div>
