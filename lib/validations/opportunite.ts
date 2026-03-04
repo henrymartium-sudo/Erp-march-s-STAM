@@ -66,7 +66,10 @@ export const formOpportuniteSchema = z.object({
   statut:               statutOpportuniteEnum,
   probabiliteGain:      z.number().int().min(0).max(100).optional().nullable(),
   notes:                z.string().optional().nullable(),
-  marcheId:             z.string().optional().nullable(),
+  marcheId:             z.preprocess(
+    (val) => (val === '' ? null : val),
+    z.string().optional().nullable()
+  ),
 })
 
 export type FormOpportuniteInput = z.infer<typeof formOpportuniteSchema>
@@ -106,7 +109,10 @@ export const createOpportuniteSchema = z.object({
     .nullable(),
 
   notes:    z.string().optional().nullable(),
-  marcheId: z.string().optional().nullable(),
+  marcheId: z.preprocess(
+    (val) => (val === '' ? null : val),
+    z.string().optional().nullable()
+  ),
 })
 
 export const updateOpportuniteSchema = createOpportuniteSchema.partial().extend({
