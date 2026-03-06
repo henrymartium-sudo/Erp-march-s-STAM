@@ -122,13 +122,18 @@ model Marche {
   marcheVehicules     MarcheVehicule[]
   historiqueStatuts   HistoriqueStatut[]
   factures            Facture[]
-  opportunites        Opportunite[]
+  opportunites        Opportunite[]      @relation("OpportuniteMarche")
   dossiers            DossierOffre[]
+
+  // Lien bidirectionnel vers l'opportunité d'origine (post-attribution)
+  opportuniteId       String?
+  opportunite         Opportunite?       @relation("MarcheOpportunite", fields: [opportuniteId], references: [id], onDelete: SetNull)
 
   @@map("marches")
   @@index([dateFinPrevue])
   @@index([numero])
   @@index([statut])
+  @@index([opportuniteId])
 }
 
 enum StatutMarche {
@@ -570,11 +575,15 @@ model SavedFilter {
 // ============================================
 
 enum StatutOpportunite {
-  IDENTIFIEE
+  IDENTIFIEE             // Legacy — migré vers EN_ANALYSE
   EN_ANALYSE
   GO
   NO_GO
-  SOUMISE
+  SOUMISE                // Legacy — migré vers OFFRE_SOUMISE
+  DOSSIER_EN_PREPARATION
+  OFFRE_SOUMISE
+  EN_ATTENTE_ATTRIBUTION
+  ATTRIBUE_PROVISOIREMENT
   GAGNEE
   PERDUE
 }
@@ -590,14 +599,20 @@ model Opportunite {
   statut               StatutOpportunite @default(IDENTIFIEE)
   probabiliteGain      Int?              // 0-100
   notes                String?           @db.Text
-  marcheId             String?
-  marche               Marche?           @relation(fields: [marcheId], references: [id], onDelete: SetNull)
-  userId               String
-  user                 User              @relation(fields: [userId], references: [id])
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
+  marcheId               String?
+  marche                 Marche?           @relation("OpportuniteMarche", fields: [marcheId], references: [id], onDelete: SetNull)
+  // Champs post-perte (renseignés si statut = PERDUE)
+  motifPerte             String?           @db.Text
+  concurrentGagnant      String?
+  montantOffreConcurrent Decimal?          @db.Decimal(15, 2)
+  userId                 String
+  user                   User              @relation(fields: [userId], references: [id])
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
 
-  dossiers             DossierOffre[]
+  dossiers               DossierOffre[]
+  // Marchés créés depuis cette opportunité (relation inverse MarcheOpportunite)
+  marches                Marche[]          @relation("MarcheOpportunite")
 
   @@index([statut])
   @@index([dateLimite])
