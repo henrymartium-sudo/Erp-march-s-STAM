@@ -9,7 +9,7 @@ import { AUDIT_ACTION, AUDIT_ENTITY } from '@/lib/audit/constants'
 import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
 import type { ActionResult } from '@/types'
 import type { PaginatedResponse } from '@/types/pagination'
-import type { Opportunite, Marche, StatutOpportunite } from '@prisma/client'
+import type { Opportunite, Marche, StatutOpportunite, StatutMarche } from '@prisma/client'
 
 // ============================================================================
 // TYPES
@@ -232,5 +232,97 @@ export async function deleteOpportunite(
   } catch (error) {
     console.error('Erreur deleteOpportunite:', error)
     return { success: false, error: "Impossible de supprimer l'opportunité" }
+  }
+}
+
+// ============================================================================
+// CRÉER UN MARCHÉ DEPUIS UNE OPPORTUNITÉ GAGNÉE
+// ============================================================================
+
+export async function createMarcheFromOpportunite(
+  opportuniteId: string
+): Promise<ActionResult<{ marcheId: string }>> {
+  try {
+    const session = await requireAuth()
+    const role = (session.user as { role?: string } | undefined)?.role
+    if (!canWrite(role)) {
+      return { success: false, error: 'Permissions insuffisantes' }
+    }
+
+    const userId = (session.user as { id?: string } | undefined)?.id
+    if (!userId) return { success: false, error: 'Utilisateur introuvable' }
+
+    // 1. Vérifier que l'opportunité est bien GAGNEE
+    const opportunite = await prisma.opportunite.findUnique({
+      where: { id: opportuniteId },
+      select: {
+        id: true,
+        statut: true,
+        objet: true,
+        autoriteContractante: true,
+        montantEstime: true,
+        reference: true,
+      },
+    })
+
+    if (!opportunite) {
+      return { success: false, error: 'Opportunité introuvable.' }
+    }
+
+    if (opportunite.statut !== 'GAGNEE') {
+      return {
+        success: false,
+        error: 'Seule une opportunité en statut GAGNÉE peut générer un marché.',
+      }
+    }
+
+    // 2. Générer un numéro de marché temporaire unique
+    const count = await prisma.marche.count()
+    const numeroTemp = `MARCHE-${new Date().getFullYear()}-${String(count + 1).padStart(3, '0')}`
+
+    // 3. Créer le marché en transaction
+    const marche = await prisma.$transaction(async (tx) => {
+      const newMarche = await tx.marche.create({
+        data: {
+          numero:                  numeroTemp,
+          objet:                   opportunite.objet,
+          type:                    'FOURNITURES',
+          montant:                 opportunite.montantEstime ?? 0,
+          dateNotification:        new Date(),
+          delaiExecution:          0,
+          statut:                  'ATTRIBUE_DEFINITIVEMENT' as StatutMarche,
+          autoriteContractanteNom: opportunite.autoriteContractante,
+          userId,
+          opportuniteId,
+        },
+      })
+
+      // Lier l'opportunité au marché (sens inverse)
+      await tx.opportunite.update({
+        where: { id: opportuniteId },
+        data: { marcheId: newMarche.id },
+      })
+
+      return newMarche
+    })
+
+    await logAction({
+      action: AUDIT_ACTION.CREATE,
+      entityType: 'MARCHE',
+      entityId: marche.id,
+      metadata: {
+        source: 'opportunite',
+        opportuniteId,
+        objet: marche.objet,
+      },
+    })
+
+    revalidatePath(`/opportunites/${opportuniteId}`)
+    revalidatePath('/marches')
+
+    return { success: true, data: { marcheId: marche.id } }
+  } catch (error) {
+    console.error('createMarcheFromOpportunite error:', error)
+    return { success: false, error: 'Erreur lors de la création du marché.' }
   }
 }
