@@ -33,6 +33,7 @@ import {
   formOpportuniteSchema,
   FormOpportuniteInput,
   STATUT_OPPORTUNITE_LABELS,
+  type StatutOpportuniteInput,
 } from '@/lib/validations/opportunite'
 import { createOpportunite, updateOpportunite } from '@/lib/actions/opportunites'
 import type { Opportunite } from '@prisma/client'
@@ -41,9 +42,17 @@ interface OpportuniteFormProps {
   opportunite?: Opportunite
 }
 
-const STATUTS = [
-  'IDENTIFIEE', 'EN_ANALYSE', 'GO', 'NO_GO', 'SOUMISE', 'GAGNEE', 'PERDUE',
-] as const
+const STATUTS: StatutOpportuniteInput[] = [
+  'EN_ANALYSE',
+  'GO',
+  'NO_GO',
+  'DOSSIER_EN_PREPARATION',
+  'OFFRE_SOUMISE',
+  'EN_ATTENTE_ATTRIBUTION',
+  'ATTRIBUE_PROVISOIREMENT',
+  'GAGNEE',
+  'PERDUE',
+]
 
 export function OpportuniteForm({ opportunite }: OpportuniteFormProps) {
   const router = useRouter()
@@ -65,10 +74,13 @@ export function OpportuniteForm({ opportunite }: OpportuniteFormProps) {
       dateLimite:           opportunite?.dateLimite
                               ? new Date(opportunite.dateLimite)
                               : undefined,
-      statut:               opportunite?.statut ?? 'IDENTIFIEE',
+      statut:               (opportunite?.statut as StatutOpportuniteInput | undefined) ?? 'EN_ANALYSE',
       probabiliteGain:      opportunite?.probabiliteGain ?? undefined,
       notes:                opportunite?.notes ?? '',
       marcheId:             opportunite?.marcheId ?? '',
+      motifPerte:           (opportunite as unknown as { motifPerte?: string | null })?.motifPerte ?? '',
+      concurrentGagnant:    (opportunite as unknown as { concurrentGagnant?: string | null })?.concurrentGagnant ?? '',
+      montantOffreConcurrent: (opportunite as unknown as { montantOffreConcurrent?: number | null })?.montantOffreConcurrent ?? undefined,
     },
   })
 
@@ -292,6 +304,71 @@ export function OpportuniteForm({ opportunite }: OpportuniteFormProps) {
             </FormItem>
           )}
         />
+
+        {/* Champs PERDUE — affichés uniquement si statut = PERDUE */}
+        {form.watch('statut') === 'PERDUE' && (
+          <div className="border rounded-md p-4 space-y-4 bg-muted/30">
+            <p className="text-sm font-medium text-muted-foreground">
+              Informations sur la perte (optionnel)
+            </p>
+            <FormField
+              control={form.control}
+              name="motifPerte"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Motif de la perte</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Prix trop élevé, délai non respecté..."
+                      rows={2}
+                      {...field}
+                      value={field.value ?? ''}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="concurrentGagnant"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Concurrent retenu</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nom de l'entreprise gagnante"
+                        {...field}
+                        value={field.value ?? ''}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="montantOffreConcurrent"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Montant offre concurrente (XOF)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="45000000"
+                        {...field}
+                        value={field.value ?? ''}
+                        onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex items-center gap-4 pt-2">

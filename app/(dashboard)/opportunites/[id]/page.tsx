@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/shared/page-header'
 import { BreadcrumbNav } from '@/components/shared/breadcrumb-nav'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { OpportuniteDeleteButton } from '@/components/opportunites/opportunite-delete-button'
+import { OpportuniteDetailActions } from '@/components/opportunites/opportunite-detail-actions'
 import { getOpportunite } from '@/lib/actions/opportunites'
 import { requireAuth, canWrite } from '@/lib/utils/permissions'
 import {
@@ -66,6 +67,12 @@ export default async function OpportuniteDetailPage({ params }: PageProps) {
                   Modifier
                 </Link>
               </Button>
+              <OpportuniteDetailActions
+                opportuniteId={opp.id}
+                currentStatut={opp.statut}
+                hasMarcheLinked={!!opp.marche}
+                canWrite={userCanWrite}
+              />
               <OpportuniteDeleteButton id={opp.id} objet={opp.objet} />
             </div>
           )
@@ -137,6 +144,44 @@ export default async function OpportuniteDetailPage({ params }: PageProps) {
           </CardHeader>
           <CardContent>
             <p className="text-sm whitespace-pre-wrap">{opp.notes}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Informations sur la perte — visible uniquement si statut PERDUE et données renseignées */}
+      {opp.statut === 'PERDUE' && (
+        (opp as unknown as { motifPerte?: string | null }).motifPerte ||
+        (opp as unknown as { concurrentGagnant?: string | null }).concurrentGagnant
+      ) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Informations sur la perte</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {(opp as unknown as { motifPerte?: string | null }).motifPerte && (
+              <div>
+                <span className="text-sm text-muted-foreground block mb-1">Motif</span>
+                <p className="text-sm whitespace-pre-wrap">
+                  {(opp as unknown as { motifPerte: string }).motifPerte}
+                </p>
+              </div>
+            )}
+            {(opp as unknown as { concurrentGagnant?: string | null }).concurrentGagnant && (
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Concurrent retenu</span>
+                <span className="text-sm font-medium">
+                  {(opp as unknown as { concurrentGagnant: string }).concurrentGagnant}
+                </span>
+              </div>
+            )}
+            {(opp as unknown as { montantOffreConcurrent?: unknown }).montantOffreConcurrent != null && (
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Montant offre concurrente</span>
+                <span className="text-sm font-medium">
+                  {formatMontant((opp as unknown as { montantOffreConcurrent: unknown }).montantOffreConcurrent)}
+                </span>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
