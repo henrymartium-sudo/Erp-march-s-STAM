@@ -52,6 +52,17 @@ const TYPE_MARCHE_LABELS = {
   PRESTATIONS_INTELLECTUELLES: 'Prestations intellectuelles',
 }
 
+// Statuts disponibles pour un nouveau marché (post-attribution uniquement)
+const STATUTS_POST_ATTRIBUTION: StatutMarche[] = [
+  'ATTRIBUE_DEFINITIVEMENT',
+  'EN_ATTENTE_LIVRAISON_OS',
+  'EN_EXECUTION',
+  'EXECUTE_ATTENTE_GARANTIES',
+  'CLOTURE',
+  'RESILIE',
+  'ANNULE',
+]
+
 // Helper pour déterminer quels champs afficher selon le statut
 type StatutSpecificField =
   | 'dateIdentification'
@@ -156,7 +167,7 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
           montant: 0,
           dateNotification: new Date(),
           delaiExecution: 90,
-          statut: 'OPPORTUNITE_IDENTIFIEE' as const,
+          statut: 'ATTRIBUE_DEFINITIVEMENT' as const,
           autoriteContractanteNom: '',
         },
   })
@@ -398,6 +409,7 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
                         {Object.entries(STATUT_LABELS)
                           .filter(([value]) => {
                             if (['RESILIE', 'ANNULE', 'INFRUCTUEUX', 'CLOTURE'].includes(value)) return false
+                            if (!isEditing && !STATUTS_POST_ATTRIBUTION.includes(value as StatutMarche)) return false
                             if (availableStatuts) return availableStatuts.includes(value as StatutMarche)
                             return true
                           })
@@ -409,12 +421,17 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
 
                         {/* Groupe Terminés */}
                         {(['RESILIE', 'ANNULE', 'INFRUCTUEUX', 'CLOTURE'] as StatutMarche[]).some(
-                          (v) => !availableStatuts || availableStatuts.includes(v)
+                          (v) =>
+                            (!isEditing ? STATUTS_POST_ATTRIBUTION.includes(v) : true) &&
+                            (!availableStatuts || availableStatuts.includes(v))
                         ) && (
                           <SelectGroup>
                             <SelectLabel>Terminés</SelectLabel>
                             {(['RESILIE', 'ANNULE', 'INFRUCTUEUX', 'CLOTURE'] as StatutMarche[])
-                              .filter((value) => !availableStatuts || availableStatuts.includes(value))
+                              .filter((value) => {
+                                if (!isEditing && !STATUTS_POST_ATTRIBUTION.includes(value)) return false
+                                return !availableStatuts || availableStatuts.includes(value)
+                              })
                               .map((value) => (
                                 <SelectItem key={value} value={value}>
                                   {STATUT_LABELS[value]}
