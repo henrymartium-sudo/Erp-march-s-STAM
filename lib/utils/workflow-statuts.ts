@@ -59,11 +59,6 @@ export const COMMENTAIRE_OBLIGATOIRE: StatutMarche[] = [
  * Séquence du chemin principal (hors terminaux latéraux).
  */
 export const CHEMIN_PRINCIPAL: StatutMarche[] = [
-  'OPPORTUNITE_IDENTIFIEE',
-  'DOSSIER_EN_PREPARATION',
-  'OFFRE_DEPOSEE',
-  'EN_ATTENTE_ATTRIBUTION',
-  'ATTRIBUE_PROVISOIREMENT',
   'ATTRIBUE_DEFINITIVEMENT',
   'EN_ATTENTE_LIVRAISON_OS',
   'EN_EXECUTION',
