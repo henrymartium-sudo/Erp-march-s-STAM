@@ -353,6 +353,9 @@ export async function getMarcheById(id: string): Promise<Marche | null> {
             },
           },
         },
+        opportunite: {
+          select: { id: true, reference: true, objet: true },
+        },
       },
     })
     return marche

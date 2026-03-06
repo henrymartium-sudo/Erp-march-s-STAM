@@ -15,6 +15,7 @@ import { MarcheCautionsSection } from './marche-cautions-section'
 import { MarcheHistoriqueStatuts } from './marche-historique-statuts'
 import { MarcheFacturesSection } from './marche-factures-section'
 import { MarcheDossiersSection } from './marche-dossiers-section'
+import { ConvertirEnOpportuniteButton } from './convertir-en-opportunite-button'
 import { formatMontant, formatDateLong, formatDelai } from '@/lib/utils/format'
 import { Pencil, Truck } from 'lucide-react'
 
@@ -29,6 +30,14 @@ const TYPE_LABELS = {
   SERVICES: 'Services',
   PRESTATIONS_INTELLECTUELLES: 'Prestations intellectuelles',
 }
+
+const STATUTS_PRE_ATTRIBUTION: StatutMarche[] = [
+  'OPPORTUNITE_IDENTIFIEE',
+  'DOSSIER_EN_PREPARATION',
+  'OFFRE_DEPOSEE',
+  'EN_ATTENTE_ATTRIBUTION',
+  'ATTRIBUE_PROVISOIREMENT',
+]
 
 export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
   const [currentStatut, setCurrentStatut] = useState<StatutMarche>(marche.statut)
@@ -50,6 +59,11 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <StatutBadge statut={currentStatut} size="lg" />
+          {STATUTS_PRE_ATTRIBUTION.includes(currentStatut) && (
+            <Badge variant="muted" className="text-xs">
+              Dossier pré-attribution
+            </Badge>
+          )}
           {canWrite && (
             <>
               <StatutChangerButton
@@ -57,6 +71,9 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
                 currentStatut={currentStatut}
                 onStatutChanged={setCurrentStatut}
               />
+              {STATUTS_PRE_ATTRIBUTION.includes(currentStatut) && !marche.opportunite && (
+                <ConvertirEnOpportuniteButton marcheId={marche.id} />
+              )}
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/marches/${marche.id}/edit`}>
                   <Pencil className="h-4 w-4 mr-1.5" />
@@ -91,6 +108,20 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
               </p>
             </div>
           </div>
+          {marche.opportunite && (
+            <div className="flex justify-between border-t pt-4">
+              <span className="text-sm text-muted-foreground">Opportunité d&apos;origine</span>
+              <Link
+                href={`/opportunites/${marche.opportunite.id}`}
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                {marche.opportunite.reference
+                  ? `${marche.opportunite.reference} — `
+                  : ''}
+                {marche.opportunite.objet}
+              </Link>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -88,6 +88,12 @@ export interface SerializedMarche {
     annee: number | null
     statut: string
   }>
+  // Opportunité d'origine (lien bidirectionnel)
+  opportunite?: {
+    id: string
+    reference: string | null
+    objet: string
+  } | null
 }
 
 // ============================================================================
