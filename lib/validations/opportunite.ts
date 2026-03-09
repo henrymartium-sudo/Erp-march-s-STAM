@@ -70,7 +70,10 @@ export const formOpportuniteSchema = z.object({
   datePublication:        z.date().optional().nullable(),
   dateLimite:             z.date().optional().nullable(),
   statut:                 statutOpportuniteEnum,
-  probabiliteGain:        z.number().int().min(0).max(100).optional().nullable(),
+  montantPropose:         z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? null : Number(val)),
+    z.number().positive().nullable().optional()
+  ),
   notes:                  z.string().optional().nullable(),
   marcheId:               z.string().optional().nullable(),
   // Champs PERDUE
@@ -107,13 +110,10 @@ export const createOpportuniteSchema = z.object({
 
   statut: statutOpportuniteEnum.default('EN_ANALYSE'),
 
-  probabiliteGain: z
-    .number()
-    .int()
-    .min(0, 'La probabilité doit être entre 0 et 100')
-    .max(100, 'La probabilité doit être entre 0 et 100')
-    .optional()
-    .nullable(),
+  montantPropose: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? null : Number(val)),
+    z.number().positive().nullable().optional()
+  ),
 
   notes:   z.string().optional().nullable(),
   marcheId: z.preprocess(
