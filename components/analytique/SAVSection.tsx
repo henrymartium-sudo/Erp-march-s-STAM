@@ -5,12 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ChartContainer } from '@/components/ui/chart'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts'
 import type { SAVStats } from '@/lib/analytics/types'
-
-function fmt(val: number) {
-  if (val >= 1_000_000) return `${Math.round(val / 1_000_000)}M`
-  if (val >= 1_000) return `${Math.round(val / 1_000)}k`
-  return `${val}`
-}
+import { formatMontantFCFA } from '@/lib/utils/format'
 
 const TYPE_COLORS = ['#1E3A5F', '#C49A1A', '#2563EB', '#10B981', '#EF4444', '#8B5CF6']
 const STATUT_COLORS: Record<string, string> = {
@@ -37,7 +32,7 @@ export function SAVSection({ data }: Props) {
   const kpis = [
     { label: 'Nb interventions', value: data.totalInterventions.toString() },
     { label: 'Délai moyen résolution', value: `${data.delaiMoyenResolutionJours}j` },
-    { label: 'Coût total', value: fmt(data.coutTotal) + ' FCFA' },
+    { label: 'Coût total', value: formatMontantFCFA(data.coutTotal) },
     { label: 'Taux de résolution', value: `${data.tauxResolution}%` },
   ]
 
@@ -78,7 +73,7 @@ export function SAVSection({ data }: Props) {
                   <Tooltip
                     formatter={(val: number, name: string, props) => [
                       name === 'count'
-                        ? `${val} interventions — Coût : ${fmt(props.payload.cout)} FCFA`
+                        ? `${val} interventions — Coût : ${formatMontantFCFA(props.payload.cout)}`
                         : val,
                       '',
                     ]}
@@ -147,7 +142,7 @@ export function SAVSection({ data }: Props) {
                       <td className="py-1.5 font-mono font-medium">{v.immatriculation}</td>
                       <td className="py-1.5 text-muted-foreground">{v.marque} {v.modele}</td>
                       <td className="py-1.5 text-right font-semibold text-[#1E3A5F]">{v.count}</td>
-                      <td className="py-1.5 text-right text-muted-foreground">{fmt(v.cout)} FCFA</td>
+                      <td className="py-1.5 text-right text-muted-foreground">{formatMontantFCFA(v.cout)}</td>
                     </tr>
                   ))}
                 </tbody>

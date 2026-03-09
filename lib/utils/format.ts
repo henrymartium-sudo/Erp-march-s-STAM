@@ -6,6 +6,35 @@ import { fr } from 'date-fns/locale'
 // ============================================================================
 
 /**
+ * Formate un montant FCFA avec abréviation lisible (Md / M / k).
+ * Usage : KPI cards, tableaux, PDF exports.
+ * Exemples : 3 396 000 000 → "3,40 Md FCFA" | 245 000 000 → "245 M FCFA"
+ */
+export function formatMontantFCFA(valeur: number): string {
+  if (valeur >= 1_000_000_000) {
+    return `${(valeur / 1_000_000_000).toFixed(2).replace('.', ',')} Md FCFA`
+  }
+  if (valeur >= 1_000_000) {
+    return `${Math.round(valeur / 1_000_000)} M FCFA`
+  }
+  if (valeur >= 1_000) {
+    return `${Math.round(valeur / 1_000)} k FCFA`
+  }
+  return `${valeur.toLocaleString('fr-FR')} FCFA`
+}
+
+/**
+ * Format abrégé sans "FCFA" — pour axes et tooltips de graphiques Recharts.
+ * Exemples : 3 396 000 000 → "3,4 Md" | 245 000 000 → "245 M"
+ */
+export function fmtAbrege(valeur: number): string {
+  if (valeur >= 1_000_000_000) return `${(valeur / 1_000_000_000).toFixed(1)} Md`
+  if (valeur >= 1_000_000) return `${Math.round(valeur / 1_000_000)} M`
+  if (valeur >= 1_000) return `${Math.round(valeur / 1_000)} k`
+  return `${valeur}`
+}
+
+/**
  * Formate un montant en francs CFA avec séparateurs de milliers
  * @param montant - Le montant à formater (number, string ou Decimal)
  * @returns Le montant formaté avec "FCFA" (ex: "1 234 567 FCFA")

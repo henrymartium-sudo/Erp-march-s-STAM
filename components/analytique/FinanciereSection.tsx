@@ -5,13 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartContainer } from '@/components/ui/chart'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Cell, Legend } from 'recharts'
 import type { FinancialStats } from '@/lib/analytics/types'
-
-function fmt(val: number) {
-  if (val >= 1_000_000_000) return `${(val / 1_000_000_000).toFixed(1)}G`
-  if (val >= 1_000_000) return `${Math.round(val / 1_000_000)}M`
-  if (val >= 1_000) return `${Math.round(val / 1_000)}k`
-  return `${val}`
-}
+import { formatMontantFCFA, fmtAbrege } from '@/lib/utils/format'
 
 const STATUT_COLORS: Record<string, string> = {
   PAYEE: '#10B981',
@@ -36,10 +30,10 @@ export function FinanciereSection({ data }: Props) {
   }
 
   const kpis = [
-    { label: 'CA contractualisé', value: fmt(data.caContractualise) + ' FCFA' },
-    { label: 'CA encaissé', value: fmt(data.caEncaisse) + ' FCFA' },
-    { label: 'CA en attente', value: fmt(data.caEnAttente) + ' FCFA' },
-    { label: 'Cautions actives', value: fmt(data.cautionsActives) + ' FCFA' },
+    { label: 'CA contractualisé', value: formatMontantFCFA(data.caContractualise) },
+    { label: 'CA encaissé', value: formatMontantFCFA(data.caEncaisse) },
+    { label: 'CA en attente', value: formatMontantFCFA(data.caEnAttente) },
+    { label: 'Cautions actives', value: formatMontantFCFA(data.cautionsActives) },
   ]
 
   // Données pour BarChart CA comparatif
@@ -75,8 +69,8 @@ export function FinanciereSection({ data }: Props) {
             <ChartContainer config={{}} className="h-[250px]">
               <BarChart data={caData}>
                 <XAxis dataKey="label" fontSize={11} />
-                <YAxis fontSize={11} tickFormatter={(v) => fmt(v)} />
-                <Tooltip formatter={(val: number) => [`${fmt(val)} FCFA`, 'Montant']} />
+                <YAxis fontSize={11} tickFormatter={(v) => fmtAbrege(v)} />
+                <Tooltip formatter={(val: number) => [formatMontantFCFA(val), 'Montant']} />
                 <Bar dataKey="montant" radius={[4, 4, 0, 0]}>
                   {caData.map((entry, i) => (
                     <Cell key={i} fill={entry.fill} />

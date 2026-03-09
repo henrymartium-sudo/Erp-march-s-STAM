@@ -8,12 +8,7 @@ import {
   PieChart, Pie, Cell, Legend,
 } from 'recharts'
 import type { PerformanceStats } from '@/lib/analytics/types'
-
-function fmt(val: number) {
-  if (val >= 1_000_000) return `${Math.round(val / 1_000_000)}M`
-  if (val >= 1_000) return `${Math.round(val / 1_000)}k`
-  return `${val}`
-}
+import { formatMontantFCFA } from '@/lib/utils/format'
 
 const COLORS = ['#1E3A5F', '#C49A1A', '#2563EB', '#10B981', '#EF4444', '#8B5CF6', '#F59E0B']
 
@@ -40,7 +35,7 @@ export function PerformanceSection({ data }: Props) {
         {[
           { label: 'Total marchés', value: data.totalMarches },
           { label: 'Taux de succès', value: `${data.winRate}%` },
-          { label: 'Montant total', value: fmt(data.montantTotal) + ' FCFA' },
+          { label: 'Montant total', value: formatMontantFCFA(data.montantTotal) },
           { label: 'Délai moyen', value: `${data.delaiMoyenJours}j` },
         ].map(({ label, value }) => (
           <Card key={label}>

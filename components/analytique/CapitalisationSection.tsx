@@ -8,12 +8,7 @@ import {
   LineChart, Line, CartesianGrid,
 } from 'recharts'
 import type { CapitalisationStats } from '@/lib/analytics/types'
-
-function fmt(val: number) {
-  if (val >= 1_000_000) return `${Math.round(val / 1_000_000)}M`
-  if (val >= 1_000) return `${Math.round(val / 1_000)}k`
-  return `${val}`
-}
+import { formatMontantFCFA, fmtAbrege } from '@/lib/utils/format'
 
 const COLORS = ['#1E3A5F', '#C49A1A', '#2563EB', '#10B981', '#EF4444', '#8B5CF6', '#F59E0B']
 
@@ -74,7 +69,7 @@ export function CapitalisationSection({ data }: Props) {
             <CardContent>
               <ChartContainer config={{}} className="h-[260px]">
                 <BarChart data={topAC.slice(0, 10)} layout="vertical">
-                  <XAxis type="number" fontSize={10} tickFormatter={fmt} />
+                  <XAxis type="number" fontSize={10} tickFormatter={fmtAbrege} />
                   <YAxis
                     type="category"
                     dataKey="nom"
@@ -84,7 +79,7 @@ export function CapitalisationSection({ data }: Props) {
                   />
                   <Tooltip
                     formatter={(val: number, name: string) => [
-                      name === 'montant' ? `${fmt(val)} FCFA` : `${val}%`,
+                      name === 'montant' ? formatMontantFCFA(val as number) : `${val}%`,
                       name === 'montant' ? 'Montant' : 'Win rate',
                     ]}
                   />
