@@ -139,6 +139,7 @@ export async function createOpportunite(
 
     const userId = (session.user as { id?: string } | undefined)?.id
     if (!userId) return { success: false, error: 'Utilisateur introuvable' }
+    const userEmail = (session.user as { email?: string } | undefined)?.email
 
     const opportunite = await prisma.opportunite.create({
       data: {
@@ -148,6 +149,8 @@ export async function createOpportunite(
     })
 
     await logAction({
+      userId,
+      userEmail,
       action: AUDIT_ACTION.CREATE,
       entityType: AUDIT_ENTITY.OPPORTUNITE,
       entityId: opportunite.id,
@@ -183,6 +186,8 @@ export async function updateOpportunite(
     }
 
     const { id: _id, ...updateData } = parsed.data
+    const userId = (session.user as { id?: string } | undefined)?.id
+    const userEmail = (session.user as { email?: string } | undefined)?.email
 
     const opportunite = await prisma.opportunite.update({
       where: { id },
@@ -190,6 +195,8 @@ export async function updateOpportunite(
     })
 
     await logAction({
+      userId,
+      userEmail,
       action: AUDIT_ACTION.UPDATE,
       entityType: AUDIT_ENTITY.OPPORTUNITE,
       entityId: id,
@@ -218,10 +225,14 @@ export async function deleteOpportunite(
     if (!canWrite(role)) {
       return { success: false, error: 'Permissions insuffisantes' }
     }
+    const userId = (session.user as { id?: string } | undefined)?.id
+    const userEmail = (session.user as { email?: string } | undefined)?.email
 
     await prisma.opportunite.delete({ where: { id } })
 
     await logAction({
+      userId,
+      userEmail,
       action: AUDIT_ACTION.DELETE,
       entityType: AUDIT_ENTITY.OPPORTUNITE,
       entityId: id,
@@ -251,6 +262,7 @@ export async function createMarcheFromOpportunite(
 
     const userId = (session.user as { id?: string } | undefined)?.id
     if (!userId) return { success: false, error: 'Utilisateur introuvable' }
+    const userEmail = (session.user as { email?: string } | undefined)?.email
 
     // 1. Vérifier que l'opportunité est bien GAGNEE
     const opportunite = await prisma.opportunite.findUnique({
@@ -307,6 +319,8 @@ export async function createMarcheFromOpportunite(
     })
 
     await logAction({
+      userId,
+      userEmail,
       action: AUDIT_ACTION.CREATE,
       entityType: 'MARCHE',
       entityId: marche.id,
