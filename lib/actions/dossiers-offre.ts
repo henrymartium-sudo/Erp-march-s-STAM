@@ -117,6 +117,8 @@ export async function createDossierOffre(
     if (!canWrite(role)) {
       return { success: false, error: 'Permissions insuffisantes' }
     }
+    const userId = (session.user as { id?: string } | undefined)?.id
+    const userEmail = (session.user as { email?: string } | undefined)?.email
 
     const parsed = createDossierOffreSchema.safeParse(data)
     if (!parsed.success) {
@@ -144,6 +146,8 @@ export async function createDossierOffre(
     })
 
     await logAction({
+      userId,
+      userEmail,
       action: AUDIT_ACTION.CREATE,
       entityType: AUDIT_ENTITY.DOSSIER_OFFRE,
       entityId: dossier.id,
@@ -179,6 +183,8 @@ export async function updateDossierOffre(
     }
 
     const { id: _id, ...updateData } = parsed.data
+    const userId = (session.user as { id?: string } | undefined)?.id
+    const userEmail = (session.user as { email?: string } | undefined)?.email
 
     const dossier = await prisma.dossierOffre.update({
       where: { id },
@@ -186,6 +192,8 @@ export async function updateDossierOffre(
     })
 
     await logAction({
+      userId,
+      userEmail,
       action: AUDIT_ACTION.UPDATE,
       entityType: AUDIT_ENTITY.DOSSIER_OFFRE,
       entityId: id,
@@ -214,10 +222,14 @@ export async function deleteDossierOffre(
     if (!canWrite(role)) {
       return { success: false, error: 'Permissions insuffisantes' }
     }
+    const userId = (session.user as { id?: string } | undefined)?.id
+    const userEmail = (session.user as { email?: string } | undefined)?.email
 
     await prisma.dossierOffre.delete({ where: { id } })
 
     await logAction({
+      userId,
+      userEmail,
       action: AUDIT_ACTION.DELETE,
       entityType: AUDIT_ENTITY.DOSSIER_OFFRE,
       entityId: id,
