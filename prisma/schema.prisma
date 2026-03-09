@@ -597,7 +597,7 @@ model Opportunite {
   datePublication      DateTime?
   dateLimite           DateTime?
   statut               StatutOpportunite @default(IDENTIFIEE)
-  probabiliteGain      Int?              // 0-100
+  montantPropose       Decimal?          @db.Decimal(15, 2)
   notes                String?           @db.Text
   marcheId               String?
   marche                 Marche?           @relation("OpportuniteMarche", fields: [marcheId], references: [id], onDelete: SetNull)
