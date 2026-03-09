@@ -36,6 +36,8 @@ export async function changerStatutOpportunite(
     if (!canWrite(role)) {
       return { success: false, error: 'Permissions insuffisantes' }
     }
+    const userId = (session.user as { id?: string } | undefined)?.id
+    const userEmail = (session.user as { email?: string } | undefined)?.email
 
     const parsed = changerStatutOpportuniteSchema.safeParse(data)
     if (!parsed.success) {
@@ -95,6 +97,8 @@ export async function changerStatutOpportunite(
 
     // 5. Audit log
     await logAction({
+      userId,
+      userEmail,
       action: AUDIT_ACTION.UPDATE,
       entityType: AUDIT_ENTITY.OPPORTUNITE,
       entityId: opportuniteId,
