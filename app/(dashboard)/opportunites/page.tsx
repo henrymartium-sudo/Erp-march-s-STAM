@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/shared/page-header'
 import { OpportuniteList } from '@/components/opportunites/opportunite-list'
 import { DataPagination } from '@/components/ui/data-pagination'
+import { ExportMenu } from '@/components/exports/export-menu'
 import { getOpportunites } from '@/lib/actions/opportunites'
-import { requireAuth, canWrite } from '@/lib/utils/permissions'
+import { requireAuth, canWrite, canExport } from '@/lib/utils/permissions'
 import { shouldShowPagination } from '@/lib/utils/pagination'
 import { Plus } from 'lucide-react'
 import type { StatutOpportunite } from '@prisma/client'
@@ -22,6 +23,7 @@ export default async function OpportunitesPage({ searchParams }: OpportunitesPag
   const session = await requireAuth()
   const role = (session.user as { role?: string } | undefined)?.role
   const userCanWrite = canWrite(role)
+  const userCanExport = canExport(role)
 
   const params = await searchParams
   const currentPage = Number(params.page) || 1
@@ -49,14 +51,23 @@ export default async function OpportunitesPage({ searchParams }: OpportunitesPag
         description="Pipeline de veille et suivi des appels d'offres"
         count={pagination.totalItems}
         action={
-          userCanWrite && (
-            <Button asChild>
-              <Link href="/opportunites/nouvelle">
-                <Plus className="h-4 w-4 mr-2" />
-                Nouvelle opportunité
-              </Link>
-            </Button>
-          )
+          <div className="flex gap-2">
+            {userCanExport && (
+              <ExportMenu
+                type="opportunites"
+                filters={{ statut: params.statut }}
+                buttonVariant="outline"
+              />
+            )}
+            {userCanWrite && (
+              <Button asChild>
+                <Link href="/opportunites/nouvelle">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nouvelle opportunité
+                </Link>
+              </Button>
+            )}
+          </div>
         }
       />
 

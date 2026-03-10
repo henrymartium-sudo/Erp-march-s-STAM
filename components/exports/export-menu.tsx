@@ -18,7 +18,7 @@ import { PDFExportModal } from './PDFExportModal'
 // TYPES
 // ============================================================================
 
-type ExportType = 'marches' | 'cautions' | 'documents' | 'vehicules'
+type ExportType = 'marches' | 'cautions' | 'documents' | 'vehicules' | 'opportunites'
 
 export interface ExportFilters {
   statut?: string
@@ -36,6 +36,7 @@ const MODULE_LABELS: Record<ExportType, string> = {
   cautions: 'Cautions',
   documents: 'Documents',
   vehicules: 'Véhicules',
+  opportunites: 'Opportunités',
 }
 
 interface ExportMenuProps {
