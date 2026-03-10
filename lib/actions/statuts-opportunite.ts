@@ -12,6 +12,7 @@ import {
 import { STATUT_OPPORTUNITE_LABELS } from '@/lib/validations/opportunite'
 import { logAction } from '@/lib/audit/logAction'
 import { AUDIT_ACTION, AUDIT_ENTITY } from '@/lib/audit/constants'
+import { CHECKLIST_STANDARD } from '@/lib/templates/checklist-offre'
 import type { ActionResult } from '@/types'
 
 const changerStatutOpportuniteSchema = z.object({
@@ -95,7 +96,35 @@ export async function changerStatutOpportunite(
       data: updateData,
     })
 
-    // 5. Audit log
+    // 5. Auto-création DossierOffre si transition vers DOSSIER_EN_PREPARATION
+    if (newStatut === 'DOSSIER_EN_PREPARATION') {
+      const existingDossier = await prisma.dossierOffre.findFirst({
+        where: { opportuniteId },
+      })
+
+      if (!existingDossier) {
+        await prisma.dossierOffre.create({
+          data: {
+            titre: `Dossier — ${opportunite.objet}`,
+            opportuniteId,
+            statut: 'EN_COURS',
+            progression: 0,
+            pieces: {
+              create: CHECKLIST_STANDARD.map((p) => ({
+                nom:         p.nom,
+                description: p.description,
+                obligatoire: p.obligatoire,
+                ordre:       p.ordre,
+                statut:      'ABSENT' as const,
+              })),
+            },
+          },
+        })
+        revalidatePath('/dossiers-offre')
+      }
+    }
+
+    // 6. Audit log
     await logAction({
       userId,
       userEmail,
