@@ -51,6 +51,11 @@ export function StatutChangerOpportuniteButton({
   const [motifPerte, setMotifPerte] = useState('')
   const [concurrentGagnant, setConcurrentGagnant] = useState('')
   const [montantConcurrent, setMontantConcurrent] = useState('')
+  // MOD-6 — période de validité offre
+  const [periodeValiditeDebut, setPeriodeValiditeDebut] = useState('')
+  const [periodeValiditeFin, setPeriodeValiditeFin] = useState('')
+  // MOD-7 — échéance attribution provisoire
+  const [echeanceAttributionProv, setEcheanceAttributionProv] = useState('')
   const [isPending, startTransition] = useTransition()
 
   const availableStatuts = getAvailableStatutsOpportunite(currentStatut).filter(
@@ -62,6 +67,8 @@ export function StatutChangerOpportuniteButton({
     COMMENTAIRE_OBLIGATOIRE_OPPORTUNITE.includes(selectedStatut as StatutOpportunite)
 
   const isPerdue = selectedStatut === 'PERDUE'
+  const isOffreSoumise = selectedStatut === 'OFFRE_SOUMISE'
+  const isAttributionProv = selectedStatut === 'ATTRIBUE_PROVISOIREMENT'
 
   function handleClose() {
     setOpen(false)
@@ -70,6 +77,9 @@ export function StatutChangerOpportuniteButton({
     setMotifPerte('')
     setConcurrentGagnant('')
     setMontantConcurrent('')
+    setPeriodeValiditeDebut('')
+    setPeriodeValiditeFin('')
+    setEcheanceAttributionProv('')
   }
 
   function handleSubmit() {
@@ -89,6 +99,15 @@ export function StatutChangerOpportuniteButton({
         concurrentGagnant: isPerdue ? concurrentGagnant.trim() || null : null,
         montantOffreConcurrent: isPerdue && montantConcurrent
           ? parseFloat(montantConcurrent)
+          : null,
+        periodeValiditeDebut: isOffreSoumise && periodeValiditeDebut
+          ? periodeValiditeDebut
+          : null,
+        periodeValiditeFin: isOffreSoumise && periodeValiditeFin
+          ? periodeValiditeFin
+          : null,
+        echeanceAttributionProv: isAttributionProv && echeanceAttributionProv
+          ? echeanceAttributionProv
           : null,
       })
 
@@ -205,6 +224,51 @@ export function StatutChangerOpportuniteButton({
                     value={montantConcurrent}
                     onChange={(e) => setMontantConcurrent(e.target.value)}
                     placeholder="45000000"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Champs spécifiques OFFRE_SOUMISE (MOD-6) */}
+            {isOffreSoumise && (
+              <div className="space-y-3 border rounded-md p-3 bg-muted/30">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Période de validité de l&apos;offre (optionnel)
+                </p>
+                <div className="space-y-1.5">
+                  <Label htmlFor="validite-debut">Début de validité</Label>
+                  <Input
+                    id="validite-debut"
+                    type="date"
+                    value={periodeValiditeDebut}
+                    onChange={(e) => setPeriodeValiditeDebut(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="validite-fin">Fin de validité</Label>
+                  <Input
+                    id="validite-fin"
+                    type="date"
+                    value={periodeValiditeFin}
+                    onChange={(e) => setPeriodeValiditeFin(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Champ spécifique ATTRIBUE_PROVISOIREMENT (MOD-7) */}
+            {isAttributionProv && (
+              <div className="space-y-3 border rounded-md p-3 bg-muted/30">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Échéance attribution provisoire (optionnel)
+                </p>
+                <div className="space-y-1.5">
+                  <Label htmlFor="echeance-attribution">Date limite d&apos;attribution</Label>
+                  <Input
+                    id="echeance-attribution"
+                    type="date"
+                    value={echeanceAttributionProv}
+                    onChange={(e) => setEcheanceAttributionProv(e.target.value)}
                   />
                 </div>
               </div>

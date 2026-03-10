@@ -123,6 +123,26 @@ export default async function OpportuniteDetailPage({ params }: PageProps) {
               <span className="text-sm text-muted-foreground">Date limite de dépôt</span>
               <span className="text-sm">{formatDate(opp.dateLimite)}</span>
             </div>
+            {/* MOD-6 — période de validité offre */}
+            {(opp as unknown as { periodeValiditeDebut?: Date | null }).periodeValiditeDebut && (
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Début validité offre</span>
+                <span className="text-sm">{formatDate((opp as unknown as { periodeValiditeDebut: Date }).periodeValiditeDebut)}</span>
+              </div>
+            )}
+            {(opp as unknown as { periodeValiditeFin?: Date | null }).periodeValiditeFin && (
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Fin validité offre</span>
+                <span className="text-sm">{formatDate((opp as unknown as { periodeValiditeFin: Date }).periodeValiditeFin)}</span>
+              </div>
+            )}
+            {/* MOD-7 — échéance attribution provisoire */}
+            {(opp as unknown as { echeanceAttributionProv?: Date | null }).echeanceAttributionProv && (
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Échéance attribution prov.</span>
+                <span className="text-sm">{formatDate((opp as unknown as { echeanceAttributionProv: Date }).echeanceAttributionProv)}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Marché lié</span>
               <span className="text-sm">
