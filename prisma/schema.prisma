@@ -601,6 +601,11 @@ model Opportunite {
   notes                String?           @db.Text
   marcheId               String?
   marche                 Marche?           @relation("OpportuniteMarche", fields: [marcheId], references: [id], onDelete: SetNull)
+  // Champs période de validité de l'offre (MOD-6)
+  periodeValiditeDebut    DateTime?
+  periodeValiditeFin      DateTime?
+  // Champ échéance attribution provisoire (MOD-7)
+  echeanceAttributionProv DateTime?
   // Champs post-perte (renseignés si statut = PERDUE)
   motifPerte             String?           @db.Text
   concurrentGagnant      String?
