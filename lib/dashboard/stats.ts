@@ -91,6 +91,7 @@ export async function getMontantsMensuels(): Promise<MontantMensuel[]> {
 
       months.push({
         mois: format(date, 'MMM yyyy', { locale: fr }),
+        moisIso: format(date, 'yyyy-MM'),
         montant: Number(result._sum.montant || 0),
       })
     }

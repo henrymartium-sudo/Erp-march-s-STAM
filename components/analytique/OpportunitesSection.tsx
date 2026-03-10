@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartContainer } from '@/components/ui/chart'
 import {
@@ -10,8 +11,10 @@ import {
   Tooltip,
   Cell,
 } from 'recharts'
-import { formatMontantFCFA, fmtAbrege } from '@/lib/utils/format'
+import { formatMontantFCFA } from '@/lib/utils/format'
 import type { OpportunitesStats } from '@/lib/analytics/types'
+import { DrillDownSheet } from '@/components/shared/DrillDownSheet'
+import { getOpportunitesByStatut, getOpportunitesByAC, type DrillDownItem } from '@/lib/actions/drill-down'
 
 interface Props {
   data: OpportunitesStats
@@ -20,6 +23,27 @@ interface Props {
 const COLORS = ['#1E3A5F', '#C49A1A', '#2563EB', '#10B981', '#EF4444', '#8B5CF6', '#F59E0B', '#EC4899', '#14B8A6']
 
 export function OpportunitesSection({ data }: Props) {
+  const [drillDown, setDrillDown] = useState<{
+    title: string; items: DrillDownItem[]; isLoading: boolean
+  } | null>(null)
+
+  async function handleStatutClick(entry: any) {
+    const statut: string = entry?.activePayload?.[0]?.payload?.statut
+    const label: string = entry?.activePayload?.[0]?.payload?.label ?? ''
+    if (!statut) return
+    setDrillDown({ title: `Opportunités — ${label}`, items: [], isLoading: true })
+    const items = await getOpportunitesByStatut(statut)
+    setDrillDown({ title: `Opportunités — ${label}`, items, isLoading: false })
+  }
+
+  async function handleACClick(entry: any) {
+    const nom: string = entry?.activePayload?.[0]?.payload?.nom
+    if (!nom) return
+    setDrillDown({ title: `Opportunités — ${nom}`, items: [], isLoading: true })
+    const items = await getOpportunitesByAC(nom)
+    setDrillDown({ title: `Opportunités — ${nom}`, items, isLoading: false })
+  }
+
   if (data.totalOpportunites === 0) {
     return (
       <div className="space-y-4">
@@ -67,7 +91,7 @@ export function OpportunitesSection({ data }: Props) {
             </CardHeader>
             <CardContent>
               <ChartContainer config={{}} className="h-[260px]">
-                <BarChart data={data.parStatut} layout="vertical">
+                <BarChart data={data.parStatut} layout="vertical" onClick={handleStatutClick} style={{ cursor: 'pointer' }}>
                   <XAxis type="number" allowDecimals={false} />
                   <YAxis type="category" dataKey="label" width={145} tick={{ fontSize: 11 }} />
                   <Tooltip formatter={(val) => [`${val}`, 'Opportunités']} />
@@ -90,7 +114,7 @@ export function OpportunitesSection({ data }: Props) {
             </CardHeader>
             <CardContent>
               <ChartContainer config={{}} className="h-[260px]">
-                <BarChart data={data.topAC} layout="vertical">
+                <BarChart data={data.topAC} layout="vertical" onClick={handleACClick} style={{ cursor: 'pointer' }}>
                   <XAxis type="number" allowDecimals={false} />
                   <YAxis type="category" dataKey="nom" width={140} tick={{ fontSize: 11 }} />
                   <Tooltip
@@ -137,6 +161,14 @@ export function OpportunitesSection({ data }: Props) {
           </CardContent>
         </Card>
       )}
+
+      <DrillDownSheet
+        open={!!drillDown}
+        onClose={() => setDrillDown(null)}
+        title={drillDown?.title ?? ''}
+        items={drillDown?.items ?? []}
+        isLoading={drillDown?.isLoading ?? false}
+      />
     </div>
   )
 }

@@ -1,6 +1,7 @@
 // components/analytique/PerformanceSection.tsx
 'use client'
 
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ChartContainer } from '@/components/ui/chart'
 import {
@@ -9,12 +10,26 @@ import {
 } from 'recharts'
 import type { PerformanceStats } from '@/lib/analytics/types'
 import { formatMontantFCFA } from '@/lib/utils/format'
+import { DrillDownSheet } from '@/components/shared/DrillDownSheet'
+import { getMarchesByStatut, type DrillDownItem } from '@/lib/actions/drill-down'
 
 const COLORS = ['#1E3A5F', '#C49A1A', '#2563EB', '#10B981', '#EF4444', '#8B5CF6', '#F59E0B']
 
 interface Props { data: PerformanceStats }
 
 export function PerformanceSection({ data }: Props) {
+  const [drillDown, setDrillDown] = useState<{
+    title: string; items: DrillDownItem[]; isLoading: boolean
+  } | null>(null)
+
+  async function handlePieClick(entry: any) {
+    const statut: string = entry?.statut
+    const label: string = entry?.label ?? ''
+    if (!statut) return
+    setDrillDown({ title: `Marchés — ${label}`, items: [], isLoading: true })
+    const items = await getMarchesByStatut(statut)
+    setDrillDown({ title: `Marchés — ${label}`, items, isLoading: false })
+  }
   if (data.totalMarches === 0) {
     return (
       <Card>
@@ -65,6 +80,8 @@ export function PerformanceSection({ data }: Props) {
                   innerRadius={60}
                   outerRadius={100}
                   paddingAngle={2}
+                  cursor="pointer"
+                  onClick={handlePieClick}
                 >
                   {data.parStatut.map((_, i) => (
                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
@@ -114,6 +131,14 @@ export function PerformanceSection({ data }: Props) {
           </CardContent>
         </Card>
       )}
+
+      <DrillDownSheet
+        open={!!drillDown}
+        onClose={() => setDrillDown(null)}
+        title={drillDown?.title ?? ''}
+        items={drillDown?.items ?? []}
+        isLoading={drillDown?.isLoading ?? false}
+      />
     </div>
   )
 }

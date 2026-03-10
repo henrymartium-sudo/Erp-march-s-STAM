@@ -38,6 +38,7 @@ export interface MarcheRecent {
 
 export interface MontantMensuel {
   mois: string
+  moisIso: string   // "YYYY-MM" — utilisé pour le drill-down
   montant: number
 }
 
