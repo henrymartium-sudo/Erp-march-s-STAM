@@ -2,8 +2,9 @@
 
 import { prisma } from '@/lib/db/prisma'
 import { requireRole } from '@/lib/utils/permissions'
-import type { Periode, PerformanceStats, FinancialStats, CapitalisationStats, SAVStats } from '@/lib/analytics/types'
+import type { Periode, PerformanceStats, FinancialStats, CapitalisationStats, SAVStats, OpportunitesStats } from '@/lib/analytics/types'
 import { STATUT_LABELS, TYPE_MARCHE_LABELS } from '@/lib/constants/marche'
+import { STATUT_OPPORTUNITE_LABELS } from '@/lib/validations/opportunite'
 import { StatutMarche, StatutFacture } from '@prisma/client'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -387,12 +388,89 @@ export async function getSAVStats(periode: Periode): Promise<SAVStats> {
   }
 }
 
+const STATUTS_EN_COURS_OPP = [
+  'EN_ANALYSE',
+  'GO',
+  'DOSSIER_EN_PREPARATION',
+  'OFFRE_SOUMISE',
+  'EN_ATTENTE_ATTRIBUTION',
+  'ATTRIBUE_PROVISOIREMENT',
+]
+
+export async function getOpportunitesStats(periode: Periode): Promise<OpportunitesStats> {
+  await requireRole(['ADMIN'])
+
+  const where = {
+    createdAt: { gte: periode.dateDebut, lte: periode.dateFin },
+  }
+
+  // 1. Répartition par statut
+  const parStatutRaw = await prisma.opportunite.groupBy({
+    by: ['statut'],
+    where,
+    _count: { id: true },
+    orderBy: { _count: { id: 'desc' } },
+  })
+
+  // 2. Agrégats globaux
+  const aggregate = await prisma.opportunite.aggregate({
+    where,
+    _count: { id: true },
+    _sum: { montantEstime: true, montantPropose: true },
+  })
+
+  // 3. Top 10 AC par nombre d'opportunités
+  const topACRaw = await prisma.opportunite.groupBy({
+    by: ['autoriteContractante'],
+    where,
+    _count: { id: true },
+    orderBy: { _count: { id: 'desc' } },
+    take: 10,
+  })
+
+  // 4. Gagnées par AC (pour les top 10)
+  const topACNoms = topACRaw.map((ac) => ac.autoriteContractante)
+  const gagneesByACRaw = await prisma.opportunite.groupBy({
+    by: ['autoriteContractante'],
+    where: { ...where, statut: 'GAGNEE', autoriteContractante: { in: topACNoms } },
+    _count: { id: true },
+  })
+  const gagneesByACMap = new Map(gagneesByACRaw.map((g) => [g.autoriteContractante, g._count.id]))
+
+  const totalOpportunites = aggregate._count.id
+  const totalGagnees = parStatutRaw.find((s) => s.statut === 'GAGNEE')?._count.id ?? 0
+  const totalEnCours = parStatutRaw
+    .filter((s) => STATUTS_EN_COURS_OPP.includes(s.statut))
+    .reduce((sum, s) => sum + s._count.id, 0)
+
+  return {
+    totalOpportunites,
+    totalGagnees,
+    totalEnCours,
+    tauxConversion:
+      totalOpportunites > 0 ? Math.round((totalGagnees / totalOpportunites) * 100) : 0,
+    montantEstimeTotal: Number(aggregate._sum.montantEstime ?? 0),
+    montantProposeTotal: Number(aggregate._sum.montantPropose ?? 0),
+    parStatut: parStatutRaw.map((s) => ({
+      statut: s.statut,
+      label: STATUT_OPPORTUNITE_LABELS[s.statut] ?? s.statut,
+      count: s._count.id,
+    })),
+    topAC: topACRaw.map((ac) => ({
+      nom: ac.autoriteContractante,
+      count: ac._count.id,
+      gagnees: gagneesByACMap.get(ac.autoriteContractante) ?? 0,
+    })),
+  }
+}
+
 export async function getAllAnalyticsData(periode: Periode) {
-  const [performance, financiere, capitalisation, sav] = await Promise.all([
+  const [performance, financiere, capitalisation, sav, opportunites] = await Promise.all([
     getPerformanceStats(periode),
     getFinancialStats(periode),
     getCapitalisationStats(periode),
     getSAVStats(periode),
+    getOpportunitesStats(periode),
   ])
-  return { performance, financiere, capitalisation, sav }
+  return { performance, financiere, capitalisation, sav, opportunites }
 }

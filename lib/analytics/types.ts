@@ -73,6 +73,19 @@ export interface SAVStats {
   }[]
 }
 
+// ── Opportunités ──────────────────────────────────────────────────────────────
+
+export interface OpportunitesStats {
+  totalOpportunites: number
+  totalGagnees: number
+  totalEnCours: number        // statuts actifs (hors NO_GO, PERDUE)
+  tauxConversion: number      // GAGNEE / total * 100
+  montantEstimeTotal: number
+  montantProposeTotal: number
+  parStatut: { statut: string; label: string; count: number }[]
+  topAC: { nom: string; count: number; gagnees: number }[]
+}
+
 // ── Données complètes ─────────────────────────────────────────────────────────
 
 export interface AllAnalyticsData {
@@ -80,4 +93,5 @@ export interface AllAnalyticsData {
   financiere: FinancialStats
   capitalisation: CapitalisationStats
   sav: SAVStats
+  opportunites: OpportunitesStats
 }

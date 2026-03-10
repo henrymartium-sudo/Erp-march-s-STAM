@@ -13,6 +13,7 @@ import { PerformanceSection } from '@/components/analytique/PerformanceSection'
 import { FinanciereSection } from '@/components/analytique/FinanciereSection'
 import { CapitalisationSection } from '@/components/analytique/CapitalisationSection'
 import { SAVSection } from '@/components/analytique/SAVSection'
+import { OpportunitesSection } from '@/components/analytique/OpportunitesSection'
 
 import { getAllAnalyticsData } from '@/lib/actions/analytics'
 import { exportAnalytiquesPDF, exportAnalytiquesExcel } from '@/lib/actions/analytics-exports'
@@ -134,6 +135,7 @@ export function AnalytiquesTab() {
           <FinanciereSection data={data.financiere} />
           <CapitalisationSection data={data.capitalisation} />
           <SAVSection data={data.sav} />
+          <OpportunitesSection data={data.opportunites} />
         </div>
       ) : (
         <p className="text-muted-foreground text-sm">Aucune donnée disponible.</p>
