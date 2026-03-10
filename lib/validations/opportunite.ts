@@ -70,10 +70,7 @@ export const formOpportuniteSchema = z.object({
   datePublication:        z.date().optional().nullable(),
   dateLimite:             z.date().optional().nullable(),
   statut:                 statutOpportuniteEnum,
-  montantPropose:         z.preprocess(
-    (val) => (val === '' || val === null || val === undefined ? null : Number(val)),
-    z.number().positive().nullable().optional()
-  ),
+  montantPropose:         z.number().positive().nullable().optional(),
   notes:                  z.string().optional().nullable(),
   marcheId:               z.string().optional().nullable(),
   // Champs PERDUE

@@ -55,7 +55,7 @@ export function OpportuniteList({ opportunites, canWrite }: OpportuniteListProps
             <TableHead>Statut</TableHead>
             <TableHead>Date limite</TableHead>
             <TableHead>Montant estimé</TableHead>
-            <TableHead>Probabilité</TableHead>
+            <TableHead>Montant proposé</TableHead>
             <TableHead>Marché lié</TableHead>
             {canWrite && <TableHead className="w-[100px]">Actions</TableHead>}
           </TableRow>
@@ -79,9 +79,7 @@ export function OpportuniteList({ opportunites, canWrite }: OpportuniteListProps
               </TableCell>
               <TableCell>{formatDate(opp.dateLimite)}</TableCell>
               <TableCell>{formatMontant(opp.montantEstime)}</TableCell>
-              <TableCell>
-                {opp.probabiliteGain != null ? `${opp.probabiliteGain}%` : '—'}
-              </TableCell>
+              <TableCell>{formatMontant(opp.montantPropose)}</TableCell>
               <TableCell>
                 {opp.marche ? (
                   <Link href={`/marches/${opp.marche.id}`} className="text-sm hover:underline text-primary">

@@ -101,12 +101,12 @@ export default async function OpportuniteDetailPage({ params }: PageProps) {
               <span className="text-sm text-muted-foreground">Montant estimé</span>
               <span className="text-sm font-medium">{formatMontant(opp.montantEstime)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Probabilité de gain</span>
-              <span className="text-sm font-medium">
-                {opp.probabiliteGain != null ? `${opp.probabiliteGain}%` : '—'}
-              </span>
-            </div>
+            {opp.montantPropose != null && ['OFFRE_SOUMISE', 'EN_ATTENTE_ATTRIBUTION', 'ATTRIBUE_PROVISOIREMENT', 'GAGNEE', 'PERDUE'].includes(opp.statut) && (
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Montant proposé</span>
+                <span className="text-sm font-semibold">{formatMontant(opp.montantPropose)}</span>
+              </div>
+            )}
           </CardContent>
         </Card>
 

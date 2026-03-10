@@ -42,6 +42,11 @@ interface OpportuniteFormProps {
   opportunite?: Opportunite
 }
 
+const STATUTS_POST_SOUMISSION = ['OFFRE_SOUMISE', 'EN_ATTENTE_ATTRIBUTION', 'ATTRIBUE_PROVISOIREMENT', 'GAGNEE', 'PERDUE']
+function isStatutOffertOuPlus(statut: string | undefined): boolean {
+  return STATUTS_POST_SOUMISSION.includes(statut ?? '')
+}
+
 const STATUTS: StatutOpportuniteInput[] = [
   'EN_ANALYSE',
   'GO',
@@ -75,7 +80,9 @@ export function OpportuniteForm({ opportunite }: OpportuniteFormProps) {
                               ? new Date(opportunite.dateLimite)
                               : undefined,
       statut:               (opportunite?.statut as StatutOpportuniteInput | undefined) ?? 'EN_ANALYSE',
-      probabiliteGain:      opportunite?.probabiliteGain ?? undefined,
+      montantPropose:       opportunite?.montantPropose
+                              ? parseFloat(opportunite.montantPropose.toString())
+                              : undefined,
       notes:                opportunite?.notes ?? '',
       marcheId:             opportunite?.marcheId ?? '',
       motifPerte:           (opportunite as unknown as { motifPerte?: string | null })?.motifPerte ?? '',
@@ -173,7 +180,7 @@ export function OpportuniteForm({ opportunite }: OpportuniteFormProps) {
           />
         </div>
 
-        {/* Ligne 3 : Montant estimé + Probabilité */}
+        {/* Ligne 3 : Montant estimé + Montant proposé (conditionnel) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -194,27 +201,27 @@ export function OpportuniteForm({ opportunite }: OpportuniteFormProps) {
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="probabiliteGain"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Probabilité de gain (%)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={100}
-                    placeholder="70"
-                    {...field}
-                    value={field.value ?? ''}
-                    onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {isStatutOffertOuPlus(form.watch('statut')) && (
+            <FormField
+              control={form.control}
+              name="montantPropose"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Montant proposé (XOF)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="Montant réellement soumis"
+                      {...field}
+                      value={field.value ?? ''}
+                      onChange={(e) => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
 
         {/* Ligne 4 : Date publication + Date limite */}
