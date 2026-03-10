@@ -26,6 +26,20 @@ const changerStatutOpportuniteSchema = z.object({
     (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
     z.number().positive().max(999999999999999).optional().nullable()
   ),
+  // Champs optionnels si newStatut === 'OFFRE_SOUMISE' (MOD-6)
+  periodeValiditeDebut:    z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : new Date(val as string)),
+    z.date().optional().nullable()
+  ),
+  periodeValiditeFin:      z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : new Date(val as string)),
+    z.date().optional().nullable()
+  ),
+  // Champ optionnel si newStatut === 'ATTRIBUTION_PROVISOIRE' (MOD-7)
+  echeanceAttributionProv: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : new Date(val as string)),
+    z.date().optional().nullable()
+  ),
 })
 
 export async function changerStatutOpportunite(
@@ -52,6 +66,9 @@ export async function changerStatutOpportunite(
       motifPerte,
       concurrentGagnant,
       montantOffreConcurrent,
+      periodeValiditeDebut,
+      periodeValiditeFin,
+      echeanceAttributionProv,
     } = parsed.data
 
     // 1. Récupérer le statut actuel
@@ -89,6 +106,13 @@ export async function changerStatutOpportunite(
       updateData.motifPerte = motifPerte ?? null
       updateData.concurrentGagnant = concurrentGagnant ?? null
       updateData.montantOffreConcurrent = montantOffreConcurrent ?? null
+    }
+    if (newStatut === 'OFFRE_SOUMISE') {
+      updateData.periodeValiditeDebut = periodeValiditeDebut ?? null
+      updateData.periodeValiditeFin = periodeValiditeFin ?? null
+    }
+    if (newStatut === 'ATTRIBUE_PROVISOIREMENT') {
+      updateData.echeanceAttributionProv = echeanceAttributionProv ?? null
     }
 
     await prisma.opportunite.update({
