@@ -9,6 +9,7 @@
 import { prisma } from "@/lib/db/prisma"
 import { getMarchesForReporting, groupMarchesByStatut } from "./getMarchesForReporting"
 import { buildReportingEmail } from "@/lib/email/reporting-templates"
+import { buildOpportuniteReportingEmail } from "@/lib/email/opportunite-reporting-templates"
 import { createEmailTransport } from "@/lib/config/email"
 
 // ============================================================
@@ -134,6 +135,85 @@ export async function runReportingCron(currentHour: number): Promise<{
       sent++
     } catch (err) {
       console.error(`❌ Échec envoi reporting "${rule.name}":`, err)
+    }
+  }
+
+  return { processed: rules.length, sent, skipped }
+}
+
+// ============================================================
+// OPPORTUNITÉS REPORTING CRON
+// ============================================================
+
+/**
+ * Exécute le processing reporting Opportunités pour l'heure donnée.
+ */
+export async function runOpportuniteReportingCron(currentHour: number): Promise<{
+  processed: number
+  sent: number
+  skipped: number
+}> {
+  const now = new Date()
+
+  const rules = await prisma.opportuniteReportingRule.findMany({
+    where: { isActive: true },
+    orderBy: { createdAt: "asc" },
+  })
+
+  let sent = 0
+  let skipped = 0
+
+  for (const rule of rules) {
+    const config = rule.scheduleConfig as ReportingScheduleConfig | null
+
+    if (!shouldRunReportingRuleNow(config, currentHour, now)) {
+      skipped++
+      continue
+    }
+
+    const recipients = (rule.recipientEmails as string[]).filter(
+      (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)
+    )
+    if (recipients.length === 0) {
+      console.warn(`⚠️ Règle Opp. "${rule.name}" : aucun destinataire valide`)
+      skipped++
+      continue
+    }
+
+    const opportunites = await prisma.opportunite.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        dossiers: {
+          select: { id: true, progression: true, statut: true },
+          take: 1,
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    })
+
+    if (opportunites.length === 0) {
+      console.log(`ℹ️ Règle Opp. "${rule.name}" : aucune opportunité`)
+      skipped++
+      continue
+    }
+
+    const { subject, html, text } = buildOpportuniteReportingEmail(rule.name, opportunites, now)
+
+    try {
+      const transporter = createEmailTransport()
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM ?? "noreply@erp-marches.local",
+        to: recipients.join(", "),
+        subject,
+        html,
+        text,
+      })
+      console.log(
+        `✅ Suivi Opp. "${rule.name}" envoyé à ${recipients.length} destinataire(s) — ${opportunites.length} opportunités`
+      )
+      sent++
+    } catch (err) {
+      console.error(`❌ Échec envoi suivi opp. "${rule.name}":`, err)
     }
   }
 

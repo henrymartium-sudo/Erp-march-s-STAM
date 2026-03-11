@@ -2,7 +2,9 @@
 
 import { requireRole } from "@/lib/utils/permissions"
 import { getReportingRules } from "@/lib/actions/reporting-rules"
+import { getOpportuniteReportingRules } from "@/lib/actions/opportunite-reporting-rules"
 import { ReportingRulesClient } from "./ReportingRulesClient"
+import { OpportuniteReportingRulesClient } from "./OpportuniteReportingRulesClient"
 import { AnalytiquesTab } from "./AnalytiquesTab"
 import { redirect } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -13,11 +15,21 @@ export default async function ReportingPage() {
   const session = await requireRole(["ADMIN"]).catch(() => null)
   if (!session) redirect("/")
 
-  const rules = await getReportingRules()
+  const [rules, opportuniteRules] = await Promise.all([
+    getReportingRules(),
+    getOpportuniteReportingRules(),
+  ])
 
-  // Sérialiser les dates pour le Client Component
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const serializedRules = rules.map((r) => ({
+    ...r,
+    scheduleConfig: r.scheduleConfig as any,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+  }))
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const serializedOpportuniteRules = opportuniteRules.map((r) => ({
     ...r,
     scheduleConfig: r.scheduleConfig as any,
     createdAt: r.createdAt.toISOString(),
@@ -36,11 +48,16 @@ export default async function ReportingPage() {
       <Tabs defaultValue="reporting">
         <TabsList>
           <TabsTrigger value="reporting">Règles email</TabsTrigger>
+          <TabsTrigger value="opportunites">Suivi Opportunités</TabsTrigger>
           <TabsTrigger value="analyses">Analyses</TabsTrigger>
         </TabsList>
 
         <TabsContent value="reporting" className="mt-4">
           <ReportingRulesClient initialRules={serializedRules} />
+        </TabsContent>
+
+        <TabsContent value="opportunites" className="mt-4">
+          <OpportuniteReportingRulesClient initialRules={serializedOpportuniteRules} />
         </TabsContent>
 
         <TabsContent value="analyses" className="mt-4">

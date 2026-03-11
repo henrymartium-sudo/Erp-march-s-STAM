@@ -7,7 +7,7 @@
  */
 
 import { timingSafeEqual } from "crypto"
-import { runReportingCron } from "@/lib/cron/reporting-processor"
+import { runReportingCron, runOpportuniteReportingCron } from "@/lib/cron/reporting-processor"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function GET(request: NextRequest) {
@@ -35,14 +35,26 @@ export async function GET(request: NextRequest) {
     console.log(`📊 Démarrage cron reporting — heure courante : ${currentHour}h`)
     const startTime = Date.now()
 
-    const result = await runReportingCron(currentHour)
+    const [marches, opportunites] = await Promise.all([
+      runReportingCron(currentHour),
+      runOpportuniteReportingCron(currentHour),
+    ])
     const duration = Date.now() - startTime
 
-    console.log(`✅ Cron reporting terminé en ${duration}ms — ${result.sent} envoi(s), ${result.skipped} ignoré(s)`)
+    console.log(
+      `✅ Cron reporting terminé en ${duration}ms — ` +
+      `Marchés: ${marches.sent} envoi(s) — Opportunités: ${opportunites.sent} envoi(s)`
+    )
 
     return NextResponse.json({
       success: true,
-      data: { ...result, hour: currentHour, duration: `${duration}ms`, timestamp: new Date().toISOString() },
+      data: {
+        marches,
+        opportunites,
+        hour: currentHour,
+        duration: `${duration}ms`,
+        timestamp: new Date().toISOString(),
+      },
     }, { status: 200 })
   } catch (error) {
     console.error("❌ Erreur critique cron reporting:", error)
