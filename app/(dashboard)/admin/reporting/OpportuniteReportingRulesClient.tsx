@@ -45,7 +45,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Plus, Send, Pencil, Trash2, Power } from "lucide-react"
+import { Plus, Send, Pencil, Trash2, Power, Download } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
 
 // ============================================================
@@ -446,6 +446,7 @@ export function OpportuniteReportingRulesClient({
   const [editingRule, setEditingRule] = useState<SerializedOpportuniteReportingRule | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<SerializedOpportuniteReportingRule | null>(null)
   const [sendingId, setSendingId] = useState<string | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
 
   function refresh() {
     startTransition(() => router.refresh())
@@ -482,6 +483,25 @@ export function OpportuniteReportingRulesClient({
     }
   }
 
+  async function handleExportExcel() {
+    setIsExporting(true)
+    try {
+      const res = await fetch('/api/exports/opportunites')
+      if (!res.ok) throw new Error("Erreur lors de l'export")
+      const blob = await res.blob()
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href     = url
+      a.download = `opportunites_${new Date().toISOString().split('T')[0]}.xlsx`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error("Erreur lors de l'export Excel")
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   async function handleSendNow(rule: SerializedOpportuniteReportingRule) {
     setSendingId(rule.id)
     const result = await sendOpportuniteReportingRuleNow(rule.id)
@@ -499,10 +519,16 @@ export function OpportuniteReportingRulesClient({
         title="Suivi Opportunités"
         description="Configurez vos règles d'envoi de tableaux synthétiques des opportunités"
         action={
-          <Button onClick={openCreate}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nouvelle règle
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleExportExcel} disabled={isExporting}>
+              <Download className="w-4 h-4 mr-2" />
+              {isExporting ? "Export..." : "Exporter Excel"}
+            </Button>
+            <Button onClick={openCreate}>
+              <Plus className="w-4 h-4 mr-2" />
+              Nouvelle règle
+            </Button>
+          </div>
         }
       />
 

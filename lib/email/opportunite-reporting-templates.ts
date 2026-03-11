@@ -125,11 +125,7 @@ function buildRow(opp: OpportuniteForReporting, today: Date, rowIndex: number): 
     ? `✅ ${dossier.progression}%`
     : "—"
 
-  const notesStr = opp.notes
-    ? opp.notes.length > 60
-      ? opp.notes.slice(0, 57) + "..."
-      : opp.notes
-    : "—"
+  const notesStr = opp.notes ?? "—"
 
   // Décomptes
   const dateLimiteLabel    = joursLabel(opp.dateLimite, today)
@@ -140,7 +136,7 @@ function buildRow(opp: OpportuniteForReporting, today: Date, rowIndex: number): 
   const echeanceColor      = joursColor(opp.echeanceAttributionProv, today)
 
   return `<tr>
-    ${td(opp.reference ?? "—",     { width: 80,  bold: true, color: "#111827", bg: rowBg, borderLeft, nowrap: true })}
+    ${td(opp.reference ?? "—",     { width: 80,  bold: true, color: "#111827", bg: rowBg, borderLeft })}
     ${td(opp.objet,                 { width: 160, bg: rowBg })}
     ${td(opp.autoriteContractante,  { width: 120, bg: rowBg })}
     ${td(STATUT_OPPORTUNITE_LABELS[statut] ?? statut, { width: 100, bg: rowBg, nowrap: true })}

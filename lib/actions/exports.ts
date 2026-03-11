@@ -1,5 +1,7 @@
 'use server'
 
+import ExcelJS from 'exceljs'
+import { format } from 'date-fns'
 import { prisma } from '@/lib/db/prisma'
 import { requireRole } from '@/lib/utils/permissions'
 import { logAction } from '@/lib/audit/logAction'
@@ -1022,5 +1024,390 @@ export async function exportVehiculesPDF(
       success: false,
       error: error.message || "Erreur lors de l'export PDF des véhicules",
     }
+  }
+}
+
+// ============================================================================
+// EXPORT OPPORTUNITÉS
+// ============================================================================
+
+const STATUT_OPP_LABELS: Record<string, string> = {
+  IDENTIFIEE:              'Identifiée',
+  EN_ANALYSE:              'En analyse',
+  GO:                      'GO',
+  NO_GO:                   'NO GO',
+  SOUMISE:                 'Soumise',
+  DOSSIER_EN_PREPARATION:  'Dossier en préparation',
+  OFFRE_SOUMISE:           'Offre soumise',
+  EN_ATTENTE_ATTRIBUTION:  'En attente attribution',
+  ATTRIBUE_PROVISOIREMENT: 'Attribué provisoirement',
+  GAGNEE:                  'Gagnée',
+  PERDUE:                  'Perdue',
+}
+
+export async function exportOpportunites(
+  filters?: ExportFilters
+): Promise<ActionResult<{ buffer: Buffer; filename: string }>> {
+  try {
+    const session = await requireRole(['ADMIN', 'AVANCE', 'VISITEUR'])
+
+    const where: any = {}
+    if (filters?.statut) where.statut = filters.statut
+
+    const opportunites = await prisma.opportunite.findMany({
+      where,
+      take: EXPORT_MAX_ROWS,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        marche:   { select: { numero: true } },
+        user:     { select: { name: true } },
+        dossiers: {
+          select: { progression: true, statut: true },
+          take: 1,
+          orderBy: { updatedAt: 'desc' },
+        },
+      },
+    })
+
+    const today = new Date()
+
+    // ----------------------------------------------------------------
+    // Helpers couleur
+    // ----------------------------------------------------------------
+    function joursRestants(date: Date | null | undefined): number | null {
+      if (!date) return null
+      return Math.ceil((new Date(date).getTime() - today.getTime()) / 86400000)
+    }
+
+    function urgenceBg(date: Date | null | undefined): string {
+      if (!date) return 'FFFFFFFF'
+      const diff = joursRestants(date)!
+      if (diff <= 3) return 'FFFEE2E2'   // rouge clair
+      if (diff <= 7) return 'FFFEF3C7'   // amber clair
+      return 'FFDCFCE7'                   // vert clair
+    }
+
+    function statutBg(statut: string): string {
+      switch (statut) {
+        case 'GAGNEE':                  return 'FFDCFCE7'
+        case 'PERDUE':
+        case 'NO_GO':                   return 'FFF3F4F6'
+        case 'SOUMISE':
+        case 'OFFRE_SOUMISE':
+        case 'EN_ATTENTE_ATTRIBUTION':
+        case 'ATTRIBUE_PROVISOIREMENT': return 'FFDBEAFE'
+        default:                        return 'FFFFFFFF'
+      }
+    }
+
+    const NAVY = 'FF1E3A5F'
+
+    const workbook = new ExcelJS.Workbook()
+    workbook.creator = 'ERP Marchés STAM'
+    workbook.created = today
+
+    // ================================================================
+    // FEUILLE 1 — LISTE COMPLÈTE
+    // ================================================================
+
+    const ws = workbook.addWorksheet('Opportunités', {
+      properties: { defaultRowHeight: 18 },
+    })
+
+    // Titre
+    ws.mergeCells('A1:M1')
+    const titleCell = ws.getCell('A1')
+    titleCell.value = 'Export des Opportunités'
+    titleCell.style = {
+      font: { bold: true, size: 14, color: { argb: NAVY } },
+      alignment: { vertical: 'middle', horizontal: 'center' },
+    }
+    ws.getRow(1).height = 30
+
+    // Timestamp
+    ws.mergeCells('A2:M2')
+    const tsCell = ws.getCell('A2')
+    tsCell.value = `Généré le ${format(today, 'dd/MM/yyyy')} à ${format(today, 'HH:mm')}`
+    tsCell.style = {
+      font: { size: 9, italic: true, color: { argb: 'FF6B7280' } },
+      alignment: { vertical: 'middle', horizontal: 'center' },
+    }
+
+    const COLS = [
+      { header: 'Réf.',                 key: 'reference',            width: 18 },
+      { header: 'Objet',                key: 'objet',                width: 38 },
+      { header: 'Autorité contr.',      key: 'autoriteContractante', width: 28 },
+      { header: 'Statut',               key: 'statut',               width: 22 },
+      { header: 'Mnt. estimé (FCFA)',   key: 'montantEstime',        width: 18 },
+      { header: 'Mnt. proposé (FCFA)',  key: 'montantPropose',       width: 18 },
+      { header: 'Date limite',          key: 'dateLimite',           width: 14 },
+      { header: 'J. restants',          key: 'joursDateLimite',      width: 12 },
+      { header: 'Période validité',     key: 'periodeValidite',      width: 24 },
+      { header: 'Échéance attr.',       key: 'echeanceAttr',         width: 14 },
+      { header: 'J. échéance',          key: 'joursEcheance',        width: 12 },
+      { header: 'Dossier offre',        key: 'dossier',              width: 14 },
+      { header: 'Notes',                key: 'notes',                width: 30 },
+    ]
+
+    const headerStyle: Partial<ExcelJS.Style> = {
+      font: { bold: true, size: 10, color: { argb: 'FFFFFFFF' } },
+      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: NAVY } },
+      alignment: { vertical: 'middle', horizontal: 'center', wrapText: true },
+      border: {
+        bottom: { style: 'medium', color: { argb: 'FF000000' } },
+        right:  { style: 'thin',   color: { argb: 'FFE5E7EB' } },
+      },
+    }
+
+    // En-têtes (ligne 4)
+    const hRow = ws.getRow(4)
+    hRow.height = 25
+    COLS.forEach((col, i) => {
+      const cell = hRow.getCell(i + 1)
+      cell.value = col.header
+      cell.style = headerStyle
+      ws.getColumn(i + 1).width = col.width
+    })
+    ws.autoFilter = { from: { row: 4, column: 1 }, to: { row: 4, column: COLS.length } }
+
+    // Données
+    opportunites.forEach((opp, idx) => {
+      const rowBg    = statutBg(opp.statut)
+      const row      = ws.getRow(5 + idx)
+      row.height     = 18
+
+      const jDL      = joursRestants(opp.dateLimite)
+      const jEA      = joursRestants(opp.echeanceAttributionProv)
+
+      const periodeStr = opp.periodeValiditeDebut
+        ? `${format(new Date(opp.periodeValiditeDebut), 'dd/MM/yyyy')} → ${format(new Date(opp.periodeValiditeFin!), 'dd/MM/yyyy')}`
+        : ''
+
+      const dossier    = opp.dossiers?.[0]
+      const dossierStr = dossier
+        ? `${dossier.statut === 'SOUMIS' ? '✓ ' : ''}${dossier.progression}%`
+        : ''
+
+      const values: any[] = [
+        opp.reference ?? '',
+        opp.objet,
+        opp.autoriteContractante,
+        STATUT_OPP_LABELS[opp.statut] ?? opp.statut,
+        opp.montantEstime?.toNumber()  ?? '',
+        opp.montantPropose?.toNumber() ?? '',
+        opp.dateLimite                 ? new Date(opp.dateLimite)                 : '',
+        jDL !== null ? jDL : '',
+        periodeStr,
+        opp.echeanceAttributionProv    ? new Date(opp.echeanceAttributionProv)    : '',
+        jEA !== null ? jEA : '',
+        dossierStr,
+        opp.notes ?? '',
+      ]
+
+      values.forEach((val, i) => {
+        const cell  = row.getCell(i + 1)
+        cell.value  = val
+        const key   = COLS[i]?.key ?? ''
+        const isDate    = val instanceof Date
+        const isMontant = key.includes('montant')
+        const isJours   = key.includes('jours')
+
+        const bgArgb =
+          key === 'joursDateLimite' && opp.dateLimite            ? urgenceBg(opp.dateLimite) :
+          key === 'joursEcheance'   && opp.echeanceAttributionProv ? urgenceBg(opp.echeanceAttributionProv) :
+          rowBg
+
+        cell.style = {
+          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: bgArgb } },
+          font: { size: 10 },
+          alignment: {
+            vertical: 'middle',
+            horizontal: isDate || isJours ? 'center' : isMontant ? 'right' : 'left',
+            wrapText: key === 'objet' || key === 'notes',
+          },
+          border: {
+            bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+            right:  { style: 'thin', color: { argb: 'FFE5E7EB' } },
+          },
+          ...(isDate                              ? { numFmt: 'dd/mm/yyyy' } : {}),
+          ...(isMontant && typeof val === 'number' ? { numFmt: '#,##0'      } : {}),
+        }
+      })
+    })
+
+    // ================================================================
+    // FEUILLE 2 — SYNTHÈSE PAR STATUT
+    // ================================================================
+
+    const ws2 = workbook.addWorksheet('Synthèse')
+
+    ws2.mergeCells('A1:D1')
+    const t2 = ws2.getCell('A1')
+    t2.value = 'Synthèse des opportunités par statut'
+    t2.style = {
+      font: { bold: true, size: 14, color: { argb: NAVY } },
+      alignment: { vertical: 'middle', horizontal: 'center' },
+    }
+    ws2.getRow(1).height = 30
+
+    const synthCols = [
+      { header: 'Statut',                       width: 28 },
+      { header: 'Nombre',                        width: 10 },
+      { header: 'Montant estimé total (FCFA)',   width: 28 },
+      { header: 'Montant proposé total (FCFA)',  width: 28 },
+    ]
+    const hRow2 = ws2.getRow(3)
+    hRow2.height = 22
+    synthCols.forEach(({ header, width }, i) => {
+      const cell = hRow2.getCell(i + 1)
+      cell.value = header
+      cell.style = {
+        font:      { bold: true, size: 10, color: { argb: 'FFFFFFFF' } },
+        fill:      { type: 'pattern', pattern: 'solid', fgColor: { argb: NAVY } },
+        alignment: { vertical: 'middle', horizontal: 'center' },
+        border:    { bottom: { style: 'medium', color: { argb: 'FF000000' } } },
+      }
+      ws2.getColumn(i + 1).width = width
+    })
+
+    // Agrégation
+    const byStatut: Record<string, { count: number; estimeTotal: number; proposeTotal: number }> = {}
+    for (const opp of opportunites) {
+      const entry = byStatut[opp.statut] ?? { count: 0, estimeTotal: 0, proposeTotal: 0 }
+      entry.count++
+      entry.estimeTotal  += opp.montantEstime?.toNumber()  || 0
+      entry.proposeTotal += opp.montantPropose?.toNumber() || 0
+      byStatut[opp.statut] = entry
+    }
+
+    let sr = 4
+    for (const [statut, agg] of Object.entries(byStatut)) {
+      const bg = statutBg(statut)
+      const cells: any[] = [
+        STATUT_OPP_LABELS[statut] ?? statut,
+        agg.count,
+        agg.estimeTotal  || '',
+        agg.proposeTotal || '',
+      ]
+      cells.forEach((val, i) => {
+        const cell = ws2.getRow(sr).getCell(i + 1)
+        cell.value = val
+        cell.style = {
+          fill:      { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } },
+          font:      { size: 10 },
+          alignment: { vertical: 'middle', horizontal: i === 0 ? 'left' : i === 1 ? 'center' : 'right' },
+          border:    { bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } } },
+          ...(i >= 2 && typeof val === 'number' ? { numFmt: '#,##0' } : {}),
+        }
+      })
+      sr++
+    }
+
+    // Ligne TOTAL
+    const totalEstime  = opportunites.reduce((s, o) => s + (o.montantEstime?.toNumber()  || 0), 0)
+    const totalPropose = opportunites.reduce((s, o) => s + (o.montantPropose?.toNumber() || 0), 0)
+    const totalData: any[] = ['TOTAL', opportunites.length, totalEstime || '', totalPropose || '']
+    totalData.forEach((val, i) => {
+      const cell = ws2.getRow(sr + 1).getCell(i + 1)
+      cell.value = val
+      cell.style = {
+        fill:      { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F4F6' } },
+        font:      { bold: true, size: 10 },
+        alignment: { vertical: 'middle', horizontal: i === 0 ? 'left' : i === 1 ? 'center' : 'right' },
+        border: {
+          top:    { style: 'medium', color: { argb: NAVY } },
+          bottom: { style: 'thin',   color: { argb: 'FFE5E7EB' } },
+        },
+        ...(i >= 2 && typeof val === 'number' ? { numFmt: '#,##0' } : {}),
+      }
+    })
+
+    const buffer   = await workbook.xlsx.writeBuffer()
+    const filename = `opportunites_${new Date().toISOString().split('T')[0]}.xlsx`
+
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.EXPORT,
+      entityType: AUDIT_ENTITY.EXPORT,
+      metadata:   { format: 'EXCEL', module: 'OPPORTUNITE', filters },
+    })
+
+    return { success: true, data: { buffer: Buffer.from(buffer), filename } }
+  } catch (error: any) {
+    console.error('[EXPORT_OPPORTUNITES]', error)
+    return { success: false, error: error.message || "Erreur lors de l'export des opportunités" }
+  }
+}
+
+export async function exportOpportunitesPDF(
+  filters?: ExportFilters
+): Promise<ActionResult<{ buffer: Buffer; filename: string }>> {
+  try {
+    const session = await requireRole(['ADMIN', 'AVANCE', 'VISITEUR'])
+
+    const where: any = {}
+    if (filters?.statut) where.statut = filters.statut
+
+    const opportunites = await prisma.opportunite.findMany({
+      where,
+      take: EXPORT_MAX_ROWS,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        marche: { select: { numero: true } },
+      },
+    })
+
+    const columns: PDFColumn[] = [
+      { header: 'Objet',                 key: 'objet',                width: '30%', align: 'left' },
+      { header: 'Autorité Contractante', key: 'autoriteContractante', width: '22%', align: 'left' },
+      { header: 'Statut',                key: 'statut',               width: '15%', align: 'left' },
+      { header: 'Montant estimé',        key: 'montantEstime',        width: '15%', align: 'right', format: 'currency' },
+      { header: 'Date limite',           key: 'dateLimite',           width: '10%', align: 'center', format: 'date' },
+      { header: 'Marché',                key: 'marcheNumero',         width: '8%',  align: 'center' },
+    ]
+
+    const data = opportunites.map((o) => ({
+      objet:                o.objet,
+      autoriteContractante: o.autoriteContractante,
+      statut:               STATUT_OPP_LABELS[o.statut] ?? o.statut,
+      montantEstime:        o.montantEstime,
+      dateLimite:           o.dateLimite,
+      marcheNumero:         o.marche?.numero || '—',
+    }))
+
+    const totalEstime = opportunites.reduce(
+      (sum, o) => sum + (o.montantEstime?.toNumber() || 0),
+      0
+    )
+
+    const summary: PDFSummaryItem[] = [
+      { label: "Nombre d'opportunités", value: opportunites.length },
+      { label: 'Montant estimé total', value: `${totalEstime.toLocaleString('fr-FR')} FCFA` },
+    ]
+
+    const buffer = await createPDFDocument({
+      title:       'Export des Opportunités',
+      subtitle:    `${opportunites.length} opportunité${opportunites.length > 1 ? 's' : ''}`,
+      columns,
+      data,
+      summary,
+      orientation: filters?.orientation ?? 'landscape',
+    })
+
+    const filename = `opportunites_${new Date().toISOString().split('T')[0]}.pdf`
+
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.EXPORT,
+      entityType: AUDIT_ENTITY.EXPORT,
+      metadata:   { format: 'PDF', module: 'OPPORTUNITE', filters },
+    })
+
+    return { success: true, data: { buffer, filename } }
+  } catch (error: any) {
+    console.error('[EXPORT_OPPORTUNITES_PDF]', error)
+    return { success: false, error: error.message || "Erreur lors de l'export PDF des opportunités" }
   }
 }
