@@ -86,6 +86,36 @@ export async function exportAnalytiquesExcel(
       applyAltRow(row, i)
     })
 
+    // ── Bloc Pipeline Commercial ─────────────────────────────────────────────
+    // RÈGLE MÉTIER : les opportunités converties en marchés ne comptent qu'une fois
+    // côté Marché — le pipeline n'affiche que les opportunités actives et pré-commerciales.
+    wsSynth.addRow([])
+    const pipelineTitle = wsSynth.addRow(['PIPELINE COMMERCIAL', ''])
+    pipelineTitle.getCell(1).style = sectionStyle as ExcelJSTypes.Style
+    pipelineTitle.height = 18
+    const pipelineHdr = wsSynth.addRow(['Indicateur', 'Valeur'])
+    applyHeaderStyle(pipelineHdr)
+    const opp = data.opportunites
+    const pipelineRows: [string, number | string][] = [
+      ['Total opportunités actives (en cours)', opp.totalEnCours],
+      ['Montant estimatif total (pipeline)', opp.montantEstimeTotal],
+      ['Montant proposé total', opp.montantProposeTotal],
+      ['Taux de conversion (Opp → Offres soumises)', opp.tauxConversion / 100],
+      ['Taux de gain global (Offres → Gagnées)', opp.tauxGainGlobal / 100],
+    ]
+    pipelineRows.forEach(([label, val], i) => {
+      const row = wsSynth.addRow([label, val])
+      if (
+        label === 'Montant estimatif total (pipeline)' ||
+        label === 'Montant proposé total'
+      ) {
+        row.getCell(2).numFmt = MONTANT_FMT
+      } else if (String(label).startsWith('Taux')) {
+        row.getCell(2).numFmt = PCT_FMT
+      }
+      applyAltRow(row, i)
+    })
+
     // ── Onglet 1 : Performance ──────────────────────────────────────────────
     const wsPerf = workbook.addWorksheet('Performance')
     wsPerf.properties.tabColor = { argb: 'FF2563EB' }
@@ -179,17 +209,18 @@ export async function exportAnalytiquesExcel(
     const wsCap = workbook.addWorksheet('Capitalisation')
     wsCap.properties.tabColor = { argb: 'FFC49A1A' }
     wsCap.views = [{ state: 'frozen', ySplit: 1 }]
-    wsCap.columns = [{ width: 36 }, { width: 10 }, { width: 10 }, { width: 14 }, { width: 22 }]
+    // Colonne 6 : "Opp. en cours" — enrichissement prospectif (pipeline actif par AC)
+    wsCap.columns = [{ width: 36 }, { width: 10 }, { width: 10 }, { width: 14 }, { width: 22 }, { width: 14 }]
 
     const capTitle = wsCap.addRow(['CAPITALISATION STRATÉGIQUE — ' + periodeLabel(periode)])
     Object.assign(capTitle.getCell(1), { style: sectionStyle })
     capTitle.height = 20
     wsCap.addRow([])
 
-    const capAChdr = wsCap.addRow(['Autorité Contractante', 'Total', 'Gagnés', 'Win Rate', 'Montant'])
+    const capAChdr = wsCap.addRow(['Autorité Contractante', 'Total', 'Gagnés', 'Win Rate', 'Montant', 'Opp. en cours'])
     applyHeaderStyle(capAChdr)
     data.capitalisation.topAC.forEach((ac, i) => {
-      const row = wsCap.addRow([ac.nom, ac.total, ac.gagnes, ac.winRate / 100, ac.montant])
+      const row = wsCap.addRow([ac.nom, ac.total, ac.gagnes, ac.winRate / 100, ac.montant, ac.opportunitesEnCours])
       row.getCell(4).numFmt = PCT_FMT
       row.getCell(5).numFmt = MONTANT_FMT
       applyAltRow(row, i)
@@ -213,7 +244,106 @@ export async function exportAnalytiquesExcel(
       applyAltRow(row, i)
     })
 
-    // ── Onglet 4 : SAV ──────────────────────────────────────────────────────
+    // ── Onglet 4 : Opportunités ──────────────────────────────────────────────
+    const wsOpp = workbook.addWorksheet('Opportunités')
+    wsOpp.properties.tabColor = { argb: 'FF8B5CF6' }
+    wsOpp.views = [{ state: 'frozen', ySplit: 1 }]
+
+    const oppTitle = wsOpp.addRow(['PIPELINE OPPORTUNITÉS — ' + periodeLabel(periode)])
+    Object.assign(oppTitle.getCell(1), { style: sectionStyle })
+    oppTitle.height = 20
+    wsOpp.addRow([])
+
+    // A) Vue générale — KPIs
+    wsOpp.columns = [{ width: 44 }, { width: 24 }]
+    const oppKpiHdr = wsOpp.addRow(['Indicateur', 'Valeur'])
+    applyHeaderStyle(oppKpiHdr)
+    const oppData = data.opportunites
+    const oppKpis: [string, number][] = [
+      ['Total opportunités', oppData.totalOpportunites],
+      ['Opportunités actives (en cours)', oppData.totalEnCours],
+      ['Opportunités gagnées', oppData.totalGagnees],
+      ['Offres soumises', oppData.totalOffressoumises],
+      ['Taux de conversion (Opp → Offres)', oppData.tauxConversion / 100],
+      ['Taux de gain global (Offres → Gagnées)', oppData.tauxGainGlobal / 100],
+      ['Montant estimatif total pipeline', oppData.montantEstimeTotal],
+      ['Montant proposé total', oppData.montantProposeTotal],
+    ]
+    oppKpis.forEach(([label, val], i) => {
+      const row = wsOpp.addRow([label, val])
+      if (label === 'Montant estimatif total pipeline' || label === 'Montant proposé total') {
+        row.getCell(2).numFmt = MONTANT_FMT
+      } else if (String(label).startsWith('Taux')) {
+        row.getCell(2).numFmt = PCT_FMT
+      }
+      applyAltRow(row, i)
+    })
+
+    // B) Répartition par statut (nombre + montants)
+    wsOpp.addRow([])
+    wsOpp.columns = [{ width: 28 }, { width: 12 }, { width: 22 }, { width: 22 }]
+    const oppStatutHdr = wsOpp.addRow(['Statut', 'Nombre', 'Montant estimé', 'Montant proposé'])
+    applyHeaderStyle(oppStatutHdr)
+    oppData.parStatut.forEach((s, i) => {
+      const row = wsOpp.addRow([s.label, s.count, s.montantEstime, s.montantPropose])
+      row.getCell(3).numFmt = MONTANT_FMT
+      row.getCell(4).numFmt = MONTANT_FMT
+      applyAltRow(row, i)
+    })
+
+    // C) Pipeline → Marchés : opportunités converties
+    // RÈGLE MÉTIER : zéro doublon — ces opportunités ne comptent que dans les totaux Marchés.
+    wsOpp.addRow([])
+    wsOpp.columns = [{ width: 42 }, { width: 22 }, { width: 22 }]
+    const oppPipelineHdr = wsOpp.addRow(['Opportunité convertie', 'N° Marché', 'Montant contractualisé'])
+    applyHeaderStyle(oppPipelineHdr)
+    if (oppData.pipelineMarches.length > 0) {
+      oppData.pipelineMarches.forEach((m, i) => {
+        const row = wsOpp.addRow([m.objet, m.marcheNumero, m.marcheMontant])
+        row.getCell(3).numFmt = MONTANT_FMT
+        applyAltRow(row, i)
+      })
+    } else {
+      wsOpp.addRow(['Aucune opportunité convertie en marché sur la période'])
+    }
+
+    // D) Top autorités contractantes
+    wsOpp.addRow([])
+    wsOpp.columns = [{ width: 36 }, { width: 12 }, { width: 12 }, { width: 22 }]
+    const oppACHdr = wsOpp.addRow(['Autorité Contractante', 'Total Opp.', 'Gagnées', 'Montant estimé'])
+    applyHeaderStyle(oppACHdr)
+    oppData.topAC.forEach((ac, i) => {
+      const row = wsOpp.addRow([ac.nom, ac.count, ac.gagnees, ac.montantEstime])
+      row.getCell(4).numFmt = MONTANT_FMT
+      applyAltRow(row, i)
+    })
+
+    // E) Évolution mensuelle des opportunités identifiées
+    wsOpp.addRow([])
+    wsOpp.columns = [{ width: 20 }, { width: 22 }]
+    const oppEvolHdr = wsOpp.addRow(['Mois', 'Opportunités identifiées'])
+    applyHeaderStyle(oppEvolHdr)
+    oppData.evolutionMensuelle.forEach((m, i) => {
+      const row = wsOpp.addRow([m.label, m.count])
+      applyAltRow(row, i)
+    })
+
+    // F) Délais moyens
+    wsOpp.addRow([])
+    wsOpp.columns = [{ width: 44 }, { width: 22 }]
+    const oppDelaiHdr = wsOpp.addRow(['Indicateur délai', 'Valeur'])
+    applyHeaderStyle(oppDelaiHdr)
+    const oppDelais: [string, number][] = [
+      ['Délai moyen identification → soumission', oppData.delaiMoyenIdentificationSoumissionJours],
+      ['Délai moyen soumission → attribution', oppData.delaiMoyenSoumissionAttributionJours],
+    ]
+    oppDelais.forEach(([label, val], i) => {
+      const row = wsOpp.addRow([label, val])
+      row.getCell(2).numFmt = '0 "jours"'
+      applyAltRow(row, i)
+    })
+
+    // ── Onglet 5 : SAV ──────────────────────────────────────────────────────
     const wsSAV = workbook.addWorksheet('SAV')
     wsSAV.properties.tabColor = { argb: 'FFEF4444' }
     wsSAV.views = [{ state: 'frozen', ySplit: 1 }]

@@ -41,6 +41,7 @@ export interface CapitalisationStats {
     gagnes: number
     montant: number
     winRate: number
+    opportunitesEnCours: number  // enrichissement prospectif — pipeline actif par AC
   }[]
   parSegment: {
     type: string
@@ -78,12 +79,19 @@ export interface SAVStats {
 export interface OpportunitesStats {
   totalOpportunites: number
   totalGagnees: number
-  totalEnCours: number        // statuts actifs (hors NO_GO, PERDUE)
-  tauxConversion: number      // GAGNEE / total * 100
+  totalEnCours: number              // statuts actifs (hors NO_GO, PERDUE)
+  totalOffressoumises: number       // OFFRE_SOUMISE et statuts ultérieurs
+  tauxConversion: number            // GAGNEE / total * 100
+  tauxGainGlobal: number            // GAGNEE / totalOffressoumises * 100
   montantEstimeTotal: number
   montantProposeTotal: number
-  parStatut: { statut: string; label: string; count: number }[]
-  topAC: { nom: string; count: number; gagnees: number }[]
+  parStatut: { statut: string; label: string; count: number; montantEstime: number; montantPropose: number }[]
+  topAC: { nom: string; count: number; gagnees: number; montantEstime: number }[]
+  // Données enrichies pour export Excel
+  pipelineMarches: { objet: string; marcheNumero: string; marcheMontant: number }[]
+  evolutionMensuelle: { mois: string; label: string; count: number }[]
+  delaiMoyenIdentificationSoumissionJours: number
+  delaiMoyenSoumissionAttributionJours: number
 }
 
 // ── Données complètes ─────────────────────────────────────────────────────────

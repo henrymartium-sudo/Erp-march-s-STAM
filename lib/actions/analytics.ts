@@ -5,7 +5,7 @@ import { requireRole } from '@/lib/utils/permissions'
 import type { Periode, PerformanceStats, FinancialStats, CapitalisationStats, SAVStats, OpportunitesStats } from '@/lib/analytics/types'
 import { STATUT_LABELS, TYPE_MARCHE_LABELS } from '@/lib/constants/marche'
 import { STATUT_OPPORTUNITE_LABELS } from '@/lib/validations/opportunite'
-import { StatutMarche, StatutFacture } from '@prisma/client'
+import { StatutMarche, StatutFacture, StatutOpportunite } from '@prisma/client'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
@@ -31,11 +31,34 @@ const STATUTS_GAGNES: StatutMarche[] = [
   StatutMarche.CLOTURE,
 ]
 
+// Statuts "en cours" pour le module Opportunités (actives, hors NO_GO et PERDUE)
+const STATUTS_EN_COURS_OPP: StatutOpportunite[] = [
+  StatutOpportunite.EN_ANALYSE,
+  StatutOpportunite.GO,
+  StatutOpportunite.DOSSIER_EN_PREPARATION,
+  StatutOpportunite.OFFRE_SOUMISE,
+  StatutOpportunite.EN_ATTENTE_ATTRIBUTION,
+  StatutOpportunite.ATTRIBUE_PROVISOIREMENT,
+]
+
+// Statuts "offre soumise ou ultérieure" (pour calcul taux de gain global)
+const STATUTS_OFFRE_SOUMISE_OPP: string[] = [
+  'SOUMISE',               // legacy alias
+  'OFFRE_SOUMISE',
+  'EN_ATTENTE_ATTRIBUTION',
+  'ATTRIBUE_PROVISOIREMENT',
+  'GAGNEE',
+  'PERDUE',
+]
+
 export async function getPerformanceStats(periode: Periode): Promise<PerformanceStats> {
   await requireRole(['ADMIN'])
 
   const where = {
     dateNotification: { gte: periode.dateDebut, lte: periode.dateFin },
+    // RÈGLE MÉTIER : exclure les marchés "Opportunité identifiée" — statut pré-commercial
+    // traité dans le module Opportunités, jamais comptabilisé comme marché réel.
+    statut: { not: StatutMarche.OPPORTUNITE_IDENTIFIEE },
   }
 
   // 1. Répartition par statut
@@ -204,6 +227,8 @@ export async function getCapitalisationStats(periode: Periode): Promise<Capitali
 
   const where = {
     dateNotification: { gte: periode.dateDebut, lte: periode.dateFin },
+    // RÈGLE MÉTIER : exclure les marchés "Opportunité identifiée"
+    statut: { not: StatutMarche.OPPORTUNITE_IDENTIFIEE },
   }
 
   // 1. Tous les marchés de la période (pour calcul win rate par AC et par type)
@@ -229,6 +254,21 @@ export async function getCapitalisationStats(periode: Periode): Promise<Capitali
     acMap.set(key, existing)
   }
 
+  // Enrichissement prospectif — opportunités en cours par AC (ÉTAPE 3C)
+  // RÈGLE MÉTIER : combine vision historique (marchés réalisés) et prospective (pipeline actif)
+  const allACNoms = Array.from(acMap.keys())
+  const oppEnCoursRaw = allACNoms.length > 0
+    ? await prisma.opportunite.groupBy({
+        by: ['autoriteContractante'],
+        where: {
+          autoriteContractante: { in: allACNoms },
+          statut: { in: STATUTS_EN_COURS_OPP },
+        },
+        _count: { id: true },
+      })
+    : []
+  const oppEnCoursMap = new Map(oppEnCoursRaw.map((o) => [o.autoriteContractante, o._count.id]))
+
   const topAC = Array.from(acMap.entries())
     .map(([nom, data]) => ({
       nom,
@@ -236,6 +276,7 @@ export async function getCapitalisationStats(periode: Periode): Promise<Capitali
       gagnes: data.gagnes,
       montant: data.montant,
       winRate: data.total > 0 ? Math.round((data.gagnes / data.total) * 100) : 0,
+      opportunitesEnCours: oppEnCoursMap.get(nom) ?? 0,
     }))
     .sort((a, b) => b.montant - a.montant)
     .slice(0, 10)
@@ -388,15 +429,6 @@ export async function getSAVStats(periode: Periode): Promise<SAVStats> {
   }
 }
 
-const STATUTS_EN_COURS_OPP = [
-  'EN_ANALYSE',
-  'GO',
-  'DOSSIER_EN_PREPARATION',
-  'OFFRE_SOUMISE',
-  'EN_ATTENTE_ATTRIBUTION',
-  'ATTRIBUE_PROVISOIREMENT',
-]
-
 export async function getOpportunitesStats(periode: Periode): Promise<OpportunitesStats> {
   await requireRole(['ADMIN'])
 
@@ -404,11 +436,12 @@ export async function getOpportunitesStats(periode: Periode): Promise<Opportunit
     createdAt: { gte: periode.dateDebut, lte: periode.dateFin },
   }
 
-  // 1. Répartition par statut
+  // 1. Répartition par statut (avec montants)
   const parStatutRaw = await prisma.opportunite.groupBy({
     by: ['statut'],
     where,
     _count: { id: true },
+    _sum: { montantEstime: true, montantPropose: true },
     orderBy: { _count: { id: 'desc' } },
   })
 
@@ -419,11 +452,12 @@ export async function getOpportunitesStats(periode: Periode): Promise<Opportunit
     _sum: { montantEstime: true, montantPropose: true },
   })
 
-  // 3. Top 10 AC par nombre d'opportunités
+  // 3. Top 10 AC par nombre d'opportunités (avec montant estimé)
   const topACRaw = await prisma.opportunite.groupBy({
     by: ['autoriteContractante'],
     where,
     _count: { id: true },
+    _sum: { montantEstime: true },
     orderBy: { _count: { id: 'desc' } },
     take: 10,
   })
@@ -437,30 +471,108 @@ export async function getOpportunitesStats(periode: Periode): Promise<Opportunit
   })
   const gagneesByACMap = new Map(gagneesByACRaw.map((g) => [g.autoriteContractante, g._count.id]))
 
+  // 5. Pipeline → Marchés : opportunités converties en marché sur la période
+  // RÈGLE MÉTIER : une opportunité gagnée génère un marché lié — ne pas comptabiliser les deux.
+  const pipelineMarchesRaw = await prisma.opportunite.findMany({
+    where: { ...where, marcheId: { not: null } },
+    select: {
+      objet: true,
+      marche: { select: { numero: true, montant: true } },
+    },
+    orderBy: { createdAt: 'asc' },
+  })
+
+  // 6. Données détail pour évolution mensuelle et délais moyens
+  const oppDetails = await prisma.opportunite.findMany({
+    where,
+    select: { createdAt: true, dateLimite: true, echeanceAttributionProv: true },
+    orderBy: { createdAt: 'asc' },
+  })
+
+  // ── Calculs KPIs ────────────────────────────────────────────────────────────
   const totalOpportunites = aggregate._count.id
   const totalGagnees = parStatutRaw.find((s) => s.statut === 'GAGNEE')?._count.id ?? 0
   const totalEnCours = parStatutRaw
-    .filter((s) => STATUTS_EN_COURS_OPP.includes(s.statut))
+    .filter((s) => STATUTS_EN_COURS_OPP.includes(s.statut as StatutOpportunite))
     .reduce((sum, s) => sum + s._count.id, 0)
+
+  // Taux de gain global : offres soumises → gagnées
+  const totalOffressoumises = parStatutRaw
+    .filter((s) => STATUTS_OFFRE_SOUMISE_OPP.includes(s.statut))
+    .reduce((sum, s) => sum + s._count.id, 0)
+  const tauxGainGlobal = totalOffressoumises > 0
+    ? Math.round((totalGagnees / totalOffressoumises) * 100)
+    : 0
+
+  // ── Évolution mensuelle ──────────────────────────────────────────────────────
+  const moisMap = new Map<string, { label: string; count: number }>()
+  for (const opp of oppDetails) {
+    const key = format(opp.createdAt, 'yyyy-MM')
+    const label = format(opp.createdAt, 'MMM yyyy', { locale: fr })
+    const existing = moisMap.get(key) || { label, count: 0 }
+    existing.count += 1
+    moisMap.set(key, existing)
+  }
+  const evolutionMensuelle = Array.from(moisMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([mois, data]) => ({ mois, label: data.label, count: data.count }))
+
+  // ── Délais moyens ────────────────────────────────────────────────────────────
+  // Délai identification → soumission (createdAt → dateLimite)
+  const oppAvecDateLimite = oppDetails.filter((o) => o.dateLimite)
+  const delaiMoyenIdentificationSoumissionJours = oppAvecDateLimite.length > 0
+    ? Math.round(
+        oppAvecDateLimite.reduce((sum, o) => {
+          const jours = (o.dateLimite!.getTime() - o.createdAt.getTime()) / (1000 * 60 * 60 * 24)
+          return sum + Math.max(0, jours)
+        }, 0) / oppAvecDateLimite.length
+      )
+    : 0
+  // Délai soumission → attribution (dateLimite → echeanceAttributionProv)
+  const oppAvecDeuxDates = oppDetails.filter((o) => o.dateLimite && o.echeanceAttributionProv)
+  const delaiMoyenSoumissionAttributionJours = oppAvecDeuxDates.length > 0
+    ? Math.round(
+        oppAvecDeuxDates.reduce((sum, o) => {
+          const jours =
+            (o.echeanceAttributionProv!.getTime() - o.dateLimite!.getTime()) / (1000 * 60 * 60 * 24)
+          return sum + Math.max(0, jours)
+        }, 0) / oppAvecDeuxDates.length
+      )
+    : 0
 
   return {
     totalOpportunites,
     totalGagnees,
     totalEnCours,
+    totalOffressoumises,
     tauxConversion:
       totalOpportunites > 0 ? Math.round((totalGagnees / totalOpportunites) * 100) : 0,
+    tauxGainGlobal,
     montantEstimeTotal: Number(aggregate._sum.montantEstime ?? 0),
     montantProposeTotal: Number(aggregate._sum.montantPropose ?? 0),
     parStatut: parStatutRaw.map((s) => ({
       statut: s.statut,
       label: STATUT_OPPORTUNITE_LABELS[s.statut] ?? s.statut,
       count: s._count.id,
+      montantEstime: Number(s._sum.montantEstime ?? 0),
+      montantPropose: Number(s._sum.montantPropose ?? 0),
     })),
     topAC: topACRaw.map((ac) => ({
       nom: ac.autoriteContractante,
       count: ac._count.id,
       gagnees: gagneesByACMap.get(ac.autoriteContractante) ?? 0,
+      montantEstime: Number(ac._sum.montantEstime ?? 0),
     })),
+    pipelineMarches: pipelineMarchesRaw
+      .filter((o) => o.marche)
+      .map((o) => ({
+        objet: o.objet,
+        marcheNumero: o.marche!.numero,
+        marcheMontant: Number(o.marche!.montant ?? 0),
+      })),
+    evolutionMensuelle,
+    delaiMoyenIdentificationSoumissionJours,
+    delaiMoyenSoumissionAttributionJours,
   }
 }
 
