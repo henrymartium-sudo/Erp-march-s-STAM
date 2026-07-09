@@ -338,7 +338,7 @@ export function DashboardShell({ children, userName, userRole }: DashboardShellP
 
       {/* ── Zone principale ── */}
       {/* md: décalée de 56px (icônes), lg: décalée de 240px (full) */}
-      <div className="flex flex-col flex-1 min-h-screen md:pl-14 lg:pl-sidebar">
+      <div className="flex flex-col flex-1 min-w-0 min-h-screen md:pl-14 lg:pl-sidebar">
 
         {/* Topbar */}
         <header
