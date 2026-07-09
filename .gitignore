@@ -1,8 +1,8 @@
 # Fichiers d'environnement (secrets et configurations locales)
-.env
-.env.local
-.env.test
-.env.*.local
+# Tout .env* est ignoré par défaut ; seuls les templates sont explicitement inclus.
+.env*
+!.env.example
+!.env.test.example
 
 # Dépendances Node.js
 node_modules/
