@@ -29,7 +29,7 @@ Se rendre sur : https://vercel.com/henrymartium-sudo/erp-marches-stam/settings/e
 #### 🔐 Sécurité Cron
 
 ```env
-CRON_SECRET=***REMOVED-CRON-SECRET***
+CRON_SECRET=VOTRE_CRON_SECRET
 ```
 
 **Type** : Encrypted
@@ -123,14 +123,14 @@ vercel link
 
 # Déclencher le cron manuellement
 curl -X GET "https://erp-marches-stam.vercel.app/api/cron/daily-alerts" \
-  -H "Authorization: Bearer ***REMOVED-CRON-SECRET***"
+  -H "Authorization: Bearer VOTRE_CRON_SECRET"
 ```
 
 **Via Postman/Insomnia** :
 
 ```
 GET https://erp-marches-stam.vercel.app/api/cron/daily-alerts
-Header: Authorization: Bearer ***REMOVED-CRON-SECRET***
+Header: Authorization: Bearer VOTRE_CRON_SECRET
 ```
 
 **Réponse attendue (succès)** :
@@ -190,7 +190,7 @@ npm run dev
 
 # Autre terminal
 curl -X GET "http://localhost:3000/api/cron/daily-alerts" \
-  -H "Authorization: Bearer ***REMOVED-CRON-SECRET***"
+  -H "Authorization: Bearer VOTRE_CRON_SECRET"
 ```
 
 **Vérifier** :
