@@ -10,25 +10,30 @@ export interface TestUser {
   role: 'ADMIN' | 'AVANCE' | 'EXPLOITATION' | 'VISITEUR';
 }
 
+// Les mots de passe des comptes de test ont été rotés le 2026-07-09
+// (valeurs jamais commitées). Les injecter via .env.test :
+// TEST_ADMIN_PASSWORD, TEST_AVANCE_PASSWORD, TEST_EXPLOITATION_PASSWORD,
+// TEST_VISITEUR_PASSWORD (+ TEST_*_EMAIL optionnels).
+// Les fallbacks ci-dessous sont les anciennes valeurs publiques, invalides en prod.
 export const TEST_USERS: Record<string, TestUser> = {
   admin: {
-    email: 'admin@erp-marches.local',
-    password: 'Admin123!',
+    email: process.env.TEST_ADMIN_EMAIL || 'admin@erp-marches.local',
+    password: process.env.TEST_ADMIN_PASSWORD || 'Admin123!',
     role: 'ADMIN',
   },
   avance: {
-    email: 'avance@erp-marches.local',
-    password: 'Avance123!',
+    email: process.env.TEST_AVANCE_EMAIL || 'avance@erp-marches.local',
+    password: process.env.TEST_AVANCE_PASSWORD || 'Avance123!',
     role: 'AVANCE',
   },
   exploitation: {
-    email: 'exploitation@erp-marches.local',
-    password: 'Exploitation123!',
+    email: process.env.TEST_EXPLOITATION_EMAIL || 'exploitation@erp-marches.local',
+    password: process.env.TEST_EXPLOITATION_PASSWORD || 'Exploitation123!',
     role: 'EXPLOITATION',
   },
   visiteur: {
-    email: 'visiteur@erp-marches.local',
-    password: 'Visiteur123!',
+    email: process.env.TEST_VISITEUR_EMAIL || 'visiteur@erp-marches.local',
+    password: process.env.TEST_VISITEUR_PASSWORD || 'Visiteur123!',
     role: 'VISITEUR',
   },
 };
