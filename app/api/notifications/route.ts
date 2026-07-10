@@ -9,12 +9,22 @@ export async function GET() {
     const session = await requireAuth()
     const userId = session.user.id
 
+    const where = {
+      recipientUserId: userId,
+      channel: "IN_APP",
+      status: "PENDING",
+    } as const
+
+    // La grande majorité des polls (toutes les 30 s) ne trouve aucune
+    // notification : sans ce garde, l'include ci-dessous déclenche quand
+    // même une requête de relations « alert_events WHERE id IN (NULL) ».
+    const count = await prisma.alertNotification.count({ where })
+    if (count === 0) {
+      return NextResponse.json({ success: true, data: [] })
+    }
+
     const notifications = await prisma.alertNotification.findMany({
-      where: {
-        recipientUserId: userId,
-        channel: "IN_APP",
-        status: "PENDING",
-      },
+      where,
       include: {
         event: { select: { type: true, sourceModule: true, referenceId: true, payload: true } },
         rule:  { select: { name: true, priority: true } },
