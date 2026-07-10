@@ -15,7 +15,10 @@ export interface TestUser {
 // TEST_ADMIN_PASSWORD, TEST_AVANCE_PASSWORD, TEST_EXPLOITATION_PASSWORD,
 // TEST_VISITEUR_PASSWORD (+ TEST_*_EMAIL optionnels).
 // Les fallbacks ci-dessous sont les anciennes valeurs publiques, invalides en prod.
-export const TEST_USERS: Record<string, TestUser> = {
+// Type concret (satisfies) plutôt que Record<string, TestUser> :
+// avec noUncheckedIndexedAccess, l'indexation d'un Record rendait
+// TEST_USERS.admin « possibly undefined » dans tous les specs.
+export const TEST_USERS = {
   admin: {
     email: process.env.TEST_ADMIN_EMAIL || 'admin@erp-marches.local',
     password: process.env.TEST_ADMIN_PASSWORD || 'Admin123!',
@@ -36,7 +39,7 @@ export const TEST_USERS: Record<string, TestUser> = {
     password: process.env.TEST_VISITEUR_PASSWORD || 'Visiteur123!',
     role: 'VISITEUR',
   },
-};
+} satisfies Record<string, TestUser>;
 
 /**
  * Se connecter avec un utilisateur test
