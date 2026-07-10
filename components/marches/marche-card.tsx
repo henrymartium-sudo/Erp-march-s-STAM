@@ -2,7 +2,7 @@ import Link from 'next/link'
 import type { SerializedMarche } from '@/types/serialized'
 import { StatutBadge } from './statut-badge'
 import { formatMontant, formatDateCourt } from '@/lib/utils/format'
-import { getUrgency, URGENCY_STYLES } from '@/lib/utils/urgence'
+import { getMarcheUrgency, URGENCY_STYLES } from '@/lib/utils/urgence'
 import { Eye, Pencil, Building2, Calendar, Banknote, Clock } from 'lucide-react'
 import type { StatutMarche } from '@prisma/client'
 
@@ -40,7 +40,7 @@ export function MarcheCard({ marche }: MarcheCardProps) {
 
   const accentBar = STATUT_TOP_COLOR[marche.statut] ?? 'bg-gray-200'
 
-  const urgency = marche.dateFinPrevue ? getUrgency(new Date(marche.dateFinPrevue)) : null
+  const urgency = getMarcheUrgency(marche.statut, marche.dateFinPrevue)
 
   return (
     <div className="group bg-white rounded-xl border border-gray-100 shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 flex flex-col overflow-hidden">

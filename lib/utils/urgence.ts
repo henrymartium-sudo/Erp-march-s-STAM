@@ -1,3 +1,6 @@
+import type { StatutMarche } from '@prisma/client'
+import { isTerminal } from './workflow-statuts'
+
 /**
  * Utilitaire d'indicateurs d'urgence basé sur la date de fin prévue
  */
@@ -53,6 +56,20 @@ export function getUrgency(deadline: Date): UrgencyInfo {
     daysRemaining,
     label: `${daysRemaining} j restants`,
   }
+}
+
+/**
+ * Urgence d'un marché en tenant compte de son statut.
+ * Un marché en statut terminal (CLOTURE, RESILIE, ANNULE, INFRUCTUEUX)
+ * n'a plus d'échéance active : aucun badge d'urgence.
+ * Même logique que getNiveauAlerte(statut, date) côté cautions.
+ */
+export function getMarcheUrgency(
+  statut: StatutMarche,
+  dateFinPrevue: Date | string | null | undefined
+): UrgencyInfo | null {
+  if (!dateFinPrevue || isTerminal(statut)) return null
+  return getUrgency(new Date(dateFinPrevue))
 }
 
 /**
