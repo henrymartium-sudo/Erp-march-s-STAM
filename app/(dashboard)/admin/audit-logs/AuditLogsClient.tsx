@@ -27,6 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { DataPagination } from '@/components/ui/data-pagination'
+import { shouldShowPagination } from '@/lib/utils/pagination'
 import { getAuditLogById, exportAuditLogsCsv } from '@/lib/actions/audit-logs'
 import { ACTION_LABELS, ENTITY_LABELS } from '@/lib/audit/constants'
 import type { AuditLogRow, AuditLogDetail, AuditLogFilters } from '@/lib/actions/audit-logs'
@@ -255,7 +256,9 @@ export function AuditLogsClient({ logs, pagination, filters }: Props) {
       </div>
 
       {/* ── Pagination ── */}
-      <DataPagination pagination={pagination} />
+      {shouldShowPagination(pagination.totalItems) && (
+        <DataPagination pagination={pagination} />
+      )}
 
       {/* ── Drawer détail ── */}
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
