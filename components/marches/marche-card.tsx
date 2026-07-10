@@ -55,7 +55,7 @@ export function MarcheCard({ marche }: MarcheCardProps) {
         {/* Header */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="min-w-0">
-            <p className="font-mono-marche text-stam-accent font-semibold leading-tight truncate">
+            <p className="font-mono-marche text-stam-accent font-semibold leading-tight truncate" title={marche.numero}>
               {marche.numero}
             </p>
             {isNumeroProvisoire(marche.numero) && (
@@ -84,7 +84,7 @@ export function MarcheCard({ marche }: MarcheCardProps) {
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Building2 className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-            <span className="text-muted-foreground truncate max-w-[55%]">{marche.autoriteContractanteNom}</span>
+            <span className="text-muted-foreground truncate max-w-[55%]" title={marche.autoriteContractanteNom}>{marche.autoriteContractanteNom}</span>
           </div>
           {marche.dateNotification && (
             <div className="flex items-center gap-2 text-sm">

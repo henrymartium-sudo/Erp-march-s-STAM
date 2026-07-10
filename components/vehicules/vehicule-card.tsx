@@ -36,7 +36,7 @@ export function VehiculeCard({ vehicule }: VehiculeCardProps) {
         {/* Header */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="min-w-0">
-            <p className="font-mono-marche text-stam-accent font-semibold leading-tight truncate">
+            <p className="font-mono-marche text-stam-accent font-semibold leading-tight truncate" title={vehicule.immatriculation}>
               {vehicule.immatriculation}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -65,7 +65,12 @@ export function VehiculeCard({ vehicule }: VehiculeCardProps) {
           {vehicule.marches && vehicule.marches.length > 0 && (
             <div className="flex items-center gap-2 text-sm">
               <Truck className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-              <span className="text-muted-foreground truncate max-w-[55%]">
+              <span
+                className="text-muted-foreground truncate max-w-[55%]"
+                title={vehicule.marches.length === 1
+                  ? `Marché ${vehicule.marches[0]?.numero ?? ''}`
+                  : `${vehicule.marches.length} marchés`}
+              >
                 {vehicule.marches.length === 1
                   ? `Marché ${vehicule.marches[0]?.numero ?? ''}`
                   : `${vehicule.marches.length} marchés`}

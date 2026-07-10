@@ -511,10 +511,13 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
                 >
                   <Truck className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-sm font-mono font-semibold text-stam-accent truncate">
+                    <p className="text-sm font-mono font-semibold text-stam-accent truncate" title={vehicule.immatriculation}>
                       {vehicule.immatriculation}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p
+                      className="text-xs text-muted-foreground truncate"
+                      title={`${vehicule.marque} ${vehicule.modele}${vehicule.annee ? ` • ${vehicule.annee}` : ''}`}
+                    >
                       {vehicule.marque} {vehicule.modele}
                       {vehicule.annee ? ` • ${vehicule.annee}` : ''}
                     </p>

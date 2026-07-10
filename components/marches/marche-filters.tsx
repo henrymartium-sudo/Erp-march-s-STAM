@@ -385,6 +385,7 @@ export function MarcheFilters({ totalCount, filteredCount }: MarcheFiltersProps)
                   >
                     <button
                       className="flex-1 text-sm text-left truncate"
+                      title={filter.nom}
                       onClick={() => applyFilter(filter)}
                     >
                       {filter.nom}

@@ -81,7 +81,7 @@ export function MarcheDossiersSection({ marcheId, canWrite }: MarcheDossiersSect
               className="flex items-center justify-between p-2.5 rounded-lg border border-gray-100 hover:bg-muted/30 transition-colors"
             >
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium truncate">{d.titre}</p>
+                <p className="text-sm font-medium truncate" title={d.titre}>{d.titre}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <Progress value={d.progression} className="h-1.5 w-24" />
                   <span className="text-xs text-muted-foreground">{d.progression}%</span>

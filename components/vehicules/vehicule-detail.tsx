@@ -208,7 +208,7 @@ export function VehiculeDetail({ vehicule, canWrite = false, canWriteSAV = false
                 <div key={marche.id} className="flex items-start justify-between gap-4">
                   <div className="space-y-1 min-w-0">
                     <p className="font-semibold">{marche.numero}</p>
-                    <p className="text-sm text-muted-foreground truncate">
+                    <p className="text-sm text-muted-foreground truncate" title={marche.objet}>
                       {marche.objet}
                     </p>
                   </div>

@@ -115,12 +115,12 @@ export function CautionCard({
         </div>
 
         {/* Référence */}
-        <p className="font-semibold text-foreground leading-snug truncate">
+        <p className="font-semibold text-foreground leading-snug truncate" title={caution.reference || 'Sans référence'}>
           {caution.reference || 'Sans référence'}
         </p>
 
         {/* Banque */}
-        <p className="text-xs text-muted-foreground mt-0.5 truncate">
+        <p className="text-xs text-muted-foreground mt-0.5 truncate" title={caution.banqueNom}>
           {caution.banqueNom}
         </p>
       </div>
@@ -158,6 +158,7 @@ export function CautionCard({
             <Link
               href={`/marches/${caution.marche.id}`}
               className="truncate hover:text-stam-accent hover:underline transition-colors"
+              title={`${caution.marche.numero} — ${caution.marche.objet}`}
               onClick={(e) => e.stopPropagation()}
             >
               {caution.marche.numero} — {caution.marche.objet}

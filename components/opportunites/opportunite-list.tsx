@@ -64,7 +64,7 @@ export function OpportuniteList({ opportunites, canWrite }: OpportuniteListProps
           {opportunites.map((opp) => (
             <TableRow key={opp.id}>
               <TableCell className="font-medium max-w-[200px]">
-                <Link href={`/opportunites/${opp.id}`} className="hover:underline truncate block">
+                <Link href={`/opportunites/${opp.id}`} className="hover:underline truncate block" title={opp.objet}>
                   {opp.objet}
                 </Link>
                 {opp.reference && (
