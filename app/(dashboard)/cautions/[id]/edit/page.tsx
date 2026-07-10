@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { requireAuth } from "@/lib/utils/permissions";
 import { getCaution } from "@/lib/actions/cautions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { RetryButton } from "@/components/shared/retry-button";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -59,6 +60,9 @@ export default async function EditCautionPage({
               Impossible de charger la caution : {result.error}
             </CardDescription>
           </CardHeader>
+          <CardContent>
+            <RetryButton />
+          </CardContent>
         </Card>
       </div>
     );

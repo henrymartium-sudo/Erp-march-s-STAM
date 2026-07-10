@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageHeader } from '@/components/shared/page-header'
+import { RetryButton } from '@/components/shared/retry-button'
 import { DataPagination } from '@/components/ui/data-pagination'
 import { Plus } from 'lucide-react'
 import { requireAuth, canWrite, canExport } from '@/lib/utils/permissions'
@@ -56,6 +57,9 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
               Impossible de charger les documents : {result.error}
             </CardDescription>
           </CardHeader>
+          <CardContent>
+            <RetryButton />
+          </CardContent>
         </Card>
       </div>
     )

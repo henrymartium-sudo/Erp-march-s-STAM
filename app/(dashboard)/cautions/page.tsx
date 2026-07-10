@@ -2,7 +2,8 @@ import { Suspense } from "react";
 import { Metadata } from "next";
 import { requireAuth, canWrite, canExport } from "@/lib/utils/permissions";
 import { getCautions } from "@/lib/actions/cautions";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { RetryButton } from "@/components/shared/retry-button";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
 import { ExportMenu } from "@/components/exports";
@@ -88,6 +89,9 @@ export default async function CautionsPage({ searchParams }: CautionsPageProps) 
               Impossible de charger les cautions : {result.error}
             </CardDescription>
           </CardHeader>
+          <CardContent>
+            <RetryButton />
+          </CardContent>
         </Card>
       </div>
     );

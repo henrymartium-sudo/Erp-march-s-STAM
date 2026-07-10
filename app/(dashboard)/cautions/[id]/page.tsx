@@ -2,7 +2,8 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { requireAuth } from "@/lib/utils/permissions";
 import { getCaution } from "@/lib/actions/cautions";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { RetryButton } from "@/components/shared/retry-button";
 import { Button } from "@/components/ui/button";
 import { BreadcrumbNav } from "@/components/shared/breadcrumb-nav";
 import { PageHeader } from "@/components/shared/page-header";
@@ -56,6 +57,9 @@ export default async function CautionDetailPage({
               Impossible de charger la caution : {result.error}
             </CardDescription>
           </CardHeader>
+          <CardContent>
+            <RetryButton />
+          </CardContent>
         </Card>
       </div>
     );

@@ -10,6 +10,7 @@ import { AlertesDashboard } from "@/components/admin/alertes/alertes-dashboard";
 import { AlertesTimeline } from "@/components/admin/alertes/alertes-timeline";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RetryButton } from "@/components/shared/retry-button";
 import { AlertCircle, Settings2, History } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -42,8 +43,9 @@ export default async function AlertesPage() {
               Erreur
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <p>Impossible de charger les alertes.</p>
+            <RetryButton />
           </CardContent>
         </Card>
       </div>

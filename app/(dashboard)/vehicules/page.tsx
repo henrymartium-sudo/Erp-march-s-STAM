@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageHeader } from '@/components/shared/page-header'
+import { RetryButton } from '@/components/shared/retry-button'
 import { VehiculeList } from '@/components/vehicules/vehicule-list'
 import { VehiculeFilters } from '@/components/vehicules/vehicule-filters'
 import { ExportMenu } from '@/components/exports'
@@ -57,6 +58,9 @@ export default async function VehiculesPage({ searchParams }: VehiculesPageProps
               Impossible de charger les véhicules : {result.error}
             </CardDescription>
           </CardHeader>
+          <CardContent>
+            <RetryButton />
+          </CardContent>
         </Card>
       </div>
     )
