@@ -247,10 +247,11 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
 
     if (warnings.length > 0) {
       setWarning(
-        `Attention : Ce marché a un statut de terminaison mais il manque des informations importantes : ${warnings.join(', ')}. Voulez-vous continuer ?`
+        `Ce marché a un statut de terminaison : veuillez renseigner ${warnings.join(', ')} avant de soumettre.`
       )
-      // Laisser continuer mais avec l'avertissement affiché
-      return true
+      // Bloquant — la validation Zod (marcheRefinements) rejette aussi
+      // ces cas en amont ; ceci est un filet de sécurité.
+      return false
     }
 
     return true

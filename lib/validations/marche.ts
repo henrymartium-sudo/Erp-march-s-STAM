@@ -157,33 +157,70 @@ const baseMarcheSchema = z.object({
   commentaireStatut: z.string().optional().nullable(),
 })
 
-// Schéma avec refinements pour la validation complète
-export const marcheSchema = baseMarcheSchema.superRefine((data, ctx) => {
-  // Validation conditionnelle selon le statut
+// ============================================================================
+// REFINEMENTS PARTAGÉS (create/update, client/serveur)
+// ============================================================================
 
-  // Validation des motifs de terminaison (minimum 10 caractères si fourni)
-  if (data.statut === 'RESILIE' && data.motifsResiliation && data.motifsResiliation.length < 10) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Les motifs de résiliation doivent contenir au moins 10 caractères',
-      path: ['motifsResiliation'],
-    })
+type MarcheRefinementData = Partial<z.infer<typeof baseMarcheSchema>>
+
+/**
+ * Validation conditionnelle selon le statut.
+ * Pour un statut de terminaison (RESILIE, ANNULE, INFRUCTUEUX), la date
+ * et les motifs (≥ 10 caractères) sont obligatoires — bloquant, cohérent
+ * avec COMMENTAIRE_OBLIGATOIRE de lib/utils/workflow-statuts.ts.
+ * Sur un schéma partiel (update), les contrôles ne s'appliquent que si
+ * le statut est présent dans le payload.
+ */
+const marcheRefinements = (data: MarcheRefinementData, ctx: z.RefinementCtx) => {
+  if (data.statut === 'RESILIE') {
+    if (!data.dateResiliation) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'La date de résiliation est requise pour un marché résilié',
+        path: ['dateResiliation'],
+      })
+    }
+    if (!data.motifsResiliation || data.motifsResiliation.trim().length < 10) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Les motifs de résiliation sont requis (minimum 10 caractères)',
+        path: ['motifsResiliation'],
+      })
+    }
   }
 
-  if (data.statut === 'ANNULE' && data.motifsAnnulation && data.motifsAnnulation.length < 10) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Les motifs d\'annulation doivent contenir au moins 10 caractères',
-      path: ['motifsAnnulation'],
-    })
+  if (data.statut === 'ANNULE') {
+    if (!data.dateAnnulation) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'La date d\'annulation est requise pour un marché annulé',
+        path: ['dateAnnulation'],
+      })
+    }
+    if (!data.motifsAnnulation || data.motifsAnnulation.trim().length < 10) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Les motifs d\'annulation sont requis (minimum 10 caractères)',
+        path: ['motifsAnnulation'],
+      })
+    }
   }
 
-  if (data.statut === 'INFRUCTUEUX' && data.motifsInfructueux && data.motifsInfructueux.length < 10) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Les motifs doivent contenir au moins 10 caractères',
-      path: ['motifsInfructueux'],
-    })
+  if (data.statut === 'INFRUCTUEUX') {
+    if (!data.dateInfructueux) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'La date de déclaration d\'infructuosité est requise',
+        path: ['dateInfructueux'],
+      })
+    }
+    if (!data.motifsInfructueux || data.motifsInfructueux.trim().length < 10) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Les motifs d\'infructuosité sont requis (minimum 10 caractères)',
+        path: ['motifsInfructueux'],
+      })
+    }
   }
 
   // Validation cross-field : dateAttributionDefinitive >= dateAttributionProvisoire
@@ -209,7 +246,10 @@ export const marcheSchema = baseMarcheSchema.superRefine((data, ctx) => {
       })
     }
   }
-})
+}
+
+// Schéma avec refinements pour la validation complète
+export const marcheSchema = baseMarcheSchema.superRefine(marcheRefinements)
 
 // Schéma pour la création (sans id, sans dates auto)
 export const createMarcheSchema = marcheSchema
@@ -235,63 +275,22 @@ const preprocessedDateFields = {
 }
 
 // Schéma pour les Server Actions (avec preprocessing des dates)
-export const createMarcheServerSchema = baseMarcheSchema.extend(preprocessedDateFields).superRefine((data, ctx) => {
-  // Copie des refinements du marcheSchema
-  if (data.statut === 'RESILIE' && data.motifsResiliation && data.motifsResiliation.length < 10) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Les motifs de résiliation doivent contenir au moins 10 caractères',
-      path: ['motifsResiliation'],
-    })
-  }
-
-  if (data.statut === 'ANNULE' && data.motifsAnnulation && data.motifsAnnulation.length < 10) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Les motifs d\'annulation doivent contenir au moins 10 caractères',
-      path: ['motifsAnnulation'],
-    })
-  }
-
-  if (data.statut === 'INFRUCTUEUX' && data.motifsInfructueux && data.motifsInfructueux.length < 10) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Les motifs doivent contenir au moins 10 caractères',
-      path: ['motifsInfructueux'],
-    })
-  }
-
-  if (
-    data.dateAttributionProvisoire &&
-    data.dateAttributionDefinitive &&
-    data.dateAttributionDefinitive < data.dateAttributionProvisoire
-  ) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'La date d\'attribution définitive doit être postérieure ou égale à la date d\'attribution provisoire',
-      path: ['dateAttributionDefinitive'],
-    })
-  }
-
-  if (data.statut === 'INFRUCTUEUX' && data.montantOffreConcurrent !== null && data.montantOffreConcurrent !== undefined) {
-    if (data.montantOffreConcurrent <= 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Le montant de l\'offre du concurrent doit être positif',
-        path: ['montantOffreConcurrent'],
-      })
-    }
-  }
-})
+export const createMarcheServerSchema = baseMarcheSchema
+  .extend(preprocessedDateFields)
+  .superRefine(marcheRefinements)
 
 // Schéma pour la modification (avec id, toutes les dates optionnelles)
 // Utilise baseMarcheSchema au lieu de marcheSchema pour éviter l'erreur .partial() avec refinements
-export const updateMarcheSchema = baseMarcheSchema.partial().extend({
+const updateMarcheBaseSchema = baseMarcheSchema.partial().extend({
   id: z.string().cuid(),
 })
 
+export const updateMarcheSchema = updateMarcheBaseSchema.superRefine(marcheRefinements)
+
 // Schéma pour modification avec preprocessing
-export const updateMarcheServerSchema = updateMarcheSchema.extend(preprocessedDateFields)
+export const updateMarcheServerSchema = updateMarcheBaseSchema
+  .extend(preprocessedDateFields)
+  .superRefine(marcheRefinements)
 
 // ============================================================================
 // TYPES INFÉRÉS
