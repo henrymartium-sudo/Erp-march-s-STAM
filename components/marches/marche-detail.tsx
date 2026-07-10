@@ -17,6 +17,7 @@ import { MarcheFacturesSection } from './marche-factures-section'
 import { MarcheDossiersSection } from './marche-dossiers-section'
 import { ConvertirEnOpportuniteButton } from './convertir-en-opportunite-button'
 import { formatMontant, formatDateLong, formatDelai } from '@/lib/utils/format'
+import { isNumeroProvisoire } from '@/lib/utils/marche-numero'
 import { Pencil, Truck } from 'lucide-react'
 
 interface MarcheDetailProps {
@@ -50,6 +51,14 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
           <p className="font-mono-marche text-stam-accent font-semibold text-base leading-tight">
             {marche.numero}
           </p>
+          {isNumeroProvisoire(marche.numero) && (
+            <Badge
+              variant="outline"
+              className="mt-1 bg-amber-50 text-amber-800 border-amber-300"
+            >
+              Numéro provisoire — à corriger
+            </Badge>
+          )}
           <h1 className="text-2xl font-bold tracking-tight text-foreground mt-1 leading-snug">
             {marche.objet}
           </h1>

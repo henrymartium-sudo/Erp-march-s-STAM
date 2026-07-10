@@ -3,6 +3,7 @@ import type { SerializedMarche } from '@/types/serialized'
 import { StatutBadge } from './statut-badge'
 import { formatMontant, formatDateCourt } from '@/lib/utils/format'
 import { getMarcheUrgency, URGENCY_STYLES } from '@/lib/utils/urgence'
+import { isNumeroProvisoire } from '@/lib/utils/marche-numero'
 import { Eye, Pencil, Building2, Calendar, Banknote, Clock } from 'lucide-react'
 import type { StatutMarche } from '@prisma/client'
 
@@ -57,6 +58,11 @@ export function MarcheCard({ marche }: MarcheCardProps) {
             <p className="font-mono-marche text-stam-accent font-semibold leading-tight truncate">
               {marche.numero}
             </p>
+            {isNumeroProvisoire(marche.numero) && (
+              <span className="inline-block mt-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-300">
+                Numéro provisoire — à corriger
+              </span>
+            )}
             <p className="text-xs text-muted-foreground mt-0.5">
               {TYPE_LABELS[marche.type] ?? marche.type}
             </p>
