@@ -60,6 +60,15 @@ export function isExploitation(role?: string | null): boolean {
 }
 
 /**
+ * Statut de marché forcé pour un rôle en lecture (EXPLOITATION restreint à EN_EXECUTION).
+ * Source unique de vérité : à utiliser dans toute fonction qui lit des marchés
+ * (liste, détail, export) pour que la restriction s'applique partout.
+ */
+export function getMarcheStatutRestriction(role?: string | null): 'EN_EXECUTION' | undefined {
+  return isExploitation(role) ? 'EN_EXECUTION' : undefined
+}
+
+/**
  * Détermine si un rôle peut exporter des données (PDF / Excel).
  * ADMIN, AVANCE et VISITEUR peuvent exporter tous les modules.
  * EXPLOITATION peut uniquement exporter les véhicules (géré au niveau de la page).

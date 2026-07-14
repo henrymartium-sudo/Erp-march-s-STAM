@@ -41,12 +41,10 @@ export default async function MarchesPage({ searchParams }: MarchesPageProps) {
   // Parse page number
   const currentPage = Number(params.page) || 1
 
-  // EXPLOITATION : forcer le filtre EN_EXECUTION
-  const statutFilter = userIsExploitation ? 'EN_EXECUTION' : params.statut
-
   // Récupérer les marchés avec tous les filtres (backend)
+  // Note : la restriction EXPLOITATION → EN_EXECUTION est appliquée dans getAllMarches()
   const marchesResponse = await getAllMarches({
-    statut: statutFilter,
+    statut: params.statut,
     type: params.type,
     search: params.search,
     montantMin: params.montantMin,
@@ -97,6 +95,7 @@ export default async function MarchesPage({ searchParams }: MarchesPageProps) {
       <MarcheFilters
         totalCount={paginationData.totalItems}
         filteredCount={marchesFiltres.length}
+        isExploitation={userIsExploitation}
       />
 
       {/* Liste des marchés */}

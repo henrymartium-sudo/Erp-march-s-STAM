@@ -3,7 +3,7 @@
 import ExcelJS from 'exceljs'
 import { format } from 'date-fns'
 import { prisma } from '@/lib/db/prisma'
-import { requireRole } from '@/lib/utils/permissions'
+import { requireRole, getMarcheStatutRestriction } from '@/lib/utils/permissions'
 import { logAction } from '@/lib/audit/logAction'
 import { AUDIT_ACTION, AUDIT_ENTITY } from '@/lib/audit/constants'
 import type { ActionResult } from '@/types'
@@ -47,10 +47,13 @@ export async function exportMarches(
     // Vérification permissions (EXPLOITATION minimum)
     const session = await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION'])
 
-    // Construction du filtre Prisma
+    // Construction du filtre Prisma — EXPLOITATION restreint à EN_EXECUTION
     const where: any = {}
+    const statutRestriction = getMarcheStatutRestriction(session.user.role)
 
-    if (filters?.statut) {
+    if (statutRestriction) {
+      where.statut = statutRestriction
+    } else if (filters?.statut) {
       where.statut = filters.statut
     }
 
@@ -511,10 +514,13 @@ export async function exportMarchesPDF(
     // Vérification permissions (EXPLOITATION minimum)
     const session = await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION'])
 
-    // Construction du filtre Prisma (même que Excel)
+    // Construction du filtre Prisma (même que Excel) — EXPLOITATION restreint à EN_EXECUTION
     const where: any = {}
+    const statutRestriction = getMarcheStatutRestriction(session.user.role)
 
-    if (filters?.statut) {
+    if (statutRestriction) {
+      where.statut = statutRestriction
+    } else if (filters?.statut) {
       where.statut = filters.statut
     }
 

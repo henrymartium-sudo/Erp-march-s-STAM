@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db/prisma'
 import { createMarcheSchema, updateMarcheSchema } from '@/lib/validations/marche'
-import { requireAuth, requireMarcheWrite, requireDelete } from '@/lib/utils/permissions'
+import { requireAuth, requireMarcheWrite, requireDelete, getMarcheStatutRestriction } from '@/lib/utils/permissions'
 import type { ActionResult } from '@/types'
 import type { Marche, TypeMarche, StatutMarche } from '@prisma/client'
 import { isTransitionValid } from '@/lib/utils/workflow-statuts'
@@ -326,7 +326,7 @@ export async function deleteMarche(id: string): Promise<ActionResult> {
 export async function getMarcheById(id: string): Promise<Marche | null> {
   try {
     // Vérification d'authentification (lecture accessible à tous les utilisateurs connectés)
-    await requireAuth()
+    const session = await requireAuth()
 
     const marche = await prisma.marche.findUnique({
       where: { id },
@@ -358,6 +358,13 @@ export async function getMarcheById(id: string): Promise<Marche | null> {
         },
       },
     })
+
+    // EXPLOITATION restreint aux marchés EN_EXECUTION
+    const statutRestriction = getMarcheStatutRestriction(session.user.role)
+    if (statutRestriction && marche?.statut !== statutRestriction) {
+      return null
+    }
+
     return marche
   } catch (error) {
     console.error('Erreur lors de la récupération du marché:', error)
@@ -382,15 +389,19 @@ export async function getAllMarches(
 ): Promise<PaginatedResponse<Marche>> {
   try {
     // Vérification d'authentification (lecture accessible à tous les utilisateurs connectés)
-    await requireAuth()
+    const session = await requireAuth()
 
     const { page, limit, ...filterParams } = options
 
     // Calcul skip/take pour Prisma
     const { skip, take } = getPrismaSkipTake({ page, limit })
 
-    // Construction des filtres via buildMarcheWhere
-    const where = buildMarcheWhere(filterParams as MarcheFilterParams)
+    // Construction des filtres via buildMarcheWhere — EXPLOITATION restreint à EN_EXECUTION
+    const statutRestriction = getMarcheStatutRestriction(session.user.role)
+    const where = buildMarcheWhere({
+      ...(filterParams as MarcheFilterParams),
+      ...(statutRestriction && { statut: statutRestriction }),
+    })
 
     // Exécution parallèle : données + count
     const [marches, total] = await Promise.all([

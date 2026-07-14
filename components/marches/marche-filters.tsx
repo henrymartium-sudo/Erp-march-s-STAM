@@ -46,9 +46,10 @@ const TYPE_LABELS: Record<string, string> = {
 interface MarcheFiltersProps {
   totalCount: number
   filteredCount: number
+  isExploitation?: boolean
 }
 
-export function MarcheFilters({ totalCount, filteredCount }: MarcheFiltersProps) {
+export function MarcheFilters({ totalCount, filteredCount, isExploitation }: MarcheFiltersProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
@@ -236,31 +237,33 @@ export function MarcheFilters({ totalCount, filteredCount }: MarcheFiltersProps)
 
         {/* Dropdowns + Actions */}
         <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
-          {/* Statut */}
-          <Select value={statutActuel} onValueChange={(v) => updateParam('statut', v)}>
-            <SelectTrigger className="w-40 h-10">
-              <SelectValue placeholder="Statut" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="tous">Tous les statuts</SelectItem>
-              {Object.entries(STATUT_LABELS)
-                .filter(([value]) => !['RESILIE', 'ANNULE', 'INFRUCTUEUX'].includes(value))
-                .map(([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                ))}
-              <SelectSeparator />
-              <SelectGroup>
-                <SelectLabel>Terminés</SelectLabel>
-                {['RESILIE', 'ANNULE', 'INFRUCTUEUX']
-                  .filter((value) => STATUT_LABELS[value as keyof typeof STATUT_LABELS])
-                  .map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {STATUT_LABELS[value as keyof typeof STATUT_LABELS]}
-                    </SelectItem>
+          {/* Statut — masqué pour EXPLOITATION (toujours restreint à EN_EXECUTION côté serveur) */}
+          {!isExploitation && (
+            <Select value={statutActuel} onValueChange={(v) => updateParam('statut', v)}>
+              <SelectTrigger className="w-40 h-10">
+                <SelectValue placeholder="Statut" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="tous">Tous les statuts</SelectItem>
+                {Object.entries(STATUT_LABELS)
+                  .filter(([value]) => !['RESILIE', 'ANNULE', 'INFRUCTUEUX'].includes(value))
+                  .map(([value, label]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
                   ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+                <SelectSeparator />
+                <SelectGroup>
+                  <SelectLabel>Terminés</SelectLabel>
+                  {['RESILIE', 'ANNULE', 'INFRUCTUEUX']
+                    .filter((value) => STATUT_LABELS[value as keyof typeof STATUT_LABELS])
+                    .map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {STATUT_LABELS[value as keyof typeof STATUT_LABELS]}
+                      </SelectItem>
+                    ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          )}
 
           {/* Type */}
           <Select value={typeActuel} onValueChange={(v) => updateParam('type', v)}>
@@ -423,7 +426,7 @@ export function MarcheFilters({ totalCount, filteredCount }: MarcheFiltersProps)
       {/* Chips filtres actifs */}
       {activeFilterCount > 0 && (
         <div className="flex flex-wrap gap-1.5 px-3 pb-2">
-          {filterParams.statut && (
+          {!isExploitation && filterParams.statut && (
             <Badge variant="secondary" className="gap-1 text-xs">
               Statut : {STATUT_LABELS[filterParams.statut as keyof typeof STATUT_LABELS] || filterParams.statut}
               <button onClick={() => updateParam('statut', null)}>
