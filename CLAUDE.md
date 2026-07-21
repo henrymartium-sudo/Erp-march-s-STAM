@@ -135,6 +135,24 @@ Requirements:
       L'utilisateur doit pouvoir créer un nouveau marché avec tous les champs requis...
 ```
 
+## Disciplines actives — instanciation projet
+
+Les 5 contrôles du skill global `disciplines-actives` (`~/.claude/skills/disciplines-actives/`) s'appliquent avant **chaque action structurelle**, pas seulement au démarrage d'une session. Déclenchement automatique par hooks depuis le 21/07/2026 ; chaque application produit un bloc de preuve de 5 lignes dans la réponse.
+
+- **17.1 Finalité** : outil de production STAM dont la raison d'être est le succès aux appels d'offres. Une action est légitime si elle sert un utilisateur réel **et/ou** améliore les chances d'une soumission. **La fiabilité des données n'est pas négociable** — une fonctionnalité sans utilisateur identifié est une dette, pas une amélioration.
+
+- **17.2 Trace** : (a) commit git sur `main` · (b) Journal de décisions (vault Obsidian local, hors dépôt) · (c) `docs/plans/` ou `memory/checkpoint-*.md` selon la nature ; `PRD.md` / `ARCHITECTURE.md` si la décision change le périmètre ou l'architecture · (d) validation Abel dans le fil — **aucun issue tracker n'est utilisé sur ce projet** (vérifié le 21/07/2026), ne pas en supposer un.
+
+- **17.3 Verdicts antérieurs** : Journal de décisions Obsidian **et** claude-mem (deux dépôts distincts, interroger les deux) · `docs/audit/` · `openspec/` pour les specs déjà tranchées.
+
+- **17.4 Irréversible sur ce projet** — les quatre, par ordre de gravité :
+  1. **Emails automatiques** (Vercel Cron → Nodemailer) — partent vers de vrais destinataires. Un email envoyé ne se rappelle pas. Ne jamais déclencher une règle d'envoi pour « tester » sur des données de production.
+  2. **Ce dépôt est public** — tout secret, identifiant ou donnée client poussé est diffusé immédiatement, et un correctif ultérieur ne purge ni les caches distants ni les forks. Avant tout push : vérifier qu'aucune valeur réelle n'est en dur (y compris hors fichiers `.env`, qu'aucun `.gitignore` ne couvre), et qu'aucun chemin local ni information d'infrastructure n'est ajouté.
+  3. **Base PostgreSQL de production** — les données réelles (marchés, cautions, pièces d'offre) ne se reconstituent pas. Vérifier l'existence d'une sauvegarde **avant** toute migration Prisma, jamais après.
+  4. **Déploiement production** (`vercel --prod`) — techniquement rollback-able, mais ce que les utilisateurs ont vu ou saisi entre-temps ne l'est pas.
+
+- **Lecture fraîche** : état réel de la base (pas le schéma supposé), branche et working tree courants, dernier déploiement Vercel, `git ls-files` avant toute affirmation sur ce qui est versionné.
+
 ---
 
-**Dernière mise à jour** : 2026-01-31
+**Dernière mise à jour** : 2026-07-21 (ajout de l'instanciation disciplines-actives)
