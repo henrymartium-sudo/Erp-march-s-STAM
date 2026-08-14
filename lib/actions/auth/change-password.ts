@@ -48,6 +48,10 @@ export async function changePassword(formData: FormData): Promise<ChangePassword
     return { success: false, error: 'Utilisateur introuvable' }
   }
 
+  if (!user.password) {
+    return { success: false, error: 'Ce compte se connecte via Google et n\'a pas de mot de passe à changer' }
+  }
+
   const valid = await bcrypt.compare(currentPassword, user.password)
   if (!valid) {
     return { success: false, error: 'Mot de passe actuel incorrect' }

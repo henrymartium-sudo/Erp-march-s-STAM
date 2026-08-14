@@ -22,6 +22,7 @@ export default async function UsersAdminPage() {
     name: u.name,
     email: u.email,
     role: u.role as string,
+    accountStatus: u.accountStatus as string,
     createdAt: u.createdAt.toISOString(),
     identifiers: u.identifiers.map(i => ({
       id: i.id,

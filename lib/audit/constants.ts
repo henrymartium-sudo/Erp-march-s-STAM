@@ -6,6 +6,8 @@ export const AUDIT_ACTION = {
   LOGIN_FAILED:    'LOGIN_FAILED',
   CHANGE_PASSWORD: 'CHANGE_PASSWORD',
   EXPORT:          'EXPORT',
+  APPROVE_USER:    'APPROVE_USER',
+  REJECT_USER:     'REJECT_USER',
 } as const
 
 export type AuditAction = typeof AUDIT_ACTION[keyof typeof AUDIT_ACTION]
@@ -22,6 +24,7 @@ export const AUDIT_ENTITY = {
   FACTURE:        'FACTURE',
   OPPORTUNITE:    'OPPORTUNITE',
   DOSSIER_OFFRE:  'DOSSIER_OFFRE',
+  USER:           'USER',
 } as const
 
 export type AuditEntity = typeof AUDIT_ENTITY[keyof typeof AUDIT_ENTITY]
@@ -38,6 +41,7 @@ export const ENTITY_LABELS: Record<string, string> = {
   FACTURE:        'Facture',
   OPPORTUNITE:    'Opportunité',
   DOSSIER_OFFRE:  'Dossier d\'offre',
+  USER:           'Utilisateur',
 }
 
 export const ACTION_LABELS: Record<string, string> = {
@@ -48,4 +52,6 @@ export const ACTION_LABELS: Record<string, string> = {
   LOGIN_FAILED:    'Connexion échouée',
   CHANGE_PASSWORD: 'Changement MDP',
   EXPORT:          'Export',
+  APPROVE_USER:    'Compte approuvé',
+  REJECT_USER:     'Compte refusé',
 }

@@ -2,16 +2,27 @@
 
 import React, { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronDown, ChevronUp, Plus, Trash2, Star, Mail, Users } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus, Trash2, Star, Mail, Users, Check, X, UserPlus } from 'lucide-react'
 import {
   addUserIdentifier,
   removeUserIdentifier,
   setPrimaryUserIdentifier,
 } from '@/lib/actions/auth/user-identifiers'
+import { approveUser, rejectUser } from '@/lib/actions/auth/users'
 import { toast } from '@/lib/utils/toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
+const ASSIGNABLE_ROLES = ['ADMIN', 'AVANCE', 'EXPLOITATION', 'VISITEUR'] as const
+type AssignableRole = typeof ASSIGNABLE_ROLES[number]
 
 type BadgeVariant = 'success' | 'warning' | 'info' | 'muted'
 
@@ -47,6 +58,7 @@ interface UserData {
   name: string
   email: string
   role: string
+  accountStatus: string
   createdAt: string
   identifiers: UserIdentifierData[]
 }
@@ -62,6 +74,36 @@ export function UsersAdminClient({ users }: UsersAdminClientProps) {
   const [pendingActionId, setPendingActionId] = useState<string | null>(null)
   const [addEmail, setAddEmail] = useState<Record<string, string>>({})
   const [addError, setAddError] = useState<Record<string, string>>({})
+  const [roleChoice, setRoleChoice] = useState<Record<string, AssignableRole>>({})
+
+  const handleApprove = (userId: string) => {
+    const role = roleChoice[userId] ?? 'VISITEUR'
+    setPendingActionId(userId)
+    startTransition(async () => {
+      const result = await approveUser(userId, role)
+      setPendingActionId(null)
+      if (result.success) {
+        toast.success('Compte approuvé')
+        router.refresh()
+      } else {
+        toast.error(result.error)
+      }
+    })
+  }
+
+  const handleReject = (userId: string) => {
+    setPendingActionId(userId)
+    startTransition(async () => {
+      const result = await rejectUser(userId)
+      setPendingActionId(null)
+      if (result.success) {
+        toast.success('Demande refusée')
+        router.refresh()
+      } else {
+        toast.error(result.error)
+      }
+    })
+  }
 
   const handleAdd = (userId: string) => {
     const email = (addEmail[userId] ?? '').trim()
@@ -112,6 +154,9 @@ export function UsersAdminClient({ users }: UsersAdminClientProps) {
     })
   }
 
+  const pendingRequests = users.filter(u => u.accountStatus === 'PENDING')
+  const otherUsers = users.filter(u => u.accountStatus !== 'PENDING')
+
   if (users.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
@@ -122,8 +167,68 @@ export function UsersAdminClient({ users }: UsersAdminClientProps) {
   }
 
   return (
-    <div className="space-y-3 max-w-3xl">
-      {users.map(user => {
+    <div className="space-y-6 max-w-3xl">
+
+      {/* ── Demandes d'accès en attente (login Google sans compte existant) ── */}
+      {pendingRequests.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+            <UserPlus className="h-3.5 w-3.5" />
+            Demandes en attente ({pendingRequests.length})
+          </p>
+          {pendingRequests.map(user => {
+            const isRowPending = isPending && pendingActionId === user.id
+            const role = roleChoice[user.id] ?? 'VISITEUR'
+            return (
+              <div
+                key={user.id}
+                className="bg-amber-50/50 rounded-xl border border-amber-200 px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between"
+              >
+                <div className="min-w-0">
+                  <div className="font-medium text-sm text-foreground truncate">{user.name}</div>
+                  <div className="text-xs text-muted-foreground truncate">{user.email}</div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Select
+                    value={role}
+                    onValueChange={(v) => setRoleChoice(prev => ({ ...prev, [user.id]: v as AssignableRole }))}
+                    disabled={isRowPending}
+                  >
+                    <SelectTrigger className="w-36 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ASSIGNABLE_ROLES.map(r => (
+                        <SelectItem key={r} value={r}>{getRoleLabel(r)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    onClick={() => handleApprove(user.id)}
+                    disabled={isRowPending}
+                  >
+                    <Check className="h-3.5 w-3.5 mr-1" />
+                    Approuver
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleReject(user.id)}
+                    disabled={isRowPending}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <X className="h-3.5 w-3.5 mr-1" />
+                    Refuser
+                  </Button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {otherUsers.map(user => {
         const isExpanded = expandedId === user.id
         const identCount = user.identifiers.length
         const isUserPending = isPending && pendingActionId === user.id
@@ -154,6 +259,11 @@ export function UsersAdminClient({ users }: UsersAdminClientProps) {
                 <Badge variant={getRoleVariant(user.role)} className="text-[11px]">
                   {getRoleLabel(user.role)}
                 </Badge>
+                {user.accountStatus === 'REJECTED' && (
+                  <Badge variant="danger" className="text-[11px]">
+                    Refusé
+                  </Badge>
+                )}
                 {identCount > 0 && (
                   <span className="text-xs text-muted-foreground tabular-nums">
                     {identCount} alias

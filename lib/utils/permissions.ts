@@ -11,6 +11,14 @@ export async function requireAuth() {
     throw new Error('Non authentifié')
   }
 
+  // PENDING/REJECTED explicites uniquement — une session JWT émise avant l'ajout
+  // de ce champ n'a pas accountStatus dans son token ; la traiter comme bloquée
+  // déconnecterait tous les utilisateurs déjà connectés au déploiement de cette
+  // fonctionnalité, alors qu'ils étaient légitimement actifs.
+  if (session.user.accountStatus === 'PENDING' || session.user.accountStatus === 'REJECTED') {
+    throw new Error('Compte en attente de validation ou désactivé')
+  }
+
   return session
 }
 

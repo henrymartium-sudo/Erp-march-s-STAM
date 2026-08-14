@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { LoginForm } from '@/components/auth/login-form'
 
 export default function LoginPage() {
@@ -27,7 +28,9 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <LoginForm />
+      <Suspense fallback={<div className="h-8 w-8 border-2 border-[hsl(214_52%_18%)] border-t-transparent rounded-full animate-spin mx-auto" />}>
+        <LoginForm />
+      </Suspense>
 
       <p className="mt-6 text-center text-xs text-muted-foreground">
         Système sécurisé — STAM v2.0

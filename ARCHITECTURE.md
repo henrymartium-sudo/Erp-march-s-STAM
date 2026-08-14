@@ -1481,6 +1481,21 @@ export async function deleteMarche(id: string) {
 | **EXPLOITATION** | Consultation complète + ajout limité (factures, documents), pas de suppression |
 | **VISITEUR** | Lecture seule sur tous les modules |
 
+### Connexion Google (OAuth)
+
+En plus du provider `Credentials`, `lib/auth/auth.config.ts` inclut un provider `Google` (`next-auth/providers/google`, variables `AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET`).
+
+**Pas d'auto-provisioning direct** : la connexion Google ne donne jamais un accès immédiat.
+- Email Google déjà associé à un `User` avec `accountStatus = 'ACTIVE'` → connexion normale, rôle lu en base (jamais depuis le profil Google).
+- Email inconnu → création automatique d'un `User` avec `accountStatus = 'PENDING'`, `role = 'VISITEUR'` (placeholder), `password = null`. Un email est envoyé aux ADMIN actifs. L'utilisateur est redirigé vers `/login?error=pending_approval` sans session valide.
+- Email connu mais `accountStatus = 'PENDING'` ou `'REJECTED'` → redirection avec le message correspondant, pas de nouvelle création.
+
+**Validation ADMIN** : `/admin/utilisateurs` affiche les comptes `PENDING` dans une section dédiée avec choix du rôle + boutons Approuver/Refuser (`lib/actions/auth/users.ts` — `approveUser`/`rejectUser`, tracés dans `audit_logs`).
+
+**Défense en profondeur** : `requireAuth()` (`lib/utils/permissions.ts`) rejette toute session dont `accountStatus !== 'ACTIVE'`, même si le blocage au niveau `signIn` était contourné.
+
+**Champ `User.password` nullable** : un compte créé via Google n'a pas de mot de passe — `authorize()` (Credentials) le vérifie explicitement avant `bcrypt.compare`.
+
 ---
 
 ## Performance & Optimisations

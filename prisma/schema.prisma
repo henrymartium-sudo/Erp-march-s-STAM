@@ -14,8 +14,9 @@ model User {
   id            String          @id @default(cuid())
   email         String          @unique
   name          String
-  password      String          // Hash bcrypt
+  password      String?         // Hash bcrypt — null pour un compte créé via Google (pas de mot de passe)
   role          UserRole        @default(VISITEUR)
+  accountStatus AccountStatus   @default(ACTIVE) // PENDING = créé via Google, en attente de validation ADMIN
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
@@ -68,6 +69,12 @@ enum UserRole {
   AVANCE         // Gestion complète marchés/cautions
   EXPLOITATION   // Consultation + ajout limité
   VISITEUR       // Lecture seule
+}
+
+enum AccountStatus {
+  ACTIVE     // Compte opérationnel
+  PENDING    // Créé via Google, en attente de validation ADMIN
+  REJECTED   // Demande d'accès refusée par un ADMIN
 }
 
 // ============================================

@@ -47,6 +47,8 @@ playwright/.cache/
 *.sqlite3
 *.sql
 backup_*.sql
+# Exception : les migrations Prisma doivent rester versionnées
+!prisma/migrations/**/*.sql
 
 # Cache Python (si vous avez des scripts Python)
 __pycache__/
