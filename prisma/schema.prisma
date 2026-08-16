@@ -72,9 +72,10 @@ enum UserRole {
 }
 
 enum AccountStatus {
-  ACTIVE     // Compte opérationnel
-  PENDING    // Créé via Google, en attente de validation ADMIN
-  REJECTED   // Demande d'accès refusée par un ADMIN
+  ACTIVE       // Compte opérationnel
+  PENDING      // Créé via Google, en attente de validation ADMIN
+  REJECTED     // Demande d'accès refusée par un ADMIN
+  DEACTIVATED  // Compte désactivé par un ADMIN — réversible (cf. reactivateUser)
 }
 
 // ============================================
