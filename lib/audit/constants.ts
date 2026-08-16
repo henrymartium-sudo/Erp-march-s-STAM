@@ -8,6 +8,8 @@ export const AUDIT_ACTION = {
   EXPORT:          'EXPORT',
   APPROVE_USER:    'APPROVE_USER',
   REJECT_USER:     'REJECT_USER',
+  DEACTIVATE_USER: 'DEACTIVATE_USER',
+  REACTIVATE_USER: 'REACTIVATE_USER',
 } as const
 
 export type AuditAction = typeof AUDIT_ACTION[keyof typeof AUDIT_ACTION]
@@ -54,4 +56,6 @@ export const ACTION_LABELS: Record<string, string> = {
   EXPORT:          'Export',
   APPROVE_USER:    'Compte approuvé',
   REJECT_USER:     'Compte refusé',
+  DEACTIVATE_USER: 'Compte désactivé',
+  REACTIVATE_USER: 'Compte réactivé',
 }
