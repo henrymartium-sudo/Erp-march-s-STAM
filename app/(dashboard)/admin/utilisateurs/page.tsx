@@ -6,7 +6,7 @@ import { UsersAdminClient } from './UsersAdminClient'
 export const dynamic = 'force-dynamic'
 
 export default async function UsersAdminPage() {
-  await requireRole(['ADMIN'])
+  const session = await requireRole(['ADMIN'])
 
   const users = await prisma.user.findMany({
     include: {
@@ -40,7 +40,7 @@ export default async function UsersAdminPage() {
         description="Gestion des comptes et des identités email secondaires"
         count={users.length}
       />
-      <UsersAdminClient users={serialized} />
+      <UsersAdminClient users={serialized} currentUserId={session.user.id} />
     </div>
   )
 }

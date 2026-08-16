@@ -2,13 +2,13 @@
 
 import React, { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronDown, ChevronUp, Plus, Trash2, Star, Mail, Users, Check, X, UserPlus } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus, Trash2, Star, Mail, Users, Check, X, UserPlus, UserX, UserCheck } from 'lucide-react'
 import {
   addUserIdentifier,
   removeUserIdentifier,
   setPrimaryUserIdentifier,
 } from '@/lib/actions/auth/user-identifiers'
-import { approveUser, rejectUser } from '@/lib/actions/auth/users'
+import { approveUser, rejectUser, deactivateUser, reactivateUser } from '@/lib/actions/auth/users'
 import { toast } from '@/lib/utils/toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -65,9 +65,10 @@ interface UserData {
 
 interface UsersAdminClientProps {
   users: UserData[]
+  currentUserId: string
 }
 
-export function UsersAdminClient({ users }: UsersAdminClientProps) {
+export function UsersAdminClient({ users, currentUserId }: UsersAdminClientProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -98,6 +99,34 @@ export function UsersAdminClient({ users }: UsersAdminClientProps) {
       setPendingActionId(null)
       if (result.success) {
         toast.success('Demande refusée')
+        router.refresh()
+      } else {
+        toast.error(result.error)
+      }
+    })
+  }
+
+  const handleDeactivate = (userId: string) => {
+    setPendingActionId(userId)
+    startTransition(async () => {
+      const result = await deactivateUser(userId)
+      setPendingActionId(null)
+      if (result.success) {
+        toast.success('Compte désactivé')
+        router.refresh()
+      } else {
+        toast.error(result.error)
+      }
+    })
+  }
+
+  const handleReactivate = (userId: string) => {
+    setPendingActionId(userId)
+    startTransition(async () => {
+      const result = await reactivateUser(userId)
+      setPendingActionId(null)
+      if (result.success) {
+        toast.success('Compte réactivé')
         router.refresh()
       } else {
         toast.error(result.error)
@@ -264,10 +293,39 @@ export function UsersAdminClient({ users }: UsersAdminClientProps) {
                     Refusé
                   </Badge>
                 )}
+                {user.accountStatus === 'DEACTIVATED' && (
+                  <Badge variant="muted" className="text-[11px]">
+                    Désactivé
+                  </Badge>
+                )}
                 {identCount > 0 && (
                   <span className="text-xs text-muted-foreground tabular-nums">
                     {identCount} alias
                   </span>
+                )}
+                {user.accountStatus === 'ACTIVE' && user.id !== currentUserId && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDeactivate(user.id)}
+                    disabled={isUserPending}
+                    className="h-7 px-2 text-[11px] text-destructive hover:text-destructive"
+                  >
+                    <UserX className="h-3.5 w-3.5 mr-1" />
+                    Désactiver
+                  </Button>
+                )}
+                {user.accountStatus === 'DEACTIVATED' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleReactivate(user.id)}
+                    disabled={isUserPending}
+                    className="h-7 px-2 text-[11px]"
+                  >
+                    <UserCheck className="h-3.5 w-3.5 mr-1" />
+                    Réactiver
+                  </Button>
                 )}
                 <button
                   onClick={() => setExpandedId(isExpanded ? null : user.id)}
