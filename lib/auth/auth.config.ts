@@ -193,6 +193,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             return '/login?error=pending_approval'
           }
 
+          if (dbUser.accountStatus === 'DEACTIVATED') {
+            return '/login?error=account_deactivated'
+          }
+
           // REJECTED
           return '/login?error=account_rejected'
         }

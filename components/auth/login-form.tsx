@@ -21,8 +21,9 @@ import { Separator } from '@/components/ui/separator'
 import { LogIn, AlertCircle } from 'lucide-react'
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
-  pending_approval: "Votre demande d'accès a été transmise à l'administrateur. Vous recevrez un accès dès validation.",
-  account_rejected: "Votre demande d'accès a été refusée. Contactez l'administrateur.",
+  pending_approval:    "Votre demande d'accès a été transmise à l'administrateur. Vous recevrez un accès dès validation.",
+  account_rejected:    "Votre demande d'accès a été refusée. Contactez l'administrateur.",
+  account_deactivated: "Votre compte a été désactivé par un administrateur. Contactez l'administrateur pour le réactiver.",
 }
 
 const loginSchema = z.object({
