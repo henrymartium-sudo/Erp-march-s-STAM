@@ -11,11 +11,22 @@ export async function requireAuth() {
     throw new Error('Non authentifié')
   }
 
-  // PENDING/REJECTED explicites uniquement — une session JWT émise avant l'ajout
-  // de ce champ n'a pas accountStatus dans son token ; la traiter comme bloquée
-  // déconnecterait tous les utilisateurs déjà connectés au déploiement de cette
-  // fonctionnalité, alors qu'ils étaient légitimement actifs.
-  if (session.user.accountStatus === 'PENDING' || session.user.accountStatus === 'REJECTED') {
+  // PENDING/REJECTED/DEACTIVATED explicites uniquement — une session JWT émise
+  // avant l'ajout de ce champ n'a pas accountStatus dans son token ; la traiter
+  // comme bloquée déconnecterait tous les utilisateurs déjà connectés au
+  // déploiement de cette fonctionnalité, alors qu'ils étaient légitimement actifs.
+  //
+  // Limite connue : un token déjà émis pour un compte ACTIVE n'est jamais
+  // resynchronisé avec la DB en cours de session (le callback jwt() de
+  // auth.config.ts ne relit accountStatus qu'au moment du login, cf. le bloc
+  // `if (user && account?.provider === ...)`). Désactiver un utilisateur ne
+  // met donc PAS fin à une session déjà ouverte — elle expire naturellement.
+  // Ce garde bloque en revanche toute NOUVELLE tentative de connexion.
+  if (
+    session.user.accountStatus === 'PENDING' ||
+    session.user.accountStatus === 'REJECTED' ||
+    session.user.accountStatus === 'DEACTIVATED'
+  ) {
     throw new Error('Compte en attente de validation ou désactivé')
   }
 
