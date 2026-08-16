@@ -56,6 +56,12 @@ async function main() {
       password: 'Visiteur123!',
       role: UserRole.VISITEUR,
     },
+    {
+      email: 'deactivation.target@erp-marches.local',
+      name: 'Deactivation Test',
+      password: 'Deactivation123!',
+      role: UserRole.VISITEUR,
+    },
   ];
 
   for (const userData of testUsers) {

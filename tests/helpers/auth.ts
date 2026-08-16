@@ -39,6 +39,12 @@ export const TEST_USERS = {
     password: process.env.TEST_VISITEUR_PASSWORD || 'Visiteur123!',
     role: 'VISITEUR',
   },
+  // Compte cible pour les tests de désactivation/réactivation (admin/utilisateurs).
+  deactivationTarget: {
+    email: process.env.TEST_DEACTIVATION_EMAIL || 'deactivation.target@erp-marches.local',
+    password: process.env.TEST_DEACTIVATION_PASSWORD || 'Deactivation123!',
+    role: 'VISITEUR',
+  },
 } satisfies Record<string, TestUser>;
 
 /**

@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
@@ -100,7 +101,27 @@ async function main() {
   });
   console.log('✅ Utilisateur VISITEUR créé :', visiteur.email);
 
-  console.log('\n🎉 Seed terminé ! 4 utilisateurs de test créés.\n');
+  // Utilisateur 5 : cible dédiée aux tests de désactivation/réactivation —
+  // NE JAMAIS l'utiliser pour un login par rôle ailleurs dans la suite.
+  const deactivationPassword = await bcrypt.hash('Deactivation123!', 10);
+  const deactivationTarget = await prisma.user.upsert({
+    where: { email: 'deactivation.target@erp-marches.local' },
+    update: {
+      password: deactivationPassword,
+      role: 'VISITEUR',
+      accountStatus: 'ACTIVE', // auto-réparation si un run E2E précédent a échoué en cours de route
+    },
+    create: {
+      id: 'test-deactivation-001',
+      name: 'Deactivation Test',
+      email: 'deactivation.target@erp-marches.local',
+      password: deactivationPassword,
+      role: 'VISITEUR',
+    },
+  });
+  console.log('✅ Utilisateur cible désactivation créé :', deactivationTarget.email);
+
+  console.log('\n🎉 Seed terminé ! 5 utilisateurs de test créés.\n');
 
   console.log('📋 Credentials de test :');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -123,6 +144,11 @@ async function main() {
   console.log('   Email    : visiteur@erp-marches.local');
   console.log('   Password : Visiteur123!');
   console.log('   Rôle     : Lecture seule partout\n');
+
+  console.log('5. CIBLE DÉSACTIVATION');
+  console.log('   Email    : deactivation.target@erp-marches.local');
+  console.log('   Password : Deactivation123!');
+  console.log('   Rôle     : Dédié aux tests désactivation/réactivation\n');
 }
 
 main()
