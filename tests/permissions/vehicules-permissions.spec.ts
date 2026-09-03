@@ -1,4 +1,4 @@
-import { test, expect, Browser, BrowserContext } from '@playwright/test';
+import { test, expect, Browser, BrowserContext, Page } from '@playwright/test';
 import { login, TEST_USERS } from '../helpers/auth';
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
@@ -6,7 +6,7 @@ const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
 /**
  * Locator robuste pour les cartes véhicules — exclut /vehicules/sav et /vehicules/nouveau
  */
-function vehicleCardLinks(page: ReturnType<BrowserContext['newPage'] extends (...args: any[]) => infer R ? () => R : never>) {
+function vehicleCardLinks(page: Page) {
   return page.locator('a[href^="/vehicules/"]:not([href="/vehicules/sav"]):not([href="/vehicules/nouveau"])');
 }
 

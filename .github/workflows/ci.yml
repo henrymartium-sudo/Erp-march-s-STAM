@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Lint & typecheck
+    runs-on: ubuntu-latest
+    env:
+      # Valeur factice : prisma.config.ts lit DATABASE_URL au chargement (`env('DATABASE_URL')`)
+      # même pour `prisma generate`, qui ne se connecte pas réellement à une base.
+      # Aucune vraie base de données n'est utilisée dans ce job.
+      DATABASE_URL: 'postgresql://ci:ci@localhost:5432/ci?schema=public'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck

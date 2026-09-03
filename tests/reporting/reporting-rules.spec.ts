@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import type { Cookie } from '@playwright/test';
+import type { Browser, Cookie, Page } from '@playwright/test';
 import { TEST_USERS } from '../helpers/auth';
 
 /**
@@ -40,7 +40,7 @@ let adminCookies: Cookie[] = [];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-async function loginAsAdmin(browser: Parameters<typeof test.beforeAll>[0] extends (args: infer A) => unknown ? A extends { browser: infer B } ? B : never : never) {
+async function loginAsAdmin(browser: Browser) {
   const context = await browser.newContext();
   const page = await context.newPage();
   page.setDefaultNavigationTimeout(60000);
@@ -59,7 +59,7 @@ async function loginAsAdmin(browser: Parameters<typeof test.beforeAll>[0] extend
 }
 
 /** Ouvre le dialog "Nouvelle règle" et attend qu'il soit visible */
-async function openNewRuleDialog(page: Parameters<typeof test>[1] extends (args: infer A) => unknown ? A extends { page: infer P } ? P : never : never) {
+async function openNewRuleDialog(page: Page) {
   await page.goto('/admin/reporting');
   await page.waitForLoadState('networkidle');
   const btn = page.getByRole('button', { name: 'Nouvelle règle', exact: true }).first();
@@ -69,7 +69,7 @@ async function openNewRuleDialog(page: Parameters<typeof test>[1] extends (args:
 }
 
 /** Supprime toutes les règles de test ([E2E]) si elles existent */
-async function cleanupTestRules(page: Parameters<typeof test>[1] extends (args: infer A) => unknown ? A extends { page: infer P } ? P : never : never) {
+async function cleanupTestRules(page: Page) {
   await page.goto('/admin/reporting');
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(1000);
@@ -103,7 +103,7 @@ test.describe('Reporting — Accès & Page', () => {
   test.setTimeout(120000);
 
   test.beforeAll(async ({ browser }) => {
-    adminCookies = await loginAsAdmin(browser as never);
+    adminCookies = await loginAsAdmin(browser);
   });
 
   test.beforeEach(async ({ page }) => {
@@ -210,7 +210,7 @@ test.describe('Reporting — Formulaire & Validation', () => {
 
   test.beforeAll(async ({ browser }) => {
     if (adminCookies.length === 0) {
-      adminCookies = await loginAsAdmin(browser as never);
+      adminCookies = await loginAsAdmin(browser);
     }
   });
 
@@ -223,14 +223,14 @@ test.describe('Reporting — Formulaire & Validation', () => {
 
   // ── T7 : Dialog "Nouvelle règle" s'ouvre ────────────────────────────────────
   test('T7 — clic "Nouvelle règle" ouvre le dialog', async ({ page }) => {
-    await openNewRuleDialog(page as never);
+    await openNewRuleDialog(page);
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Nouvelle règle de reporting', exact: true })).toBeVisible();
   });
 
   // ── T8 : Email invalide → erreur inline ─────────────────────────────────────
   test('T8 — email invalide affiche un message d\'erreur', async ({ page }) => {
-    await openNewRuleDialog(page as never);
+    await openNewRuleDialog(page);
 
     const emailInput = page.locator('[role="dialog"] input[placeholder="email@exemple.com"]');
     await emailInput.fill('pas-un-email');
@@ -242,7 +242,7 @@ test.describe('Reporting — Formulaire & Validation', () => {
 
   // ── T9 : Email doublon → erreur ─────────────────────────────────────────────
   test('T9 — email doublon affiche "Email déjà ajouté"', async ({ page }) => {
-    await openNewRuleDialog(page as never);
+    await openNewRuleDialog(page);
 
     const emailInput = page.locator('[role="dialog"] input[placeholder="email@exemple.com"]');
     const addBtn = page.locator('[role="dialog"] button', { hasText: 'Ajouter' }).first();
@@ -260,7 +260,7 @@ test.describe('Reporting — Formulaire & Validation', () => {
 
   // ── T10 : Planification DAILY ────────────────────────────────────────────────
   test('T10 — planification DAILY : heure visible, pas de jours', async ({ page }) => {
-    await openNewRuleDialog(page as never);
+    await openNewRuleDialog(page);
 
     // Sélectionner DAILY (devrait être le défaut, mais on force)
     const scheduleSelect = page.locator('[role="dialog"] [role="combobox"]').filter({ hasText: /Quotidien|Hebdomadaire|Mensuel|Manuel/i }).first();
@@ -279,7 +279,7 @@ test.describe('Reporting — Formulaire & Validation', () => {
 
   // ── T11 : Planification WEEKLY ───────────────────────────────────────────────
   test('T11 — planification WEEKLY : heure + boutons jours visibles', async ({ page }) => {
-    await openNewRuleDialog(page as never);
+    await openNewRuleDialog(page);
 
     const scheduleSelect = page.locator('[role="dialog"] [role="combobox"]').filter({ hasText: /Quotidien|Hebdomadaire|Mensuel|Manuel/i }).first();
     await scheduleSelect.click();
@@ -293,7 +293,7 @@ test.describe('Reporting — Formulaire & Validation', () => {
 
   // ── T12 : Planification MONTHLY ──────────────────────────────────────────────
   test('T12 — planification MONTHLY : heure + champ jour du mois', async ({ page }) => {
-    await openNewRuleDialog(page as never);
+    await openNewRuleDialog(page);
 
     const scheduleSelect = page.locator('[role="dialog"] [role="combobox"]').filter({ hasText: /Quotidien|Hebdomadaire|Mensuel|Manuel/i }).first();
     await scheduleSelect.click();
@@ -307,7 +307,7 @@ test.describe('Reporting — Formulaire & Validation', () => {
 
   // ── T13 : Planification MANUAL ───────────────────────────────────────────────
   test('T13 — planification MANUAL : ni heure ni jours', async ({ page }) => {
-    await openNewRuleDialog(page as never);
+    await openNewRuleDialog(page);
 
     const scheduleSelect = page.locator('[role="dialog"] [role="combobox"]').filter({ hasText: /Quotidien|Hebdomadaire|Mensuel|Manuel/i }).first();
     await scheduleSelect.click();
@@ -326,7 +326,7 @@ test.describe('Reporting — CRUD', () => {
 
   test.beforeAll(async ({ browser }) => {
     if (adminCookies.length === 0) {
-      adminCookies = await loginAsAdmin(browser as never);
+      adminCookies = await loginAsAdmin(browser);
     }
   });
 
@@ -339,7 +339,7 @@ test.describe('Reporting — CRUD', () => {
 
   // ── T14 : Création règle DAILY complète ──────────────────────────────────────
   test('T14 — créer une règle DAILY → toast "Règle créée" + apparaît dans liste', async ({ page }) => {
-    await openNewRuleDialog(page as never);
+    await openNewRuleDialog(page);
 
     // Nom
     await page.locator('[role="dialog"] input#name').fill(RULE_DAILY_NAME);
@@ -381,7 +381,7 @@ test.describe('Reporting — CRUD', () => {
 
   // ── T15 : Création règle WEEKLY ───────────────────────────────────────────────
   test('T15 — créer une règle WEEKLY (Lun + Mer) → planification affichée', async ({ page }) => {
-    await openNewRuleDialog(page as never);
+    await openNewRuleDialog(page);
 
     // Nom
     await page.locator('[role="dialog"] input#name').fill(RULE_WEEKLY_NAME);
@@ -569,7 +569,7 @@ test.describe('Reporting — CRUD', () => {
 
   // ── T21 : Nettoyage final ─────────────────────────────────────────────────────
   test('T21 — nettoyage : toutes les règles [E2E] supprimées', async ({ page }) => {
-    await cleanupTestRules(page as never);
+    await cleanupTestRules(page);
 
     await page.goto('/admin/reporting');
     await page.waitForLoadState('networkidle');
@@ -587,7 +587,7 @@ test.describe('Reporting — Responsive', () => {
 
   test.beforeAll(async ({ browser }) => {
     if (adminCookies.length === 0) {
-      adminCookies = await loginAsAdmin(browser as never);
+      adminCookies = await loginAsAdmin(browser);
     }
   });
 

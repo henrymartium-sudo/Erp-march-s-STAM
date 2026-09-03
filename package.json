@@ -8,6 +8,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "clean": "taskkill /F /IM node.exe || echo No processes to clean",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
