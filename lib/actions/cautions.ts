@@ -183,9 +183,17 @@ export async function updateCaution(data: unknown): Promise<ActionResult<Caution
     }
 
     // 5. Mise à jour dans Prisma
+    // marcheId '' (aucun marché sélectionné) doit devenir null pour Prisma —
+    // une chaîne vide sur une colonne de relation viole la contrainte de clé
+    // étrangère au lieu de la déconnecter. createCaution omet déjà ce cas ;
+    // ici on veut explicitement pouvoir dissocier le marché lors d'une
+    // modification, donc null plutôt qu'une simple omission.
     const caution = await prisma.caution.update({
       where: { id },
-      data: updateData,
+      data: {
+        ...updateData,
+        marcheId: updateData.marcheId === '' ? null : updateData.marcheId,
+      },
     })
 
     // 6. Revalidation du cache Next.js

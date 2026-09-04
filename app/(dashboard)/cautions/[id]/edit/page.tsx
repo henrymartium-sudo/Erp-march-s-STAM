@@ -73,6 +73,12 @@ export default async function EditCautionPage({
   // Sérialiser pour le Client Component (Decimal -> number, Date -> string ISO)
   const caution = {
     ...rawCaution,
+    // Une caution sans marché a marcheId = null en base. Le schéma Zod du
+    // formulaire (cautionSchema) n'accepte que undefined ou '' pour ce champ
+    // optionnel — jamais null. Sans cette conversion, react-hook-form bloque
+    // la soumission côté client sans aucune erreur visible (le champ marcheId
+    // n'a pas de FormField dans CautionForm, donc pas de message d'erreur).
+    marcheId: rawCaution.marcheId ?? '',
     montant: typeof rawCaution.montant === 'number'
       ? rawCaution.montant
       : Number(rawCaution.montant),
