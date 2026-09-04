@@ -75,7 +75,10 @@ export function DocumentCard({
         </div>
         <DocumentBadge type={document.type} />
         <DropdownMenu>
-          <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-gray-100">
+          <DropdownMenuTrigger
+            aria-label={`Actions pour ${document.nom}`}
+            className="md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-gray-100"
+          >
             <MoreVertical className="h-4 w-4 text-muted-foreground" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -148,7 +151,10 @@ export function DocumentCard({
         {/* Dropdown secondaire (supprimer / versions) */}
         {(onDelete || (hasVersions && onViewVersions)) && (
           <DropdownMenu>
-            <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-gray-100 flex-shrink-0">
+            <DropdownMenuTrigger
+              aria-label={`Actions pour ${document.nom}`}
+              className="md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity p-1 rounded-lg hover:bg-gray-100 flex-shrink-0"
+            >
               <MoreVertical className="h-4 w-4 text-muted-foreground" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
