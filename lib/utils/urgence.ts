@@ -17,8 +17,8 @@ export interface UrgencyInfo {
  * Calcule le niveau d'urgence selon la date de fin prévue.
  *
  * Règles :
- * - dépassé  → overdue  (slate foncé)
- * - < 15 j   → red      (rouge)
+ * - dépassé  → overdue  (rouge plein, le plus critique)
+ * - < 15 j   → red      (rouge clair)
  * - 15–30 j  → orange   (orange)
  * - > 30 j   → green    (vert)
  */
@@ -73,11 +73,13 @@ export function getMarcheUrgency(
 }
 
 /**
- * Classes CSS Tailwind pour chaque niveau d'urgence
+ * Classes CSS Tailwind pour chaque niveau d'urgence.
+ * L'échéance dépassée (overdue) est le niveau le plus critique : elle doit
+ * ressortir davantage que "red" (< 15 j restants), pas moins.
  */
 export const URGENCY_STYLES: Record<UrgencyLevel, string> = {
   green: 'bg-green-100 text-green-700 border-green-200',
   orange: 'bg-orange-100 text-orange-700 border-orange-200',
   red: 'bg-red-100 text-red-700 border-red-200',
-  overdue: 'bg-slate-100 text-slate-600 border-slate-300',
+  overdue: 'bg-red-600 text-white border-red-700',
 }

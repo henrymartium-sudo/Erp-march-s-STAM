@@ -164,7 +164,7 @@ export const cautionFiltersSchema = z.object({
   dateEcheanceFin: z.date().optional(),
   search: z.string().optional(),
   page: z.number().int().positive().optional(),
-  limit: z.number().int().positive().max(100).optional(),
+  limit: z.number().int().positive().max(10000).optional(),
 })
 
 // ============================================================================

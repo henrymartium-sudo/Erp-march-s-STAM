@@ -140,9 +140,27 @@ export function StatusCharts({
                       paddingAngle={2}
                       dataKey="value"
                       cursor="pointer"
-                      label={({ name, percent }) =>
-                        `${name}: ${(percent * 100).toFixed(0)}%`
-                      }
+                      label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                        // Segments trop fins : le pourcentage n'y tiendrait pas lisiblement
+                        if (percent < 0.05) return null
+                        const RADIAN = Math.PI / 180
+                        const radius = innerRadius + (outerRadius - innerRadius) * 0.5
+                        const x = cx + radius * Math.cos(-midAngle * RADIAN)
+                        const y = cy + radius * Math.sin(-midAngle * RADIAN)
+                        return (
+                          <text
+                            x={x}
+                            y={y}
+                            fill="white"
+                            textAnchor="middle"
+                            dominantBaseline="central"
+                            fontSize={12}
+                            fontWeight={600}
+                          >
+                            {`${(percent * 100).toFixed(0)}%`}
+                          </text>
+                        )
+                      }}
                       labelLine={false}
                       onClick={(data) => {
                         if (data?.statut) openMarchesStatut(data.statut, data.name)

@@ -266,7 +266,7 @@ export function UsersAdminClient({ users, currentUserId }: UsersAdminClientProps
           <div key={user.id} className="bg-white rounded-xl border shadow-sm overflow-hidden">
 
             {/* ── En-tête utilisateur ── */}
-            <div className="flex items-center justify-between px-5 py-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between px-5 py-4">
               <div className="flex items-center gap-3 min-w-0">
                 {/* Avatar initiale */}
                 <div
@@ -284,7 +284,7 @@ export function UsersAdminClient({ users, currentUserId }: UsersAdminClientProps
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-2 flex-wrap sm:flex-shrink-0">
                 <Badge variant={getRoleVariant(user.role)} className="text-[11px]">
                   {getRoleLabel(user.role)}
                 </Badge>

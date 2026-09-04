@@ -96,13 +96,13 @@ export function DocumentsContent({ documents: initialDocuments, canWrite = false
   return (
     <>
       {/* Filtres + toggle vue */}
-      <div className="flex items-end gap-3">
-        <div className="flex-1">
+      <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+        <div className="flex-1 min-w-0">
           <DocumentFilters />
         </div>
 
         {/* Toggle grille / liste */}
-        <div className="flex items-center rounded-lg border border-gray-200 bg-white p-1 gap-0.5 shadow-sm flex-shrink-0">
+        <div className="flex items-center self-start rounded-lg border border-gray-200 bg-white p-1 gap-0.5 shadow-sm flex-shrink-0">
           <button
             onClick={() => setViewMode('list')}
             aria-label="Vue liste"

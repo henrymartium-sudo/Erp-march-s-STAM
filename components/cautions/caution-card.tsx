@@ -27,18 +27,21 @@ interface CautionCardProps {
   className?: string;
 }
 
-/* Barre gauche colorée selon niveau d'alerte */
+/* Barre gauche colorée selon niveau d'alerte.
+   EXPIRE est le niveau le plus critique (cf. getCouleurNiveauAlerte
+   qui lui donne déjà text-red-800, plus foncé que CRITIQUE) : la barre
+   doit donc ressortir davantage, pas moins. */
 const LEFT_BORDER_COLOR = {
   CRITIQUE: 'border-l-red-500',
   ATTENTION: 'border-l-amber-400',
   INFO:      'border-l-yellow-400',
-  EXPIRE:    'border-l-gray-300',
+  EXPIRE:    'border-l-red-800',
   AUCUN:     'border-l-emerald-400',
 } as const
 
 /* Countdown : couleur du badge jours restants */
 function getCountdownStyle(joursRestants: number, expire: boolean): { pill: string; pulse: boolean } {
-  if (expire)              return { pill: 'text-gray-500 bg-gray-100',   pulse: false }
+  if (expire)              return { pill: 'text-red-700 bg-red-50',      pulse: false }
   if (joursRestants < 30)  return { pill: 'text-red-600 bg-red-50',      pulse: true  }
   if (joursRestants < 90)  return { pill: 'text-amber-600 bg-amber-50',  pulse: false }
   return                          { pill: 'text-emerald-600 bg-emerald-50', pulse: false }

@@ -56,9 +56,9 @@ export function AlertesDashboard({
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid gap-6 lg:grid-cols-2 min-w-0">
       {/* Section Alertes */}
-      <div className="space-y-6">
+      <div className="space-y-6 min-w-0">
         {/* Cautions */}
         <Card>
           <CardHeader>
@@ -181,11 +181,11 @@ export function AlertesDashboard({
       </div>
 
       {/* Section Destinataires & Actions */}
-      <div className="space-y-6">
+      <div className="space-y-6 min-w-0">
         {/* Destinataires */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
+            <CardTitle className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between">
               <span className="flex items-center gap-2">
                 <Mail className="h-5 w-5" />
                 Destinataires
@@ -193,7 +193,7 @@ export function AlertesDashboard({
                   {selectedDestinataires.length} / {destinataires.length}
                 </Badge>
               </span>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant="ghost"
                   size="sm"

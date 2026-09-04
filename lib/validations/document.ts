@@ -187,7 +187,7 @@ export const documentFiltersSchema = z.object({
   dateDebut: z.date().optional(),
   dateFin: z.date().optional(),
   page: z.number().int().positive().optional(),
-  limit: z.number().int().positive().max(100).optional(),
+  limit: z.number().int().positive().max(10000).optional(),
 })
 
 /**
