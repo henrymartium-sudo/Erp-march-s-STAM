@@ -42,11 +42,12 @@ Dès que le contexte de la conversation d'orchestration atteint **~50 %** (barre
 > (attention `tsconfig.tsbuildinfo` modifié préexistant).
 >
 > **Lot 0 — MERGÉ (PR #8, `bbfd3a3`, 2026-09-05)** sur revue de code + build vert ×2 (local + préview Vercel),
-> diff 34 fichiers relu ligne à ligne. Abel a validé « tout le Lot 0 » puis, après blocage de la vérif visuelle en remote
-> (règle mdp + RAM 0,44 Go = mur T7/Lot 4), le merge sur revue (option C, précédent PR #3/#6).
-> → **Dette de vérif visuelle Lot 0** (Phase 5, ou dès que possible au poste) : sweep préview/local 8 modules × 3 viewports —
-> priorité `statut-workflow-stepper` (remap couleurs, fort impact), `#003` PageHeader détail Opportunité 375px, `Sheet` #051,
-> tables admin `rounded-xl`, `Card` `shadow-card`. `tests/layout/page-header-overflow.spec.ts` commité mais jamais exécuté.
+> diff 34 fichiers relu ligne à ligne. Abel : « tout le Lot 0 » puis merge sur revue (option C, précédent PR #3/#6).
+> **Vérif visuelle FAITE en prod** (`bbfd3a3`/`267ff22`, session Browser pane persistante) : `/marches` liste (desktop+375),
+> `/opportunites` détail 375 (**#003 confirmé corrigé — actions repliées, 0 débordement**), marché détail, `/admin/alertes/rules`+`history`
+> (desktop+375). Tokens/typo/`rounded-xl`/`shadow-card`/`Card`/breadcrumb `showHome` OK, **0 erreur console** sur ces pages.
+> `statut-workflow-stepper.tsx` = composant serveur pur (props-only) → remap couleurs 100 % sûr. **Aucune régression Lot 0.**
+> Reste non vérifié : `Sheet` mobile #051 (pane masqué en fin de check — risque faible), `tests/layout/page-header-overflow.spec.ts` jamais exécuté.
 >
 > **C — reste du backlog.** `docs/audit/2026-09-04-audit-ui-ux-app.md` : 99 entrées / 18 lots. **Lots 0-4 faits et en prod.**
 > - **Lots 5-17** (92 entrées Important/Cosmétique) — jamais validés par Abel. Phase 3 non close → validation lot par lot **avant** de coder.
@@ -64,6 +65,10 @@ Dès que le contexte de la conversation d'orchestration atteint **~50 %** (barre
 > `admin-analytique`, `auth-profil`) · config ESLint absente du dépôt (dette, 4 confirmations) ·
 > 4ᵉ occurrence `marches/marche-filters.tsx:399` (menu invisible au tactile) ·
 > `dossiers-offre` : 3 `BreadcrumbNav` sans `showHome` (repéré au Lot 0, hors périmètre #063).
+>
+> **Bugs PRÉ-EXISTANTS repérés à la vérif visuelle prod du Lot 0 (NON causés par Lot 0, à verser au backlog)** :
+> - `marches/marche-pagination.tsx` : débordement horizontal ~456px à 375 (`flex flex-row` non-wrap, « Previous 1 2 3 4 … 6 Next »). Recoupe #070 (Lot 7, pagination → composant partagé). Fichier non touché par Lot 0.
+> - `/marches/[id]` : React error #418 (mismatch d'hydratation) + `TypeError parentNode` en cascade. `/marches` liste et `/opportunites/[id]` (mêmes composants Lot 0) sont propres → l'erreur est dans un composant propre au détail marché, pré-existante. Cohérent avec §6.1 du rapport (« erreurs console / hydratation » suspectées). À diagnostiquer (probablement `marche-detail.tsx` client + rendu de dates/temps relatif).
 
 <details><summary>B + D — faits le 2026-09-05 (reprise à froid B→D→C)</summary>
 
@@ -158,7 +163,9 @@ Priorité de correction : transversal d'abord, puis pipeline AO (`opportunites`,
 | 2026-09-05 | 4 — Lot 0 codé | agent `fix-and-verify` en worktree : `960eb5b` (11 entrées, swaps tokens) + `5caccaa` (#003 + #063 + `tests/layout/page-header-overflow.spec.ts` écrit, non exécuté). 34 fichiers, +148/−84. `chart.tsx` : narrowing `THEMES` sûr (0 consommateur `theme:`). Décisions : #051 `rounded-xl` non appliqué au Sheet ancré ; #060 vs #050 → `text-xs` (11px) ; périmètre #049/#050 élargi aux occurrences réelles (grep). | — | `960eb5b`, `5caccaa` |
 | 2026-09-05 | 4 — Lot 0 revue + PR | Revue orchestrateur : `npm run build` exit 0 **revérifié dans le checkout complet** (l'agent n'avait pas `node_modules`), `tsc` 0 nouvelle erreur, `text-xs`=11px confirmé, scan secrets/chemins clean. Poussé, **PR #8** ouverte (choix Abel). | — | `5caccaa` poussé |
 | 2026-09-05 | 4 — Lot 0 vérif visuelle | **bloquée en remote** : préview Vercel accessible (pas de SSO) mais (1) saisie mdp interdite (règle sécurité), (2) `Admin123!` invalide en prod (`auth.ts:13-17` — vrais mdp via `TEST_ADMIN_PASSWORD` dans `.env.test`, clé absente), (3) E2E local bloqué RAM 0,44 Go / 3,89 (mur T7/Lot 4). Abel d'abord « repousser au poste » puis **renversé → option C** (merge sur revue). | — | — |
-| 2026-09-05 | 4 — Merge Lot 0 | **fait** : `gh pr merge 8 --squash`. Feu vert Abel « faisons ta recommandation C » + `/disciplines-actives senior`. Lectures fraîches OK (PR `CLEAN`, `origin/main` inchangé, re-scan secrets clean, prod actuelle = `e6893a2`). `main` = `bbfd3a3`, déploiement prod Vercel déclenché. Rollback : `git revert bbfd3a3` + Vercel dashboard → déploiement `e6893a2`. Vérif visuelle → dette Phase 5. | — | squash PR #8 (`bbfd3a3`) |
+| 2026-09-05 | 4 — Merge Lot 0 | **fait** : `gh pr merge 8 --squash`. Feu vert Abel « faisons ta recommandation C » + `/disciplines-actives senior`. Lectures fraîches OK (PR `CLEAN`, `origin/main` inchangé, re-scan secrets clean, prod actuelle = `e6893a2`). `main` = `bbfd3a3`, déploiement prod Vercel `success`. Rollback : `git revert bbfd3a3` + Vercel dashboard → déploiement `e6893a2`. | — | squash PR #8 (`bbfd3a3`) |
+| 2026-09-05 | 4 — Checkpoint doc | `PROGRESS.md` actualisé (Lot 0 mergé, prochaine étape Lot 5) → commit direct `main` `267ff22` (sanctionné ledger). | — | `267ff22` |
+| 2026-09-05 | 4 — Vérif visuelle Lot 0 | **faite en prod** (session Browser pane persistante, authentifiée). `/marches` liste + `/opportunites` détail 375 (**#003 confirmé corrigé, 0 débordement**) + marché détail + `/admin/alertes/rules`/`history` (desktop + 375) : tokens/typo/`rounded-xl`/`Card`/breadcrumb OK, **0 erreur console** sur ces pages. `statut-workflow-stepper` = composant serveur pur → remap sûr. **Aucune régression Lot 0.** 2 bugs **pré-existants** repérés (pagination marchés déborde à 375 ; React #418 hydratation sur `/marches/[id]`) → backlog. Non vérifié : `Sheet` #051 (pane masqué). | — | — |
 
 ---
 
