@@ -21,9 +21,9 @@ Dès que le contexte de la conversation d'orchestration atteint **~50 %** (barre
 
 | Champ | Valeur |
 |---|---|
-| Phase | **4 TERMINÉE (B + D, 2026-09-05) : les 4 lots Bloquant MERGÉS sur `main` (`aa33892`→`cf0e4c5`) + déployés prod, doc d'audit MERGÉE sur `main` (PR #7, squash). Prochaine étape : C — validation Lot 0 + Lots 5-17.** |
-| Branche | `chore/audit-ui-ux` — **fusionnée dans `main` via PR #7 (squash, 2026-09-05)** ; supprimable (`git branch -d`, remote inclus). Cette maj = dernier commit de la branche avant merge. |
-| `main` | 4 lots (`aa33892`/`5a58af1`/`4ef17c1`/`cf0e4c5`) + doc campagne d'audit (squash PR #7). Prod Vercel à jour. |
+| Phase | **4 EN COURS. Lots 1-4 (Bloquant) + Lot 0 (dernier Bloquant #003 + 12 fondations design-system) MERGÉS sur `main` et déployés prod. Reste Phase 4 : Lots 5-17 (92 entrées Important/Cosmétique), validation lot par lot avant code.** |
+| Branche | Lot 0 = `fix/audit-lot0-fondations-transversales` (`960eb5b`+`5caccaa`) **mergée squash → `main` via PR #8 (2026-09-05)**. Branches `fix/*` + `chore/audit-ui-ux` + worktrees `.claude/worktrees/agent-*` → cleanup Phase 5. |
+| `main` | `bbfd3a3` — Lots 1-4 + doc audit (PR #7) + Lot 0 (PR #8, squash). Déploiement prod Vercel `bbfd3a3` déclenché au merge. |
 | Workflow | `audit-ui-ux-app` — modèle d'audit : hérité (session) · `live:false` |
 | runId | `wf_4f556b30-730` |
 | scriptPath | `…/f0c71625-…/workflows/scripts/audit-ui-ux-app-wf_4f556b30-730.js` |
@@ -32,30 +32,38 @@ Dès que le contexte de la conversation d'orchestration atteint **~50 %** (barre
 | Modules Vague 1 | `opportunites`, `cautions`, `dossiers-offre`, `factures`, `documents` |
 | Rapport Vague 1 | `docs/audit/2026-09-04-audit-ui-ux-VAGUE1.md` (58 findings bruts → 52 entrées backlog : 6 Bloquant / 18 Important / 28 Cosmétique, 11 lots, 10 bugs fonctionnels en annexe) |
 | Rapport consolidé | `docs/audit/2026-09-04-audit-ui-ux-app.md` — 100 entrées brutes (48 Pilote réel, pas 41 comme annoncé par son résumé — incohérence interne détectée et documentée §0 du rapport + 52 Vague 1) → 1 doublon inter-rapports fusionné (`CardTitle`/`ui/card.tsx:39`) → **99 entrées backlog** (7 Bloquant / 41 Important / 51 Cosmétique), 18 lots fusionnés (Lot 0 unique), 16 bugs fonctionnels en annexe (aucun doublon) |
-| Backlog validé | **partiel** — Lots 1, 2, 3, 4 approuvés par Abel (2026-09-04, validation ciblée « Bloquant seulement »). Lot 0 (dont #003, 7ᵉ Bloquant) + Lots 5-17 en attente de validation. |
+| Backlog validé | Lots 1, 2, 3, 4 **+ Lot 0** approuvés par Abel et **mergés/déployés prod**. Lots 5-17 (92 entrées Important/Cosmétique) en attente de validation lot par lot. |
 
-## Prochaine action — C : reste du backlog (reprise à froid, session dédiée validée par Abel 2026-09-05)
+## Prochaine action — C : Lots 5-17 (validation lot par lot), + dette vérif visuelle Lot 0
 
-> **Reprise** : `/disciplines-actives senior` → lire ce fichier (sur `main`) → puis lecture fraîche (`git status`, `git branch --show-current`,
-> `gh pr list --state open` [attendu : **aucune** PR de la campagne — les 5 sont mergées], `git worktree list`).
-> Note : `chore/audit-ui-ux` est fusionnée dans `main` ; si le working tree y est encore, `git checkout main` (attention à `tsconfig.tsbuildinfo` modifié préexistant).
+> **Reprise** : `/disciplines-actives senior` → lire ce fichier (sur `main`) → lecture fraîche
+> (`git status`, `git branch --show-current`, `gh pr list --state open` [attendu : **aucune** PR de la campagne],
+> `git worktree list`). Note : les branches `fix/*` sont mergées ; si le working tree est sur l'une d'elles, `git checkout main`
+> (attention `tsconfig.tsbuildinfo` modifié préexistant).
 >
-> **C — reste du backlog.** `docs/audit/2026-09-04-audit-ui-ux-app.md` : 99 entrées / 18 lots, **Lots 1-4 faits et en prod**.
-> - **Lot 0** (#003 = 7ᵉ Bloquant + 12 cosmétiques, bloque Lots 7/10/15) — jamais validé ni commencé. **À présenter à Abel en premier.**
-> - **Lots 5-17** (92 entrées Important/Cosmétique) — jamais validés par Abel.
-> - **Méthode** : Phase 3 non close → validation lot par lot par Abel **avant** de coder. Puis même méthode que Lots 1-4
->   (agents `fix-and-verify` isolés en `git worktree`, 1 lot = 1 PR, feu vert Abel séparé sur chaque merge = déploiement prod).
+> **Lot 0 — MERGÉ (PR #8, `bbfd3a3`, 2026-09-05)** sur revue de code + build vert ×2 (local + préview Vercel),
+> diff 34 fichiers relu ligne à ligne. Abel a validé « tout le Lot 0 » puis, après blocage de la vérif visuelle en remote
+> (règle mdp + RAM 0,44 Go = mur T7/Lot 4), le merge sur revue (option C, précédent PR #3/#6).
+> → **Dette de vérif visuelle Lot 0** (Phase 5, ou dès que possible au poste) : sweep préview/local 8 modules × 3 viewports —
+> priorité `statut-workflow-stepper` (remap couleurs, fort impact), `#003` PageHeader détail Opportunité 375px, `Sheet` #051,
+> tables admin `rounded-xl`, `Card` `shadow-card`. `tests/layout/page-header-overflow.spec.ts` commité mais jamais exécuté.
+>
+> **C — reste du backlog.** `docs/audit/2026-09-04-audit-ui-ux-app.md` : 99 entrées / 18 lots. **Lots 0-4 faits et en prod.**
+> - **Lots 5-17** (92 entrées Important/Cosmétique) — jamais validés par Abel. Phase 3 non close → validation lot par lot **avant** de coder.
+> - **Méthode** : identique aux Lots 0-4 (agent `fix-and-verify` isolé en `git worktree`, 1 lot = 1 PR, feu vert Abel séparé sur push puis sur merge = déploiement prod).
+> - **Prochain lot à présenter : Lot 5 — Accessibilité transversale du shell** (#008-013, 026, 054-056, 061 + bug F02), effort M.
 > - Garde-fou `feedback_workflow_token_cost` (2026-08-31) : aucun `Workflow` sans proposition validée + coût affiché.
 >
 > **Dette ouverte (à solder en Phase 5 clôture)** :
-> - E2E `tests/cautions/filters.spec.ts` (Lot 4 — jamais vert, cause machine) et `tests/marches/vehicule-liaison.spec.ts` (Lot 1 — jamais lancé, cible base prod) → rejouer sur base de test locale.
-> - 4 worktrees `fix/*` dans `.claude/worktrees/agent-*` + branches mergées (+ `chore/audit-ui-ux`) → `git worktree remove` + `git branch -d`.
-> - Suivi doc de la campagne C : PR #7 mergée → les prochaines maj de `PROGRESS.md` vont en **commit direct sur `main`** (précédent `86caba7`) ou 1 PR `docs(audit)` par checkpoint.
+> - E2E jamais verts/lancés : `tests/cautions/filters.spec.ts` (Lot 4), `tests/marches/vehicule-liaison.spec.ts` (Lot 1), `tests/layout/page-header-overflow.spec.ts` (Lot 0) → rejouer sur base de test locale.
+> - Vérif visuelle Lot 0 (ci-dessus).
+> - 5 worktrees `.claude/worktrees/agent-*` + branches `fix/*` mergées (+ `chore/audit-ui-ux`) → `git worktree remove` + `git branch -d` (local + remote).
 > - Build + E2E complets, maj `memory/MEMORY.md` cross-session.
 >
 > **E/F — différés, non tranchés** : Vague 2 (5 modules non audités : `dashboard-home`, `vehicules`, `admin-users`,
-> `admin-analytique`, `auth-profil`) · config ESLint absente du dépôt (dette, 3 confirmations) ·
-> 4ᵉ occurrence `marches/marche-filters.tsx:399` (menu invisible au tactile).
+> `admin-analytique`, `auth-profil`) · config ESLint absente du dépôt (dette, 4 confirmations) ·
+> 4ᵉ occurrence `marches/marche-filters.tsx:399` (menu invisible au tactile) ·
+> `dossiers-offre` : 3 `BreadcrumbNav` sans `showHome` (repéré au Lot 0, hors périmètre #063).
 
 <details><summary>B + D — faits le 2026-09-05 (reprise à froid B→D→C)</summary>
 
@@ -146,6 +154,11 @@ Priorité de correction : transversal d'abord, puis pipeline AO (`opportunites`,
 | 2026-09-05 | D — Merge Lots 2 & 3 | **fait** : `gh pr merge --squash` sur #5 (`aa33892`) puis #4 (`5a58af1`). Feu vert Abel explicite sur le geste après vérif 17.4 (merge `main` → déploiement prod Vercel auto, confirmé via historique 20 déploiements ; rollback instantané vers `dpl_Etb98Tsq7`/`44504b6` + `git revert` dispo). 2 déploiements prod déclenchés, `5a58af1` = état final. #6 reste `MERGEABLE` sans rebase. | — | `aa33892`, `5a58af1` |
 | 2026-09-05 | D — Merge Lots 4 & 1 | **fait** : #6 (`4ef17c1`) et #3 (`cf0e4c5`) mergés en squash sur revue de code (feu vert Abel séparé pour chacun ; diffs relus — #6 : `buildNiveauAlerteWhere` en clause Prisma dérivée de `getNiveauAlerte` ; #3 : popover responsive + Checkbox présentationnel). E2E des deux non exécuté (machine 0,64 Go ; #3 ciblerait la base prod) → dette Phase 5. `main` = `cf0e4c5`, déploiements prod Vercel `dpl_RFV23946` (#6, READY) puis `dpl_2YDbpQco` (#3, BUILDING). **D terminée : 0 PR de fix ouverte.** | — | `4ef17c1`, `cf0e4c5` |
 | 2026-09-05 | B — Merge doc | **fait** : PR #7 (`chore/audit-ui-ux`, 5 commits `docs(audit)`, `CLEAN/MERGEABLE`, aucun chevauchement de fichier avec les 4 lots, Vercel check pass) mergée en squash sur `main` — demande Abel « merge PR #7 ». Doc-only : sortie de build identique, déploiement prod sans risque runtime. `chore/audit-ui-ux` désormais fusionnée → supprimable. Suivi doc de C : commit direct `main` ou 1 PR `docs(audit)` par checkpoint. | — | squash PR #7 |
+| 2026-09-05 | 3 — Validation Lot 0 | Abel : « tout le Lot 0 » (#003 + 12 fondations design-system) plutôt que #003 seul. Phase 3 toujours non close pour Lots 5-17. | — | — |
+| 2026-09-05 | 4 — Lot 0 codé | agent `fix-and-verify` en worktree : `960eb5b` (11 entrées, swaps tokens) + `5caccaa` (#003 + #063 + `tests/layout/page-header-overflow.spec.ts` écrit, non exécuté). 34 fichiers, +148/−84. `chart.tsx` : narrowing `THEMES` sûr (0 consommateur `theme:`). Décisions : #051 `rounded-xl` non appliqué au Sheet ancré ; #060 vs #050 → `text-xs` (11px) ; périmètre #049/#050 élargi aux occurrences réelles (grep). | — | `960eb5b`, `5caccaa` |
+| 2026-09-05 | 4 — Lot 0 revue + PR | Revue orchestrateur : `npm run build` exit 0 **revérifié dans le checkout complet** (l'agent n'avait pas `node_modules`), `tsc` 0 nouvelle erreur, `text-xs`=11px confirmé, scan secrets/chemins clean. Poussé, **PR #8** ouverte (choix Abel). | — | `5caccaa` poussé |
+| 2026-09-05 | 4 — Lot 0 vérif visuelle | **bloquée en remote** : préview Vercel accessible (pas de SSO) mais (1) saisie mdp interdite (règle sécurité), (2) `Admin123!` invalide en prod (`auth.ts:13-17` — vrais mdp via `TEST_ADMIN_PASSWORD` dans `.env.test`, clé absente), (3) E2E local bloqué RAM 0,44 Go / 3,89 (mur T7/Lot 4). Abel d'abord « repousser au poste » puis **renversé → option C** (merge sur revue). | — | — |
+| 2026-09-05 | 4 — Merge Lot 0 | **fait** : `gh pr merge 8 --squash`. Feu vert Abel « faisons ta recommandation C » + `/disciplines-actives senior`. Lectures fraîches OK (PR `CLEAN`, `origin/main` inchangé, re-scan secrets clean, prod actuelle = `e6893a2`). `main` = `bbfd3a3`, déploiement prod Vercel déclenché. Rollback : `git revert bbfd3a3` + Vercel dashboard → déploiement `e6893a2`. Vérif visuelle → dette Phase 5. | — | squash PR #8 (`bbfd3a3`) |
 
 ---
 
