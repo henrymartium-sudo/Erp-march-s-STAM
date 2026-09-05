@@ -1,0 +1,105 @@
+{
+  "findings": [
+    {
+      "severity": "Important",
+      "category": "coherence",
+      "file": "app/(dashboard)/dossiers-offre/page.tsx",
+      "finding": "Aucun FilterBar sur la page liste (pas de recherche, pas de filtre par statut). Les 4 autres modules liste de l'app (marches, vehicules, documents, cautions) suivent tous le pattern impose PageHeader + FilterBar + Grid/Table + Pagination (composants marche-filters.tsx, vehicule-filters.tsx, document-filters.tsx confirmes presents). Dossiers-offre casse la structure uniforme.",
+      "fix": "Ajouter un FilterBar horizontal compact (recherche texte sur titre + dropdown statut EN_COURS/SOUMIS/ARCHIVE) suivant le meme pattern que components/marches/marche-filters.tsx (rounded-xl border shadow-card, compteur resultats text-xs, bouton Effacer conditionnel).",
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "etats",
+      "file": "app/(dashboard)/dossiers-offre",
+      "line": 0,
+      "finding": "Aucun loading.tsx dans tout le module (page liste, [id], [id]/edit, nouveau). Les 4 autres routes liste de l'app (marches, vehicules, documents, cautions) ont chacune leur loading.tsx avec Skeleton shimmer — regle explicite du contrat design-system ('Chaque route liste a son loading.tsx'). Sans lui, la navigation vers /dossiers-offre affiche un blanc/flash le temps du fetch Prisma au lieu du CardSkeleton/ListSkeleton attendu.",
+      "fix": "Creer app/(dashboard)/dossiers-offre/loading.tsx avec <ListSkeleton count={6}/> (ou variante Table si le layout liste reste un Table), suivant le modele de app/(dashboard)/marches/loading.tsx.",
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "design-system",
+      "file": "components/dossiers-offre/checklist-view.tsx",
+      "line": 21,
+      "finding": "Couleurs de statut codees en dur avec des classes Tailwind neutres (text-amber-500, text-blue-500, text-green-500 dans ICONE_COLOR ligne 21-26) au lieu des tokens STAM semantiques (stam-warning, stam-accent/info, stam-success). Meme pattern reprodu​it dans components/dossiers-offre/piece-statut-button.tsx ligne 24-29 (text-amber-600, text-blue-600, text-green-600). Le composant Badge dispose deja des variants success/warning/danger/info/muted sur ces memes tokens (utilises correctement ailleurs dans le module via STATUT_DOSSIER_COLORS/STATUT_PIECE_COLORS) — ces deux fichiers re-derivent des couleurs paralleles au lieu de reutiliser le meme systeme, ce qui desynchronisera visuellement le badge de statut piece (variant info/warning/etc via STATUT_PIECE_COLORS, utilise nulle part dans ces 2 fichiers) de l'icone/texte de statut affiches juste a cote.",
+      "fix": "Remplacer les classes Tailwind ad hoc par les tokens STAM (text-stam-warning, text-stam-accent, text-stam-success, text-destructive) dans checklist-view.tsx:21-26 et piece-statut-button.tsx:24-29 — ou mieux, reutiliser directement STATUT_PIECE_COLORS (deja exporte par lib/validations/dossier-offre.ts) pour piloter a la fois le Badge et ces couleurs d'icone/texte, en une seule source de verite.",
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "etats",
+      "file": "components/dossiers-offre/piece-statut-button.tsx",
+      "line": 38,
+      "finding": "Aucun toast.success apres une mise a jour reussie du statut d'une piece (updatePieceStatut) — seul toast.error est appele en cas d'echec (ligne 43). Le contrat impose le pattern ActionResult -> toast.success/error systematique apres mutation. Ici le succes est totalement silencieux (seul le Select change visuellement), contrairement a dossier-form.tsx (toast.success ligne 75) et dossier-delete-button.tsx (toast.success ligne 35) dans le meme module.",
+      "fix": "Ajouter toast.success('Statut mis a jour') dans le bloc if (result.success) de handleChange, ligne 40-41.",
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "accessibilite",
+      "file": "components/dossiers-offre/piece-statut-button.tsx",
+      "line": 56,
+      "finding": "Le SelectTrigger controlant le statut d'une piece (ligne 56-59) n'a ni aria-label ni label associe visible — seul un SelectValue affiche le statut courant. Un utilisateur au clavier/lecteur d'ecran naviguant la liste des pieces (checklist-view.tsx) n'a aucun moyen de savoir a quelle piece ce select est rattache une fois le focus dessus, le nom de la piece etant dans un <p> separe non lie.",
+      "fix": "Ajouter aria-label={`Statut de la piece ${nom}`} sur le SelectTrigger (necessite de passer le nom de la piece en prop depuis checklist-view.tsx) ou lier via aria-labelledby a l'id du <p> du nom.",
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "hierarchie",
+      "file": "components/dossiers-offre/dossier-list.tsx",
+      "line": 41,
+      "finding": "Le <Table> (6 colonnes : Titre, Statut, Progression, Pieces, Date depot, Actions) est enveloppe dans <div className=\"rounded-md border\"> sans overflow-x-auto. Au point de controle mobile impose 375x667, une table a 6 colonnes va deborder horizontalement du viewport sans mecanisme de scroll dedie a la table (seul le scroll de page global s'appliquera, cassant le layout shell/sidebar).",
+      "fix": "Envelopper le Table dans <div className=\"rounded-md border overflow-x-auto\">.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "conformite",
+      "file": "components/dossiers-offre/dossier-form.tsx",
+      "line": 43,
+      "finding": "Le formulaire recoit marcheId/opportuniteId (defaultMarcheId, defaultOpportuniteId, et dossier.marcheId/opportuniteId en edition) mais n'affiche ni champ ni valeur en lecture seule pour ce lien marche/opportunite nulle part dans le formulaire (ni page liste ni page detail ne l'affichent non plus). Un dossier lie a un marche existant ne montre cette relation dans aucune UI du module — l'utilisateur ne peut ni la voir ni la corriger.",
+      "fix": "Hors perimetre strictement visuel (gap fonctionnel) : ajouter un champ de selection/affichage du marche/opportunite lie (Select ou lien texte en lecture seule) dans dossier-form.tsx et/ou sur la page detail [id]/page.tsx.",
+      "is_functional_bug": true
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "conformite",
+      "file": "app/(dashboard)/dossiers-offre/[id]/page.tsx",
+      "line": 69,
+      "finding": "CardTitle \"Informations\" herite du style shadcn text-2xl (20px reel via l'echelle custom) alors que le contrat documente cette incoherence connue (CardTitle reste surdimensionne vs le reste de la hierarchie ou h3/h4 font 16-18px) et pousse PageHeader comme titre de page a la place. Ici CardTitle sert de sous-titre de section dans un Card, cree un saut visuel avec le PageHeader juste au-dessus qui utilise deja text-2xl pour le vrai titre de page — deux elements de meme taille de police a deux niveaux hierarchiques differents sur le meme ecran.",
+      "fix": "Passer className=\"text-base font-semibold\" (ou text-lg) sur ce CardTitle ponctuellement, en attendant la correction globale du composant Card documentee comme dette connue.",
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "micro-interaction",
+      "file": "components/dossiers-offre/dossier-list.tsx",
+      "line": 83,
+      "finding": "Deux boutons icone adjacents (Pencil, Trash2) en size=\"icon\" (40x40px, cible tactile Button par defaut) dans une cellule de table etroite (w-[100px]) — sous le seuil de 44px recommande, et rapproches l'un de l'autre sans gap suffisant a l'echelle mobile/tablette pour un usage tactile precis. Ce n'est pas specifique a ce fichier (le composant Button lui-meme definit size icon en h-10 w-10) mais l'usage cote a cote ici concentre le risque de mis-tap.",
+      "fix": "Si corrige au niveau module : augmenter le gap entre les deux boutons (gap-1 -> gap-2) et/ou elargir legerement la colonne Actions. Correction structurelle a faire au niveau du composant Button si applique a toute l'app.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "etats",
+      "file": "app/(dashboard)/dossiers-offre/page.tsx",
+      "line": 27,
+      "finding": "Etat d'erreur de la page liste reduit a un <p className=\"text-destructive\">{result.error}</p> brut, sans composant Alert, sans icone, sans action de reessai — moins soigne que le pattern attendu pour un etat d'erreur de premier niveau de page (le contrat exige des messages d'erreur clairs et utiles mais aussi une coherence de composants ; aucun autre module de la liste consultee n'a ete verifie pour comparaison directe ici, marque a verifier).",
+      "fix": "Utiliser le composant Alert (variant destructive) avec titre + description + eventuellement un lien de rechargement, au lieu d'un <p> nu.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "etats",
+      "file": "components/dossiers-offre/dossier-list.tsx",
+      "line": 32,
+      "finding": "Etat vide minimal : simple texte centre sans icone ni CTA (\"Aucun dossier d'offre enregistre.\"), alors que canWrite est disponible en prop et qu'un CTA \"Nouveau dossier\" existe deja dans le PageHeader — l'etat vide ne renforce pas l'action a faire pour un utilisateur qui atterrit sur une liste vide.",
+      "fix": "Enrichir l'etat vide avec une icone (ex. FolderOpen) et, si canWrite, un bouton \"Creer le premier dossier\" pointant vers /dossiers-offre/nouveau, coherent avec le CTA du PageHeader.",
+      "is_functional_bug": false
+    }
+  ]
+}

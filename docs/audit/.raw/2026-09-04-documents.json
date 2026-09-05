@@ -1,0 +1,134 @@
+{
+  "findings": [
+    {
+      "severity": "Bloquant",
+      "category": "accessibilite",
+      "file": "components/documents/document-card.tsx",
+      "line": 78,
+      "finding": "Le menu d'actions secondaires (versions/supprimer) de DocumentCard est un DropdownMenuTrigger en `opacity-0 group-hover:opacity-100` (lignes 78 et 151, mode compact et mode grille), sans aucun état visible/atteignable au clavier ou au toucher — seul `:hover` le révèle. Sur tablette (icônes, pas de survol) et mobile (aucun `:hover` tactile), le bouton reste invisible et non actionnable : impossible de supprimer un document ou de voir ses versions depuis la vue grille sur ces points de contrôle. De plus, le trigger n'a ni `aria-label` ni texte `sr-only` (contrairement à celui de DocumentTable ligne 226 qui a `<span className=\"sr-only\">Actions</span>`), donc même au clavier/lecteur d'écran l'icône seule (`MoreVertical`) n'a pas de nom accessible.",
+      "fix": "Retirer `opacity-0 group-hover:opacity-100` (ou ajouter `focus-visible:opacity-100` + rendre le trigger visible par défaut sur les breakpoints tactiles via `md:opacity-0 md:group-hover:opacity-100`), et ajouter `aria-label=\"Actions\"` sur les deux `DropdownMenuTrigger` (lignes 78 et 151).",
+      "a_verifier_live": true,
+      "is_functional_bug": true
+    },
+    {
+      "severity": "Important",
+      "category": "design-system",
+      "file": "components/documents/document-card.tsx",
+      "line": 120,
+      "finding": "Couleurs codées en dur au lieu des tokens shadcn/STAM, répétées dans le même fichier : `bg-white` (L120, devrait être `bg-card`), `border-gray-100` (L68, L120, L213 — devrait être `border-border`/`border-gray-100` n'existe pas dans le contrat), `hover:bg-gray-50` (L68), `hover:bg-gray-100` (L78, L151, L227 — devrait être `hover:bg-muted`/`hover:bg-accent`), `bg-gray-50/50` (L213), `border-gray-200` (L223, séparateur vertical entre boutons footer).",
+      "fix": "Remplacer par les tokens : `bg-white`→`bg-card`, `border-gray-100`/`border-gray-200`→`border-border`, `hover:bg-gray-50`/`hover:bg-gray-100`→`hover:bg-muted` ou `hover:bg-accent`.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "design-system",
+      "file": "components/documents/document-card.tsx",
+      "line": 30,
+      "finding": "`TYPE_TOP_BAR` (L30-39) et `TYPE_ICON_COLOR` (L41-50) utilisent 8 couleurs Tailwind arbitraires (blue-400/500, green-400/500, orange-400/500, purple-400/500, pink-400/500, indigo-400/500, cyan-400/500, gray-300/400) entièrement hors du système de tokens STAM (ni `stam.*`, ni `chart-1..5`, ni `destructive`/`success`/`warning`). Aucune de ces teintes ne correspond aux 5 couleurs chart imposées ni aux variantes badge sémantiques.",
+      "fix": "Dériver ces couleurs de la palette imposée (ex. mapper sur `chart-1..5` + `stam-warning`/`stam-danger`/`muted-foreground` pour rester dans le système), ou documenter explicitement pourquoi une palette étendue est nécessaire pour 8 types de documents.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "design-system",
+      "file": "app/(dashboard)/documents/_components/documents-content.tsx",
+      "line": 105,
+      "finding": "Toggle vue liste/grille : `border-gray-200 bg-white` (L105) et `hover:bg-gray-100` (L112, L125) codés en dur au lieu de `border-border`/`bg-card`/`hover:bg-muted`. De plus les boutons du toggle (`px-3 py-1.5` + `text-xs`, L109-117 et L118-129) mesurent environ 28-30px de hauteur, sous la cible tactile minimale de 44px recommandée — à vérifier en rendu réel sur mobile 375px.",
+      "fix": "Remplacer les couleurs par les tokens (`border-border`, `bg-card`, `hover:bg-muted`) et porter le `py` à une hauteur ≥44px sur les points de contrôle tactiles (ou envelopper dans un composant `size=\"sm\"` du design-system avec zone de clic étendue via `min-h-11`).",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "etats",
+      "file": "app/(dashboard)/documents/_components/documents-content.tsx",
+      "line": 136,
+      "finding": "État vide dupliqué et bâclé à deux endroits distincts avec un balisage copié-collé au lieu d'un composant partagé : `documents-content.tsx` L136-138 (vue grille) et `components/documents/document-table.tsx` L114-120 (vue liste) affichent chacun juste `<p>Aucun document trouvé</p>` centré, sans icône, sans distinction \"aucun résultat pour ces filtres\" vs \"aucun document du tout\", et sans CTA (bouton \"Uploader un document\" alors que `canWrite` est disponible dans `DocumentsContent`).",
+      "fix": "Créer un état vide partagé (icône + message contextuel + CTA `Nouveau document` si `canWrite`) et l'utiliser dans les deux vues au lieu de dupliquer un `<p>` nu dans chaque fichier.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "accessibilite",
+      "file": "components/documents/document-filters.tsx",
+      "line": 94,
+      "finding": "Le champ de recherche (`<Input>` L94-100) n'a pas de `<Label>` associé (via `htmlFor`/`id`) ni d'`aria-label` — seuls un `placeholder` et une icône `Search` décorative indiquent son rôle, ce qui ne constitue pas un nom accessible robuste pour un lecteur d'écran.",
+      "fix": "Ajouter `<Label htmlFor=\"doc-search\" className=\"sr-only\">Rechercher un document</Label>` et `id=\"doc-search\"` sur l'`Input`, ou a minima `aria-label=\"Rechercher un document\"`.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "design-system",
+      "file": "components/documents/document-filters.tsx",
+      "line": 87,
+      "finding": "`bg-white rounded-xl border border-gray-100 shadow-card` (L87) et `border-t border-gray-50` (L156) codés en dur au lieu des tokens (`bg-card`, `border-border`).",
+      "fix": "Remplacer `bg-white`→`bg-card`, `border-gray-100`/`border-gray-50`→`border-border`.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "coherence",
+      "file": "app/(dashboard)/documents/upload/page.tsx",
+      "line": 32,
+      "finding": "La page d'upload n'utilise pas le composant partagé `PageHeader` (utilisé partout ailleurs dans le module : liste L73 de `page.tsx`, détail L40 de `[id]/page.tsx`) mais un `<h1 className=\"text-3xl font-bold tracking-tight\">` fait main. `text-3xl` (24px, échelle redéfinie) écrase le style `h1` global de `globals.css` (`text-2xl`, 20px) appliqué partout ailleurs, créant un titre de page plus grand et visuellement incohérent avec le reste du module. La page n'a pas non plus de `BreadcrumbNav` (présent sur la page détail) — juste un bouton retour ad hoc.",
+      "fix": "Remplacer le bloc `h1`/bouton retour par `<PageHeader title=\"Uploader un document\" description=\"...\" />` (éventuellement avec un slot action pour le bouton retour), en cohérence avec les pages liste/détail du même module.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "accessibilite",
+      "file": "components/documents/document-card.tsx",
+      "line": 193,
+      "finding": "`text-amber-600` (#D97706) codé en dur pour la mention \"Valide jusqu'au...\" sur fond blanc (`bg-white`), en `text-xs` (11px selon l'échelle du contrat). Ratio de contraste calculé depuis les valeurs sRGB : ≈3.19:1 sur fond blanc, sous le seuil de 4.5:1 requis pour du texte normal (WCAG AA). Le token `stam-warning` (#D97706 également, `32 95% 44%`) existe déjà et n'est pas utilisé ici — couleur dupliquée en dur au lieu du token sémantique.",
+      "fix": "Utiliser le token `text-stam-warning` (ou le variant badge `warning`) et vérifier le contraste réel en rendu ; à ce niveau de contraste, envisager une teinte plus foncée ou passer par le badge `warning` qui a un fond dédié plutôt que du texte coloré isolé.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "coherence",
+      "file": "components/documents/document-filters.tsx",
+      "line": 152,
+      "finding": "Contrairement à `components/marches/marche-filters.tsx` et `components/vehicules/vehicule-filters.tsx` (qui affichent un compteur de résultats `text-xs`), `DocumentFilters` n'affiche aucun compteur de résultats — écart au pattern FilterBar décrit dans le contrat (\"compteur résultats `text-xs`\") et incohérence avec les deux autres modules équivalents de l'app.",
+      "fix": "Ajouter un compteur de résultats (`X document(s) trouvé(s)`) dans la barre de filtres, sur le modèle de `marche-filters.tsx`/`vehicule-filters.tsx`.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "accessibilite",
+      "file": "components/documents/document-version-history.tsx",
+      "line": 170,
+      "finding": "Les boutons icône Prévisualiser/Télécharger (`size=\"icon\"`, L170-188) n'ont que `title=\"Prévisualiser\"`/`title=\"Télécharger\"` comme indication, pas d'`aria-label`. Le support de `title` par les lecteurs d'écran est inconstant ; c'est `aria-label` qui est la pratique imposée par le contrat pour les boutons icône seuls.",
+      "fix": "Ajouter `aria-label=\"Prévisualiser\"` / `aria-label=\"Télécharger\"` sur ces deux boutons (en plus ou à la place de `title`).",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "etats",
+      "file": "components/documents/document-preview.tsx",
+      "line": 138,
+      "finding": "États de chargement affichés avec un spinner `Loader2` animé (`document-preview.tsx` L138-141 pour le chargement de la prévisualisation, `document-version-history.tsx` L83-88 pour l'historique des versions) au lieu du `Skeleton`/shimmer imposé par le contrat (\"Chargement = Skeleton + shimmer, jamais spinner\").",
+      "fix": "Remplacer les blocs `Loader2` par un `Skeleton` (ex. `<Skeleton className=\"h-96 w-full\" />` pour la zone de prévisualisation, une liste de `Skeleton` pour l'historique des versions) conformément au pattern déjà utilisé sur les pages liste.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "hierarchie",
+      "file": "app/(dashboard)/documents/[id]/_components/document-detail-content.tsx",
+      "line": 91,
+      "finding": "`<CardTitle className=\"text-2xl\">{document.nom}</CardTitle>` (L91) reproduit l'incohérence connue et déjà trackée du composant `CardTitle` shadcn resté à `text-2xl` (24px échelle Tailwind standard, soit plus grand que le `h1` de page via `PageHeader` juste au-dessus dans le même écran) — deux titres de tailles différentes se succèdent visuellement sur la même page (titre de page dans `PageHeader`, puis titre de card plus gros dans le contenu).",
+      "fix": "Aligner `CardTitle` sur l'échelle du contrat (`text-lg`/`text-xl` selon le niveau de titre voulu) ou dé-dupliquer en n'affichant pas le nom du document une seconde fois dans la Card puisqu'il est déjà le titre de page.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    }
+  ]
+}

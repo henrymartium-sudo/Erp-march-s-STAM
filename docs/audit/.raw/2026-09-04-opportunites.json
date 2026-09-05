@@ -1,0 +1,124 @@
+{
+  "findings": [
+    {
+      "severity": "Bloquant",
+      "category": "responsive",
+      "file": "components/shared/page-header.tsx",
+      "line": 22,
+      "finding": "Le conteneur racine de PageHeader est `flex items-start justify-between gap-4` sans `flex-wrap`, et le slot `action` est forcé en `flex-shrink-0`. Sur la page détail Opportunité (app/(dashboard)/opportunites/[id]/page.tsx:58-80), ce slot peut contenir jusqu'à 4 contrôles simultanés (bouton \"Modifier\" avec texte, bouton \"Statut\" avec texte, bouton conditionnel \"Créer le marché\" avec texte, icône Supprimer) — c'est le point d'action le plus chargé de tout le module. À 375px de large, la somme des largeurs de ces boutons dépasse largement l'espace restant une fois le titre affiché, sans mécanisme de repli (pas de wrap, pas de menu overflow).",
+      "fix": "Ajouter `flex-wrap` sur le conteneur de PageHeader (ou `flex-col sm:flex-row` sous le breakpoint sm), et/ou regrouper les actions secondaires (Statut, Créer le marché) dans un DropdownMenu sur mobile.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "coherence",
+      "file": "components/opportunites/opportunite-list.tsx",
+      "line": 48,
+      "finding": "La liste Opportunités est rendue en <Table> shadcn dense (7-8 colonnes) alors que le pattern imposé pour toute page liste du module (\"Cards modules redesignées\" + \"Pages liste : PageHeader + FilterBar + Grid + Pagination\") est une grille de cards dédiées (MarcheCard, VehiculeCard, DocumentCard, CautionCard). Aucune OpportuniteCard n'existe. C'est la seule liste métier du produit encore en table brute, rupture visuelle nette avec marches/véhicules/documents/cautions.",
+      "fix": "Créer un composant opportunite-card.tsx (barre couleur top 4px selon statut, montant en typo large, footer Voir/Modifier) et remplacer la Table par une grille responsive, conformément au pattern des autres modules.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "conformite",
+      "file": "app/(dashboard)/opportunites/page.tsx",
+      "line": 31,
+      "finding": "`getOpportunites({ statut: params.statut, page })` accepte un filtre `statut` (lu depuis les searchParams) mais aucun FilterBar n'est rendu sur la page — aucun composant `FilterBar` n'existe même dans le repo (`grep FilterBar` = 0 résultat côté opportunites). Le filtre par statut n'est donc atteignable qu'en modifiant l'URL à la main ; les autres modules (marches, véhicules, documents) exposent ce filtre via une barre horizontale compacte conforme au pattern.",
+      "fix": "Ajouter un FilterBar (search + Select statut + \"Effacer\" conditionnel + compteur de résultats) au-dessus de la liste, réutilisant le pattern déjà en place sur marches/véhicules/documents.",
+      "a_verifier_live": false,
+      "is_functional_bug": true
+    },
+    {
+      "severity": "Important",
+      "category": "etats",
+      "file": "app/(dashboard)/opportunites/page.tsx",
+      "line": 1,
+      "finding": "Aucun `loading.tsx` n'existe sous `app/(dashboard)/opportunites/` (dossier vérifié : seuls `[id]/`, `nouvelle/`, `page.tsx` sont présents). Le chargement RSC de la liste ne montre donc aucun Skeleton shimmer, contrairement à marches/véhicules/documents/cautions qui ont chacun leur `loading.tsx`.",
+      "fix": "Ajouter `app/(dashboard)/opportunites/loading.tsx` avec `<ListSkeleton count={6}>` (ou équivalent table skeleton), conformément au pattern imposé pour chaque route liste.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "etats",
+      "file": "components/opportunites/opportunite-list.tsx",
+      "line": 41,
+      "finding": "État vide réduit à une ligne de texte muted (\"Aucune opportunité enregistrée.\", `text-center py-12 text-muted-foreground`) sans icône, sans titre, sans CTA. Comparer avec `components/marches/marche-list.tsx:21-38` et le pattern identique de `vehicule-list.tsx` : icône 16×16 + `<h3>` + description + bouton \"Créer\" avec Plus. L'utilisateur en état vide n'a aucun chemin d'action visible.",
+      "fix": "Aligner sur le pattern marche-list.tsx : icône (ex. Target/FileSearch), titre \"Aucune opportunité\", description, bouton \"Nouvelle opportunité\" (visible seulement si canWrite).",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "etats",
+      "file": "app/(dashboard)/opportunites/page.tsx",
+      "line": 40,
+      "finding": "État d'erreur de chargement réduit à `<p className=\"text-destructive\">{result.error}</p>` sans composant Alert, sans icône, sans action de nouvelle tentative — alors que le design system fournit `components/ui/alert.tsx` prévu pour ce cas et que la règle CLAUDE.md exige des \"messages d'erreur clairs et utiles\".",
+      "fix": "Remplacer par `<Alert variant=\"destructive\">` avec icône et message, éventuellement un bouton de rechargement.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "accessibilite",
+      "file": "components/opportunites/opportunite-list.tsx",
+      "line": 93,
+      "finding": "Boutons icône seule sans `aria-label` : le bouton Modifier (`Pencil`, opportunite-list.tsx:93-97) et le trigger de suppression (`Trash2`, components/opportunites/opportunite-delete-button.tsx:42-44, réutilisé identique en liste ligne 98 et en page détail app/(dashboard)/opportunites/[id]/page.tsx:76). Les icônes lucide-react ne portent pas nativement `aria-hidden`/label ; un lecteur d'écran n'annonce aucun texte exploitable pour ces actions destructives/de modification.",
+      "fix": "Ajouter `aria-label=\"Modifier l'opportunité\"` sur le Button/Link Pencil, et `aria-label=\"Supprimer l'opportunité\"` sur le Button du AlertDialogTrigger dans opportunite-delete-button.tsx.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "coherence",
+      "file": "app/(dashboard)/opportunites/[id]/page.tsx",
+      "line": 52,
+      "finding": "Les 3 pages Opportunités utilisant BreadcrumbNav (détail [id]/page.tsx:52, [id]/edit/page.tsx:32, nouvelle/page.tsx:18) n'activent pas la prop `showHome`, contrairement au pattern documenté `<BreadcrumbNav items showHome>` et à son usage effectif sur marches/véhicules/documents/cautions ([id]/page.tsx de chacun de ces modules). L'icône Accueil est absente du fil d'Ariane Opportunités.",
+      "fix": "Ajouter `showHome` aux 3 appels de BreadcrumbNav du module opportunites.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "coherence",
+      "file": "components/opportunites/statut-changer-button.tsx",
+      "line": 240,
+      "finding": "Deux widgets de saisie de date différents coexistent dans le même module : `opportunite-form.tsx:235-256` (Popover + Calendar shadcn, format `PPP` fr) pour datePublication/dateLimite, contre `statut-changer-button.tsx:240-245, 249-254, 266-271` (`<Input type=\"date\">` HTML natif, rendu et format dépendant du navigateur) pour periodeValiditeDebut/Fin et echeanceAttributionProv. Rupture d'expérience au sein d'un même flux (créer/éditer une opportunité vs changer son statut).",
+      "fix": "Remplacer les `<Input type=\"date\">` du Sheet de changement de statut par le même composant Popover+Calendar que le formulaire principal.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "design-system",
+      "file": "components/ui/button.tsx",
+      "line": 31,
+      "finding": "Cible tactile probable < 44px : `size: icon` = `h-10 w-10` (40×40px). Utilisé pour les actions Modifier/Supprimer icône-seule du module opportunites : opportunite-list.tsx:93 et 98, opportunite-delete-button.tsx:42.",
+      "fix": "Envisager `h-11 w-11` pour la variante icon, ou au minimum élargir la zone cliquable via padding sur les usages liste/table.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "design-system",
+      "file": "components/opportunites/opportunite-list.tsx",
+      "line": 71,
+      "finding": "Numéros/référence non tokenisés en police mono : `opp.reference` (opportunite-list.tsx:71 et app/(dashboard)/opportunites/[id]/page.tsx:97) et `opp.marche.numero` (opportunite-list.tsx:86 et [id]/page.tsx:151) sont rendus en police par défaut sans la classe `.font-mono-marche` imposée pour \"tout code/numéro de marché, immatriculation\".",
+      "fix": "Appliquer `className=\"font-mono-marche\"` sur ces 4 emplacements.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "design-system",
+      "file": "components/ui/card.tsx",
+      "line": 39,
+      "finding": "CardTitle reste `text-2xl` (20px), hors de l'échelle de titres de carte attendue (h3/h4 = 16-18px). Sur la page détail Opportunité, ceci s'applique à 4 titres de carte simultanés (\"Informations générales\", \"Dates clés\", \"Notes\", \"Informations sur la perte\" — app/(dashboard)/opportunites/[id]/page.tsx:85, 115, 163, 178), amplifiant visuellement une dette déjà documentée comme ouverte dans le contrat design-system.",
+      "fix": "Réduire CardTitle à `text-lg font-semibold` (cohérent avec h3), correctif global components/ui/card.tsx à traiter une seule fois pour tout le produit.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    }
+  ]
+}
