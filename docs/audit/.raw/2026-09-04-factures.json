@@ -1,0 +1,77 @@
+{
+  "module": "factures",
+  "date": "2026-09-04",
+  "scope": ["app/(dashboard)/factures", "components/factures"],
+  "findings": [
+    {
+      "severity": "Bloquant",
+      "category": "etats",
+      "file": "app/(dashboard)/factures/page.tsx",
+      "line": 1,
+      "finding": "La route liste /factures n'a pas de loading.tsx, contrairement à /marches, /documents, /vehicules et /cautions qui en ont tous un (Skeleton + shimmer). Pendant le fetch de getFactures (route en force-dynamic), aucun état de chargement n'est affiché.",
+      "fix": "Créer app/(dashboard)/factures/loading.tsx en reprenant le pattern de cautions/loading.tsx (Skeleton PageHeader + squelette de tableau à 9 colonnes ou ListSkeleton).",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "hierarchie",
+      "file": "app/(dashboard)/factures/page.tsx",
+      "line": 27,
+      "finding": "getFactures accepte statut et marcheId en filtres mais aucun composant de type FilterBar (cf. MarcheFilters du module marchés : recherche + Select statut) n'existe dans le module factures — l'utilisateur ne peut filtrer/rechercher une facture que via l'URL, jamais depuis l'UI. Écart au pattern imposé PageHeader + FilterBar + Grid + Pagination.",
+      "fix": "Ajouter un composant FactureFilters (barre horizontale rounded-xl border shadow-card, Select statut + Select/recherche marché, compteur de résultats text-xs) branché sur les query params déjà supportés côté serveur.",
+      "a_verifier_live": false,
+      "is_functional_bug": true
+    },
+    {
+      "severity": "Important",
+      "category": "design-system",
+      "file": "components/factures/facture-form.tsx:102,197,268,329; components/factures/facture-list.tsx:47",
+      "line": 102,
+      "finding": "bg-white rounded-xl border border-gray-100 shadow-card codé en dur à 5 emplacements du module au lieu des tokens shadcn déjà disponibles (bg-card / border-border). border-gray-100 (#F3F4F6 Tailwind) ne correspond à aucun token du contrat : le token border vaut 214 32% 91% (#E2E8F0), une teinte différente.",
+      "fix": "Remplacer les 5 occurrences par bg-card border-border (ou utiliser le composant Card shadcn par défaut) pour rester sur les tokens.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "coherence",
+      "file": "components/factures/facture-list.tsx",
+      "line": 68,
+      "finding": "Le lien du numéro de facture utilise text-stam-primary (navy #1E3A5F, identité de marque réservée sidebar/panneau login) — seul usage de ce token pour un lien dans toute la codebase. La convention établie pour un identifiant de liste (numéro de marché, immatriculation) est font-mono-marche text-stam-accent (bleu #2563EB, mono) ; ni la couleur ni la police mono ne sont appliquées ici.",
+      "fix": "Remplacer par font-mono-marche text-stam-accent hover:underline, aligné sur marche-card.tsx:58 et vehicule-card.tsx:39.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "coherence",
+      "file": "app/(dashboard)/factures/[id]/page.tsx:34; app/(dashboard)/factures/[id]/edit/page.tsx:38; app/(dashboard)/factures/nouvelle/page.tsx:31",
+      "line": 34,
+      "finding": "Les 3 BreadcrumbNav du module factures omettent la prop showHome, alors que les modules marchés, documents, véhicules et cautions l'activent systématiquement sur leurs pages détail/formulaire (icône Accueil en premier maillon). Incohérence de navigation entre modules du même shell.",
+      "fix": "Ajouter showHome sur les 3 <BreadcrumbNav> du module factures.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "micro-interaction",
+      "file": "components/factures/facture-form.tsx",
+      "line": 65,
+      "finding": "Le champ Montant TTC reste un <Input type=\"number\"> pleinement éditable alors qu'un useEffect l'écrase automatiquement à chaque changement de montantHT ou tva, y compris après une saisie manuelle du TTC. Un utilisateur qui corrige le TTC (ex. arrondi contractuel) voit sa saisie silencieusement écrasée dès qu'il retouche HT ou TVA, sans aucun feedback ni avertissement.",
+      "fix": "Rendre le champ TTC en lecture seule avec un style visuel de valeur calculée, ou n'auto-calculer que tant que l'utilisateur n'a pas modifié le champ manuellement (flag dirty).",
+      "a_verifier_live": false,
+      "is_functional_bug": true
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "hierarchie",
+      "file": "app/(dashboard)/factures/[id]/page.tsx",
+      "line": 69,
+      "finding": "Le contrat documente un layout 2 colonnes pour les pages détail (marche-detail, caution-detail, vehicule-detail). La page facture utilise grid-cols-1 lg:grid-cols-3 (3 cards Montants/Dates/Marché à plat), un pattern différent des autres pages détail du même type d'écran.",
+      "fix": "Si non intentionnel, regrouper en 2 colonnes (ex. colonne principale Montants+Dates, colonne latérale Marché associé) pour rester cohérent avec les autres pages détail.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    }
+  ]
+}

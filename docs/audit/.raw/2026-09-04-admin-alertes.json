@@ -1,0 +1,174 @@
+{
+  "findings": [
+    {
+      "severity": "Bloquant",
+      "category": "conformite",
+      "file": "components/admin/alertes/rule-builder/rules-list-client.tsx",
+      "line": 43,
+      "finding": "Suppression d'une regle via window.confirm() natif au lieu d'un AlertDialog shadcn. Le contrat design-system impose une confirmation AlertDialog avant toute action destructive ; confirm() natif est non stylable, non responsive, non accessible au theme et incoherent avec le reste de l'app.",
+      "fix": "Remplacer confirm() par <AlertDialog> (composant deja disponible) avec titre, description nommant la regle, action destructive variant=destructive et bouton Annuler.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "accessibilite",
+      "file": "components/admin/alertes/rule-builder/rules-list-client.tsx",
+      "line": 112,
+      "finding": "Les trois boutons-icone d'action (Power/Pencil/Trash2) n'ont qu'un attribut title, pas d'aria-label. Le contrat impose aria-label sur tout bouton icone seule (title seul est reserve a la sidebar tablette).",
+      "fix": "Ajouter aria-label={rule.isActive ? 'Desactiver la regle' : 'Activer la regle'}, aria-label=\"Modifier la regle\", aria-label=\"Supprimer la regle\" sur chaque Button.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "design-system",
+      "file": "components/admin/alertes/rule-builder/rules-list-client.tsx",
+      "line": 67,
+      "finding": "Couleurs et surfaces en dur au lieu des tokens : bg-white (l.67), bg-gray-50 (l.70,80), hover:bg-gray-50 (l.80), border-b sans token. Le blanc de carte doit venir de bg-card, les fonds neutres de bg-muted, le hover de hover:bg-muted/50.",
+      "fix": "bg-white -> bg-card ; bg-gray-50 (thead) -> bg-muted ; hover:bg-gray-50 -> hover:bg-muted/50. Idem history-table.tsx l.45,48,60 et condition-editor.tsx l.196.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "responsive",
+      "file": "components/admin/alertes/rule-builder/rules-list-client.tsx",
+      "line": 67,
+      "finding": "Le conteneur du <table> utilise overflow-hidden et non overflow-x-auto. En 375px les colonnes Regle + Statut + Actions (3 boutons 28px) depassent la largeur : contenu tronque, pas de scroll horizontal. history-table.tsx l.45 fait correctement overflow-x-auto : incoherence dans le meme module.",
+      "fix": "Remplacer 'rounded-lg border bg-white overflow-hidden' par 'rounded-xl border bg-card overflow-x-auto' comme dans history-table.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "etats",
+      "file": "app/(dashboard)/admin/alertes/history/page.tsx",
+      "line": 8,
+      "finding": "Aucun loading.tsx pour les routes /admin/alertes/rules et /admin/alertes/history alors que ce sont des pages liste (dynamic = force-dynamic, fetch serveur bloquant). Le contrat impose un loading.tsx avec Skeleton shimmer par route liste. Ici l'utilisateur voit un ecran figé pendant le chargement DB.",
+      "fix": "Ajouter app/(dashboard)/admin/alertes/rules/loading.tsx et history/loading.tsx rendant <PageHeader> + <ListSkeleton> ou un skeleton de table (lignes animate-pulse skeleton-shimmer).",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "responsive",
+      "file": "components/admin/alertes/rule-builder/condition-editor.tsx",
+      "line": 196,
+      "finding": "Chaque ligne de condition est un flex items-center gap-2 non-wrap contenant 2 Select w-44 (176px) + une valeur w-44/w-28 + bouton. Total > 400px : deborde en mobile 375px et tablette etroite, sans retour a la ligne ni scroll.",
+      "fix": "Passer la ligne en 'flex flex-wrap items-center gap-2' ou en grille responsive (grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_auto]), et rendre les Select w-full sm:w-44.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "coherence",
+      "file": "components/admin/alertes/history-table.tsx",
+      "line": 35,
+      "finding": "L'historique affiche toutes les notifications retournees sans pagination, alors que getNotificationHistory expose 'total' (suggerant un set potentiellement large) et que le contrat impose une Pagination (data-pagination) en pied de liste. Risque de page tres longue en production.",
+      "fix": "Paginer cote serveur (page/pageSize) et ajouter <DataPagination> sous la table ; ou au minimum limiter + lien \"voir tout\".",
+      "a_verifier_live": true,
+      "is_functional_bug": true
+    },
+    {
+      "severity": "Important",
+      "category": "etats",
+      "file": "components/admin/alertes/history-table.tsx",
+      "line": 84,
+      "finding": "Le statut est affiche en enum brut anglais non traduit ('SENT', 'PENDING', 'FAILED', 'READ') dans un badge. Le contrat impose des libelles metier lisibles cote UI.",
+      "fix": "Ajouter un STATUS_LABELS: Record<string,string> = { SENT:'Envoye', READ:'Lu', PENDING:'En attente', FAILED:'Echec' } et afficher STATUS_LABELS[n.status] ?? n.status.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "etats",
+      "file": "components/admin/alertes/rule-builder/condition-editor.tsx",
+      "line": 193,
+      "finding": "Les lignes de condition utilisent key={i} (index de tableau) comme cle React. A la suppression d'une condition au milieu de la liste, l'etat interne des Select/Input se decale vers la mauvaise ligne (valeurs affichees fausses).",
+      "fix": "Attribuer un id stable a chaque condition a la creation (crypto.randomUUID()) et l'utiliser comme key.",
+      "a_verifier_live": true,
+      "is_functional_bug": true
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "design-system",
+      "file": "components/admin/alertes/rule-builder/rules-list-client.tsx",
+      "line": 121,
+      "finding": "Icone Power coloree en text-green-600 / text-gray-400 en dur au lieu des tokens STAM (stam-success / muted-foreground). #16A34A sur fond blanc = contraste ~3.4:1, acceptable pour une icone mais hors design-system.",
+      "fix": "text-green-600 -> text-stam-success ; text-gray-400 -> text-muted-foreground.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "design-system",
+      "file": "components/admin/alertes/rule-builder/rules-list-client.tsx",
+      "line": 57,
+      "finding": "Etats vides rendus en 'rounded-lg border border-dashed p-8' : rayon rounded-lg (8px, atom) au lieu de rounded-xl (12px, carte/panneau) impose pour les conteneurs. Meme ecart history-table.tsx l.38 et le conteneur de table l.67/45.",
+      "fix": "Uniformiser les conteneurs de liste et empty-states en rounded-xl.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "design-system",
+      "file": "components/admin/alertes/rule-builder/condition-editor.tsx",
+      "line": 74,
+      "finding": "Le declencheur du multi-select enum est un <button> brut avec classes en dur (rounded-md border-input bg-background px-3 py-1.5 shadow-sm hover:bg-accent) au lieu de reutiliser le SelectTrigger / Button. Hauteur et focus-ring divergent des autres champs du formulaire.",
+      "fix": "Composer avec le meme trigger que les autres Select (h-10, rounded-lg, focus ring STAM) ou extraire un composant MultiSelectTrigger partage.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "coherence",
+      "file": "app/(dashboard)/admin/alertes/rules/page.tsx",
+      "line": 17,
+      "finding": "Incoherence PageHeader dans le module : la page Historique passe la prop count (badge bleu info) en plus de description, la page Regles met le compte uniquement dans description (\"X regle(s) configuree(s)\"). Deux traitements du meme pattern count.",
+      "fix": "Aligner : passer count={rules.length} sur la page Regles et garder description purement qualitative, comme la page Historique.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "conformite",
+      "file": "components/admin/alertes/rule-builder/rule-form.tsx",
+      "line": 61,
+      "finding": "Cast (rule as any)?.externalEmails : usage de 'any' interdit par le contrat qualite. Le type AlertRule Prisma devrait exposer externalEmails (String[]).",
+      "fix": "Regenerer le client Prisma / typer explicitement : (rule as AlertRule & { externalEmails?: string[] }).externalEmails ?? [].",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "hierarchie",
+      "file": "components/admin/alertes/rule-builder/rule-form.tsx",
+      "line": 189,
+      "finding": "Les sous-sections du formulaire (Conditions, Canaux, Roles, Emails externes, Planification) sont des <h3> font-medium identiques, sans numerotation ni pictogramme. Sur un formulaire long (8 blocs + Separator), la hierarchie de progression est plate et la lecture penible.",
+      "fix": "Renforcer chaque titre de bloc (text-sm font-semibold uppercase tracking-wide text-muted-foreground, ou pastille numerotee) et/ou regrouper en Card par section.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "etats",
+      "file": "components/admin/alertes/rule-builder/rule-form.tsx",
+      "line": 276,
+      "finding": "Le bouton Annuler fait router.back() : si la page d'edition est ouverte via lien direct / rechargement, back() peut sortir de l'app ou revenir sur une page hors module. Aucune protection contre la perte de saisie non enregistree.",
+      "fix": "Remplacer par router.push('/admin/alertes/rules'). Optionnel : garde beforeunload / AlertDialog si le formulaire est sale.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "accessibilite",
+      "file": "components/admin/alertes/history-table.tsx",
+      "line": 89,
+      "finding": "Colonne Log en text-xs (11px) text-muted-foreground font-mono sur fond blanc : contraste ~4.7:1 limite a 11px, et information tronquee (max-w-[200px] truncate) sans tooltip ni title pour lire la valeur complete.",
+      "fix": "Passer en text-sm ou ajouter title={n.deliveryLog} sur la cellule ; envisager un Popover pour le log complet.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    }
+  ]
+}

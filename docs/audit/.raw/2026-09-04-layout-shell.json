@@ -1,0 +1,284 @@
+{
+  "findings": [
+    {
+      "severity": "Bloquant",
+      "category": "responsive",
+      "file": "components/shared/VehicleMultiSelect.tsx",
+      "line": 72,
+      "finding": "PopoverContent a une largeur fixe w-[400px]. En viewport 375px (point de contrôle mobile imposé), le panneau déborde de 25px+ et provoque un scroll horizontal.",
+      "fix": "Utiliser w-[--radix-popover-trigger-width] ou w-[min(400px,calc(100vw-2rem))].",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "etats",
+      "file": "components/shared/VehicleMultiSelect.tsx",
+      "line": 83,
+      "finding": "Le div a onClick={() => toggle(id)} ET le Checkbox enfant a onCheckedChange={() => toggle(id)}. Un clic direct sur la case déclenche les deux (bascule + rebascule via bubbling) : la sélection s'annule. Seul un clic sur le libellé fonctionne.",
+      "fix": "Rendre le Checkbox purement présentationnel (tabIndex=-1 / pointer-events-none, garder checked) et laisser le onClick du conteneur seul gérer le toggle ; ou retirer le onClick du div.",
+      "a_verifier_live": true,
+      "is_functional_bug": true
+    },
+    {
+      "severity": "Important",
+      "category": "hierarchie",
+      "file": "components/layout/dashboard-shell.tsx",
+      "line": 86,
+      "finding": "getPageTitle itère pageTitles dans l'ordre d'insertion : '/vehicules' est testé avant '/vehicules/sav', donc pathname.startsWith('/vehicules') matche en premier. La page SAV affiche le titre topbar 'Véhicules' au lieu de 'SAV — Vue globale'. Même risque pour toute future sous-route.",
+      "fix": "Trier les entrées par longueur de clé décroissante avant le for, ou faire un match exact prioritaire puis fallback préfixe le plus long.",
+      "a_verifier_live": false,
+      "is_functional_bug": true
+    },
+    {
+      "severity": "Important",
+      "category": "accessibilite",
+      "file": "components/layout/dashboard-shell.tsx",
+      "line": 366,
+      "finding": "La topbar rend un <h1> (pageTitle) et PageHeader rend aussi un <h1> (page-header.tsx:25). Toute page liste a donc deux <h1> simultanés, le premier dans le DOM étant le plus petit visuellement. Nuisible pour la structure de titres (lecteurs d'écran) et contraire à la décision refonte 'un seul titre'.",
+      "fix": "Rendre le titre topbar en <p>/<div> non sémantique (ou aria-hidden), et garder le <h1> unique dans PageHeader ; ou inversement passer PageHeader en <h2>.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "hierarchie",
+      "file": "components/layout/dashboard-shell.tsx",
+      "line": 367,
+      "finding": "Titre topbar en text-[15px] font-semibold : à peine plus gros que le corps (14px), donc peu dominant, et 15px est hors de l'échelle typographique redéfinie (11/13/14/16/18/20/24).",
+      "fix": "Utiliser text-lg (16px) ou text-base font-semibold, valeurs de l'échelle.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "design-system",
+      "file": "components/admin/alertes/notifications/notification-bell.tsx",
+      "line": 57,
+      "finding": "Pastille compteur en bg-red-500 (couleur Tailwind brute) et text-[9px] hors échelle. Le rouge de la marque est le token destructive / stam-danger (0 72% 51%), pas red-500 (0 84% 60%).",
+      "fix": "bg-destructive (ou bg-stam-danger) + text-[10px] au minimum, idéalement une classe utilitaire dédiée.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "accessibilite",
+      "file": "components/admin/alertes/notifications/notification-bell.tsx",
+      "line": 51,
+      "finding": "Le bouton cloche force h-8 w-8 (32px) sur size='icon' ; cible tactile < 44px sur la topbar, utilisée en mobile.",
+      "fix": "Garder size='icon' (40px) ou porter la zone cliquable à 44px ; ne pas rétrécir.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "accessibilite",
+      "file": "components/layout/dashboard-shell.tsx",
+      "line": 326,
+      "finding": "La sidebar mobile (overlay slide-in) est un simple <aside> conditionnel : pas de role=dialog/aria-modal, pas de piège de focus, pas de fermeture à la touche Échap. Au clavier, le focus reste sur le contenu derrière l'overlay.",
+      "fix": "Utiliser le composant Sheet (Radix Dialog) déjà dispo, ou ajouter focus-trap + listener keydown Escape + aria-modal.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "accessibilite",
+      "file": "components/layout/dashboard-shell.tsx",
+      "line": 171,
+      "finding": "Les liens de navigation sidebar n'ont aucun style de focus visible : le hover est géré en JS (onMouseEnter/Leave) et aucune classe focus-visible n'est posée. Navigation clavier sans indicateur sur fond sombre (contrat : focus visible obligatoire).",
+      "fix": "Ajouter focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/50 sur le <Link>.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "accessibilite",
+      "file": "app/globals.css",
+      "line": 91,
+      "finding": "Texte des items de nav inactifs = --sidebar-muted (214 25% 58%) sur --sidebar-bg (214 52% 18%). Ratio calculé ≈ 4.3:1, sous le seuil 4.5:1 pour du texte normal. Tous les libellés de nav non actifs sont concernés (dashboard-shell.tsx:183).",
+      "fix": "Éclaircir --sidebar-muted vers L≈66-68% (≈ 214 22% 67%) pour repasser au-dessus de 4.5:1.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "design-system",
+      "file": "components/ui/select.tsx",
+      "line": 78,
+      "finding": "border-gray-100 (gris froid #F3F4F6) codé en dur pour le contour du SelectContent, au lieu du token border (214 32% 91% ≈ #E2E8F0, slate). Même valeur en dur dans skeleton.tsx:18 (CardSkeleton) et dialog.tsx:47 (hover:bg-gray-100). Divergence répétée du design-system.",
+      "fix": "Remplacer par border-border et hover:bg-muted / hover:bg-accent.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "design-system",
+      "file": "components/shared/DrillDownSheet.tsx",
+      "line": 34,
+      "finding": "Couleur de titre codée en dur text-[#1E3A5F] (lignes 34 et 59), qui est exactement --stam-primary. Aucun token utilisé.",
+      "fix": "text-stam-primary.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "conformite",
+      "file": "components/ui/alert.tsx",
+      "line": 13,
+      "finding": "Classe dark: résiduelle 'dark:border-destructive' sur la variante destructive. Mode sombre interdit au MVP et aucun .dark n'est jamais appliqué au DOM : style mort.",
+      "fix": "Retirer 'dark:border-destructive'.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "conformite",
+      "file": "components/ui/chart.tsx",
+      "line": 9,
+      "finding": "THEMES = { light: '', dark: '.dark' } et la boucle ChartStyle génère un bloc CSS '.dark [data-chart=...] { ... }'. Gestion de thème sombre morte (MVP sans dark mode).",
+      "fix": "Réduire à un seul thème : supprimer l'entrée dark et la boucle Object.entries(THEMES), émettre directement le bloc :root/[data-chart].",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "coherence",
+      "file": "components/ui/alert.tsx",
+      "line": 11,
+      "finding": "Alert n'expose que default et destructive, sans variantes sémantiques success/warning/info alignées sur le système Badge (+5 variantes STAM). De plus la variante default utilise bg-background (= fond de page) : une alerte posée sur une page a un fond identique à la page et n'a pas de relief.",
+      "fix": "Passer default à bg-card et ajouter les variantes success/warning/info/danger (bordure + fond stam-*-bg + texte stam-*), comme pour Badge.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "coherence",
+      "file": "components/ui/sheet.tsx",
+      "line": 24,
+      "finding": "Sheet incohérent avec Dialog/AlertDialog du même module : overlay bg-black/80 sans backdrop-blur (Dialog = bg-black/50 backdrop-blur-sm) ; contenu sans rayon (rounded-none) et shadow-lg (Dialog = shadow-2xl) ; bouton close en focus:ring-ring focus:ring-offset-2 (ancien shadcn) alors que les atomes refonte utilisent ring-primary/20 ring-offset-0.",
+      "fix": "Aligner overlay (bg-black/50 backdrop-blur-sm), rounded-xl sur les côtés gauche/droite, focus ring-primary/20 ring-offset-0, shadow-2xl.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "accessibilite",
+      "file": "components/shared/VehicleMultiSelect.tsx",
+      "line": 110,
+      "finding": "Le bouton de suppression (icône X seule) d'un badge véhicule n'a pas d'aria-label.",
+      "fix": "aria-label={`Retirer ${v.immatriculation}`} sur le <button>.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "design-system",
+      "file": "components/layout/dashboard-shell.tsx",
+      "line": 145,
+      "finding": "Valeurs de police arbitraires hors échelle dans le shell : text-[15px] (l.367), text-[10px] (l.149, l.235), text-[9px] (notification-bell), text-[13px] répété (l.145,229,289…) au lieu de text-xs/text-sm. L'échelle redéfinie ne comporte ni 15 ni 9 ni 10px.",
+      "fix": "Mapper sur text-xs (11) / text-sm (13) / text-base (14) / text-lg (16) ; supprimer 15px et 9px.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "accessibilite",
+      "file": "components/layout/dashboard-shell.tsx",
+      "line": 359,
+      "finding": "Bouton hamburger : aria-label='Menu' constant, pas d'aria-expanded reflétant l'état ouvert/fermé, et le libellé ne change pas quand l'icône devient une croix.",
+      "fix": "aria-expanded={mobileOpen} et aria-label dynamique ('Ouvrir le menu' / 'Fermer le menu').",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "accessibilite",
+      "file": "components/layout/dashboard-shell.tsx",
+      "line": 158,
+      "finding": "Le <nav> de la sidebar n'a pas d'aria-label alors que la page comporte plusieurs landmarks nav (sidebar desktop, sidebar mobile, fil d'Ariane, pagination).",
+      "fix": "aria-label='Navigation principale' (et un label distinct pour la variante mobile).",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "design-system",
+      "file": "components/ui/card.tsx",
+      "line": 39,
+      "finding": "CardTitle est resté text-2xl (20px) : surdimensionné par rapport à h3 (16) / h4 (14) et à DialogTitle/SheetTitle (text-lg). Angle d'audit ouvert du contrat.",
+      "fix": "text-lg font-semibold (ou aligner sur PageHeader et déprécier CardTitle comme titre de page).",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "design-system",
+      "file": "components/ui/card.tsx",
+      "line": 12,
+      "finding": "Card de base utilise shadow-sm (shadcn) alors que le contrat impose shadow-card (ombres teintées navy) pour toute card/panneau au repos. Cohabitation des deux systèmes d'ombres.",
+      "fix": "Remplacer shadow-sm par shadow-card sur Card.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "coherence",
+      "file": "components/shared/VehicleMultiSelect.tsx",
+      "line": 90,
+      "finding": "L'immatriculation est rendue en font-mono brut au lieu de la classe utilitaire .font-mono-marche imposée pour tout numéro/immatriculation (13px, letter-spacing .025em).",
+      "fix": "className='text-sm font-medium font-mono-marche'.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "conformite",
+      "file": "components/shared/retry-button.tsx",
+      "line": 23,
+      "finding": "État de chargement matérialisé par un spinner (animate-spin) alors que le contrat impose Skeleton/shimmer et proscrit le spinner.",
+      "fix": "Remplacer par un libellé seul ('Nouvelle tentative…') sans icône rotative, ou une barre de progression indéterminée conforme.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "accessibilite",
+      "file": "components/shared/SortableHeader.tsx",
+      "line": 35,
+      "finding": "Bouton de tri en h-8 (32px) : cible tactile sous 44px sur les en-têtes de liste/tableau en usage mobile.",
+      "fix": "Porter à h-9 minimum et augmenter le padding tactile (ou h-11 sur mobile).",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "design-system",
+      "file": "components/layout/dashboard-shell.tsx",
+      "line": 345,
+      "finding": "Topbar en bg-white en dur au lieu du token bg-card (même valeur mais non tokenisée) ; idem gradients avatar/logo qui recodent hsl(45 77% 44%) / hsl(214 52% 18%) au lieu de hsl(var(--stam-gold)) / hsl(var(--sidebar-bg)).",
+      "fix": "bg-card sur la topbar ; utiliser les var() dans les style inline des gradients (le SVG mis à part).",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "micro-interaction",
+      "file": "components/layout/dashboard-shell.tsx",
+      "line": 170,
+      "finding": "title={item.label} posé sur tous les items sidebar, y compris en desktop (lg) où le libellé texte est déjà visible : tooltip natif redondant au survol.",
+      "fix": "Ne poser title que dans le mode icônes seules (md et < lg, hors forceExpanded).",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "coherence",
+      "file": "components/layout/dashboard-shell.tsx",
+      "line": 323,
+      "finding": "Overlay de la sidebar mobile en bg-black/60 backdrop-blur-sm alors que Dialog/AlertDialog du module utilisent bg-black/50. Légère incohérence de traitement des overlays.",
+      "fix": "Uniformiser à bg-black/50 backdrop-blur-sm.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    }
+  ]
+}

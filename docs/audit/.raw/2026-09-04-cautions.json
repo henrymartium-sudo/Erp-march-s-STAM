@@ -1,0 +1,143 @@
+{
+  "findings": [
+    {
+      "severity": "Bloquant",
+      "category": "design-system",
+      "file": "components/cautions/caution-badge.tsx",
+      "line": 45,
+      "finding": "Le composant CautionBadge force toujours variant=\"outline\" sur <Badge> et injecte colorClass (ex. 'blue', 'green', 'purple', 'orange' pour le type ; 'success', 'warning', 'destructive', 'default' pour le statut, cf. lib/constants/caution.ts:27-43) comme simple className. Ce ne sont ni des variants valides de badgeVariants (components/ui/badge.tsx:9-30) ni des classes Tailwind existantes (aucune règle .blue/.green/.purple/.orange/.success/.warning dans app/globals.css) : la classe est totalement inerte. Résultat vérifié dans le code : TOUS les badges type et statut de caution (liste, détail, timeline) rendent le même style outline neutre (bordure + text-foreground), sans aucune différenciation colorée par type ou statut — la fonctionnalité de code couleur documentée dans le rubric est absente en pratique.",
+      "fix": "Mapper TYPE_CAUTION_COLORS/STATUT_CAUTION_COLORS vers les vrais variants Badge (success/warning/danger/info/muted définis dans components/ui/badge.tsx:19-29) et les passer via la prop `variant`, pas `className`. Retirer les valeurs 'blue'/'green'/'purple'/'orange' qui n'existent pas dans le design system.",
+      "is_functional_bug": true,
+      "a_verifier_live": true
+    },
+    {
+      "severity": "Bloquant",
+      "category": "etats",
+      "file": "app/(dashboard)/cautions/[id]/_components/caution-detail-content.tsx",
+      "line": 23,
+      "finding": "Le bouton 'Supprimer' (variant destructive, components/cautions/caution-detail.tsx:144-149) appelle handleDelete directement, qui exécute deleteCaution(caution.id) sans aucune confirmation (pas d'AlertDialog). Un simple clic supprime définitivement une caution bancaire — donnée métier sensible (garantie financière liée à un marché public).",
+      "fix": "Envelopper l'action dans un <AlertDialog> (composant déjà disponible dans components/ui) demandant confirmation explicite avant d'appeler deleteCaution.",
+      "is_functional_bug": true
+    },
+    {
+      "severity": "Important",
+      "category": "etats",
+      "file": "components/cautions/caution-card.tsx",
+      "line": 104,
+      "finding": "Dans le menu kebab de la carte liste, l'item 'Supprimer' (icône Trash2, style text-destructive) appelle onDelete(caution.id), qui dans app/(dashboard)/cautions/_components/cautions-content.tsx:108-113 ne fait que router.push(`/cautions/${id}`) — il ne supprime rien, il redirige simplement vers la page de détail. Le libellé et l'icône promettent une suppression qui n'a jamais lieu depuis la liste.",
+      "fix": "Soit retirer cet item du menu liste (la suppression n'existe que depuis le détail), soit lui donner un vrai comportement de suppression avec confirmation cohérent avec la page détail.",
+      "is_functional_bug": true
+    },
+    {
+      "severity": "Bloquant",
+      "category": "conformite",
+      "file": "components/cautions/caution-filters.tsx",
+      "line": 62,
+      "finding": "CautionFilters ne synchronise jamais son état avec l'URL (pas de useRouter/searchParams). Or app/(dashboard)/cautions/page.tsx:74-80 appelle getCautions() côté serveur avec pagination (skip/take) à partir de searchParams, et CautionsContent (app/(dashboard)/cautions/_components/cautions-content.tsx:20-99) refiltre ensuite CÔTÉ CLIENT le seul lot déjà paginé côté serveur (ex. 20 cautions). Conséquence vérifiée dans le code : taper une recherche ou cocher un type/statut ne filtre que la page serveur courante, jamais l'ensemble des cautions ; le compteur du PageHeader (pagination.totalItems, page.tsx:126) reste basé sur le total non filtré côté client, donnant un total incohérent avec la liste affichée. De plus, le paramètre `niveauAlerte` transmis par page.tsx:77 à getCautions n'est jamais lu côté serveur (absent de cautionFiltersSchema et de la clause `where` dans lib/actions/cautions.ts:382-471) : il est silencieusement ignoré.",
+      "fix": "Faire piloter CautionFilters par l'URL (useRouter().push avec searchParams) comme le reste du filtrage serveur, ajouter niveauAlerte à cautionFiltersSchema et au `where` Prisma, et supprimer le filtrage client redondant dans CautionsContent une fois le filtrage serveur complet.",
+      "is_functional_bug": true,
+      "a_verifier_live": true
+    },
+    {
+      "severity": "Important",
+      "category": "conformite",
+      "file": "components/cautions/caution-list.tsx",
+      "line": 40,
+      "finding": "CautionList implémente sa PROPRE pagination cliente (itemsPerPage=20, state currentPage, boutons Précédent/Suivant faits main lignes 133-182) en plus de la pagination serveur déjà rendue par <DataPagination> dans app/(dashboard)/cautions/page.tsx:194-196. Deux systèmes de pagination indépendants coexistent sur le même écran : la pagination serveur re-fetch une page de ~20 cautions depuis Prisma, puis CautionList repagine ce sous-ensemble déjà réduit avec ses propres numéros de page. Le pattern imposé par le rubric est un composant `data-pagination` unique.",
+      "fix": "Supprimer la pagination interne de CautionList (itemsPerPage/currentPage/boutons custom) et laisser la seule pagination serveur (`DataPagination`) piloter la navigation entre pages.",
+      "is_functional_bug": true
+    },
+    {
+      "severity": "Important",
+      "category": "design-system",
+      "file": "components/cautions/caution-filters.tsx",
+      "line": 208,
+      "finding": "Les filtres Type et Statut (lignes 203-238) utilisent des <input type=\"checkbox\"> HTML natifs non stylés au lieu du composant Checkbox shadcn/ui existant dans components/ui — violation de la contrainte CLAUDE.md 'shadcn/ui uniquement, pas de HTML de formulaire natif'. Par ailleurs l'ensemble du panneau de filtres (bloc rounded-lg p-4 bg-muted/50, lignes 196-375, extensible via bouton Filtres) n'a jamais été migré vers le pattern FilterBar horizontale compacte (rounded-xl border shadow-card, recherche + dropdowns inline + badges filtres actifs bg-primary/8) appliqué aux autres modules (marchés, véhicules, documents) lors de la refonte layer 2 — c'est resté l'ancien filtre vertical extensible, avec des badges filtres actifs en variant=\"secondary\" générique au lieu du style bg-primary/8 text-primary attendu.",
+      "fix": "Remplacer les checkboxes natives par <Checkbox> shadcn, et convertir le panneau en barre horizontale compacte alignée sur FilterBar des autres modules.",
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "design-system",
+      "file": "components/cautions/caution-card.tsx",
+      "line": 31,
+      "finding": "Couleurs codées en dur au lieu des tokens sémantiques STAM (stam-danger/-bg, stam-warning/-bg, stam-success/-bg) sur le composant réutilisable caution-card.tsx : LEFT_BORDER_COLOR (lignes 31-37 : border-l-red-500, border-l-amber-400, border-l-yellow-400, border-l-gray-300, border-l-emerald-400), getCountdownStyle (lignes 40-45 : text-red-600 bg-red-50, text-amber-600 bg-amber-50, text-emerald-600 bg-emerald-50, text-gray-500 bg-gray-100), et bg-white/border-gray-100/border-gray-50/border-gray-200/hover:bg-blue-50/bg-gray-50\\/50 (lignes 68, 123, 129, 137, 155, 171, 174, 181, 184). Même divergence dans lib/utils/caution.ts:115-129 (getCouleurNiveauAlerte retourne text-red-600/text-orange-600/text-yellow-600/text-red-800/text-gray-600 au lieu des tokens), consommé par components/cautions/caution-detail.tsx:161-163,166,264,270 et components/cautions/caution-timeline.tsx:165-169,209-214.",
+      "fix": "Remplacer chaque couleur Tailwind brute par le token STAM correspondant (stam-danger/-bg pour critique/expiré, stam-warning/-bg pour attention, stam-success/-bg pour ok) sur les 4 fichiers listés, et bg-white/border-gray-* par card/border du design system.",
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "accessibilite",
+      "file": "components/cautions/caution-filters.tsx",
+      "line": 117,
+      "finding": "Le champ de recherche (Input placeholder=\"Rechercher une caution...\") n'a ni <Label> associé ni aria-label ; seul le placeholder identifie son rôle, ce qui disparaît dès la saisie et n'est pas exposé de façon fiable aux lecteurs d'écran.",
+      "fix": "Ajouter un aria-label=\"Rechercher une caution\" sur l'Input, ou un <Label> visuellement masqué (sr-only) associé via htmlFor/id.",
+      "is_functional_bug": false,
+      "a_verifier_live": true
+    },
+    {
+      "severity": "Important",
+      "category": "accessibilite",
+      "file": "components/cautions/caution-card.tsx",
+      "line": 84,
+      "finding": "Le déclencheur du menu d'actions (kebab, DropdownMenuTrigger) est en opacity-0 group-hover:opacity-100 — visible uniquement au survol souris. Sur tablette (768px, souvent tactile) et mobile (375px), il n'existe pas de hover : le menu Voir/Modifier/Supprimer devient invisible en permanence bien que toujours cliquable, ce qui le rend indécouvrable pour un usage tactile.",
+      "fix": "Afficher le trigger en permanence sur les breakpoints tactiles (retirer opacity-0 sous lg, ou basculer sur opacity-100 par défaut avec focus-visible/hover en plus au lieu d'exclusif).",
+      "is_functional_bug": false,
+      "a_verifier_live": true
+    },
+    {
+      "severity": "Important",
+      "category": "hierarchie",
+      "file": "app/(dashboard)/cautions/[id]/edit/page.tsx",
+      "line": 99,
+      "finding": "La page Modifier n'utilise ni <BreadcrumbNav> ni <PageHeader>, contrairement à app/(dashboard)/cautions/[id]/page.tsx:99-117 (détail) qui applique scrupuleusement ce pattern. À la place : un bouton retour icône-seule sans aria-label ni sr-only (ligne 103-107, <ArrowLeft/> dans un <Button size=\"icon\"> sans nom accessible) et un <h1 className=\"text-3xl ...\"> (ligne 109) qui contredit à la fois la règle globale h1 = text-2xl (globals.css @layer base) et la convention layer 4 'h1 redondants supprimés, le titre vit dans PageHeader'.",
+      "fix": "Aligner la page Modifier sur le pattern de la page détail : BreadcrumbNav + PageHeader (avec bouton retour intégré ou lien clair), retirer le <h1> text-3xl fait main, et ajouter aria-label=\"Retour\" (ou sr-only) sur le bouton icône ArrowLeft.",
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "coherence",
+      "file": "app/(dashboard)/cautions/nouvelle/page.tsx",
+      "line": 29,
+      "finding": "La page 'Nouvelle caution' n'utilise ni BreadcrumbNav ni PageHeader (juste un <Card><CardHeader><CardTitle>) — troisième variante d'en-tête différente sur le même module après celle de [id]/page.tsx (Breadcrumb+PageHeader) et celle de [id]/edit/page.tsx (h1 fait main). Les 3 écrans du module (détail, édition, création) ont chacun un habillage de page distinct.",
+      "fix": "Uniformiser les 3 écrans (liste/détail/édition/création) sur BreadcrumbNav + PageHeader.",
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "design-system",
+      "file": "components/cautions/caution-filters.tsx",
+      "line": 22,
+      "finding": "useDebounce est importé mais jamais utilisé (import mort) — la recherche texte déclenche un refiltrage à chaque frappe sans debounce, alors que le hook de 300ms est la convention établie ailleurs dans le projet (mémo mémoire projet : hooks/use-debounce.ts, 300ms).",
+      "fix": "Appliquer useDebounce sur filters.search avant de propager onFiltersChange, ou retirer l'import s'il n'est décidément pas nécessaire ici (filtrage local).",
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "hierarchie",
+      "file": "app/(dashboard)/cautions/nouvelle/page.tsx",
+      "line": 33,
+      "finding": "CardTitle (composant shadcn resté text-2xl, cf. rubric §2) est utilisé comme titre de page dans les écrans Nouvelle (ligne 33) et Modifier (app/(dashboard)/cautions/[id]/edit/page.tsx:121), un usage que la refonte a justement cherché à éliminer au profit de PageHeader — incohérence déjà connue globalement, concrètement présente ici.",
+      "fix": "Une fois migré vers PageHeader (cf. finding hiérarchie ci-dessus), ce CardTitle disparaît naturellement ou redevient un simple sous-titre de section.",
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "coherence",
+      "file": "app/(dashboard)/cautions/_components/cautions-content.tsx",
+      "line": 116,
+      "finding": "Filtres + Liste sont enveloppés dans un unique <Card className=\"p-6\"> englobant, alors que le pattern cible (rubric §4) prévoit une FilterBar autonome (rounded-xl border shadow-card) suivie directement de la Grid, sans carte englobante supplémentaire.",
+      "fix": "Retirer le Card englobant p-6 et laisser CautionFilters et CautionList se présenter directement dans le flux de page comme les autres modules liste.",
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "coherence",
+      "file": "app/(dashboard)/cautions/[id]/edit/_components/edit-caution-content.tsx",
+      "line": 33,
+      "finding": "CautionForm est utilisé sans prop onCancel en mode édition (contrairement à un bouton Annuler qui existerait dans le form si la prop était fournie, cf. components/cautions/caution-form.tsx:465-469) : aucun moyen d'annuler l'édition autrement qu'en quittant la page/navigateur.",
+      "fix": "Passer onCancel={() => router.push(`/cautions/${caution.id}`)} à CautionForm.",
+      "is_functional_bug": false
+    }
+  ]
+}

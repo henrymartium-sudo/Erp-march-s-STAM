@@ -1,0 +1,294 @@
+{
+  "findings": [
+    {
+      "severity": "Important",
+      "category": "conformite",
+      "file": "components/marches/delete-marche-dialog.tsx",
+      "line": 64,
+      "finding": "La suppression d'un marche (action irreversible, la plus destructive du module) utilise un <Dialog> generique, alors que l'action moins risquee 'Convertir en opportunite' utilise correctement <AlertDialog>. Incoherence de pattern et ecart au contrat (AlertDialog impose avant action destructive).",
+      "fix": "Reconstruire ce composant avec AlertDialog/AlertDialogAction/AlertDialogCancel comme convertir-en-opportunite-button.tsx. Garder le recap numero/objet dans le corps.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "design-system",
+      "file": "components/marches/delete-marche-dialog.tsx",
+      "line": 93,
+      "finding": "Message d'erreur en couleurs codees en dur: 'p-3 text-sm text-red-800 bg-red-100 border border-red-200'. Aucun token, pas d'usage du composant Alert / des tokens destructive.",
+      "fix": "Utiliser <Alert variant=\"destructive\"> ou au minimum 'text-destructive bg-destructive/10 border-destructive/20'.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "coherence",
+      "file": "components/marches/delete-marche-dialog.tsx",
+      "line": 43,
+      "finding": "Apres suppression reussie, aucun toast sonner: simple router.push('/marches'). Les autres mutations du module (changement de statut, filtres sauvegardes, conversion) affichent toast.success. L'utilisateur n'a aucune confirmation que la suppression a abouti.",
+      "fix": "Ajouter toast.success(`Marche ${marcheNumero} supprime`) avant la redirection, via lib/utils/toast.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "coherence",
+      "file": "components/marches/marche-form.tsx",
+      "line": 1253,
+      "finding": "Retours de mutation create/update affiches via <div> colores en dur (text-red-800 bg-red-100 / text-yellow-800 bg-yellow-100 / text-green-800 bg-green-100) au lieu du pattern ActionResult -> toast.success/error. Le meme fichier importe deja lib/utils/toast et l'utilise pour la restauration de brouillon. Incoherence interne + ecart au contrat toasts.",
+      "fix": "Remplacer les 3 blocs error/warning/success par toast.error(result.error) / toast.warning(...) / toast.success('Marche cree'). Si un rappel inline est voulu pour le warning bloquant, utiliser <Alert> avec tokens.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "design-system",
+      "file": "components/marches/marche-form.tsx",
+      "line": 591,
+      "finding": "Card des champs specifiques: 'border-blue-200 bg-blue-50/50' code en dur + animations 'animate-in fade-in slide-in-from-top-2' (tailwindcss-animate) alors que le contrat impose les keyframes normees animate-fade-in (150ms). 'transition-all duration-300' est aussi a la limite haute (>300ms interdit).",
+      "fix": "Utiliser 'border-primary/20 bg-primary/5' et 'animate-fade-in'. Retirer duration-300.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "hierarchie",
+      "file": "components/marches/marche-detail.tsx",
+      "line": 105,
+      "finding": "CardTitle reste en text-2xl (20px bold) par defaut shadcn, identique au h1 'objet' du marche (ligne 62, text-2xl font-bold). Aucune hierarchie visuelle entre le titre de page et les ~7 titres de sections ('Informations generales', 'Dates et delais'...). marche-form.tsx force pourtant CardTitle a text-lg (ligne 593): incoherence entre les deux ecrans du module.",
+      "fix": "Passer les CardTitle de marche-detail a className=\"text-lg\" (aligne sur h3 global et sur le formulaire), ou corriger CardTitle a la source.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "hierarchie",
+      "file": "components/marches/marche-detail.tsx",
+      "line": 69,
+      "finding": "Cluster d'actions de l'entete: StatutBadge lg + badge muted + bouton Statut + bouton Convertir + bouton Modifier (tous size sm) + DeleteMarcheDialog (bouton size default, variant destructive plein rouge + shadow). Le bouton 'Supprimer' est donc le plus grand et le plus contraste de la rangee: l'action destructive domine visuellement les actions primaires. En tablette/mobile la rangee flex-wrap se casse en plusieurs lignes desordonnees.",
+      "fix": "Passer DeleteMarcheDialog en size sm variant ghost/outline avec icone seule (ou le reléguer dans un DropdownMenu 'Actions'). Regrouper les actions secondaires dans un menu au-dela de 2 boutons.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "design-system",
+      "file": "components/marches/marche-detail.tsx",
+      "line": 57,
+      "finding": "Nombreuses couleurs en dur hors tokens: badge numero provisoire 'bg-amber-50 text-amber-800 border-amber-300' (l.57), liens 'text-blue-600' (l.211, l.224), Card statut 'border-red-200 bg-red-50/50' / 'border-orange-200 bg-orange-50/50' (l.259-264), 'text-orange-700' (l.440, l.451), encarts motifs 'bg-white p-3' (l.464, l.475, l.487) — bg-white en dur dans une Card potentiellement teintee, et badge 'text-[10px]' (l.524, hors echelle typo, min = text-xs 11px).",
+      "fix": "Badge provisoire -> <Badge variant=\"warning\">. Liens -> 'text-primary'. Cards statut -> 'border-destructive/30 bg-destructive/5' etc. Encarts motifs -> 'bg-muted'. Remplacer text-[10px] par text-xs.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "coherence",
+      "file": "app/(dashboard)/marches/nouveau/page.tsx",
+      "line": 21,
+      "finding": "Titre en <h1 className=\"text-3xl font-bold\"> (24px) alors que la refonte a supprime les h1 redondants au profit de PageHeader (utilise sur la liste) et que la page detail titre l'objet en text-2xl (20px). Resultat: 'Creer un marche' s'affiche plus gros que le titre d'un marche reel. Idem edit/page.tsx:39.",
+      "fix": "Utiliser <PageHeader title=\"Creer un marche\" description=\"...\"> comme la page liste, ou a defaut aligner sur h1 global (text-2xl). Appliquer aux deux pages.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "coherence",
+      "file": "app/(dashboard)/marches/[id]/edit/page.tsx",
+      "line": 27,
+      "finding": "Pages nouveau/ et [id]/edit/ n'ont pas de BreadcrumbNav (juste un bouton fantome 'Retour'), alors que la page detail utilise <BreadcrumbNav showHome items=...>. Navigation contextuelle incoherente au sein du module. La page detail utilise aussi space-y-5 vs space-y-6 partout ailleurs.",
+      "fix": "Ajouter <BreadcrumbNav showHome items={[{label:'Marches',href:'/marches'}, {label:'Nouveau'}]} /> (et 'Modifier' + numero en edition). Uniformiser space-y-6.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "design-system",
+      "file": "lib/utils/statut.ts",
+      "line": 27,
+      "finding": "STATUT_COLORS: 13 statuts mappes sur des teintes brutes de l'echelle Tailwind (bg-blue-100/purple-100/indigo-100/yellow-100/cyan-100/teal-100/emerald-100...) au lieu des tokens. ATTRIBUE_PROVISOIREMENT et INFRUCTUEUX partagent exactement 'bg-orange-100 text-orange-800' -> deux statuts indistinguables. 'text-yellow-800 sur bg-yellow-100' est le pire ratio de contraste de la serie.",
+      "fix": "Mapper au minimum les etats de sens fort (succes/danger/warning) sur les variants Badge semantiques success/danger/warning; donner a INFRUCTUEUX une teinte distincte de ATTRIBUE_PROVISOIREMENT; verifier chaque paire texte/fond >= 4.5:1.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "design-system",
+      "file": "lib/utils/urgence.ts",
+      "line": 78,
+      "finding": "URGENCY_STYLES code green-100/orange-100/red-100/slate-100 en dur alors que le design-system fournit stam-success-bg / stam-warning-bg / stam-danger-bg pour exactement cet usage (countdown coloree, deja la convention des caution-card).",
+      "fix": "Remplacer par les paires token stam-*-bg / stam-* (aligner sur caution-card).",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "design-system",
+      "file": "components/marches/marche-card.tsx",
+      "line": 47,
+      "finding": "Card racine en 'bg-white border border-gray-100' au lieu de 'bg-card border-border'. Idem footer 'bg-gray-50/50' (l.109), separateur 'bg-gray-200' (l.117), hover 'hover:bg-blue-50' (l.112). Aucun token.",
+      "fix": "bg-white -> bg-card ; border-gray-100 -> border-border ; bg-gray-50/50 -> bg-muted/50 ; hover:bg-blue-50 -> hover:bg-accent.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "design-system",
+      "file": "components/marches/marche-card.tsx",
+      "line": 22,
+      "finding": "STATUT_TOP_COLOR: 13 hues arbitraires de l'echelle Tailwind (bg-cyan-400, bg-lime-400, bg-indigo-400...) pour la barre 4px de la card. Non tokenise, non aligne sur STATUT_COLORS, palette 'arc-en-ciel' peu institutionnelle.",
+      "fix": "Deriver la barre des memes groupes semantiques que STATUT_COLORS (idealement une source unique statut->couleur partagee card/badge).",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "design-system",
+      "file": "components/marches/marche-card.tsx",
+      "line": 62,
+      "finding": "Badge 'Numero provisoire' code a la main: 'text-[10px] ... bg-amber-50 text-amber-800 border border-amber-300'. text-[10px] est hors echelle typo (min text-xs = 11px) et il existe un variant Badge 'warning'.",
+      "fix": "<Badge variant=\"warning\" className=\"text-xs\">Numero provisoire</Badge>.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "responsive",
+      "file": "components/marches/marche-card.tsx",
+      "line": 110,
+      "finding": "Liens d'action du footer ('Voir details', 'Modifier') en py-1.5 (6px) autour d'un texte ~16px -> hauteur de cible tactile ~28px, sous le minimum de 44px. Sur mobile 375px ces cibles sont trop petites.",
+      "fix": "Passer les liens en h-9 min (py-2.5) ou les rendre en <Button size=\"sm\" variant=\"ghost\"> pleine hauteur.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "accessibilite",
+      "file": "components/marches/marche-filters.tsx",
+      "line": 220,
+      "finding": "L'Input de recherche n'a ni <label> associe ni aria-label (seulement un placeholder). Le bouton d'effacement (l.227, icone X seule) n'a pas d'aria-label non plus.",
+      "fix": "Ajouter aria-label=\"Rechercher un marche\" sur l'Input et aria-label=\"Effacer la recherche\" sur le bouton X.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "accessibilite",
+      "file": "components/marches/marche-filters.tsx",
+      "line": 432,
+      "finding": "Les boutons X de retrait des chips de filtres actifs (l.432, 440, 448, 463) sont des <button> sans texte ni aria-label -> non annonces par lecteur d'ecran.",
+      "fix": "aria-label={`Retirer le filtre ${...}`} sur chaque bouton.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "conformite",
+      "file": "components/marches/marche-filters.tsx",
+      "line": 396,
+      "finding": "Suppression d'un filtre sauvegarde (icone Trash2, destructive) declenchee directement au clic, sans AlertDialog de confirmation. Le contrat impose une confirmation avant action destructive.",
+      "fix": "Envelopper handleDeleteFilter dans un AlertDialog (ou au minimum un confirm inline 'Supprimer ?').",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "design-system",
+      "file": "components/marches/marche-filters.tsx",
+      "line": 213,
+      "finding": "Conteneur FilterBar en 'bg-white border-gray-100' (l.213) et separateur compteur 'border-t border-gray-50' (l.477) — border-gray-50 est quasi invisible; aucun token.",
+      "fix": "bg-white -> bg-card ; border-gray-100 / border-gray-50 -> border-border.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "coherence",
+      "file": "components/marches/marche-filters.tsx",
+      "line": 427,
+      "finding": "Les chips de filtres actifs utilisent <Badge variant=\"secondary\"> alors que le contrat de refonte specifie les filtres actifs en badges discrets 'bg-primary/8 text-primary'.",
+      "fix": "Aligner le style des chips sur 'bg-primary/8 text-primary' (comme les autres FilterBars converties).",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "etats",
+      "file": "components/marches/marche-list.tsx",
+      "line": 16,
+      "finding": "Le tri (useSortable) s'applique cote client sur 'marches' qui ne contient que la page paginee courante (~20 items). Trier par 'Montant' ne reordonne que les 20 lignes visibles, pas le jeu complet -> resultat trompeur pour l'utilisateur qui croit voir 'le plus gros marche'.",
+      "fix": "Remonter le tri cote serveur (param URL sort/dir passe a getAllMarches), ou masquer la toolbar de tri quand la pagination est active, ou indiquer explicitement 'tri sur la page courante'.",
+      "a_verifier_live": false,
+      "is_functional_bug": true
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "etats",
+      "file": "components/marches/marche-list.tsx",
+      "line": 21,
+      "finding": "Etat vide unique: meme texte 'Aucun marche ne correspond a vos criteres... Commencez par creer votre premier marche' et meme CTA, que la base soit reellement vide ou qu'un filtre ne renvoie rien. Trompeur quand 50 marches existent mais que le filtre exclut tout.",
+      "fix": "Distinguer les deux cas via hasFilters: si filtres actifs -> 'Aucun resultat' + bouton 'Effacer les filtres'; sinon -> onboarding 'creer le premier marche'.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "coherence",
+      "file": "components/marches/marche-pagination.tsx",
+      "line": 20,
+      "finding": "Composant de pagination maison base sur <Pagination> shadcn brut, alors que le contrat prevoit le composant partage 'data-pagination' pour la structure page liste. De plus les PaginationPrevious/Next desactives restent dans l'ordre de tabulation (aria-disabled seul, pas de tabIndex=-1).",
+      "fix": "Remplacer par <DataPagination> si l'API le permet; sinon ajouter tabIndex={-1} sur prev/next quand desactives.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Important",
+      "category": "etats",
+      "file": "components/marches/marche-form.tsx",
+      "line": 383,
+      "finding": "onChange montant: field.onChange(parseFloat(e.target.value)) -> NaN si le champ est vide/efface; idem delaiExecution parseInt (l.525), delaiValiditeOffre, etc. NaN se propage dans le state du formulaire et l'affichage du message d'erreur Zod peut etre confus.",
+      "fix": "field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value)) et garder isNaN -> undefined.",
+      "a_verifier_live": true,
+      "is_functional_bug": true
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "conformite",
+      "file": "components/marches/marche-form.tsx",
+      "line": 261,
+      "finding": "onSubmit(data: any) et checkTerminationWarnings(data: any) — 'any' interdit par les regles projet. Le composant fait aussi ~1300 lignes (> seuil 300, dette connue mais non traitee).",
+      "fix": "Typer data: CreateMarcheInput. Extraire les sections (champs specifiques statut, autorite contractante) en sous-composants.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "conformite",
+      "file": "components/marches/marche-form.tsx",
+      "line": 33,
+      "finding": "Import 'Calendar' de components/ui/calendar non utilise (les dates passent toutes par <Input type=\"date\">). Import mort.",
+      "fix": "Supprimer l'import inutilise.",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "etats",
+      "file": "app/(dashboard)/marches/[id]/edit/page.tsx",
+      "line": 15,
+      "finding": "Aucun loading.tsx pour les routes nouveau/ et [id]/ et [id]/edit/ (seule /marches en a un). getMarcheById + auth cote serveur sans etat de chargement -> ecran fige pendant la navigation vers le detail/l'edition.",
+      "fix": "Ajouter loading.tsx (skeleton 2 colonnes pour le detail, skeleton formulaire pour edit) sous ces routes.",
+      "a_verifier_live": true,
+      "is_functional_bug": false
+    },
+    {
+      "severity": "Cosmetique",
+      "category": "micro-interaction",
+      "file": "components/marches/marche-card.tsx",
+      "line": 108,
+      "finding": "Le contrat prevoit 'Actions secondaires revelees au hover' pour les cards modules; ici le footer d'actions (Voir/Modifier) est toujours visible. Mineur mais divergence explicite du pattern card.",
+      "fix": "Optionnel: attenuer le footer (opacity-0 group-hover:opacity-100) sur >=lg, garder visible sur tactile. A trancher avec le besoin (visibilite permanente peut etre volontaire).",
+      "a_verifier_live": false,
+      "is_functional_bug": false
+    }
+  ]
+}
