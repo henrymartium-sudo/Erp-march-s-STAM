@@ -14,8 +14,11 @@ import type { ActionResult } from '@/types'
 import type { Caution, TypeCaution, StatutCaution } from '@prisma/client'
 import { Prisma } from '@prisma/client'
 import { ZodError } from 'zod'
+import { addDays } from 'date-fns'
 import type { PaginatedResponse } from '@/types/pagination'
 import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
+import { ALERTE_CAUTION_SEUILS } from '@/lib/constants/caution'
+import type { NiveauAlerte } from '@/lib/utils/caution'
 
 // ============================================================================
 // TYPES
@@ -379,6 +382,61 @@ export async function getCaution(id: string): Promise<ActionResult<CautionWithRe
 // GET ALL (avec filtres et pagination)
 // ============================================================================
 
+/**
+ * Traduit un niveau d'alerte en clause Prisma équivalente.
+ *
+ * Le niveau d'alerte n'est pas stocké en base : il est dérivé de `statut` et
+ * `dateEcheance` par getNiveauAlerte() (lib/utils/caution.ts). Les bornes
+ * ci-dessous reprennent exactement cette fonction, afin que le filtre serveur
+ * renvoie précisément les cautions affichées avec ce niveau :
+ *   joursRestants = differenceInDays(dateEcheance, maintenant)
+ *   joursRestants <= n  <=>  dateEcheance < maintenant + (n + 1) jours
+ */
+function buildNiveauAlerteWhere(niveau: NiveauAlerte): Prisma.CautionWhereInput {
+  const now = new Date()
+  const borne = (jours: number) => addDays(now, jours + 1)
+
+  switch (niveau) {
+    // Statut terminal EXPIREE, ou caution active dont l'échéance est atteinte
+    case 'EXPIRE':
+      return {
+        OR: [
+          { statut: 'EXPIREE' },
+          { statut: 'ACTIVE', dateEcheance: { lt: borne(0) } },
+        ],
+      }
+    case 'CRITIQUE':
+      return {
+        statut: 'ACTIVE',
+        dateEcheance: { gte: borne(0), lt: borne(ALERTE_CAUTION_SEUILS.CRITIQUE) },
+      }
+    case 'ATTENTION':
+      return {
+        statut: 'ACTIVE',
+        dateEcheance: {
+          gte: borne(ALERTE_CAUTION_SEUILS.CRITIQUE),
+          lt: borne(ALERTE_CAUTION_SEUILS.ATTENTION),
+        },
+      }
+    case 'INFO':
+      return {
+        statut: 'ACTIVE',
+        dateEcheance: {
+          gte: borne(ALERTE_CAUTION_SEUILS.ATTENTION),
+          lt: borne(ALERTE_CAUTION_SEUILS.INFO),
+        },
+      }
+    // Aucune alerte : caution soldée (libérée/appelée) ou échéance lointaine
+    case 'AUCUN':
+      return {
+        OR: [
+          { statut: { in: ['LIBEREE', 'APPELEE'] } },
+          { statut: 'ACTIVE', dateEcheance: { gte: borne(ALERTE_CAUTION_SEUILS.INFO) } },
+        ],
+      }
+  }
+}
+
 export async function getCautions(filters?: unknown): Promise<
   ActionResult<PaginatedResponse<CautionWithRelations>>
 > {
@@ -411,6 +469,12 @@ export async function getCautions(filters?: unknown): Promise<
 
       if (validatedFilters.statut) {
         where.statut = validatedFilters.statut
+      }
+
+      // Niveau d'alerte : condition composée, placée dans AND pour ne pas
+      // écraser le OR utilisé par la recherche textuelle.
+      if (validatedFilters.niveauAlerte) {
+        where.AND = [buildNiveauAlerteWhere(validatedFilters.niveauAlerte)]
       }
 
       if (validatedFilters.marcheId) {
