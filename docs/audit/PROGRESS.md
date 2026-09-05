@@ -34,32 +34,41 @@ Dès que le contexte de la conversation d'orchestration atteint **~50 %** (barre
 | Rapport consolidé | `docs/audit/2026-09-04-audit-ui-ux-app.md` — 100 entrées brutes (48 Pilote réel, pas 41 comme annoncé par son résumé — incohérence interne détectée et documentée §0 du rapport + 52 Vague 1) → 1 doublon inter-rapports fusionné (`CardTitle`/`ui/card.tsx:39`) → **99 entrées backlog** (7 Bloquant / 41 Important / 51 Cosmétique), 18 lots fusionnés (Lot 0 unique), 16 bugs fonctionnels en annexe (aucun doublon) |
 | Backlog validé | **partiel** — Lots 1, 2, 3, 4 approuvés par Abel (2026-09-04, validation ciblée « Bloquant seulement »). Lot 0 (dont #003, 7ᵉ Bloquant) + Lots 5-17 en attente de validation. |
 
-## Prochaine action — ordre validé par Abel (2026-09-05), à reprendre après `/clear`
+## Prochaine action — C : reste du backlog (reprise à froid, session dédiée validée par Abel 2026-09-05)
 
-> **B — sécuriser la doc d'audit — ✅ FAIT (2026-09-05).** Commit `ea472af` sur `chore/audit-ui-ux` (13 fichiers,
-> +2409) : `docs/audit/2026-09-04-audit-ui-ux-{PILOTE,VAGUE1,app}.md`, `docs/audit/PROGRESS.md`, `docs/audit/.raw/`
-> (8 JSON — commités, choix Abel), `.claude/agents/ui-ux-reviewer.md`. Poussé, **[PR #7](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/7) ouverte**
-> (route branche+PR, choix Abel). Modifs préexistantes sans rapport laissées non commitées comme prévu. Scan
-> secrets/chemins locaux : propre avant commit.
+> **Reprise** : `/disciplines-actives senior` → lire ce fichier → puis lecture fraîche (`git status`, `git branch --show-current`,
+> `gh pr list --state open` [attendu : seule #7], `git worktree list`).
 >
-> **D — débloquer les 4 PR ouvertes.** ✅ FAIT (2026-09-05). Les 4 lots mergés en squash sur `main`, chacun déployé en prod Vercel (feu vert Abel explicite sur le geste, merge `main` → déploiement prod auto confirmé).
-> - PR [#5](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/5) (Lot 3, TTC) : `aa33892`. E2E `tests/factures/ttc-manuel.spec.ts` déjà vert avant merge.
-> - PR [#4](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/4) (Lot 2, menus tactiles) : `5a58af1`. Cascade CSS prouvée en navigateur avant merge.
-> - PR [#6](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/6) (Lot 4, sécurité cautions) : `4ef17c1`. **Mergé sur revue de code** (diff serveur `buildNiveauAlerteWhere` relu ; 5 correctifs relus ligne à ligne au Lot 4). E2E `tests/cautions/filters.spec.ts` **jamais vert** (machine 0,64 Go) → à confirmer/réparer en Phase 5.
-> - PR [#3](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/3) (Lot 1, VehicleMultiSelect) : `cf0e4c5`. **Mergé sur revue de code** (diff = 2 changements CSS/aria, 1 composant). E2E `tests/marches/vehicule-liaison.spec.ts` **non lancé** (écrit en base prod, disproportionné) → Phase 5 avec base de test locale.
->
-> **Dette E2E à solder en Phase 5** : `tests/cautions/filters.spec.ts` (jamais vert, cause env) · `tests/marches/vehicule-liaison.spec.ts` (jamais lancé, cible prod).
->
-> **C — reste du backlog.** `docs/audit/2026-09-04-audit-ui-ux-app.md` : 99 entrées / 18 lots, seuls **Lots 1-4 faits**.
-> - **Lot 0** (#003 = 7ᵉ Bloquant + 12 cosmétiques, bloque Lots 7/10/15) — jamais validé ni commencé.
+> **C — reste du backlog.** `docs/audit/2026-09-04-audit-ui-ux-app.md` : 99 entrées / 18 lots, **Lots 1-4 faits et en prod**.
+> - **Lot 0** (#003 = 7ᵉ Bloquant + 12 cosmétiques, bloque Lots 7/10/15) — jamais validé ni commencé. **À présenter à Abel en premier.**
 > - **Lots 5-17** (92 entrées Important/Cosmétique) — jamais validés par Abel.
-> - Validation lot par lot par Abel d'abord (Phase 3 non close), puis même méthode que Lots 1-4.
+> - **Méthode** : Phase 3 non close → validation lot par lot par Abel **avant** de coder. Puis même méthode que Lots 1-4
+>   (agents `fix-and-verify` isolés en `git worktree`, 1 lot = 1 PR, feu vert Abel séparé sur chaque merge = déploiement prod).
+> - Garde-fou `feedback_workflow_token_cost` (2026-08-31) : aucun `Workflow` sans proposition validée + coût affiché.
+>
+> **Dette ouverte (à solder en Phase 5 clôture)** :
+> - E2E `tests/cautions/filters.spec.ts` (Lot 4 — jamais vert, cause machine) et `tests/marches/vehicule-liaison.spec.ts` (Lot 1 — jamais lancé, cible base prod) → rejouer sur base de test locale.
+> - 4 worktrees `fix/*` dans `.claude/worktrees/agent-*` + branches mergées → `git worktree remove` + `git branch -d`.
+> - PR #7 (doc d'audit) : à merger en fin de campagne, ou continuer à y pousser PROGRESS.md.
+> - Build + E2E complets, maj `memory/MEMORY.md` cross-session.
 >
 > **E/F — différés, non tranchés** : Vague 2 (5 modules non audités : `dashboard-home`, `vehicules`, `admin-users`,
 > `admin-analytique`, `auth-profil`) · config ESLint absente du dépôt (dette, 3 confirmations) ·
-> 4ᵉ occurrence `marches/marche-filters.tsx:399` (menu invisible au tactile) · Phase 5 clôture (build+E2E complet, maj `memory/MEMORY.md`).
+> 4ᵉ occurrence `marches/marche-filters.tsx:399` (menu invisible au tactile).
+
+<details><summary>B + D — faits le 2026-09-05 (reprise à froid B→D→C)</summary>
+
+> **B — doc d'audit sécurisée.** Commit `ea472af` sur `chore/audit-ui-ux` (13 fichiers, +2409) : les 3 rapports +
+> `PROGRESS.md` + `docs/audit/.raw/` (8 JSON, inclusion = choix Abel) + `.claude/agents/ui-ux-reviewer.md`. Poussé,
+> **[PR #7](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/7)** (route branche+PR = choix Abel). Scan secrets/chemins locaux propre. Modifs préexistantes sans rapport
+> (`.claude/settings.local.json`, `.claude/agent-memory/*`, `.claude/launch.json`, `tsconfig.tsbuildinfo`) laissées hors commit.
 >
-> **Garde-fou** : `feedback_workflow_token_cost` (2026-08-31) — pas de `Workflow` sans proposition validée par Abel + coût affiché. Règle 50 % de contexte (haut de ce fichier) tenue toute la session (plusieurs checkpoints). Entrée Journal de décisions du 2026-09-04/05 écrite et validée.
+> **D — 4 PR de fix mergées + déployées prod.** Squash sur `main` : #5 `aa33892` (Lot 3 TTC) · #4 `5a58af1` (Lot 2 menus) ·
+> #6 `4ef17c1` (Lot 4 cautions, mergé sur revue — E2E jamais vert) · #3 `cf0e4c5` (Lot 1 MultiSelect, mergé sur revue — E2E non lancé).
+> `main` = `cf0e4c5`, prod `dpl_2YDbpQco` READY. Feu vert Abel explicite sur chaque geste de merge (17.4 : merge `main`
+> → déploiement prod Vercel auto, confirmé). Rollback : Vercel → `dpl_Etb98Tsq7` (`44504b6`) + `git revert`.
+
+</details>
 
 <details><summary>Historique — état avant la Vague 2 (Vague 1 terminée)</summary>
 
