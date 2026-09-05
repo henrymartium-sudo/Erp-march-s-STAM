@@ -21,9 +21,9 @@ Dès que le contexte de la conversation d'orchestration atteint **~50 %** (barre
 
 | Champ | Valeur |
 |---|---|
-| Phase | **4 TERMINÉE (D fait, 2026-09-05) : les 4 lots Bloquant MERGÉS sur `main` (`aa33892`→`cf0e4c5`), déployés en prod Vercel. Doc d'audit en PR #7 (ouverte, sert de PR de suivi campagne). Prochaine étape : C — validation Lot 0 + Lots 5-17.** |
-| Branche | `chore/audit-ui-ux` @ `d8ecc35`+ — doc d'audit poussée, [PR #7](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/7) ouverte (branche de suivi de la campagne) |
-| `main` | `cf0e4c5` = `44504b6` + Lot 3 (`aa33892` #5) + Lot 2 (`5a58af1` #4) + Lot 4 (`4ef17c1` #6) + Lot 1 (`cf0e4c5` #3) |
+| Phase | **4 TERMINÉE (B + D, 2026-09-05) : les 4 lots Bloquant MERGÉS sur `main` (`aa33892`→`cf0e4c5`) + déployés prod, doc d'audit MERGÉE sur `main` (PR #7, squash). Prochaine étape : C — validation Lot 0 + Lots 5-17.** |
+| Branche | `chore/audit-ui-ux` — **fusionnée dans `main` via PR #7 (squash, 2026-09-05)** ; supprimable (`git branch -d`, remote inclus). Cette maj = dernier commit de la branche avant merge. |
+| `main` | 4 lots (`aa33892`/`5a58af1`/`4ef17c1`/`cf0e4c5`) + doc campagne d'audit (squash PR #7). Prod Vercel à jour. |
 | Workflow | `audit-ui-ux-app` — modèle d'audit : hérité (session) · `live:false` |
 | runId | `wf_4f556b30-730` |
 | scriptPath | `…/f0c71625-…/workflows/scripts/audit-ui-ux-app-wf_4f556b30-730.js` |
@@ -36,8 +36,9 @@ Dès que le contexte de la conversation d'orchestration atteint **~50 %** (barre
 
 ## Prochaine action — C : reste du backlog (reprise à froid, session dédiée validée par Abel 2026-09-05)
 
-> **Reprise** : `/disciplines-actives senior` → lire ce fichier → puis lecture fraîche (`git status`, `git branch --show-current`,
-> `gh pr list --state open` [attendu : seule #7], `git worktree list`).
+> **Reprise** : `/disciplines-actives senior` → lire ce fichier (sur `main`) → puis lecture fraîche (`git status`, `git branch --show-current`,
+> `gh pr list --state open` [attendu : **aucune** PR de la campagne — les 5 sont mergées], `git worktree list`).
+> Note : `chore/audit-ui-ux` est fusionnée dans `main` ; si le working tree y est encore, `git checkout main` (attention à `tsconfig.tsbuildinfo` modifié préexistant).
 >
 > **C — reste du backlog.** `docs/audit/2026-09-04-audit-ui-ux-app.md` : 99 entrées / 18 lots, **Lots 1-4 faits et en prod**.
 > - **Lot 0** (#003 = 7ᵉ Bloquant + 12 cosmétiques, bloque Lots 7/10/15) — jamais validé ni commencé. **À présenter à Abel en premier.**
@@ -48,8 +49,8 @@ Dès que le contexte de la conversation d'orchestration atteint **~50 %** (barre
 >
 > **Dette ouverte (à solder en Phase 5 clôture)** :
 > - E2E `tests/cautions/filters.spec.ts` (Lot 4 — jamais vert, cause machine) et `tests/marches/vehicule-liaison.spec.ts` (Lot 1 — jamais lancé, cible base prod) → rejouer sur base de test locale.
-> - 4 worktrees `fix/*` dans `.claude/worktrees/agent-*` + branches mergées → `git worktree remove` + `git branch -d`.
-> - PR #7 (doc d'audit) : à merger en fin de campagne, ou continuer à y pousser PROGRESS.md.
+> - 4 worktrees `fix/*` dans `.claude/worktrees/agent-*` + branches mergées (+ `chore/audit-ui-ux`) → `git worktree remove` + `git branch -d`.
+> - Suivi doc de la campagne C : PR #7 mergée → les prochaines maj de `PROGRESS.md` vont en **commit direct sur `main`** (précédent `86caba7`) ou 1 PR `docs(audit)` par checkpoint.
 > - Build + E2E complets, maj `memory/MEMORY.md` cross-session.
 >
 > **E/F — différés, non tranchés** : Vague 2 (5 modules non audités : `dashboard-home`, `vehicules`, `admin-users`,
@@ -58,9 +59,10 @@ Dès que le contexte de la conversation d'orchestration atteint **~50 %** (barre
 
 <details><summary>B + D — faits le 2026-09-05 (reprise à froid B→D→C)</summary>
 
-> **B — doc d'audit sécurisée.** Commit `ea472af` sur `chore/audit-ui-ux` (13 fichiers, +2409) : les 3 rapports +
+> **B — doc d'audit sécurisée puis fusionnée.** Commit `ea472af` sur `chore/audit-ui-ux` (13 fichiers, +2409) : les 3 rapports +
 > `PROGRESS.md` + `docs/audit/.raw/` (8 JSON, inclusion = choix Abel) + `.claude/agents/ui-ux-reviewer.md`. Poussé,
-> **[PR #7](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/7)** (route branche+PR = choix Abel). Scan secrets/chemins locaux propre. Modifs préexistantes sans rapport
+> **[PR #7](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/7)** (route branche+PR = choix Abel), puis **mergée en squash sur `main` le 2026-09-05** (demande Abel « merge PR #7 »).
+> Scan secrets/chemins locaux propre. Modifs préexistantes sans rapport
 > (`.claude/settings.local.json`, `.claude/agent-memory/*`, `.claude/launch.json`, `tsconfig.tsbuildinfo`) laissées hors commit.
 >
 > **D — 4 PR de fix mergées + déployées prod.** Squash sur `main` : #5 `aa33892` (Lot 3 TTC) · #4 `5a58af1` (Lot 2 menus) ·
@@ -143,6 +145,7 @@ Priorité de correction : transversal d'abord, puis pipeline AO (`opportunites`,
 | 2026-09-05 | B — Sécuriser la doc | **fait** : commit `ea472af` sur `chore/audit-ui-ux` (13 fichiers d'audit, +2409), poussé, [PR #7](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/7) ouverte. Route branche+PR + inclusion `docs/audit/.raw/` (8 JSON) = choix Abel dans le fil. Scan secrets/chemins locaux propre avant commit ; modifs `.claude/*` + `tsconfig.tsbuildinfo` préexistantes laissées hors commit. | — | `ea472af` |
 | 2026-09-05 | D — Merge Lots 2 & 3 | **fait** : `gh pr merge --squash` sur #5 (`aa33892`) puis #4 (`5a58af1`). Feu vert Abel explicite sur le geste après vérif 17.4 (merge `main` → déploiement prod Vercel auto, confirmé via historique 20 déploiements ; rollback instantané vers `dpl_Etb98Tsq7`/`44504b6` + `git revert` dispo). 2 déploiements prod déclenchés, `5a58af1` = état final. #6 reste `MERGEABLE` sans rebase. | — | `aa33892`, `5a58af1` |
 | 2026-09-05 | D — Merge Lots 4 & 1 | **fait** : #6 (`4ef17c1`) et #3 (`cf0e4c5`) mergés en squash sur revue de code (feu vert Abel séparé pour chacun ; diffs relus — #6 : `buildNiveauAlerteWhere` en clause Prisma dérivée de `getNiveauAlerte` ; #3 : popover responsive + Checkbox présentationnel). E2E des deux non exécuté (machine 0,64 Go ; #3 ciblerait la base prod) → dette Phase 5. `main` = `cf0e4c5`, déploiements prod Vercel `dpl_RFV23946` (#6, READY) puis `dpl_2YDbpQco` (#3, BUILDING). **D terminée : 0 PR de fix ouverte.** | — | `4ef17c1`, `cf0e4c5` |
+| 2026-09-05 | B — Merge doc | **fait** : PR #7 (`chore/audit-ui-ux`, 5 commits `docs(audit)`, `CLEAN/MERGEABLE`, aucun chevauchement de fichier avec les 4 lots, Vercel check pass) mergée en squash sur `main` — demande Abel « merge PR #7 ». Doc-only : sortie de build identique, déploiement prod sans risque runtime. `chore/audit-ui-ux` désormais fusionnée → supprimable. Suivi doc de C : commit direct `main` ou 1 PR `docs(audit)` par checkpoint. | — | squash PR #7 |
 
 ---
 
