@@ -69,7 +69,7 @@ export function VehicleMultiSelect({
             <ChevronDown className="h-4 w-4 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[400px] p-0" align="start">
+        <PopoverContent className="w-[min(400px,calc(100vw-2rem))] p-0" align="start">
           <div className="max-h-64 overflow-y-auto p-2">
             {vehicules.length === 0 ? (
               <p className="text-sm text-muted-foreground p-2 text-center">
@@ -79,12 +79,25 @@ export function VehicleMultiSelect({
               vehicules.map((vehicule) => (
                 <div
                   key={vehicule.id}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-muted cursor-pointer"
+                  role="checkbox"
+                  aria-checked={value.includes(vehicule.id)}
+                  tabIndex={0}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-muted cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   onClick={() => toggle(vehicule.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      toggle(vehicule.id)
+                    }
+                  }}
                 >
+                  {/* Purement présentationnel : le toggle est piloté par le conteneur
+                      (sinon un clic direct sur la case déclenchait deux fois le toggle) */}
                   <Checkbox
                     checked={value.includes(vehicule.id)}
-                    onCheckedChange={() => toggle(vehicule.id)}
+                    tabIndex={-1}
+                    aria-hidden
+                    className="pointer-events-none"
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium font-mono">{vehicule.immatriculation}</p>
