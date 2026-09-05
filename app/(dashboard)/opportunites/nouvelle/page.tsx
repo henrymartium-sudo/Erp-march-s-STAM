@@ -16,6 +16,7 @@ export default async function NouvelleOpportunitePage() {
   return (
     <div className="space-y-6">
       <BreadcrumbNav
+        showHome
         items={[
           { label: 'Opportunités', href: '/opportunites' },
           { label: 'Nouvelle opportunité' },

@@ -32,6 +32,7 @@ export default async function FacturePage({ params }: FacturePageProps) {
   return (
     <div className="space-y-6">
       <BreadcrumbNav
+        showHome
         items={[
           { label: 'Factures', href: '/factures' },
           { label: facture.numero },
