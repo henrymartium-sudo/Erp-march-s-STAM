@@ -1,56 +1,35 @@
 'use client';
 
-import { useState } from 'react';
 import { CautionCard } from './caution-card';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SortableHeader } from '@/components/shared/SortableHeader';
 import { useSortable } from '@/hooks/use-sortable';
-import { ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import type { SerializedCaution } from '@/types/serialized';
 
 interface CautionListProps {
   cautions: SerializedCaution[];
   onEdit?: (id: string) => void;
-  onDelete?: (id: string) => void;
   isLoading?: boolean;
-  itemsPerPage?: number;
   className?: string;
 }
 
 /**
- * Liste paginée de cautions avec tri par colonne (asc/desc).
+ * Liste de cautions avec tri par colonne (asc/desc).
+ *
+ * La pagination est assurée côté serveur et rendue par <DataPagination> dans
+ * la page : ce composant n'affiche que le lot déjà paginé qu'il reçoit.
  */
 export function CautionList({
   cautions,
   onEdit,
-  onDelete,
   isLoading = false,
-  itemsPerPage = 20,
   className,
 }: CautionListProps) {
-  const [currentPage, setCurrentPage] = useState(1);
-
   const { sortedData, sortConfig, onSort } = useSortable<SerializedCaution>(
     cautions,
     { key: 'dateEcheance', direction: 'asc' }
   );
-
-  // Pagination sur les données triées
-  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedCautions = sortedData.slice(startIndex, startIndex + itemsPerPage);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // Réinitialiser la page quand le tri change
-  const handleSort = (key: keyof SerializedCaution) => {
-    setCurrentPage(1);
-    onSort(key);
-  };
 
   if (isLoading) {
     return (
@@ -83,8 +62,7 @@ export function CautionList({
       {/* En-tête avec tri et compteur */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div className="text-sm text-muted-foreground">
-          {cautions.length} caution{cautions.length > 1 ? 's' : ''} trouvée{cautions.length > 1 ? 's' : ''}
-          {totalPages > 1 && ` (page ${currentPage} sur ${totalPages})`}
+          {cautions.length} caution{cautions.length > 1 ? 's' : ''} affichée{cautions.length > 1 ? 's' : ''}
         </div>
 
         <div className="flex flex-wrap items-center gap-1">
@@ -93,94 +71,40 @@ export function CautionList({
             field="dateEcheance"
             label="Échéance"
             sortConfig={sortConfig}
-            onSort={handleSort}
+            onSort={onSort}
           />
           <SortableHeader<SerializedCaution>
             field="montant"
             label="Montant"
             sortConfig={sortConfig}
-            onSort={handleSort}
+            onSort={onSort}
           />
           <SortableHeader<SerializedCaution>
             field="statut"
             label="Statut"
             sortConfig={sortConfig}
-            onSort={handleSort}
+            onSort={onSort}
           />
           <SortableHeader<SerializedCaution>
             field="createdAt"
             label="Ajoutée"
             sortConfig={sortConfig}
-            onSort={handleSort}
+            onSort={onSort}
           />
         </div>
       </div>
 
       {/* Grille de cautions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {paginatedCautions.map((caution) => (
+        {sortedData.map((caution) => (
           <CautionCard
             key={caution.id}
             caution={caution}
             mode="normal"
             onEdit={onEdit}
-            onDelete={onDelete}
           />
         ))}
       </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-8">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Précédent
-          </Button>
-
-          <div className="flex items-center gap-1">
-            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-              let pageNumber: number;
-
-              if (totalPages <= 5) {
-                pageNumber = i + 1;
-              } else if (currentPage <= 3) {
-                pageNumber = i + 1;
-              } else if (currentPage >= totalPages - 2) {
-                pageNumber = totalPages - 4 + i;
-              } else {
-                pageNumber = currentPage - 2 + i;
-              }
-
-              return (
-                <Button
-                  key={pageNumber}
-                  variant={currentPage === pageNumber ? 'default' : 'outline'}
-                  size="sm"
-                  className="w-8"
-                  onClick={() => handlePageChange(pageNumber)}
-                >
-                  {pageNumber}
-                </Button>
-              );
-            })}
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            Suivant
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

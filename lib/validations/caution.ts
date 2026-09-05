@@ -19,6 +19,19 @@ export const statutCautionEnum = z.enum([
   'APPELEE',
 ])
 
+/**
+ * Niveaux d'alerte calculés (voir getNiveauAlerte dans lib/utils/caution.ts).
+ * Ce n'est pas une colonne Prisma : le filtre est traduit en conditions sur
+ * `statut` + `dateEcheance` dans getCautions().
+ */
+export const niveauAlerteEnum = z.enum([
+  'AUCUN',
+  'INFO',
+  'ATTENTION',
+  'CRITIQUE',
+  'EXPIRE',
+])
+
 // ============================================================================
 // HELPER POUR PREPROCESSING DES DATES
 // ============================================================================
@@ -157,6 +170,7 @@ export const updateCautionServerSchema = updateCautionSchema.extend(preprocessed
 export const cautionFiltersSchema = z.object({
   type: typeCautionEnum.optional(),
   statut: statutCautionEnum.optional(),
+  niveauAlerte: niveauAlerteEnum.optional(),
   marcheId: z.string().cuid().optional(),
   dateEmissionDebut: z.date().optional(),
   dateEmissionFin: z.date().optional(),

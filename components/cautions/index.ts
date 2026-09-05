@@ -6,7 +6,6 @@ export { CautionDetail } from './caution-detail';
 // Composants de liste et filtrage
 export { CautionList } from './caution-list';
 export { CautionFilters } from './caution-filters';
-export type { CautionFiltersState } from './caution-filters';
 
 // Composants de visualisation
 export { CautionTimeline } from './caution-timeline';

@@ -4,7 +4,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { CautionBadge } from './caution-badge';
@@ -14,7 +13,7 @@ import {
   getJoursRestants,
   getNiveauAlerte,
 } from '@/lib/utils/caution';
-import { Eye, Pencil, Trash2, MoreVertical, Building2, Calendar } from 'lucide-react';
+import { Eye, Pencil, MoreVertical, Building2, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SerializedCaution } from '@/types/serialized';
 import Link from 'next/link';
@@ -23,7 +22,6 @@ interface CautionCardProps {
   caution: SerializedCaution;
   mode?: 'compact' | 'normal';
   onEdit?: (id: string) => void;
-  onDelete?: (id: string) => void;
   className?: string;
 }
 
@@ -48,7 +46,6 @@ export function CautionCard({
   caution,
   mode = 'normal',
   onEdit,
-  onDelete,
   className,
 }: CautionCardProps) {
   const dateEcheance  = new Date(caution.dateEcheance);
@@ -64,7 +61,7 @@ export function CautionCard({
     : `J-${joursRestants}`
 
   return (
-    <div className={cn(
+    <div data-testid="caution-card" className={cn(
       'group bg-white rounded-xl border border-gray-100 border-l-4 shadow-card',
       'hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200',
       'flex flex-col overflow-hidden',
@@ -98,18 +95,11 @@ export function CautionCard({
                   Modifier
                 </DropdownMenuItem>
               )}
-              {onDelete && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => onDelete(caution.id)}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Supprimer
-                  </DropdownMenuItem>
-                </>
-              )}
+              {/*
+                Pas d'action "Supprimer" ici : la suppression n'est proposée que
+                sur la page de détail, où elle passe par une confirmation
+                AlertDialog. L'ancien item ne faisait qu'ouvrir le détail.
+              */}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

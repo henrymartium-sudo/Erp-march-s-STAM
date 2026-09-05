@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,31 +22,12 @@ import { Badge } from '@/components/ui/badge';
 import { X, Filter, CalendarIcon, RotateCcw, Search } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
   TYPE_CAUTION_OPTIONS,
   STATUT_CAUTION_OPTIONS,
 } from '@/lib/constants/caution';
-import type { TypeCaution, StatutCaution } from '@prisma/client';
-import type { NiveauAlerte } from '@/lib/utils/caution';
-
-export interface CautionFiltersState {
-  search?: string;
-  types?: TypeCaution[];
-  statuts?: StatutCaution[];
-  dateEmissionDebut?: Date;
-  dateEmissionFin?: Date;
-  dateEcheanceDebut?: Date;
-  dateEcheanceFin?: Date;
-  niveauAlerte?: NiveauAlerte;
-}
-
-interface CautionFiltersProps {
-  filters: CautionFiltersState;
-  onFiltersChange: (filters: CautionFiltersState) => void;
-  className?: string;
-}
 
 const NIVEAU_ALERTE_OPTIONS = [
   { value: 'CRITIQUE', label: '🔴 Critique' },
@@ -55,57 +37,101 @@ const NIVEAU_ALERTE_OPTIONS = [
   { value: 'AUCUN', label: '🟢 OK' },
 ] as const;
 
+/** Paramètres d'URL pilotés par ce composant (hors pagination) */
+const FILTER_PARAM_KEYS = [
+  'search',
+  'type',
+  'statut',
+  'niveauAlerte',
+  'dateEmissionDebut',
+  'dateEmissionFin',
+  'dateEcheanceDebut',
+  'dateEcheanceFin',
+] as const;
+
+const URL_DATE_FORMAT = 'yyyy-MM-dd';
+
+function parseUrlDate(value: string | null): Date | undefined {
+  if (!value) return undefined;
+  const parsed = parse(value, URL_DATE_FORMAT, new Date());
+  return isNaN(parsed.getTime()) ? undefined : parsed;
+}
+
+interface CautionFiltersProps {
+  className?: string;
+}
+
 /**
- * Composant de filtrage avancé pour les cautions
- * Permet de filtrer par type, statut, dates, niveau d'alerte et recherche textuelle
+ * Composant de filtrage avancé pour les cautions.
+ *
+ * Les filtres sont portés par l'URL (searchParams) et appliqués côté serveur
+ * dans getCautions() : ils s'appliquent donc à l'ensemble des cautions et non
+ * à la seule page courante. Toute modification réinitialise `page`.
  */
-export function CautionFilters({
-  filters,
-  onFiltersChange,
-  className,
-}: CautionFiltersProps) {
+export function CautionFilters({ className }: CautionFiltersProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const hasActiveFilters = Boolean(
-    filters.search ||
-    filters.types?.length ||
-    filters.statuts?.length ||
-    filters.dateEmissionDebut ||
-    filters.dateEmissionFin ||
-    filters.dateEcheanceDebut ||
-    filters.dateEcheanceFin ||
-    filters.niveauAlerte
-  );
+  // Valeurs courantes lues depuis l'URL
+  const typeActuel = searchParams.get('type') || 'ALL';
+  const statutActuel = searchParams.get('statut') || 'ALL';
+  const niveauAlerteActuel = searchParams.get('niveauAlerte') || 'ALL';
+  const dateEmissionDebut = parseUrlDate(searchParams.get('dateEmissionDebut'));
+  const dateEmissionFin = parseUrlDate(searchParams.get('dateEmissionFin'));
+  const dateEcheanceDebut = parseUrlDate(searchParams.get('dateEcheanceDebut'));
+  const dateEcheanceFin = parseUrlDate(searchParams.get('dateEcheanceFin'));
 
-  const activeFiltersCount = [
-    filters.search,
-    filters.types?.length,
-    filters.statuts?.length,
-    filters.dateEmissionDebut,
-    filters.dateEmissionFin,
-    filters.dateEcheanceDebut,
-    filters.dateEcheanceFin,
-    filters.niveauAlerte,
-  ].filter(Boolean).length;
+  // Recherche : état local debouncé avant propagation dans l'URL
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
+  // Synchronisation URL — recherche
+  useEffect(() => {
+    const current = searchParams.get('search') || '';
+    if (debouncedSearch === current) return;
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (debouncedSearch) {
+      params.set('search', debouncedSearch);
+    } else {
+      params.delete('search');
+    }
+    params.delete('page');
+    router.push(`/cautions?${params.toString()}`);
+  }, [debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const updateParam = (key: string, value: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value && value !== 'ALL') {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    params.delete('page');
+    router.push(`/cautions?${params.toString()}`);
+  };
+
+  const updateDateParam = (key: string, date: Date | undefined) => {
+    updateParam(key, date ? format(date, URL_DATE_FORMAT) : null);
+  };
+
+  const clearParams = (keys: string[]) => {
+    const params = new URLSearchParams(searchParams.toString());
+    keys.forEach((key) => params.delete(key));
+    params.delete('page');
+    router.push(`/cautions?${params.toString()}`);
+  };
+
+  const activeFilterKeys = FILTER_PARAM_KEYS.filter((key) =>
+    Boolean(searchParams.get(key))
+  );
+  const hasActiveFilters = activeFilterKeys.length > 0 || searchQuery !== '';
+  const activeFiltersCount = activeFilterKeys.length;
 
   const handleReset = () => {
-    onFiltersChange({});
-  };
-
-  const toggleType = (type: TypeCaution) => {
-    const current = filters.types || [];
-    const updated = current.includes(type)
-      ? current.filter((t) => t !== type)
-      : [...current, type];
-    onFiltersChange({ ...filters, types: updated.length ? updated : undefined });
-  };
-
-  const toggleStatut = (statut: StatutCaution) => {
-    const current = filters.statuts || [];
-    const updated = current.includes(statut)
-      ? current.filter((s) => s !== statut)
-      : [...current, statut];
-    onFiltersChange({ ...filters, statuts: updated.length ? updated : undefined });
+    setSearchQuery('');
+    router.push('/cautions');
   };
 
   return (
@@ -116,15 +142,15 @@ export function CautionFilters({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Rechercher une caution..."
-            value={filters.search || ''}
-            onChange={(e) => onFiltersChange({ ...filters, search: e.target.value || undefined })}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-9"
           />
-          {filters.search && (
+          {searchQuery && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onFiltersChange({ ...filters, search: undefined })}
+              onClick={() => setSearchQuery('')}
               className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
             >
               <X className="h-4 w-4" />
@@ -160,33 +186,66 @@ export function CautionFilters({
       </div>
 
       {/* Filtres actifs (badges) */}
-      {hasActiveFilters && (
+      {activeFiltersCount > 0 && (
         <div className="flex flex-wrap gap-2">
-          {filters.types?.map((type) => (
-            <Badge key={type} variant="secondary" className="gap-1">
-              Type: {TYPE_CAUTION_OPTIONS.find(o => o.value === type)?.label}
-              <X
-                className="h-3 w-3 cursor-pointer"
-                onClick={() => toggleType(type)}
-              />
-            </Badge>
-          ))}
-          {filters.statuts?.map((statut) => (
-            <Badge key={statut} variant="secondary" className="gap-1">
-              Statut: {STATUT_CAUTION_OPTIONS.find(o => o.value === statut)?.label}
-              <X
-                className="h-3 w-3 cursor-pointer"
-                onClick={() => toggleStatut(statut)}
-              />
-            </Badge>
-          ))}
-          {filters.niveauAlerte && (
+          {typeActuel !== 'ALL' && (
             <Badge variant="secondary" className="gap-1">
-              Alerte: {NIVEAU_ALERTE_OPTIONS.find(o => o.value === filters.niveauAlerte)?.label}
-              <X
-                className="h-3 w-3 cursor-pointer"
-                onClick={() => onFiltersChange({ ...filters, niveauAlerte: undefined })}
-              />
+              Type: {TYPE_CAUTION_OPTIONS.find((o) => o.value === typeActuel)?.label ?? typeActuel}
+              <button
+                type="button"
+                aria-label="Retirer le filtre type"
+                onClick={() => updateParam('type', null)}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {statutActuel !== 'ALL' && (
+            <Badge variant="secondary" className="gap-1">
+              Statut: {STATUT_CAUTION_OPTIONS.find((o) => o.value === statutActuel)?.label ?? statutActuel}
+              <button
+                type="button"
+                aria-label="Retirer le filtre statut"
+                onClick={() => updateParam('statut', null)}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {niveauAlerteActuel !== 'ALL' && (
+            <Badge variant="secondary" className="gap-1">
+              Alerte: {NIVEAU_ALERTE_OPTIONS.find((o) => o.value === niveauAlerteActuel)?.label ?? niveauAlerteActuel}
+              <button
+                type="button"
+                aria-label="Retirer le filtre niveau d'alerte"
+                onClick={() => updateParam('niveauAlerte', null)}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {(dateEmissionDebut || dateEmissionFin) && (
+            <Badge variant="secondary" className="gap-1">
+              Émission: {dateEmissionDebut ? format(dateEmissionDebut, 'dd/MM/yyyy') : '…'} → {dateEmissionFin ? format(dateEmissionFin, 'dd/MM/yyyy') : '…'}
+              <button
+                type="button"
+                aria-label="Retirer le filtre date d'émission"
+                onClick={() => clearParams(['dateEmissionDebut', 'dateEmissionFin'])}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {(dateEcheanceDebut || dateEcheanceFin) && (
+            <Badge variant="secondary" className="gap-1">
+              Échéance: {dateEcheanceDebut ? format(dateEcheanceDebut, 'dd/MM/yyyy') : '…'} → {dateEcheanceFin ? format(dateEcheanceFin, 'dd/MM/yyyy') : '…'}
+              <button
+                type="button"
+                aria-label="Retirer le filtre date d'échéance"
+                onClick={() => clearParams(['dateEcheanceDebut', 'dateEcheanceFin'])}
+              >
+                <X className="h-3 w-3" />
+              </button>
             </Badge>
           )}
         </div>
@@ -198,57 +257,52 @@ export function CautionFilters({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Filtre Type */}
             <div className="space-y-2">
-              <Label>Type de caution</Label>
-              <div className="space-y-1">
-                {TYPE_CAUTION_OPTIONS.map((option) => (
-                  <label
-                    key={option.value}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={filters.types?.includes(option.value as TypeCaution)}
-                      onChange={() => toggleType(option.value as TypeCaution)}
-                      className="h-4 w-4 rounded border-gray-300"
-                    />
-                    <span className="text-sm">{option.label}</span>
-                  </label>
-                ))}
-              </div>
+              <Label htmlFor="filtre-type">Type de caution</Label>
+              <Select
+                value={typeActuel}
+                onValueChange={(value) => updateParam('type', value)}
+              >
+                <SelectTrigger id="filtre-type">
+                  <SelectValue placeholder="Tous les types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Tous les types</SelectItem>
+                  {TYPE_CAUTION_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Filtre Statut */}
             <div className="space-y-2">
-              <Label>Statut</Label>
-              <div className="space-y-1">
-                {STATUT_CAUTION_OPTIONS.map((option) => (
-                  <label
-                    key={option.value}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={filters.statuts?.includes(option.value as StatutCaution)}
-                      onChange={() => toggleStatut(option.value as StatutCaution)}
-                      className="h-4 w-4 rounded border-gray-300"
-                    />
-                    <span className="text-sm">{option.label}</span>
-                  </label>
-                ))}
-              </div>
+              <Label htmlFor="filtre-statut">Statut</Label>
+              <Select
+                value={statutActuel}
+                onValueChange={(value) => updateParam('statut', value)}
+              >
+                <SelectTrigger id="filtre-statut">
+                  <SelectValue placeholder="Tous les statuts" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Tous les statuts</SelectItem>
+                  {STATUT_CAUTION_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Filtre Niveau Alerte */}
             <div className="space-y-2">
               <Label htmlFor="niveau-alerte">Niveau d&apos;alerte</Label>
               <Select
-                value={filters.niveauAlerte || 'ALL'}
-                onValueChange={(value) =>
-                  onFiltersChange({
-                    ...filters,
-                    niveauAlerte: value === 'ALL' ? undefined : (value as NiveauAlerte),
-                  })
-                }
+                value={niveauAlerteActuel}
+                onValueChange={(value) => updateParam('niveauAlerte', value)}
               >
                 <SelectTrigger id="niveau-alerte">
                   <SelectValue placeholder="Tous les niveaux" />
@@ -275,8 +329,8 @@ export function CautionFilters({
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="flex-1 justify-start text-left font-normal">
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {filters.dateEmissionDebut ? (
-                        format(filters.dateEmissionDebut, 'dd/MM/yyyy', { locale: fr })
+                      {dateEmissionDebut ? (
+                        format(dateEmissionDebut, 'dd/MM/yyyy', { locale: fr })
                       ) : (
                         'De...'
                       )}
@@ -285,10 +339,8 @@ export function CautionFilters({
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={filters.dateEmissionDebut}
-                      onSelect={(date) =>
-                        onFiltersChange({ ...filters, dateEmissionDebut: date })
-                      }
+                      selected={dateEmissionDebut}
+                      onSelect={(date) => updateDateParam('dateEmissionDebut', date)}
                       locale={fr}
                     />
                   </PopoverContent>
@@ -298,8 +350,8 @@ export function CautionFilters({
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="flex-1 justify-start text-left font-normal">
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {filters.dateEmissionFin ? (
-                        format(filters.dateEmissionFin, 'dd/MM/yyyy', { locale: fr })
+                      {dateEmissionFin ? (
+                        format(dateEmissionFin, 'dd/MM/yyyy', { locale: fr })
                       ) : (
                         'À...'
                       )}
@@ -308,10 +360,8 @@ export function CautionFilters({
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={filters.dateEmissionFin}
-                      onSelect={(date) =>
-                        onFiltersChange({ ...filters, dateEmissionFin: date })
-                      }
+                      selected={dateEmissionFin}
+                      onSelect={(date) => updateDateParam('dateEmissionFin', date)}
                       locale={fr}
                     />
                   </PopoverContent>
@@ -327,8 +377,8 @@ export function CautionFilters({
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="flex-1 justify-start text-left font-normal">
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {filters.dateEcheanceDebut ? (
-                        format(filters.dateEcheanceDebut, 'dd/MM/yyyy', { locale: fr })
+                      {dateEcheanceDebut ? (
+                        format(dateEcheanceDebut, 'dd/MM/yyyy', { locale: fr })
                       ) : (
                         'De...'
                       )}
@@ -337,10 +387,8 @@ export function CautionFilters({
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={filters.dateEcheanceDebut}
-                      onSelect={(date) =>
-                        onFiltersChange({ ...filters, dateEcheanceDebut: date })
-                      }
+                      selected={dateEcheanceDebut}
+                      onSelect={(date) => updateDateParam('dateEcheanceDebut', date)}
                       locale={fr}
                     />
                   </PopoverContent>
@@ -350,8 +398,8 @@ export function CautionFilters({
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="flex-1 justify-start text-left font-normal">
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {filters.dateEcheanceFin ? (
-                        format(filters.dateEcheanceFin, 'dd/MM/yyyy', { locale: fr })
+                      {dateEcheanceFin ? (
+                        format(dateEcheanceFin, 'dd/MM/yyyy', { locale: fr })
                       ) : (
                         'À...'
                       )}
@@ -360,10 +408,8 @@ export function CautionFilters({
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={filters.dateEcheanceFin}
-                      onSelect={(date) =>
-                        onFiltersChange({ ...filters, dateEcheanceFin: date })
-                      }
+                      selected={dateEcheanceFin}
+                      onSelect={(date) => updateDateParam('dateEcheanceFin', date)}
                       locale={fr}
                     />
                   </PopoverContent>

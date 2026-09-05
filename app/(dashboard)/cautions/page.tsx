@@ -30,8 +30,28 @@ interface CautionsPageProps {
     statut?: string;
     niveauAlerte?: string;
     search?: string;
+    dateEmissionDebut?: string;
+    dateEmissionFin?: string;
+    dateEcheanceDebut?: string;
+    dateEcheanceFin?: string;
     page?: string;
   }>;
+}
+
+/**
+ * Convertit un paramètre d'URL au format "yyyy-MM-dd" en Date.
+ * Les bornes de fin couvrent la journée entière pour que le jour sélectionné
+ * soit inclus dans le filtre.
+ */
+function parseDateParam(
+  value: string | undefined,
+  bound: 'start' | 'end'
+): Date | undefined {
+  if (!value) return undefined;
+  const date = new Date(
+    bound === 'end' ? `${value}T23:59:59.999` : `${value}T00:00:00`
+  );
+  return isNaN(date.getTime()) ? undefined : date;
 }
 
 /**
@@ -70,12 +90,18 @@ export default async function CautionsPage({ searchParams }: CautionsPageProps) 
   // Parse page number
   const currentPage = Number(params.page) || 1;
 
-  // Récupérer les cautions avec filtres et pagination
+  // Récupérer les cautions avec filtres et pagination.
+  // Tous les filtres de l'URL sont appliqués côté serveur : ils portent donc
+  // sur l'ensemble des cautions, pas seulement sur la page courante.
   const result = await getCautions({
     type: params.type,
     statut: params.statut,
     niveauAlerte: params.niveauAlerte,
     search: params.search,
+    dateEmissionDebut: parseDateParam(params.dateEmissionDebut, 'start'),
+    dateEmissionFin: parseDateParam(params.dateEmissionFin, 'end'),
+    dateEcheanceDebut: parseDateParam(params.dateEcheanceDebut, 'start'),
+    dateEcheanceFin: parseDateParam(params.dateEcheanceFin, 'end'),
     page: currentPage,
   });
 
