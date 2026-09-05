@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -36,10 +37,35 @@ interface FactureFormProps {
 
 type FormValues = FormFactureInput
 
+/** Montant TTC déduit du HT et du taux de TVA, arrondi au centime. */
+function computeMontantTTC(montantHT: number, tva: number): number {
+  return Math.round(montantHT * (1 + tva / 100) * 100) / 100
+}
+
+/** Deux montants sont considérés distincts au-delà du centime. */
+const SEUIL_ECART_TTC = 0.01
+
+const formatFCFA = (valeur: number): string =>
+  valeur.toLocaleString('fr-FR', { maximumFractionDigits: 2 })
+
 export function FactureForm({ marches, facture, defaultMarcheId }: FactureFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const isEditing = !!facture
+
+  // Le TTC est calculé automatiquement tant que l'utilisateur ne l'a pas saisi
+  // lui-même. Dès qu'il le fait (arrondi contractuel négocié, écart facturé),
+  // sa valeur devient la source de vérité et n'est plus écrasée.
+  // En édition, une facture dont le TTC stocké diverge du calcul HT + TVA
+  // porte déjà une saisie manuelle : on la protège dès le montage.
+  const [ttcManuallyEdited, setTtcManuallyEdited] = useState<boolean>(() => {
+    if (!facture) return false
+    const ht = Number(facture.montantHT)
+    const taux = Number(facture.tva)
+    const ttc = Number(facture.montantTTC)
+    if (!Number.isFinite(ht) || !Number.isFinite(taux) || !Number.isFinite(ttc)) return false
+    return Math.abs(ttc - computeMontantTTC(ht, taux)) >= SEUIL_ECART_TTC
+  })
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formFactureSchema),
@@ -58,16 +84,27 @@ export function FactureForm({ marches, facture, defaultMarcheId }: FactureFormPr
     },
   })
 
-  // Calcul automatique du montant TTC
+  // Calcul automatique du montant TTC — suspendu après une saisie manuelle
   const montantHT = form.watch('montantHT')
   const tva = form.watch('tva')
+  const montantTTC = form.watch('montantTTC')
 
   useEffect(() => {
+    if (ttcManuallyEdited) return
     if (montantHT && tva !== undefined) {
-      const ttc = Number(montantHT) * (1 + Number(tva) / 100)
-      form.setValue('montantTTC', Math.round(ttc * 100) / 100, { shouldValidate: false })
+      form.setValue('montantTTC', computeMontantTTC(Number(montantHT), Number(tva)), {
+        shouldValidate: false,
+      })
     }
-  }, [montantHT, tva, form])
+  }, [montantHT, tva, ttcManuallyEdited, form])
+
+  // Référence de contrôle affichée à l'utilisateur quand sa saisie diverge
+  const ttcCalcule =
+    montantHT && tva !== undefined ? computeMontantTTC(Number(montantHT), Number(tva)) : null
+  const ecartTTC =
+    ttcManuallyEdited && ttcCalcule !== null && typeof montantTTC === 'number' && Number.isFinite(montantTTC)
+      ? Math.round((montantTTC - ttcCalcule) * 100) / 100
+      : null
 
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true)
@@ -254,9 +291,38 @@ export function FactureForm({ marches, facture, defaultMarcheId }: FactureFormPr
                       placeholder="Calculé automatiquement"
                       {...field}
                       value={field.value ?? ''}
-                      onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                      onChange={(e) => {
+                        const saisie = e.target.value
+                        // Champ vidé : on redonne la main au calcul automatique
+                        if (saisie === '') {
+                          setTtcManuallyEdited(false)
+                          field.onChange(undefined)
+                          return
+                        }
+                        setTtcManuallyEdited(true)
+                        field.onChange(parseFloat(saisie))
+                      }}
                     />
                   </FormControl>
+                  {ttcManuallyEdited && (
+                    <FormDescription data-testid="ttc-saisie-manuelle">
+                      Saisie manuelle : le recalcul automatique est suspendu pour ce champ.
+                      {ecartTTC !== null && Math.abs(ecartTTC) >= SEUIL_ECART_TTC && ttcCalcule !== null && (
+                        <>
+                          {' '}Écart de {ecartTTC > 0 ? '+' : '−'}
+                          {formatFCFA(Math.abs(ecartTTC))} FCFA avec le calcul HT + TVA (
+                          {formatFCFA(ttcCalcule)} FCFA).
+                        </>
+                      )}{' '}
+                      <button
+                        type="button"
+                        className="underline underline-offset-2 hover:text-foreground"
+                        onClick={() => setTtcManuallyEdited(false)}
+                      >
+                        Rétablir le calcul automatique
+                      </button>
+                    </FormDescription>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
