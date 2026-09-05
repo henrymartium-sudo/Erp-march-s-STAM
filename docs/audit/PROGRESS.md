@@ -21,8 +21,8 @@ Dès que le contexte de la conversation d'orchestration atteint **~50 %** (barre
 
 | Champ | Valeur |
 |---|---|
-| Phase | **4 — Correction : Lots 1-4 commités + poussés + PR ouvertes (#3-#6, aucune mergée). Checkpoint avant `/clear` 2026-09-05.** |
-| Branche | `chore/audit-ui-ux` (créée depuis `main` @ `44504b6`) — **la doc d'audit y est TOUJOURS non commitée** |
+| Phase | **4 — Correction : Lots 1-4 en PR (#3-#6, aucune mergée) · doc d'audit sécurisée en PR #7 (B fait). Reprise 2026-09-05 : ordre B→D→C.** |
+| Branche | `chore/audit-ui-ux` @ `ea472af` — **doc d'audit commitée + poussée, [PR #7](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/7) ouverte** (2026-09-05) |
 | Workflow | `audit-ui-ux-app` — modèle d'audit : hérité (session) · `live:false` |
 | runId | `wf_4f556b30-730` |
 | scriptPath | `…/f0c71625-…/workflows/scripts/audit-ui-ux-app-wf_4f556b30-730.js` |
@@ -35,14 +35,13 @@ Dès que le contexte de la conversation d'orchestration atteint **~50 %** (barre
 
 ## Prochaine action — ordre validé par Abel (2026-09-05), à reprendre après `/clear`
 
-> **B — sécuriser la doc d'audit (priorité 1, coût quasi nul).** Sur `chore/audit-ui-ux`, commiter les fichiers
-> de CETTE campagne uniquement : `docs/audit/2026-09-04-audit-ui-ux-{PILOTE,VAGUE1,app}.md`, `docs/audit/PROGRESS.md`,
-> `docs/audit/.raw/` (ou les gitignore — à trancher), `.claude/agents/ui-ux-reviewer.md`. **NE PAS commiter** les
-> modifs préexistantes sans rapport : `.claude/settings.local.json`, `.claude/agent-memory/context-continuity-manager/*`,
-> `.claude/launch.json`, `tsconfig.tsbuildinfo`. Puis push + PR (ou commit direct — les docs sont parfois commités
-> directement sur `main` sur ce projet, cf. `86caba7` ; trancher avec Abel).
+> **B — sécuriser la doc d'audit — ✅ FAIT (2026-09-05).** Commit `ea472af` sur `chore/audit-ui-ux` (13 fichiers,
+> +2409) : `docs/audit/2026-09-04-audit-ui-ux-{PILOTE,VAGUE1,app}.md`, `docs/audit/PROGRESS.md`, `docs/audit/.raw/`
+> (8 JSON — commités, choix Abel), `.claude/agents/ui-ux-reviewer.md`. Poussé, **[PR #7](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/7) ouverte**
+> (route branche+PR, choix Abel). Modifs préexistantes sans rapport laissées non commitées comme prévu. Scan
+> secrets/chemins locaux : propre avant commit.
 >
-> **D — débloquer les 4 PR ouvertes.** [#3](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/3) Lot 1 ·
+> **D — débloquer les 4 PR ouvertes.** ⏳ EN COURS (reprise 2026-09-05). [#3](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/3) Lot 1 ·
 > [#4](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/4) Lot 2 · [#5](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/5) Lot 3 ·
 > [#6](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/6) Lot 4. Toutes **OPEN**, aucune mergée.
 > - PR #4, #5 : E2E propres → prêtes à merger (décision Abel).
@@ -130,6 +129,7 @@ Priorité de correction : transversal d'abord, puis pipeline AO (`opportunites`,
 | 2026-09-05 | 4 — Lot 4 | **COMMITÉ** : `367f6fa` sur `fix/cautions-securite-fiabilite-actions`. Les 5 correctifs relus ligne à ligne et confirmés corrects (badge → vrais variants, AlertDialog sur suppression détail, filtres 100% pilotés par l'URL + `niveauAlerte` en Zod/Prisma, item kebab mort retiré, pagination client doublon supprimée). `tests/cautions/filters.spec.ts` complété (+2 tests : compteur d'en-tête = décompte filtré réel ; filtre combiné à page=2 ne retombe pas silencieusement sur les données non filtrées). tsc propre (baseline inchangée), eslint propre (5 préexistants confirmés via `git show HEAD`, 0 nouveau). **E2E toujours non confirmé** — 5ᵉ tentative de l'agent : un process `find /` orphelin (100% CPU, résidu de sa propre exploration) tuait la machine, tué ; malgré ça le serveur dev a crashé 3× (« Jest worker … exceeding retry limit », pool de compilation Next sous charge) + indice de **sessions Claude concurrentes sur la même machine** (process `claude.exe` à forte conso CPU observés). Cohérent avec le précédent T7 (6 tentatives / 3 sessions, memory/MEMORY.md). | — | — (non poussé) |
 | 2026-09-05 | 4 — Push + PR | 4 lots poussés, PR [#3](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/3)/[#4](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/4)/[#5](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/5)/[#6](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/6) ouvertes (choix Abel). Vérif 17.4 #2 (secrets/valeurs réelles) faite avant push : rien hors `.claude/settings.local.json` préexistant non commité. Entrée Journal de décisions 2026-09-04/05 écrite et validée. | — | 4 branches poussées |
 | 2026-09-05 | Checkpoint avant `/clear` | Ordre validé par Abel : **B** (sécuriser la doc d'audit, non commitée) → **D** (débloquer les 4 PR) → **C** (Lot 0 + Lots 5-17). Section « Prochaine action » ci-dessus mise à jour en conséquence. Prompt de reprise à froid fourni dans le fil. | — | — |
+| 2026-09-05 | B — Sécuriser la doc | **fait** : commit `ea472af` sur `chore/audit-ui-ux` (13 fichiers d'audit, +2409), poussé, [PR #7](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/7) ouverte. Route branche+PR + inclusion `docs/audit/.raw/` (8 JSON) = choix Abel dans le fil. Scan secrets/chemins locaux propre avant commit ; modifs `.claude/*` + `tsconfig.tsbuildinfo` préexistantes laissées hors commit. | — | `ea472af` |
 
 ---
 
