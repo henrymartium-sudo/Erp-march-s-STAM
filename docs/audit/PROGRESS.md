@@ -21,8 +21,9 @@ Dès que le contexte de la conversation d'orchestration atteint **~50 %** (barre
 
 | Champ | Valeur |
 |---|---|
-| Phase | **4 — Correction : Lots 2 & 3 MERGÉS sur main (PR #4/#5, déploiement prod). Lot 1 (#3) + Lot 4 (#6) encore ouverts. Doc d'audit en PR #7. Reprise 2026-09-05 : D en cours.** |
-| Branche | `chore/audit-ui-ux` @ `ea472af` — **doc d'audit commitée + poussée, [PR #7](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/7) ouverte** (2026-09-05) |
+| Phase | **4 TERMINÉE (D fait, 2026-09-05) : les 4 lots Bloquant MERGÉS sur `main` (`aa33892`→`cf0e4c5`), déployés en prod Vercel. Doc d'audit en PR #7 (ouverte, sert de PR de suivi campagne). Prochaine étape : C — validation Lot 0 + Lots 5-17.** |
+| Branche | `chore/audit-ui-ux` @ `d8ecc35`+ — doc d'audit poussée, [PR #7](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/7) ouverte (branche de suivi de la campagne) |
+| `main` | `cf0e4c5` = `44504b6` + Lot 3 (`aa33892` #5) + Lot 2 (`5a58af1` #4) + Lot 4 (`4ef17c1` #6) + Lot 1 (`cf0e4c5` #3) |
 | Workflow | `audit-ui-ux-app` — modèle d'audit : hérité (session) · `live:false` |
 | runId | `wf_4f556b30-730` |
 | scriptPath | `…/f0c71625-…/workflows/scripts/audit-ui-ux-app-wf_4f556b30-730.js` |
@@ -41,11 +42,13 @@ Dès que le contexte de la conversation d'orchestration atteint **~50 %** (barre
 > (route branche+PR, choix Abel). Modifs préexistantes sans rapport laissées non commitées comme prévu. Scan
 > secrets/chemins locaux : propre avant commit.
 >
-> **D — débloquer les 4 PR ouvertes.** ⏳ EN COURS (reprise 2026-09-05).
-> - PR [#5](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/5) (Lot 3) : **MERGÉ 2026-09-05** — squash `aa33892` sur `main`, déploiement prod Vercel (feu vert Abel sur le geste).
-> - PR [#4](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/4) (Lot 2) : **MERGÉ 2026-09-05** — squash `5a58af1` sur `main`, déploiement prod Vercel `dpl_GqEMndX8` (supersede `dpl_9BHaBEJX`).
-> - PR [#6](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/6) (Lot 4) : `CLEAN/MERGEABLE` (chevauchement `caution-card.tsx` avec #4 résolu auto par GitHub, pas de rebase). E2E `tests/cautions/filters.spec.ts` toujours non confirmé — machine à **0,64 Go RAM libre / 3,89** à la reprise (= condition des 6 échecs). Commande : `cd .claude/worktrees/agent-ab49e16234145830e && npx playwright test tests/cautions/filters.spec.ts --project=chromium`.
-> - PR [#3](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/3) (Lot 1) : test E2E `tests/marches/vehicule-liaison.spec.ts` **écrit en base prod** → autorisation Abel requise avant de le lancer.
+> **D — débloquer les 4 PR ouvertes.** ✅ FAIT (2026-09-05). Les 4 lots mergés en squash sur `main`, chacun déployé en prod Vercel (feu vert Abel explicite sur le geste, merge `main` → déploiement prod auto confirmé).
+> - PR [#5](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/5) (Lot 3, TTC) : `aa33892`. E2E `tests/factures/ttc-manuel.spec.ts` déjà vert avant merge.
+> - PR [#4](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/4) (Lot 2, menus tactiles) : `5a58af1`. Cascade CSS prouvée en navigateur avant merge.
+> - PR [#6](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/6) (Lot 4, sécurité cautions) : `4ef17c1`. **Mergé sur revue de code** (diff serveur `buildNiveauAlerteWhere` relu ; 5 correctifs relus ligne à ligne au Lot 4). E2E `tests/cautions/filters.spec.ts` **jamais vert** (machine 0,64 Go) → à confirmer/réparer en Phase 5.
+> - PR [#3](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/3) (Lot 1, VehicleMultiSelect) : `cf0e4c5`. **Mergé sur revue de code** (diff = 2 changements CSS/aria, 1 composant). E2E `tests/marches/vehicule-liaison.spec.ts` **non lancé** (écrit en base prod, disproportionné) → Phase 5 avec base de test locale.
+>
+> **Dette E2E à solder en Phase 5** : `tests/cautions/filters.spec.ts` (jamais vert, cause env) · `tests/marches/vehicule-liaison.spec.ts` (jamais lancé, cible prod).
 >
 > **C — reste du backlog.** `docs/audit/2026-09-04-audit-ui-ux-app.md` : 99 entrées / 18 lots, seuls **Lots 1-4 faits**.
 > - **Lot 0** (#003 = 7ᵉ Bloquant + 12 cosmétiques, bloque Lots 7/10/15) — jamais validé ni commencé.
@@ -130,6 +133,7 @@ Priorité de correction : transversal d'abord, puis pipeline AO (`opportunites`,
 | 2026-09-05 | Checkpoint avant `/clear` | Ordre validé par Abel : **B** (sécuriser la doc d'audit, non commitée) → **D** (débloquer les 4 PR) → **C** (Lot 0 + Lots 5-17). Section « Prochaine action » ci-dessus mise à jour en conséquence. Prompt de reprise à froid fourni dans le fil. | — | — |
 | 2026-09-05 | B — Sécuriser la doc | **fait** : commit `ea472af` sur `chore/audit-ui-ux` (13 fichiers d'audit, +2409), poussé, [PR #7](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/7) ouverte. Route branche+PR + inclusion `docs/audit/.raw/` (8 JSON) = choix Abel dans le fil. Scan secrets/chemins locaux propre avant commit ; modifs `.claude/*` + `tsconfig.tsbuildinfo` préexistantes laissées hors commit. | — | `ea472af` |
 | 2026-09-05 | D — Merge Lots 2 & 3 | **fait** : `gh pr merge --squash` sur #5 (`aa33892`) puis #4 (`5a58af1`). Feu vert Abel explicite sur le geste après vérif 17.4 (merge `main` → déploiement prod Vercel auto, confirmé via historique 20 déploiements ; rollback instantané vers `dpl_Etb98Tsq7`/`44504b6` + `git revert` dispo). 2 déploiements prod déclenchés, `5a58af1` = état final. #6 reste `MERGEABLE` sans rebase. | — | `aa33892`, `5a58af1` |
+| 2026-09-05 | D — Merge Lots 4 & 1 | **fait** : #6 (`4ef17c1`) et #3 (`cf0e4c5`) mergés en squash sur revue de code (feu vert Abel séparé pour chacun ; diffs relus — #6 : `buildNiveauAlerteWhere` en clause Prisma dérivée de `getNiveauAlerte` ; #3 : popover responsive + Checkbox présentationnel). E2E des deux non exécuté (machine 0,64 Go ; #3 ciblerait la base prod) → dette Phase 5. `main` = `cf0e4c5`, déploiements prod Vercel `dpl_RFV23946` (#6, READY) puis `dpl_2YDbpQco` (#3, BUILDING). **D terminée : 0 PR de fix ouverte.** | — | `4ef17c1`, `cf0e4c5` |
 
 ---
 
