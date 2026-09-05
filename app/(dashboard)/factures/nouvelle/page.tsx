@@ -29,6 +29,7 @@ export default async function NouvelleFacturePage({ searchParams }: NouvelleFact
   return (
     <div className="space-y-6">
       <BreadcrumbNav
+        showHome
         items={[
           { label: 'Factures', href: '/factures' },
           { label: 'Nouvelle facture' },

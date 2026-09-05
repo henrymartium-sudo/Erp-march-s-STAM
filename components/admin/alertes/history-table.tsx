@@ -35,17 +35,17 @@ interface Props {
 export function HistoryTable({ notifications }: Props) {
   if (notifications.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
+      <div className="rounded-xl border border-dashed p-8 text-center text-muted-foreground">
         Aucune notification dans l'historique.
       </div>
     )
   }
 
   return (
-    <div className="rounded-lg border bg-white overflow-x-auto">
+    <div className="rounded-xl border bg-card overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b bg-gray-50 text-left">
+          <tr className="border-b bg-muted text-left">
             <th className="px-4 py-3 font-medium text-muted-foreground">Date</th>
             <th className="px-4 py-3 font-medium text-muted-foreground">Règle</th>
             <th className="px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Événement</th>
@@ -57,7 +57,7 @@ export function HistoryTable({ notifications }: Props) {
         </thead>
         <tbody className="divide-y">
           {notifications.map((n) => (
-            <tr key={n.id} className="hover:bg-gray-50 transition-colors">
+            <tr key={n.id} className="hover:bg-muted/50 transition-colors">
               <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                 {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: fr })}
               </td>

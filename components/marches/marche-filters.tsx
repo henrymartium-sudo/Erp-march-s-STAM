@@ -210,7 +210,7 @@ export function MarcheFilters({ totalCount, filteredCount, isExploitation }: Mar
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-card">
+    <div className="bg-card rounded-xl border border-border shadow-card">
       {/* Barre principale */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-3">
 
@@ -474,7 +474,7 @@ export function MarcheFilters({ totalCount, filteredCount, isExploitation }: Mar
       )}
 
       {/* Compteur de résultats */}
-      <div className="px-4 py-2 border-t border-gray-50">
+      <div className="px-4 py-2 border-t border-border">
         <p className="text-xs text-muted-foreground">
           {hasFilters ? (
             <><span className="font-semibold text-foreground">{filteredCount}</span> résultat{filteredCount > 1 ? 's' : ''} sur {totalCount}</>

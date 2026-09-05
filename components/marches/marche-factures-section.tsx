@@ -107,7 +107,7 @@ export function MarcheFacturesSection({
               <Link
                 key={facture.id}
                 href={`/factures/${facture.id}`}
-                className="flex items-center justify-between p-2.5 rounded-lg border border-gray-100 hover:bg-muted/30 transition-colors"
+                className="flex items-center justify-between p-2.5 rounded-lg border border-border hover:bg-muted/30 transition-colors"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate" title={facture.numero}>{facture.numero}</p>

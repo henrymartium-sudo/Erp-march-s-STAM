@@ -76,8 +76,8 @@ export function getMarcheUrgency(
  * Classes CSS Tailwind pour chaque niveau d'urgence
  */
 export const URGENCY_STYLES: Record<UrgencyLevel, string> = {
-  green: 'bg-green-100 text-green-700 border-green-200',
-  orange: 'bg-orange-100 text-orange-700 border-orange-200',
-  red: 'bg-red-100 text-red-700 border-red-200',
-  overdue: 'bg-slate-100 text-slate-600 border-slate-300',
+  green: 'bg-stam-success-bg text-stam-success border-stam-success/20',
+  orange: 'bg-stam-warning-bg text-stam-warning border-stam-warning/20',
+  red: 'bg-stam-danger-bg text-stam-danger border-stam-danger/20',
+  overdue: 'bg-muted text-muted-foreground border-border',
 }

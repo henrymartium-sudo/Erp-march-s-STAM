@@ -21,7 +21,7 @@ interface Props {
 
 export function NotificationPanel({ notifications, onMarkRead, onMarkAllRead, onClose }: Props) {
   return (
-    <div className="absolute right-0 top-10 z-50 w-80 rounded-lg border bg-white shadow-lg">
+    <div className="absolute right-0 top-10 z-50 w-80 rounded-lg border bg-card shadow-lg">
       <div className="flex items-center justify-between border-b px-4 py-3">
         <span className="font-semibold text-sm">
           Notifications {notifications.length > 0 && `(${notifications.length})`}
@@ -53,7 +53,7 @@ export function NotificationPanel({ notifications, onMarkRead, onMarkAllRead, on
           notifications.map((n) => (
             <div
               key={n.id}
-              className="flex items-start gap-3 border-b px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors"
+              className="flex items-start gap-3 border-b px-4 py-3 hover:bg-muted/50 cursor-pointer transition-colors"
               onClick={() => onMarkRead(n.id)}
             >
               <div className="flex-1 min-w-0">

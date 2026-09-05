@@ -30,6 +30,7 @@ export default async function EditOpportunitePage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <BreadcrumbNav
+        showHome
         items={[
           { label: 'Opportunités', href: '/opportunites' },
           { label: opp.objet, href: `/opportunites/${id}` },
