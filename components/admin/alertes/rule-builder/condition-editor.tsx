@@ -72,7 +72,7 @@ function EnumValueInput({
         <PopoverTrigger asChild>
           <button
             type="button"
-            className="flex items-center gap-1 min-w-[7rem] max-w-[14rem] rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm hover:bg-accent"
+            className="flex h-10 items-center justify-between gap-1 min-w-[7rem] max-w-[14rem] rounded-lg border border-input bg-background px-3 py-2 text-sm transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-0 focus:border-primary"
           >
             <span className="flex-1 text-left truncate">
               {selected.length === 0
@@ -193,7 +193,7 @@ export function ConditionEditor({
       {conditions.map((cond, i) => {
         const fieldDef = fields.find(f => f.field === cond.field)
         return (
-          <div key={i} className="flex items-center gap-2 rounded-lg border p-2 bg-gray-50">
+          <div key={i} className="flex items-center gap-2 rounded-lg border p-2 bg-muted">
             {/* Sélecteur de champ */}
             <Select
               value={cond.field}

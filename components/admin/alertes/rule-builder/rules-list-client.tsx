@@ -54,7 +54,7 @@ export function RulesListClient({ rules: initialRules }: Props) {
 
   if (rules.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
+      <div className="rounded-xl border border-dashed p-8 text-center text-muted-foreground">
         Aucune règle configurée.{' '}
         <Link href="/admin/alertes/rules/new" className="underline hover:text-foreground">
           Créer la première règle
@@ -64,10 +64,10 @@ export function RulesListClient({ rules: initialRules }: Props) {
   }
 
   return (
-    <div className="rounded-lg border bg-white overflow-hidden">
+    <div className="rounded-xl border bg-card overflow-hidden">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b bg-gray-50 text-left">
+          <tr className="border-b bg-muted text-left">
             <th className="px-4 py-3 font-medium text-muted-foreground">Règle</th>
             <th className="px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Événement</th>
             <th className="px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">Canaux</th>
@@ -77,7 +77,7 @@ export function RulesListClient({ rules: initialRules }: Props) {
         </thead>
         <tbody className="divide-y">
           {rules.map((rule) => (
-            <tr key={rule.id} className="hover:bg-gray-50 transition-colors">
+            <tr key={rule.id} className="hover:bg-muted/50 transition-colors">
               <td className="px-4 py-3">
                 <div className="font-medium">{rule.name}</div>
                 {rule.description && (
@@ -118,7 +118,7 @@ export function RulesListClient({ rules: initialRules }: Props) {
                     title={rule.isActive ? 'Désactiver' : 'Activer'}
                     data-testid="rule-toggle"
                   >
-                    <Power className={`h-4 w-4 ${rule.isActive ? 'text-green-600' : 'text-gray-400'}`} />
+                    <Power className={`h-4 w-4 ${rule.isActive ? 'text-stam-success' : 'text-muted-foreground'}`} />
                   </Button>
 
                   <Button

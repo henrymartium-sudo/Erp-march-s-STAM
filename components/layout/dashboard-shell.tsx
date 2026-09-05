@@ -142,11 +142,11 @@ function SidebarContent({ userName, userRole, onClose, forceExpanded = false }: 
         </div>
         {/* Texte — masqué en mode icônes tablette */}
         <div className={cn('leading-none', forceExpanded ? 'block' : 'hidden lg:block')}>
-          <div className="text-white font-bold text-[15px] tracking-[0.08em] uppercase leading-tight">
+          <div className="text-white font-bold text-lg tracking-[0.08em] uppercase leading-tight">
             STAM
           </div>
           <div
-            className="text-[10px] tracking-[0.12em] uppercase leading-tight mt-0.5"
+            className="text-xs tracking-[0.12em] uppercase leading-tight mt-0.5"
             style={{ color: 'hsl(214 25% 58%)' }}
           >
             Marchés Publics
@@ -169,7 +169,7 @@ function SidebarContent({ userName, userRole, onClose, forceExpanded = false }: 
               onClick={onClose}
               title={item.label}
               className={cn(
-                'group flex items-center py-[9px] rounded-lg text-[13px] font-medium transition-all duration-150 select-none',
+                'group flex items-center py-[9px] rounded-lg text-sm font-medium transition-all duration-150 select-none',
                 /* Tablette : centré, sans gap ni px. Desktop / mobile overlay : left, gap-3, px-3 */
                 forceExpanded
                   ? 'justify-start gap-3 px-3'
@@ -226,13 +226,13 @@ function SidebarContent({ userName, userRole, onClose, forceExpanded = false }: 
             {userName?.charAt(0)?.toUpperCase() ?? 'U'}
           </div>
           <div className={cn('min-w-0 flex-1', forceExpanded ? 'block' : 'hidden lg:block')}>
-            <div className="text-white text-[13px] font-medium truncate leading-tight">
+            <div className="text-white text-sm font-medium truncate leading-tight">
               {userName ?? 'Utilisateur'}
             </div>
             <div className="mt-1">
               <Badge
                 variant={getRoleVariant(userRole)}
-                className="text-[10px] px-1.5 py-0 h-4 leading-none"
+                className="text-xs px-1.5 py-0 h-4 leading-none"
               >
                 {getRoleLabel(userRole)}
               </Badge>
@@ -246,7 +246,7 @@ function SidebarContent({ userName, userRole, onClose, forceExpanded = false }: 
           onClick={onClose}
           title="Mon profil"
           className={cn(
-            'flex items-center w-full py-2 rounded-lg text-[13px] font-medium transition-all duration-150',
+            'flex items-center w-full py-2 rounded-lg text-sm font-medium transition-all duration-150',
             forceExpanded ? 'gap-3 px-3' : 'justify-center gap-0 px-1 lg:justify-start lg:gap-3 lg:px-3'
           )}
           style={{ color: 'hsl(var(--sidebar-muted))' }}
@@ -270,7 +270,7 @@ function SidebarContent({ userName, userRole, onClose, forceExpanded = false }: 
           onClick={() => signOut({ callbackUrl: '/login' })}
           title="Déconnexion"
           className={cn(
-            'flex items-center w-full py-2 rounded-lg text-[13px] font-medium transition-all duration-150',
+            'flex items-center w-full py-2 rounded-lg text-sm font-medium transition-all duration-150',
             forceExpanded ? 'gap-3 px-3' : 'justify-center gap-0 px-1 lg:justify-start lg:gap-3 lg:px-3'
           )}
           style={{ color: 'hsl(var(--sidebar-muted))' }}
@@ -320,7 +320,7 @@ export function DashboardShell({ children, userName, userRole }: DashboardShellP
       {mobileOpen && (
         <>
           <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
             onClick={() => setMobileOpen(false)}
           />
           <aside
@@ -342,7 +342,7 @@ export function DashboardShell({ children, userName, userRole }: DashboardShellP
 
         {/* Topbar */}
         <header
-          className="sticky top-0 z-30 flex items-center gap-4 bg-white px-4 lg:px-6"
+          className="sticky top-0 z-30 flex items-center gap-4 bg-card px-4 lg:px-6"
           style={{
             height: '56px',
             borderBottom: '1px solid hsl(var(--border))',
@@ -364,7 +364,7 @@ export function DashboardShell({ children, userName, userRole }: DashboardShellP
           {/* Titre page */}
           <div className="flex-1 min-w-0">
             <h1
-              className="text-[15px] font-semibold tracking-tight truncate"
+              className="text-lg font-semibold tracking-tight truncate"
               style={{ color: 'hsl(var(--foreground))' }}
             >
               {pageTitle}
@@ -377,18 +377,18 @@ export function DashboardShell({ children, userName, userRole }: DashboardShellP
           {/* Avatar + infos utilisateur */}
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex flex-col items-end gap-0.5 leading-none">
-              <div className="text-[13px] font-medium text-foreground">
+              <div className="text-sm font-medium text-foreground">
                 {userName ?? 'Utilisateur'}
               </div>
               <Badge
                 variant={getRoleVariant(userRole)}
-                className="text-[10px] px-1.5 py-0 h-4 leading-none"
+                className="text-xs px-1.5 py-0 h-4 leading-none"
               >
                 {getRoleLabel(userRole)}
               </Badge>
             </div>
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-bold select-none"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold select-none"
               style={{
                 background: 'linear-gradient(135deg, hsl(var(--stam-primary)) 0%, hsl(var(--stam-primary-light)) 100%)',
                 color: 'white',

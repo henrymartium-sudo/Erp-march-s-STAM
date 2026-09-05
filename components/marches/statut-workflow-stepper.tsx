@@ -31,16 +31,16 @@ export function StatutWorkflowStepper({
               <span
                 className={cn(
                   'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border text-xs',
-                  isPast && 'bg-green-100 border-green-500 text-green-700',
-                  isCurrent && 'bg-blue-100 border-blue-600 text-blue-700 font-bold',
-                  isSelected && 'bg-amber-100 border-amber-500 text-amber-700',
-                  isFuture && !isSelected && 'bg-gray-50 border-gray-300 text-gray-400'
+                  isPast && 'bg-stam-success-bg border-stam-success text-stam-success',
+                  isCurrent && 'bg-stam-accent-light border-primary text-primary font-bold',
+                  isSelected && 'bg-stam-warning-bg border-stam-warning text-stam-warning',
+                  isFuture && !isSelected && 'bg-muted border-border text-muted-foreground'
                 )}
               >
                 {isPast ? (
                   <Check className="h-3 w-3" />
                 ) : isCurrent ? (
-                  <span className="h-2 w-2 rounded-full bg-blue-600" />
+                  <span className="h-2 w-2 rounded-full bg-primary" />
                 ) : isSelected ? (
                   <ArrowRight className="h-3 w-3" />
                 ) : (
@@ -50,9 +50,9 @@ export function StatutWorkflowStepper({
               <span
                 className={cn(
                   'text-xs',
-                  isPast && 'text-green-700',
-                  isCurrent && 'font-semibold text-blue-700',
-                  isSelected && 'font-semibold text-amber-700',
+                  isPast && 'text-stam-success',
+                  isCurrent && 'font-semibold text-primary',
+                  isSelected && 'font-semibold text-stam-warning',
                   isFuture && !isSelected && 'text-muted-foreground'
                 )}
               >
@@ -76,9 +76,9 @@ export function StatutWorkflowStepper({
                   key={statut}
                   className={cn(
                     'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs border',
-                    isCurrent && 'bg-gray-200 border-gray-400 text-gray-700 font-semibold',
-                    isSelected && 'bg-amber-100 border-amber-500 text-amber-700 font-semibold',
-                    !isCurrent && !isSelected && 'bg-gray-50 border-gray-200 text-gray-400'
+                    isCurrent && 'bg-muted border-border text-foreground font-semibold',
+                    isSelected && 'bg-stam-warning-bg border-stam-warning text-stam-warning font-semibold',
+                    !isCurrent && !isSelected && 'bg-muted border-border text-muted-foreground'
                   )}
                 >
                   <X className="h-2.5 w-2.5" />

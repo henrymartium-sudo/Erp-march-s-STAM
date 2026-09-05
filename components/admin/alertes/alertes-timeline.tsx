@@ -169,17 +169,17 @@ export function AlertesTimeline({ alertes }: AlertesTimelineProps) {
             </div>
 
             {/* Items timeline */}
-            <div className="bg-white divide-y divide-gray-50">
+            <div className="bg-card divide-y divide-border">
               {sectionItems.map((item, idx) => (
                 <div
                   key={item.id}
-                  className="flex items-start gap-4 px-5 py-4 hover:bg-gray-50/50 transition-colors duration-150"
+                  className="flex items-start gap-4 px-5 py-4 hover:bg-muted/50 transition-colors duration-150"
                 >
                   {/* Indicateur vertical */}
                   <div className="flex flex-col items-center flex-shrink-0 pt-1">
                     <div className={`h-2.5 w-2.5 rounded-full ${cfg.dotClass}`} />
                     {idx < sectionItems.length - 1 && (
-                      <div className="w-px flex-1 min-h-[24px] bg-gray-200 mt-1.5" />
+                      <div className="w-px flex-1 min-h-[24px] bg-border mt-1.5" />
                     )}
                   </div>
 
@@ -219,7 +219,7 @@ export function AlertesTimeline({ alertes }: AlertesTimelineProps) {
                         <p className={`text-xl font-bold leading-none ${cfg.countdownText}`}>
                           {item.joursRestants}
                         </p>
-                        <p className={`text-[10px] mt-0.5 ${cfg.countdownText} opacity-70`}>
+                        <p className={`text-xs mt-0.5 ${cfg.countdownText} opacity-70`}>
                           jours
                         </p>
                       </div>

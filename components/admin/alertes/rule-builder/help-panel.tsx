@@ -229,7 +229,7 @@ export function AlertesHelpPanel({ activeField, onUseRecipe, className }: Props)
   const content = activeField ? (HELP_CONTENT[activeField] ?? null) : null
 
   return (
-    <aside className={cn("rounded-xl border bg-white shadow-sm", className)}>
+    <aside className={cn("rounded-xl border bg-card shadow-sm", className)}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div className="flex items-center gap-2">
@@ -241,7 +241,7 @@ export function AlertesHelpPanel({ activeField, onUseRecipe, className }: Props)
         <button
           type="button"
           onClick={() => setCollapsed(v => !v)}
-          className="rounded p-1 hover:bg-gray-100 text-muted-foreground"
+          className="rounded p-1 hover:bg-muted text-muted-foreground"
           aria-label={collapsed ? "Afficher l'aide" : "Masquer l'aide"}
         >
           {collapsed
@@ -290,7 +290,7 @@ export function AlertesHelpPanel({ activeField, onUseRecipe, className }: Props)
                 {RECIPES.map((recipe) => (
                   <div
                     key={recipe.name}
-                    className="rounded-lg border bg-gray-50 p-3 space-y-1.5"
+                    className="rounded-lg border bg-muted p-3 space-y-1.5"
                   >
                     <p className="font-medium text-xs leading-snug">{recipe.name}</p>
                     <p className="text-xs text-muted-foreground">

@@ -31,7 +31,7 @@ export function DrillDownSheet({
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader className="mb-4">
-          <SheetTitle className="text-[#1E3A5F]">{title}</SheetTitle>
+          <SheetTitle className="text-stam-primary">{title}</SheetTitle>
         </SheetHeader>
 
         {isLoading ? (

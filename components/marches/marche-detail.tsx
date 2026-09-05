@@ -256,11 +256,11 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
         <Card
           className={
             currentStatut === 'RESILIE'
-              ? 'border-red-200 bg-red-50/50'
+              ? 'border-stam-danger/20 bg-stam-danger-bg/50'
               : currentStatut === 'ANNULE'
-              ? 'border-gray-300 bg-gray-50/50'
+              ? 'border-border bg-muted/50'
               : currentStatut === 'INFRUCTUEUX'
-              ? 'border-orange-200 bg-orange-50/50'
+              ? 'border-stam-warning/20 bg-stam-warning-bg/50'
               : ''
           }
         >
@@ -461,7 +461,7 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
                 <p className="text-sm font-medium text-muted-foreground mb-2">
                   Motifs de résiliation
                 </p>
-                <p className="text-sm whitespace-pre-wrap bg-white p-3 rounded-md border">
+                <p className="text-sm whitespace-pre-wrap bg-card p-3 rounded-md border">
                   {marche.motifsResiliation}
                 </p>
               </div>
@@ -472,7 +472,7 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
                 <p className="text-sm font-medium text-muted-foreground mb-2">
                   Motifs d'annulation
                 </p>
-                <p className="text-sm whitespace-pre-wrap bg-white p-3 rounded-md border">
+                <p className="text-sm whitespace-pre-wrap bg-card p-3 rounded-md border">
                   {marche.motifsAnnulation}
                 </p>
               </div>
@@ -483,7 +483,7 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
                 <p className="text-sm font-medium text-muted-foreground mb-2">
                   Motifs d'infructuosité
                 </p>
-                <p className="text-sm whitespace-pre-wrap bg-white p-3 rounded-md border">
+                <p className="text-sm whitespace-pre-wrap bg-card p-3 rounded-md border">
                   {marche.motifsInfructueux}
                 </p>
               </div>
@@ -507,7 +507,7 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
                 <Link
                   key={vehicule.id}
                   href={`/vehicules/${vehicule.id}`}
-                  className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50/50 hover:bg-gray-100 transition-colors"
+                  className="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/50 hover:bg-muted transition-colors"
                 >
                   <Truck className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div className="min-w-0">
@@ -521,7 +521,7 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
                       {vehicule.marque} {vehicule.modele}
                       {vehicule.annee ? ` • ${vehicule.annee}` : ''}
                     </p>
-                    <Badge variant="outline" className="text-[10px] mt-1">
+                    <Badge variant="outline" className="text-xs mt-1">
                       {vehicule.statut.replace(/_/g, ' ')}
                     </Badge>
                   </div>

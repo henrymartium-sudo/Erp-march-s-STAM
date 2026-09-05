@@ -588,7 +588,7 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
 
           {/* Section : Champs spécifiques au statut */}
           {statutSpecificFields.length > 0 && (
-            <Card className="border-blue-200 bg-blue-50/50 transition-all duration-300 animate-in fade-in slide-in-from-top-2">
+            <Card className="border-primary/20 bg-primary/5 animate-fade-in">
               <CardHeader>
                 <CardTitle className="text-lg">
                   Informations spécifiques - {STATUT_LABELS[currentStatut as keyof typeof STATUT_LABELS]}

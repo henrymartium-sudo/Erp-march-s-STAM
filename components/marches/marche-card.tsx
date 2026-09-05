@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { SerializedMarche } from '@/types/serialized'
 import { StatutBadge } from './statut-badge'
+import { Badge } from '@/components/ui/badge'
 import { formatMontant, formatDateCourt } from '@/lib/utils/format'
 import { getMarcheUrgency, URGENCY_STYLES } from '@/lib/utils/urgence'
 import { isNumeroProvisoire } from '@/lib/utils/marche-numero'
@@ -44,7 +45,7 @@ export function MarcheCard({ marche }: MarcheCardProps) {
   const urgency = getMarcheUrgency(marche.statut, marche.dateFinPrevue)
 
   return (
-    <div className="group bg-white rounded-xl border border-gray-100 shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 flex flex-col overflow-hidden">
+    <div className="group bg-card rounded-xl border border-border shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 flex flex-col overflow-hidden">
 
       {/* Barre couleur statut */}
       <div className={`h-1 w-full ${accentBar}`} />
@@ -59,9 +60,9 @@ export function MarcheCard({ marche }: MarcheCardProps) {
               {marche.numero}
             </p>
             {isNumeroProvisoire(marche.numero) && (
-              <span className="inline-block mt-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-300">
+              <Badge variant="warning" className="mt-0.5 text-xs">
                 Numéro provisoire — à corriger
-              </span>
+              </Badge>
             )}
             <p className="text-xs text-muted-foreground mt-0.5">
               {TYPE_LABELS[marche.type] ?? marche.type}
@@ -106,18 +107,18 @@ export function MarcheCard({ marche }: MarcheCardProps) {
       </Link>
 
       {/* Footer actions */}
-      <div className="border-t border-gray-100 px-5 py-3 flex items-center gap-2 bg-gray-50/50">
+      <div className="border-t border-border px-5 py-3 flex items-center gap-2 bg-muted/50">
         <Link
           href={`/marches/${marche.id}`}
-          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-stam-accent hover:text-stam-accent/80 py-1.5 px-3 rounded-lg hover:bg-blue-50 transition-colors duration-150"
+          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-stam-accent hover:text-stam-accent/80 py-1.5 px-3 rounded-lg hover:bg-stam-accent-light transition-colors duration-150"
         >
           <Eye className="h-3.5 w-3.5" />
           Voir détails
         </Link>
-        <div className="w-px h-4 bg-gray-200" />
+        <div className="w-px h-4 bg-border" />
         <Link
           href={`/marches/${marche.id}/edit`}
-          className="flex items-center justify-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground py-1.5 px-3 rounded-lg hover:bg-gray-100 transition-colors duration-150"
+          className="flex items-center justify-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground py-1.5 px-3 rounded-lg hover:bg-muted transition-colors duration-150"
         >
           <Pencil className="h-3.5 w-3.5" />
           Modifier

@@ -78,7 +78,7 @@ export function MarcheDossiersSection({ marcheId, canWrite }: MarcheDossiersSect
             <Link
               key={d.id}
               href={`/dossiers-offre/${d.id}`}
-              className="flex items-center justify-between p-2.5 rounded-lg border border-gray-100 hover:bg-muted/30 transition-colors"
+              className="flex items-center justify-between p-2.5 rounded-lg border border-border hover:bg-muted/30 transition-colors"
             >
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium truncate" title={d.titre}>{d.titre}</p>
