@@ -21,7 +21,7 @@ Dès que le contexte de la conversation d'orchestration atteint **~50 %** (barre
 
 | Champ | Valeur |
 |---|---|
-| Phase | **4 — Correction : Lots 1-4 en PR (#3-#6, aucune mergée) · doc d'audit sécurisée en PR #7 (B fait). Reprise 2026-09-05 : ordre B→D→C.** |
+| Phase | **4 — Correction : Lots 2 & 3 MERGÉS sur main (PR #4/#5, déploiement prod). Lot 1 (#3) + Lot 4 (#6) encore ouverts. Doc d'audit en PR #7. Reprise 2026-09-05 : D en cours.** |
 | Branche | `chore/audit-ui-ux` @ `ea472af` — **doc d'audit commitée + poussée, [PR #7](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/7) ouverte** (2026-09-05) |
 | Workflow | `audit-ui-ux-app` — modèle d'audit : hérité (session) · `live:false` |
 | runId | `wf_4f556b30-730` |
@@ -41,12 +41,11 @@ Dès que le contexte de la conversation d'orchestration atteint **~50 %** (barre
 > (route branche+PR, choix Abel). Modifs préexistantes sans rapport laissées non commitées comme prévu. Scan
 > secrets/chemins locaux : propre avant commit.
 >
-> **D — débloquer les 4 PR ouvertes.** ⏳ EN COURS (reprise 2026-09-05). [#3](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/3) Lot 1 ·
-> [#4](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/4) Lot 2 · [#5](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/5) Lot 3 ·
-> [#6](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/6) Lot 4. Toutes **OPEN**, aucune mergée.
-> - PR #4, #5 : E2E propres → prêtes à merger (décision Abel).
-> - PR #3 (Lot 1) : test E2E `tests/marches/vehicule-liaison.spec.ts` **écrit en base prod** → autorisation Abel requise avant de le lancer.
-> - PR #6 (Lot 4) : E2E `tests/cautions/filters.spec.ts` jamais passé (6 tentatives, cause environnementale — machine saturée / sessions Claude concurrentes, PAS le code). Relancer sur machine calme : `cd .claude/worktrees/agent-ab49e16234145830e && npx playwright test tests/cautions/filters.spec.ts --project=chromium`.
+> **D — débloquer les 4 PR ouvertes.** ⏳ EN COURS (reprise 2026-09-05).
+> - PR [#5](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/5) (Lot 3) : **MERGÉ 2026-09-05** — squash `aa33892` sur `main`, déploiement prod Vercel (feu vert Abel sur le geste).
+> - PR [#4](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/4) (Lot 2) : **MERGÉ 2026-09-05** — squash `5a58af1` sur `main`, déploiement prod Vercel `dpl_GqEMndX8` (supersede `dpl_9BHaBEJX`).
+> - PR [#6](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/6) (Lot 4) : `CLEAN/MERGEABLE` (chevauchement `caution-card.tsx` avec #4 résolu auto par GitHub, pas de rebase). E2E `tests/cautions/filters.spec.ts` toujours non confirmé — machine à **0,64 Go RAM libre / 3,89** à la reprise (= condition des 6 échecs). Commande : `cd .claude/worktrees/agent-ab49e16234145830e && npx playwright test tests/cautions/filters.spec.ts --project=chromium`.
+> - PR [#3](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/3) (Lot 1) : test E2E `tests/marches/vehicule-liaison.spec.ts` **écrit en base prod** → autorisation Abel requise avant de le lancer.
 >
 > **C — reste du backlog.** `docs/audit/2026-09-04-audit-ui-ux-app.md` : 99 entrées / 18 lots, seuls **Lots 1-4 faits**.
 > - **Lot 0** (#003 = 7ᵉ Bloquant + 12 cosmétiques, bloque Lots 7/10/15) — jamais validé ni commencé.
@@ -130,6 +129,7 @@ Priorité de correction : transversal d'abord, puis pipeline AO (`opportunites`,
 | 2026-09-05 | 4 — Push + PR | 4 lots poussés, PR [#3](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/3)/[#4](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/4)/[#5](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/5)/[#6](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/6) ouvertes (choix Abel). Vérif 17.4 #2 (secrets/valeurs réelles) faite avant push : rien hors `.claude/settings.local.json` préexistant non commité. Entrée Journal de décisions 2026-09-04/05 écrite et validée. | — | 4 branches poussées |
 | 2026-09-05 | Checkpoint avant `/clear` | Ordre validé par Abel : **B** (sécuriser la doc d'audit, non commitée) → **D** (débloquer les 4 PR) → **C** (Lot 0 + Lots 5-17). Section « Prochaine action » ci-dessus mise à jour en conséquence. Prompt de reprise à froid fourni dans le fil. | — | — |
 | 2026-09-05 | B — Sécuriser la doc | **fait** : commit `ea472af` sur `chore/audit-ui-ux` (13 fichiers d'audit, +2409), poussé, [PR #7](https://github.com/henrymartium-sudo/Erp-march-s-STAM/pull/7) ouverte. Route branche+PR + inclusion `docs/audit/.raw/` (8 JSON) = choix Abel dans le fil. Scan secrets/chemins locaux propre avant commit ; modifs `.claude/*` + `tsconfig.tsbuildinfo` préexistantes laissées hors commit. | — | `ea472af` |
+| 2026-09-05 | D — Merge Lots 2 & 3 | **fait** : `gh pr merge --squash` sur #5 (`aa33892`) puis #4 (`5a58af1`). Feu vert Abel explicite sur le geste après vérif 17.4 (merge `main` → déploiement prod Vercel auto, confirmé via historique 20 déploiements ; rollback instantané vers `dpl_Etb98Tsq7`/`44504b6` + `git revert` dispo). 2 déploiements prod déclenchés, `5a58af1` = état final. #6 reste `MERGEABLE` sans rebase. | — | `aa33892`, `5a58af1` |
 
 ---
 
