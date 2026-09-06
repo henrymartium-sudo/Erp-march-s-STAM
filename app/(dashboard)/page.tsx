@@ -108,6 +108,8 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <h1 className="sr-only">Tableau de bord</h1>
+
       {/* KPIs principaux */}
       <KPICards
         marchesStats={marchesStats}

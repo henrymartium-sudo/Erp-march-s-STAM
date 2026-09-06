@@ -88,7 +88,7 @@
     ================================================================ */
     --sidebar-bg: 214 52% 18%;           /* Bleu institutionnel très profond */
     --sidebar-fg: 210 30% 92%;           /* Texte blanc cassé */
-    --sidebar-muted: 214 25% 58%;        /* Texte secondaire estompé */
+    --sidebar-muted: 214 22% 67%;        /* Texte secondaire estompé — 5.91:1 sur --sidebar-bg (WCAG AA) */
     --sidebar-active-bg: 214 48% 28%;    /* Item actif — fond légèrement plus clair */
     --sidebar-hover-bg: 214 48% 22%;     /* Hover — transition douce */
     --sidebar-border: 214 35% 25%;       /* Séparateurs subtils */

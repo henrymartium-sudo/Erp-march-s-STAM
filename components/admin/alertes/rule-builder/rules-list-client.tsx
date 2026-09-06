@@ -116,6 +116,7 @@ export function RulesListClient({ rules: initialRules }: Props) {
                     onClick={() => handleToggle(rule.id, rule.isActive)}
                     disabled={isPending}
                     title={rule.isActive ? 'Désactiver' : 'Activer'}
+                    aria-label={`${rule.isActive ? 'Désactiver' : 'Activer'} la règle ${rule.name}`}
                     data-testid="rule-toggle"
                   >
                     <Power className={`h-4 w-4 ${rule.isActive ? 'text-stam-success' : 'text-muted-foreground'}`} />
@@ -128,7 +129,10 @@ export function RulesListClient({ rules: initialRules }: Props) {
                     asChild
                     title="Modifier"
                   >
-                    <Link href={`/admin/alertes/rules/${rule.id}/edit`}>
+                    <Link
+                      href={`/admin/alertes/rules/${rule.id}/edit`}
+                      aria-label={`Modifier la règle ${rule.name}`}
+                    >
                       <Pencil className="h-4 w-4" />
                     </Link>
                   </Button>
@@ -140,6 +144,7 @@ export function RulesListClient({ rules: initialRules }: Props) {
                     onClick={() => handleDelete(rule.id, rule.name)}
                     disabled={isPending}
                     title="Supprimer"
+                    aria-label={`Supprimer la règle ${rule.name}`}
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>

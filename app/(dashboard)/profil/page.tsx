@@ -13,10 +13,13 @@ export default async function ProfilPage() {
   const userWithRole = session.user as { name?: string | null; email?: string | null; role?: string }
 
   return (
-    <ProfilClient
-      name={userWithRole.name ?? 'Utilisateur'}
-      email={userWithRole.email ?? ''}
-      role={userWithRole.role ?? 'VISITEUR'}
-    />
+    <>
+      <h1 className="sr-only">Mon profil</h1>
+      <ProfilClient
+        name={userWithRole.name ?? 'Utilisateur'}
+        email={userWithRole.email ?? ''}
+        role={userWithRole.role ?? 'VISITEUR'}
+      />
+    </>
   )
 }
