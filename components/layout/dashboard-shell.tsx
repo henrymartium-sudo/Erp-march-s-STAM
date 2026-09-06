@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
@@ -83,13 +83,27 @@ const pageTitles: Record<string, string> = {
   '/profil':             'Mon profil',
 }
 
+/** Un chemin correspond si égal, ou si le pathname est un de ses sous-chemins. */
+function matchesRoute(pathname: string, route: string): boolean {
+  return pathname === route || pathname.startsWith(`${route}/`)
+}
+
 function getPageTitle(pathname: string): string {
   if (pathname === '/') return 'Tableau de bord'
-  for (const [path, title] of Object.entries(pageTitles)) {
-    if (path !== '/' && pathname.startsWith(path)) return title
+  // Le préfixe le plus long gagne : /vehicules/sav ne doit pas être capté par /vehicules.
+  let best: string | null = null
+  for (const path of Object.keys(pageTitles)) {
+    if (path === '/') continue
+    if (matchesRoute(pathname, path) && (best === null || path.length > best.length)) {
+      best = path
+    }
   }
-  return 'STAM ERP'
+  return (best !== null ? pageTitles[best] : undefined) ?? 'STAM ERP'
 }
+
+/** Anneau de focus clavier lisible sur le fond sombre de la sidebar. */
+const SIDEBAR_FOCUS_RING =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/50'
 
 /* ── Sidebar content ──────────────────────────────────────────────── */
 interface SidebarContentProps {
@@ -105,7 +119,13 @@ function SidebarContent({ userName, userRole, onClose, forceExpanded = false }: 
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/'
-    return pathname.startsWith(href)
+    if (!matchesRoute(pathname, href)) return false
+    // Un item plus spécifique qui matche aussi l'emporte : sur /vehicules/sav,
+    // seul « SAV » doit ressortir actif, pas « Véhicules ».
+    return !navItems.some(
+      (other) =>
+        other.href.length > href.length && matchesRoute(pathname, other.href)
+    )
   }
 
   return (
@@ -155,10 +175,13 @@ function SidebarContent({ userName, userRole, onClose, forceExpanded = false }: 
       </div>
 
       {/* ── Nav ── */}
-      <nav className={cn(
-        'flex-1 py-5 overflow-y-auto space-y-0.5',
-        forceExpanded ? 'px-3' : 'px-1.5 lg:px-3'
-      )}>
+      <nav
+        aria-label="Navigation principale"
+        className={cn(
+          'flex-1 py-5 overflow-y-auto space-y-0.5',
+          forceExpanded ? 'px-3' : 'px-1.5 lg:px-3'
+        )}
+      >
         {navItems.filter(item => !item.roles || (userRole && item.roles.includes(userRole))).map((item) => {
           const Icon = item.icon
           const active = isActive(item.href)
@@ -170,6 +193,8 @@ function SidebarContent({ userName, userRole, onClose, forceExpanded = false }: 
               title={item.label}
               className={cn(
                 'group flex items-center py-[9px] rounded-lg text-sm font-medium transition-all duration-150 select-none',
+                /* Focus clavier visible sur fond sombre (le hover est géré en JS inline) */
+                SIDEBAR_FOCUS_RING,
                 /* Tablette : centré, sans gap ni px. Desktop / mobile overlay : left, gap-3, px-3 */
                 forceExpanded
                   ? 'justify-start gap-3 px-3'
@@ -247,6 +272,7 @@ function SidebarContent({ userName, userRole, onClose, forceExpanded = false }: 
           title="Mon profil"
           className={cn(
             'flex items-center w-full py-2 rounded-lg text-sm font-medium transition-all duration-150',
+            SIDEBAR_FOCUS_RING,
             forceExpanded ? 'gap-3 px-3' : 'justify-center gap-0 px-1 lg:justify-start lg:gap-3 lg:px-3'
           )}
           style={{ color: 'hsl(var(--sidebar-muted))' }}
@@ -271,6 +297,7 @@ function SidebarContent({ userName, userRole, onClose, forceExpanded = false }: 
           title="Déconnexion"
           className={cn(
             'flex items-center w-full py-2 rounded-lg text-sm font-medium transition-all duration-150',
+            SIDEBAR_FOCUS_RING,
             forceExpanded ? 'gap-3 px-3' : 'justify-center gap-0 px-1 lg:justify-start lg:gap-3 lg:px-3'
           )}
           style={{ color: 'hsl(var(--sidebar-muted))' }}
@@ -300,10 +327,60 @@ interface DashboardShellProps {
   userRole?: string | null
 }
 
+/** Éléments atteignables au clavier à l'intérieur du panneau mobile. */
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
 export function DashboardShell({ children, userName, userRole }: DashboardShellProps) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
   const pageTitle = getPageTitle(pathname)
+  const mobileNavRef = useRef<HTMLElement>(null)
+  const hamburgerRef = useRef<HTMLButtonElement>(null)
+
+  /* Panneau mobile = dialogue modal : focus initial dedans, Tab piégé,
+     Échap ferme, focus rendu au hamburger à la fermeture. */
+  useEffect(() => {
+    if (!mobileOpen) return
+    const panel = mobileNavRef.current
+    if (!panel) return
+
+    const focusables = () =>
+      Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
+
+    focusables()[0]?.focus()
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setMobileOpen(false)
+        return
+      }
+      if (e.key !== 'Tab') return
+
+      const items = focusables()
+      const first = items[0]
+      const last = items[items.length - 1]
+      if (!first || !last) return
+
+      const active = document.activeElement
+      const outside = !panel.contains(active)
+
+      if (e.shiftKey && (outside || active === first)) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && (outside || active === last)) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      hamburgerRef.current?.focus()
+    }
+  }, [mobileOpen])
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -324,6 +401,11 @@ export function DashboardShell({ children, userName, userRole }: DashboardShellP
             onClick={() => setMobileOpen(false)}
           />
           <aside
+            id="mobile-sidebar"
+            ref={mobileNavRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu de navigation"
             className="fixed inset-y-0 left-0 w-sidebar z-50 flex flex-col md:hidden animate-slide-in-left"
           >
             <SidebarContent
@@ -351,24 +433,28 @@ export function DashboardShell({ children, userName, userRole }: DashboardShellP
         >
           {/* Hamburger — visible uniquement < md */}
           <button
-            className="md:hidden p-2 rounded-lg transition-colors"
+            ref={hamburgerRef}
+            className="md:hidden p-2 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             style={{ color: 'hsl(var(--muted-foreground))' }}
             onClick={() => setMobileOpen(!mobileOpen)}
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'hsl(var(--muted))')}
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '')}
-            aria-label="Menu"
+            aria-label={mobileOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-sidebar"
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
 
-          {/* Titre page */}
+          {/* Titre page — non sémantique : le <h1> unique de la page est celui de PageHeader */}
           <div className="flex-1 min-w-0">
-            <h1
+            <p
+              data-testid="topbar-title"
               className="text-lg font-semibold tracking-tight truncate"
               style={{ color: 'hsl(var(--foreground))' }}
             >
               {pageTitle}
-            </h1>
+            </p>
           </div>
 
           {/* Cloche notifications in-app */}
