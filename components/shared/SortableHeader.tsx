@@ -32,7 +32,7 @@ export function SortableHeader<T>({
       variant={isActive ? 'secondary' : 'ghost'}
       size="sm"
       onClick={() => onSort(field)}
-      className={cn('h-8 gap-1 text-xs font-medium', className)}
+      className={cn('h-11 md:h-9 gap-1 text-xs font-medium', className)}
     >
       {label}
       {direction === 'asc' ? (
