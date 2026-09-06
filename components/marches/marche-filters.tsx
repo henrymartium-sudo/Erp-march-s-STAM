@@ -219,6 +219,7 @@ export function MarcheFilters({ totalCount, filteredCount, isExploitation }: Mar
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
             placeholder="Rechercher un marché..."
+            aria-label="Rechercher un marché"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 pr-9"
@@ -228,6 +229,7 @@ export function MarcheFilters({ totalCount, filteredCount, isExploitation }: Mar
               variant="ghost"
               size="sm"
               onClick={() => setSearchQuery('')}
+              aria-label="Effacer la recherche"
               className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
             >
               <X className="h-3.5 w-3.5" />
@@ -397,6 +399,7 @@ export function MarcheFilters({ totalCount, filteredCount, isExploitation }: Mar
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-destructive"
+                      aria-label={`Supprimer le filtre ${filter.nom}`}
                       onClick={() => handleDeleteFilter(filter.id, filter.nom)}
                       disabled={isPending}
                     >
@@ -429,7 +432,7 @@ export function MarcheFilters({ totalCount, filteredCount, isExploitation }: Mar
           {!isExploitation && filterParams.statut && (
             <Badge variant="secondary" className="gap-1 text-xs">
               Statut : {STATUT_LABELS[filterParams.statut as keyof typeof STATUT_LABELS] || filterParams.statut}
-              <button onClick={() => updateParam('statut', null)}>
+              <button aria-label="Retirer le filtre Statut" onClick={() => updateParam('statut', null)}>
                 <X className="h-3 w-3" />
               </button>
             </Badge>
@@ -437,7 +440,7 @@ export function MarcheFilters({ totalCount, filteredCount, isExploitation }: Mar
           {filterParams.type && (
             <Badge variant="secondary" className="gap-1 text-xs">
               Type : {TYPE_LABELS[filterParams.type] || filterParams.type}
-              <button onClick={() => updateParam('type', null)}>
+              <button aria-label="Retirer le filtre Type" onClick={() => updateParam('type', null)}>
                 <X className="h-3 w-3" />
               </button>
             </Badge>
@@ -445,7 +448,7 @@ export function MarcheFilters({ totalCount, filteredCount, isExploitation }: Mar
           {(filterParams.montantMin || filterParams.montantMax) && (
             <Badge variant="secondary" className="gap-1 text-xs">
               Montant : {filterParams.montantMin ? `≥${Number(filterParams.montantMin).toLocaleString('fr-FR')}` : ''}{filterParams.montantMin && filterParams.montantMax ? ' – ' : ''}{filterParams.montantMax ? `≤${Number(filterParams.montantMax).toLocaleString('fr-FR')}` : ''} FCFA
-              <button onClick={() => {
+              <button aria-label="Retirer le filtre Montant" onClick={() => {
                 setMontantMinInput('')
                 setMontantMaxInput('')
                 const params = new URLSearchParams(searchParams.toString())
@@ -460,7 +463,7 @@ export function MarcheFilters({ totalCount, filteredCount, isExploitation }: Mar
           {(filterParams.dateCreationDebut || filterParams.dateCreationFin) && (
             <Badge variant="secondary" className="gap-1 text-xs">
               Créé : {filterParams.dateCreationDebut || '…'} → {filterParams.dateCreationFin || '…'}
-              <button onClick={() => {
+              <button aria-label="Retirer le filtre Date de création" onClick={() => {
                 const params = new URLSearchParams(searchParams.toString())
                 params.delete('dateCreationDebut')
                 params.delete('dateCreationFin')

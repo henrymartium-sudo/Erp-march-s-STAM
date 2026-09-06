@@ -123,6 +123,7 @@ export function VehicleMultiSelect({
               <button
                 type="button"
                 onClick={(e) => remove(v.id, e)}
+                aria-label={`Retirer le véhicule ${v.immatriculation}`}
                 className="ml-1 rounded-sm opacity-70 hover:opacity-100"
               >
                 <X className="h-3 w-3" />
