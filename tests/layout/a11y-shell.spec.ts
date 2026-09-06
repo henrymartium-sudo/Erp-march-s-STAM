@@ -91,4 +91,14 @@ test.describe('Shell — titres et item de nav actif sur les sous-routes', () =>
     await expect(activeItems).toHaveCount(1)
     await expect(activeItems.first()).toHaveAttribute('href', '/vehicules')
   })
+
+  test('le tableau de bord conserve un <h1> unique après le retrait du titre topbar (#008)', async () => {
+    // La home n'a ni PageHeader ni <h1> propre : sans le sr-only ajouté au Lot 5,
+    // le retrait du <h1> de la topbar la laisserait sans aucun titre de niveau 1.
+    await goto('/')
+
+    const headings = page.locator('h1')
+    await expect(headings).toHaveCount(1)
+    await expect(headings.first()).toHaveText('Tableau de bord')
+  })
 })
