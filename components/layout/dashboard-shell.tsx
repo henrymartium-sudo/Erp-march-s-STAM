@@ -167,7 +167,7 @@ function SidebarContent({ userName, userRole, onClose, forceExpanded = false }: 
           </div>
           <div
             className="text-xs tracking-[0.12em] uppercase leading-tight mt-0.5"
-            style={{ color: 'hsl(214 25% 58%)' }}
+            style={{ color: 'hsl(var(--sidebar-muted))' }}
           >
             Marchés Publics
           </div>
