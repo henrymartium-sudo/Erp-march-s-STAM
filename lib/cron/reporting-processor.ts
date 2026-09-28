@@ -76,6 +76,7 @@ export async function runReportingCron(currentHour: number): Promise<{
   processed: number
   sent: number
   skipped: number
+  failed: number
 }> {
   const now = new Date()
 
@@ -87,6 +88,7 @@ export async function runReportingCron(currentHour: number): Promise<{
 
   let sent = 0
   let skipped = 0
+  let failed = 0
 
   for (const rule of rules) {
     const config = rule.scheduleConfig as ReportingScheduleConfig | null
@@ -135,10 +137,11 @@ export async function runReportingCron(currentHour: number): Promise<{
       sent++
     } catch (err) {
       console.error(`❌ Échec envoi reporting "${rule.name}":`, err)
+      failed++
     }
   }
 
-  return { processed: rules.length, sent, skipped }
+  return { processed: rules.length, sent, skipped, failed }
 }
 
 // ============================================================
@@ -152,6 +155,7 @@ export async function runOpportuniteReportingCron(currentHour: number): Promise<
   processed: number
   sent: number
   skipped: number
+  failed: number
 }> {
   const now = new Date()
 
@@ -162,6 +166,7 @@ export async function runOpportuniteReportingCron(currentHour: number): Promise<
 
   let sent = 0
   let skipped = 0
+  let failed = 0
 
   for (const rule of rules) {
     const config = rule.scheduleConfig as ReportingScheduleConfig | null
@@ -214,8 +219,9 @@ export async function runOpportuniteReportingCron(currentHour: number): Promise<
       sent++
     } catch (err) {
       console.error(`❌ Échec envoi suivi opp. "${rule.name}":`, err)
+      failed++
     }
   }
 
-  return { processed: rules.length, sent, skipped }
+  return { processed: rules.length, sent, skipped, failed }
 }

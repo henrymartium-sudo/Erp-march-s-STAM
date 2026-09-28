@@ -46,8 +46,14 @@ export async function GET(request: NextRequest) {
       `Marchés: ${marches.sent} envoi(s) — Opportunités: ${opportunites.sent} envoi(s)`
     )
 
+    // Un envoi en échec doit faire échouer le cron, sinon cron-job.org reste vert
+    const failed = marches.failed + opportunites.failed
+    if (failed > 0) {
+      console.error(`❌ Cron reporting : ${failed} envoi(s) en échec`)
+    }
+
     return NextResponse.json({
-      success: true,
+      success: failed === 0,
       data: {
         marches,
         opportunites,
@@ -55,7 +61,7 @@ export async function GET(request: NextRequest) {
         duration: `${duration}ms`,
         timestamp: new Date().toISOString(),
       },
-    }, { status: 200 })
+    }, { status: failed > 0 ? 500 : 200 })
   } catch (error) {
     console.error("❌ Erreur critique cron reporting:", error)
     return NextResponse.json({
