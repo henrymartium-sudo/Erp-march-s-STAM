@@ -90,13 +90,13 @@ export default async function OpportunitesPage({ searchParams }: OpportunitesPag
         }
       />
 
-      <OpportuniteFilters phaseCounts={countsResult.data} filteredCount={pagination.totalItems} />
+      <OpportuniteFilters phaseCounts={countsResult.data} filteredCount={pagination.totalItems}>
+        <OpportuniteList opportunites={opportunites} canWrite={userCanWrite} hasFilters={hasFilters} />
 
-      <OpportuniteList opportunites={opportunites} canWrite={userCanWrite} hasFilters={hasFilters} />
-
-      {shouldShowPagination(pagination.totalItems) && (
-        <DataPagination pagination={pagination} />
-      )}
+        {shouldShowPagination(pagination.totalItems) && (
+          <DataPagination pagination={pagination} />
+        )}
+      </OpportuniteFilters>
     </div>
   )
 }

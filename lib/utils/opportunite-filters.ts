@@ -132,9 +132,14 @@ export function buildOpportuniteWhere(
   return and.length > 0 ? { AND: and } : {}
 }
 
-/** Ordre de tri Prisma. Les dates/montants absents passent en fin de liste. */
+/**
+ * Ordre de tri Prisma. Les dates/montants absents passent en fin de liste.
+ * Tri par date limite : sur des échéances à venir, la plus proche d'abord (urgences en tête) ;
+ * sinon la plus récente d'abord, pour ne pas ouvrir la liste sur de vieilles échéances.
+ */
 export function buildOpportuniteOrderBy(
-  tri: OpportuniteTri = 'echeance'
+  tri: OpportuniteTri = 'echeance',
+  echeance?: OpportuniteEcheance
 ): Prisma.OpportuniteOrderByWithRelationInput[] {
   switch (tri) {
     case 'recent':
@@ -142,7 +147,9 @@ export function buildOpportuniteOrderBy(
     case 'montant':
       return [{ montantEstime: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }]
     case 'echeance':
-    default:
-      return [{ dateLimite: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }]
+    default: {
+      const sort = echeance === 'a-venir' || echeance === '7-jours' ? 'asc' : 'desc'
+      return [{ dateLimite: { sort, nulls: 'last' } }, { createdAt: 'desc' }]
+    }
   }
 }

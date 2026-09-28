@@ -1067,7 +1067,7 @@ export async function exportOpportunites(
     const opportunites = await prisma.opportunite.findMany({
       where,
       take: EXPORT_MAX_ROWS,
-      orderBy: buildOpportuniteOrderBy(oppFilters.tri),
+      orderBy: buildOpportuniteOrderBy(oppFilters.tri, oppFilters.echeance),
       include: {
         marche:   { select: { numero: true } },
         user:     { select: { name: true } },
@@ -1362,7 +1362,7 @@ export async function exportOpportunitesPDF(
     const opportunites = await prisma.opportunite.findMany({
       where,
       take: EXPORT_MAX_ROWS,
-      orderBy: buildOpportuniteOrderBy(oppFilters.tri),
+      orderBy: buildOpportuniteOrderBy(oppFilters.tri, oppFilters.echeance),
       include: {
         marche: { select: { numero: true } },
       },

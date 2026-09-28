@@ -54,7 +54,7 @@ export async function getOpportunites(
             select: { id: true, numero: true, objet: true },
           },
         },
-        orderBy: buildOpportuniteOrderBy(filters.tri),
+        orderBy: buildOpportuniteOrderBy(filters.tri, filters.echeance),
         skip,
         take,
       }),
