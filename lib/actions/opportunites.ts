@@ -7,6 +7,13 @@ import { requireAuth, canWrite } from '@/lib/utils/permissions'
 import { logAction } from '@/lib/audit/logAction'
 import { AUDIT_ACTION, AUDIT_ENTITY } from '@/lib/audit/constants'
 import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
+import {
+  PHASE_STATUTS,
+  buildOpportuniteOrderBy,
+  buildOpportuniteWhere,
+  type OpportuniteFilters,
+  type OpportunitePhase,
+} from '@/lib/utils/opportunite-filters'
 import type { ActionResult } from '@/types'
 import type { PaginatedResponse } from '@/types/pagination'
 import type { Opportunite, Marche, StatutOpportunite, StatutMarche } from '@prisma/client'
@@ -19,8 +26,7 @@ export type OpportuniteWithMarche = Opportunite & {
   marche: Pick<Marche, 'id' | 'numero' | 'objet'> | null
 }
 
-export interface GetOpportunitesOptions {
-  statut?: StatutOpportunite
+export interface GetOpportunitesOptions extends OpportuniteFilters {
   page?: number
   limit?: number
 }
@@ -35,12 +41,10 @@ export async function getOpportunites(
   try {
     await requireAuth()
 
-    const { statut, page, limit } = options
+    const { page, limit, ...filters } = options
     const { skip, take } = getPrismaSkipTake({ page, limit })
 
-    const where = {
-      ...(statut && { statut }),
-    }
+    const where = buildOpportuniteWhere(filters)
 
     const [opportunites, total] = await Promise.all([
       prisma.opportunite.findMany({
@@ -50,7 +54,7 @@ export async function getOpportunites(
             select: { id: true, numero: true, objet: true },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: buildOpportuniteOrderBy(filters.tri, filters.echeance),
         skip,
         take,
       }),
@@ -64,6 +68,35 @@ export async function getOpportunites(
   } catch (error) {
     console.error('Erreur getOpportunites:', error)
     return { success: false, error: 'Impossible de charger les opportunités' }
+  }
+}
+
+/**
+ * Nombre d'opportunités par phase (onglets de la liste), indépendamment des autres filtres.
+ */
+export async function getOpportunitesPhaseCounts(): Promise<
+  ActionResult<Record<OpportunitePhase, number>>
+> {
+  try {
+    await requireAuth()
+
+    const grouped = await prisma.opportunite.groupBy({
+      by: ['statut'],
+      _count: { _all: true },
+    })
+
+    const counts: Record<OpportunitePhase, number> = { 'en-cours': 0, gagnees: 0, perdues: 0, toutes: 0 }
+    for (const g of grouped) {
+      counts.toutes += g._count._all
+      for (const phase of ['en-cours', 'gagnees', 'perdues'] as const) {
+        if (PHASE_STATUTS[phase].includes(g.statut)) counts[phase] += g._count._all
+      }
+    }
+
+    return { success: true, data: counts }
+  } catch (error) {
+    console.error('Erreur getOpportunitesPhaseCounts:', error)
+    return { success: false, error: 'Impossible de charger les compteurs' }
   }
 }
 

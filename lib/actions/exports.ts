@@ -19,6 +19,7 @@ import {
   type PDFSummaryItem,
 } from '@/lib/utils/pdf'
 import { formatDateCourt } from '@/lib/utils/format'
+import { buildOpportuniteOrderBy, buildOpportuniteWhere, parseOpportuniteFilters } from '@/lib/utils/opportunite-filters'
 
 // Limite maximale de lignes par export (protection mémoire)
 const EXPORT_MAX_ROWS = 1000;
@@ -29,6 +30,9 @@ const EXPORT_MAX_ROWS = 1000;
 
 interface ExportFilters {
   statut?: string
+  phase?: string
+  echeance?: string
+  tri?: string
   type?: string
   dateDebut?: string
   dateFin?: string
@@ -1057,13 +1061,13 @@ export async function exportOpportunites(
   try {
     const session = await requireRole(['ADMIN', 'AVANCE', 'VISITEUR'])
 
-    const where: any = {}
-    if (filters?.statut) where.statut = filters.statut
+    const oppFilters = parseOpportuniteFilters({ ...filters })
+    const where = buildOpportuniteWhere(oppFilters)
 
     const opportunites = await prisma.opportunite.findMany({
       where,
       take: EXPORT_MAX_ROWS,
-      orderBy: { createdAt: 'desc' },
+      orderBy: buildOpportuniteOrderBy(oppFilters.tri, oppFilters.echeance),
       include: {
         marche:   { select: { numero: true } },
         user:     { select: { name: true } },
@@ -1352,13 +1356,13 @@ export async function exportOpportunitesPDF(
   try {
     const session = await requireRole(['ADMIN', 'AVANCE', 'VISITEUR'])
 
-    const where: any = {}
-    if (filters?.statut) where.statut = filters.statut
+    const oppFilters = parseOpportuniteFilters({ ...filters })
+    const where = buildOpportuniteWhere(oppFilters)
 
     const opportunites = await prisma.opportunite.findMany({
       where,
       take: EXPORT_MAX_ROWS,
-      orderBy: { createdAt: 'desc' },
+      orderBy: buildOpportuniteOrderBy(oppFilters.tri, oppFilters.echeance),
       include: {
         marche: { select: { numero: true } },
       },

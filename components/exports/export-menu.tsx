@@ -28,6 +28,8 @@ export interface ExportFilters {
   dateFin?: string
   search?: string
   marcheId?: string
+  echeance?: string
+  tri?: string
 }
 
 /** Labels affichés dans la modal PDF */
@@ -102,6 +104,8 @@ export function ExportMenu({
     if (filters?.dateFin) params.set('dateFin', filters.dateFin)
     if (filters?.search) params.set('search', filters.search)
     if (filters?.marcheId) params.set('marcheId', filters.marcheId)
+    if (filters?.echeance) params.set('echeance', filters.echeance)
+    if (filters?.tri) params.set('tri', filters.tri)
     const qs = params.toString()
     return `/api/exports/${type}${qs ? `?${qs}` : ''}`
   }
@@ -116,6 +120,8 @@ export function ExportMenu({
     if (filters?.dateFin) params.set('dateFin', filters.dateFin)
     if (filters?.search) params.set('search', filters.search)
     if (filters?.marcheId) params.set('marcheId', filters.marcheId)
+    if (filters?.echeance) params.set('echeance', filters.echeance)
+    if (filters?.tri) params.set('tri', filters.tri)
     const qs = params.toString()
     return `/api/exports-pdf/${type}${qs ? `?${qs}` : ''}`
   }

@@ -18,6 +18,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const filters = {
       statut: searchParams.get('statut') || undefined,
+      phase: searchParams.get('phase') || undefined,
+      search: searchParams.get('search') || undefined,
+      echeance: searchParams.get('echeance') || undefined,
+      tri: searchParams.get('tri') || undefined,
     }
 
     const result = await exportOpportunites(filters)
