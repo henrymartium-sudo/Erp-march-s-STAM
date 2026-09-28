@@ -98,8 +98,8 @@ export function OpportuniteList({ opportunites, canWrite, hasFilters }: Opportun
             <TableHead className="min-w-[200px] sm:min-w-[260px]">Objet</TableHead>
             <TableHead className="hidden min-w-[180px] lg:table-cell">Autorité contractante</TableHead>
             <TableHead className="hidden sm:table-cell">Statut</TableHead>
-            <TableHead className="hidden md:table-cell">Date limite</TableHead>
-            <TableHead className="hidden text-right md:table-cell">Montant</TableHead>
+            <TableHead className="hidden xl:table-cell">Date limite</TableHead>
+            <TableHead className="hidden text-right xl:table-cell">Montant</TableHead>
             {canWrite && <TableHead className="w-[100px]"><span className="sr-only">Actions</span></TableHead>}
           </TableRow>
         </TableHeader>
@@ -134,7 +134,7 @@ export function OpportuniteList({ opportunites, canWrite, hasFilters }: Opportun
                   <p className="mt-1 line-clamp-1 text-xs text-muted-foreground lg:hidden" title={opp.autoriteContractante}>
                     {opp.autoriteContractante}
                   </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs md:hidden">
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs xl:hidden">
                     <Badge
                       variant={STATUT_OPPORTUNITE_COLORS[opp.statut] as 'success' | 'warning' | 'danger' | 'info' | 'muted'}
                       className="whitespace-nowrap sm:hidden"
@@ -162,11 +162,11 @@ export function OpportuniteList({ opportunites, canWrite, hasFilters }: Opportun
                     {STATUT_OPPORTUNITE_LABELS[opp.statut] ?? opp.statut}
                   </Badge>
                 </TableCell>
-                <TableCell className="hidden whitespace-nowrap align-top md:table-cell">
+                <TableCell className="hidden whitespace-nowrap align-top xl:table-cell">
                   <div className="text-sm tabular-nums">{formatDate(opp.dateLimite)}</div>
                   <EcheanceIndicator opp={opp} />
                 </TableCell>
-                <TableCell className="hidden whitespace-nowrap text-right align-top tabular-nums md:table-cell">
+                <TableCell className="hidden whitespace-nowrap text-right align-top tabular-nums xl:table-cell">
                   {montantEstime ?? <span className="text-muted-foreground">—</span>}
                   {montantPropose && (
                     <div className="text-xs text-muted-foreground">Proposé : {montantPropose}</div>
