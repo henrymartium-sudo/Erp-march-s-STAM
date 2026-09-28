@@ -95,7 +95,7 @@ export function OpportuniteList({ opportunites, canWrite, hasFilters }: Opportun
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="min-w-[200px] sm:min-w-[260px]">Objet</TableHead>
+            <TableHead className="sm:min-w-[260px]">Objet</TableHead>
             <TableHead className="hidden min-w-[180px] xl:table-cell">Autorité contractante</TableHead>
             <TableHead className="hidden sm:table-cell">Statut</TableHead>
             <TableHead className="hidden xl:table-cell">Date limite</TableHead>
@@ -109,7 +109,7 @@ export function OpportuniteList({ opportunites, canWrite, hasFilters }: Opportun
             const montantPropose = formatMontant(opp.montantPropose)
             return (
               <TableRow key={opp.id}>
-                <TableCell className="max-w-[360px] align-top">
+                <TableCell className="max-w-[220px] align-top sm:max-w-[360px]">
                   <Link
                     href={`/opportunites/${opp.id}`}
                     className="line-clamp-2 font-medium hover:underline"
