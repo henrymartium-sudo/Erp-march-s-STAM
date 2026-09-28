@@ -96,7 +96,7 @@ export function OpportuniteList({ opportunites, canWrite, hasFilters }: Opportun
         <TableHeader>
           <TableRow>
             <TableHead className="min-w-[200px] sm:min-w-[260px]">Objet</TableHead>
-            <TableHead className="hidden min-w-[180px] lg:table-cell">Autorité contractante</TableHead>
+            <TableHead className="hidden min-w-[180px] xl:table-cell">Autorité contractante</TableHead>
             <TableHead className="hidden sm:table-cell">Statut</TableHead>
             <TableHead className="hidden xl:table-cell">Date limite</TableHead>
             <TableHead className="hidden text-right xl:table-cell">Montant</TableHead>
@@ -131,7 +131,7 @@ export function OpportuniteList({ opportunites, canWrite, hasFilters }: Opportun
                     </Link>
                   )}
                   {/* Colonnes masquées sur petit écran : leur contenu passe sous l'objet */}
-                  <p className="mt-1 line-clamp-1 text-xs text-muted-foreground lg:hidden" title={opp.autoriteContractante}>
+                  <p className="mt-1 line-clamp-1 text-xs text-muted-foreground xl:hidden" title={opp.autoriteContractante}>
                     {opp.autoriteContractante}
                   </p>
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs xl:hidden">
@@ -149,7 +149,7 @@ export function OpportuniteList({ opportunites, canWrite, hasFilters }: Opportun
                     {montantEstime && <span className="tabular-nums">{montantEstime}</span>}
                   </div>
                 </TableCell>
-                <TableCell className="hidden max-w-[220px] align-top lg:table-cell">
+                <TableCell className="hidden max-w-[220px] align-top xl:table-cell">
                   <span className="line-clamp-2 text-sm" title={opp.autoriteContractante}>
                     {opp.autoriteContractante}
                   </span>
