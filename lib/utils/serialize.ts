@@ -7,6 +7,24 @@
  */
 
 import type { SerializedMarche, SerializedCaution, SerializedVehicule, SerializedIntervention } from '@/types/serialized'
+import type { Lot, DossierOffre, PieceOffre } from '@prisma/client'
+
+/**
+ * Lot sérialisé (Decimal -> number, Date -> ISO string), avec son dossier et les pièces
+ * de ce dossier le cas échéant.
+ */
+export type SerializedLot = Omit<Lot, 'montantEstime' | 'montantPropose' | 'montantOffreConcurrent' | 'createdAt' | 'updatedAt'> & {
+  montantEstime: number | null
+  montantPropose: number | null
+  montantOffreConcurrent: number | null
+  createdAt: string
+  updatedAt: string
+  dossier: (Omit<DossierOffre, 'createdAt' | 'updatedAt'> & {
+    createdAt: string
+    updatedAt: string
+    pieces: PieceOffre[]
+  }) | null
+}
 
 /**
  * Sérialise un marché Prisma en objet plain pour le passage aux Client Components.
@@ -189,6 +207,33 @@ export function serializeVehicule(vehicule: any): SerializedVehicule {
     marches: vehicule.marcheVehicules
       ? vehicule.marcheVehicules.map((mv: any) => mv.marche).filter(Boolean)
       : undefined,
+  }
+}
+
+/**
+ * Sérialise un lot Prisma (avec dossier et pièces éventuels) en objet plain pour le
+ * passage aux Client Components. Convertit les Decimal en number et les Date en string ISO.
+ */
+export function serializeLot(lot: any): SerializedLot {
+  return {
+    ...lot,
+    montantEstime: lot.montantEstime != null
+      ? (typeof lot.montantEstime === 'number' ? lot.montantEstime : Number(lot.montantEstime))
+      : null,
+    montantPropose: lot.montantPropose != null
+      ? (typeof lot.montantPropose === 'number' ? lot.montantPropose : Number(lot.montantPropose))
+      : null,
+    montantOffreConcurrent: lot.montantOffreConcurrent != null
+      ? (typeof lot.montantOffreConcurrent === 'number' ? lot.montantOffreConcurrent : Number(lot.montantOffreConcurrent))
+      : null,
+    createdAt: lot.createdAt instanceof Date ? lot.createdAt.toISOString() : String(lot.createdAt),
+    updatedAt: lot.updatedAt instanceof Date ? lot.updatedAt.toISOString() : String(lot.updatedAt),
+    dossier: lot.dossier ? {
+      ...lot.dossier,
+      createdAt: lot.dossier.createdAt instanceof Date ? lot.dossier.createdAt.toISOString() : String(lot.dossier.createdAt),
+      updatedAt: lot.dossier.updatedAt instanceof Date ? lot.dossier.updatedAt.toISOString() : String(lot.dossier.updatedAt),
+      pieces: lot.dossier.pieces ?? [],
+    } : null,
   }
 }
 

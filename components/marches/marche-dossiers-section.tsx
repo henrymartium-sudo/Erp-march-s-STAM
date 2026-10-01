@@ -2,25 +2,24 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, FolderCheck } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { FolderCheck } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getDossiersOffre } from '@/lib/actions/dossiers-offre'
 import {
-  STATUT_DOSSIER_LABELS,
-  STATUT_DOSSIER_COLORS,
+  ETAT_DOSSIER_LABELS,
+  ETAT_DOSSIER_COLORS,
 } from '@/lib/validations/dossier-offre'
+import { deriverEtatDossier } from '@/lib/utils/lots'
 import type { DossierOffreWithPieces } from '@/lib/actions/dossiers-offre'
 
 interface MarcheDossiersSectionProps {
   marcheId: string
-  canWrite: boolean
 }
 
-export function MarcheDossiersSection({ marcheId, canWrite }: MarcheDossiersSectionProps) {
+export function MarcheDossiersSection({ marcheId }: MarcheDossiersSectionProps) {
   const [dossiers, setDossiers] = useState<DossierOffreWithPieces[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -59,14 +58,6 @@ export function MarcheDossiersSection({ marcheId, canWrite }: MarcheDossiersSect
             </Badge>
           )}
         </CardTitle>
-        {canWrite && (
-          <Button size="sm" variant="outline" asChild>
-            <Link href={`/dossiers-offre/nouveau?marcheId=${marcheId}`}>
-              <Plus className="h-3.5 w-3.5 mr-1.5" />
-              Ajouter
-            </Link>
-          </Button>
-        )}
       </CardHeader>
       <CardContent className="space-y-2">
         {dossiers.length === 0 ? (
@@ -74,27 +65,30 @@ export function MarcheDossiersSection({ marcheId, canWrite }: MarcheDossiersSect
             Aucun dossier d&apos;offre pour ce marché
           </p>
         ) : (
-          dossiers.map((d) => (
-            <Link
-              key={d.id}
-              href={`/dossiers-offre/${d.id}`}
-              className="flex items-center justify-between p-2.5 rounded-lg border border-border hover:bg-muted/30 transition-colors"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium truncate" title={d.titre}>{d.titre}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <Progress value={d.progression} className="h-1.5 w-24" />
-                  <span className="text-xs text-muted-foreground">{d.progression}%</span>
-                </div>
-              </div>
-              <Badge
-                variant={STATUT_DOSSIER_COLORS[d.statut] as 'success' | 'warning' | 'danger' | 'info' | 'muted'}
-                className="text-xs ml-2 flex-shrink-0"
+          dossiers.map((d) => {
+            const etat = d.opportunite ? deriverEtatDossier(d.opportunite.statut) : 'AUCUN'
+            return (
+              <Link
+                key={d.id}
+                href={d.opportuniteId ? `/opportunites/${d.opportuniteId}?onglet=lots` : '/opportunites'}
+                className="flex items-center justify-between p-2.5 rounded-lg border border-border hover:bg-muted/30 transition-colors"
               >
-                {STATUT_DOSSIER_LABELS[d.statut] ?? d.statut}
-              </Badge>
-            </Link>
-          ))
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate" title={d.titre}>{d.titre}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Progress value={d.progression} className="h-1.5 w-24" />
+                    <span className="text-xs text-muted-foreground">{d.progression}%</span>
+                  </div>
+                </div>
+                <Badge
+                  variant={ETAT_DOSSIER_COLORS[etat] as 'success' | 'warning' | 'danger' | 'info' | 'muted'}
+                  className="text-xs ml-2 flex-shrink-0"
+                >
+                  {ETAT_DOSSIER_LABELS[etat]}
+                </Badge>
+              </Link>
+            )
+          })
         )}
       </CardContent>
     </Card>

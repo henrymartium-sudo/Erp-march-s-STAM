@@ -17,6 +17,7 @@
     "db:seed": "ts-node -P tsconfig.json prisma/seed-test-users.ts",
     "db:seed:test": "ts-node -P tsconfig.json prisma/seed-test-local.ts",
     "migrate:statuts": "ts-node -P tsconfig.json prisma/migrate-statuts.ts",
+    "reprise:lots": "ts-node -P tsconfig.json --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/reprise-lots.ts",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",

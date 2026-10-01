@@ -1,5 +1,7 @@
 // lib/analytics/types.ts
 
+import type { StatsLots } from '@/lib/utils/lots'
+
 export interface Periode {
   dateDebut: Date
   dateFin: Date
@@ -87,6 +89,7 @@ export interface OpportunitesStats {
   montantProposeTotal: number
   parStatut: { statut: string; label: string; count: number; montantEstime: number; montantPropose: number }[]
   topAC: { nom: string; count: number; gagnees: number; montantEstime: number }[]
+  lots: StatsLots                   // résultats des lots des opportunités de la période
   // Données enrichies pour export Excel
   pipelineMarches: { objet: string; marcheNumero: string; marcheMontant: number }[]
   evolutionMensuelle: { mois: string; label: string; count: number }[]

@@ -7,7 +7,7 @@ import type { Cookie } from '@playwright/test'
  * T4-A : La page /opportunites est accessible et affiche le titre
  * T4-B : Créer une opportunité avec les champs requis → toast + présence dans la liste
  * T4-C : La liste affiche les colonnes attendues du tableau
- * T4-D : Changer le statut d'une opportunité via le formulaire d'édition
+ * T4-D : Changer le statut d'une opportunité depuis la fiche (bouton « Statut »)
  * T4-E : Modifier l'objet d'une opportunité existante
  * T4-F : Supprimer une opportunité avec confirmation AlertDialog
  * T4-G : Filtrer les opportunités par statut via URL
@@ -89,8 +89,8 @@ test.describe.serial('Phase 4 — Opportunités', () => {
       await page.fill('input[placeholder*="véhicules utilitaires"]', OPP_OBJET)
       await page.fill('input[placeholder*="Ministère des Transports"]', OPP_AC)
 
-      // Le statut "Identifiée" est déjà sélectionné par défaut — vérifier
-      await expect(page.locator('[role="combobox"]').first()).toContainText(/Identifiée/, { timeout: 5000 })
+      // Le statut "En analyse" est déjà sélectionné par défaut — vérifier
+      await expect(page.locator('[role="combobox"]').first()).toContainText(/En analyse/, { timeout: 5000 })
 
       // Soumettre le formulaire
       await page.click('button[type="submit"]')
@@ -134,8 +134,7 @@ test.describe.serial('Phase 4 — Opportunités', () => {
       await expect(headers.filter({ hasText: 'Autorité contractante' })).toBeVisible()
       await expect(headers.filter({ hasText: 'Statut' })).toBeVisible()
       await expect(headers.filter({ hasText: 'Date limite' })).toBeVisible()
-      await expect(headers.filter({ hasText: 'Montant estimé' })).toBeVisible()
-      await expect(headers.filter({ hasText: 'Probabilité' })).toBeVisible()
+      await expect(headers.filter({ hasText: 'Montant' })).toBeVisible()
     } finally {
       await context.close()
     }
@@ -143,7 +142,9 @@ test.describe.serial('Phase 4 — Opportunités', () => {
 
   // ─── T4-D : Changer le statut ────────────────────────────────────────────────
 
-  test('T4-D — Changer le statut d\'une opportunité via le formulaire', async ({ browser }) => {
+  test('T4-D — Changer le statut d\'une opportunité depuis la fiche', async ({ browser }) => {
+    // Deux rendus de page (fiche puis liste) et une action serveur : plus que les 30 s par défaut du serveur de dev
+    test.setTimeout(90000)
     const context = await browser.newContext()
     await context.addCookies(adminCookies)
     const page = await context.newPage()
@@ -151,24 +152,28 @@ test.describe.serial('Phase 4 — Opportunités', () => {
 
     try {
       expect(testOpportuniteId).toBeTruthy()
-      await page.goto(`/opportunites/${testOpportuniteId}/edit`)
+      // Le statut ne se change plus depuis /edit (lecture seule) mais depuis la fiche
+      await page.goto(`/opportunites/${testOpportuniteId}`)
       await page.waitForLoadState('networkidle')
 
-      // Changer le statut vers "En analyse"
-      const statutSelect = page.locator('[role="combobox"]').first()
-      await statutSelect.click()
-      await page.getByRole('option', { name: 'En analyse', exact: true }).click()
+      // Panneau « Changer le statut » : EN_ANALYSE → GO
+      // (un clic sur le bouton avant son hydratation est perdu : attendre que React l'ait pris en charge)
+      const boutonStatut = page.getByRole('button', { name: 'Statut', exact: true })
+      await expect
+        .poll(() => boutonStatut.evaluate((el) => Object.keys(el).some((k) => k.startsWith('__reactProps'))), { timeout: 30000 })
+        .toBe(true)
+      await boutonStatut.click()
+      await page.locator('#new-statut').click()
+      await page.getByRole('option', { name: 'GO', exact: true }).click()
+      await page.getByRole('button', { name: 'Confirmer' }).click()
+      await expect(page.getByText('Statut changé : GO').first()).toBeVisible({ timeout: 30000 })
 
-      // Soumettre
-      await page.click('button[type="submit"]')
-      await expect(page.getByText('Opportunité mise à jour')).toBeVisible({ timeout: 15000 })
-
-      // Retour sur la liste — le badge "En analyse" est visible dans la ligne
-      await page.waitForURL(/\/opportunites$/, { timeout: 15000 })
+      // Retour sur la liste — le badge "GO" est visible dans la ligne
+      await page.goto('/opportunites')
       await page.waitForLoadState('networkidle')
 
       const updatedRow = page.getByRole('row').filter({ hasText: OPP_OBJET })
-      await expect(updatedRow.getByText('En analyse')).toBeVisible({ timeout: 10000 })
+      await expect(updatedRow.getByText('GO', { exact: true }).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 })
     } finally {
       await context.close()
     }

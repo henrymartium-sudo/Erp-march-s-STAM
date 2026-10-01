@@ -12,6 +12,7 @@ import { toast } from '@/lib/utils/toast'
 interface OpportuniteDetailActionsProps {
   opportuniteId: string
   currentStatut: StatutOpportunite
+  nbLots: number
   hasMarcheLinked: boolean
   canWrite: boolean
 }
@@ -19,6 +20,7 @@ interface OpportuniteDetailActionsProps {
 export function OpportuniteDetailActions({
   opportuniteId,
   currentStatut,
+  nbLots,
   hasMarcheLinked,
   canWrite,
 }: OpportuniteDetailActionsProps) {
@@ -46,6 +48,7 @@ export function OpportuniteDetailActions({
       <StatutChangerOpportuniteButton
         opportuniteId={opportuniteId}
         currentStatut={statut}
+        nbLots={nbLots}
         onStatutChanged={setStatut}
       />
       {statut === 'GAGNEE' && !hasMarcheLinked && (

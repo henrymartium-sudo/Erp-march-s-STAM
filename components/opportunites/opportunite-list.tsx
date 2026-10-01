@@ -17,10 +17,11 @@ import {
 } from '@/lib/validations/opportunite'
 import { STATUTS_AVANT_SOUMISSION } from '@/lib/utils/opportunite-filters'
 import { cn } from '@/lib/utils'
-import type { OpportuniteWithMarche } from '@/lib/actions/opportunites'
+import { calculerAvancementLots, totalMontantPropose } from '@/lib/utils/lots'
+import type { OpportuniteListItem, OpportuniteWithMarche } from '@/lib/actions/opportunites'
 
 interface OpportuniteListProps {
-  opportunites: OpportuniteWithMarche[]
+  opportunites: OpportuniteListItem[]
   canWrite: boolean
   hasFilters: boolean
 }
@@ -106,7 +107,8 @@ export function OpportuniteList({ opportunites, canWrite, hasFilters }: Opportun
         <TableBody>
           {opportunites.map((opp) => {
             const montantEstime = formatMontant(opp.montantEstime)
-            const montantPropose = formatMontant(opp.montantPropose)
+            const montantPropose = formatMontant(totalMontantPropose(opp.lots))
+            const { nbLots, progressionMoyenne } = calculerAvancementLots(opp.lots)
             return (
               <TableRow key={opp.id}>
                 <TableCell className="max-w-[220px] align-top sm:max-w-[360px]">
@@ -129,6 +131,12 @@ export function OpportuniteList({ opportunites, canWrite, hasFilters }: Opportun
                     >
                       Marché {opp.marche.numero}
                     </Link>
+                  )}
+                  {nbLots > 0 && (
+                    <p className="mt-1 text-xs tabular-nums text-muted-foreground">
+                      {nbLots} lot{nbLots > 1 ? 's' : ''}
+                      {progressionMoyenne !== null && ` · dossier ${progressionMoyenne} %`}
+                    </p>
                   )}
                   {/* Colonnes masquées sur petit écran : leur contenu passe sous l'objet */}
                   <p className="mt-1 line-clamp-1 text-xs text-muted-foreground xl:hidden" title={opp.autoriteContractante}>

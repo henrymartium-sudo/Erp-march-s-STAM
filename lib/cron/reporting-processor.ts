@@ -188,11 +188,7 @@ export async function runOpportuniteReportingCron(currentHour: number): Promise<
     const opportunites = await prisma.opportunite.findMany({
       orderBy: { createdAt: "desc" },
       include: {
-        dossiers: {
-          select: { id: true, progression: true, statut: true },
-          take: 1,
-          orderBy: { createdAt: "desc" },
-        },
+        lots: { select: { montantPropose: true, dossier: { select: { progression: true } } } },
       },
     })
 

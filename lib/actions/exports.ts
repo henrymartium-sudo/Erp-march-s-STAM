@@ -20,6 +20,7 @@ import {
 } from '@/lib/utils/pdf'
 import { formatDateCourt } from '@/lib/utils/format'
 import { buildOpportuniteOrderBy, buildOpportuniteWhere, parseOpportuniteFilters } from '@/lib/utils/opportunite-filters'
+import { calculerAvancementLots, deriverEtatDossier, totalMontantPropose } from '@/lib/utils/lots'
 
 // Limite maximale de lignes par export (protection mémoire)
 const EXPORT_MAX_ROWS = 1000;
@@ -1071,11 +1072,7 @@ export async function exportOpportunites(
       include: {
         marche:   { select: { numero: true } },
         user:     { select: { name: true } },
-        dossiers: {
-          select: { progression: true, statut: true },
-          take: 1,
-          orderBy: { updatedAt: 'desc' },
-        },
+        lots:     { select: { montantPropose: true, dossier: { select: { progression: true } } } },
       },
     })
 
@@ -1193,9 +1190,10 @@ export async function exportOpportunites(
         ? `${format(new Date(opp.periodeValiditeDebut), 'dd/MM/yyyy')} → ${format(new Date(opp.periodeValiditeFin!), 'dd/MM/yyyy')}`
         : ''
 
-      const dossier    = opp.dossiers?.[0]
-      const dossierStr = dossier
-        ? `${dossier.statut === 'SOUMIS' ? '✓ ' : ''}${dossier.progression}%`
+      const { progressionMoyenne } = calculerAvancementLots(opp.lots)
+      const etatDossier = deriverEtatDossier(opp.statut)
+      const dossierStr = progressionMoyenne !== null
+        ? `${etatDossier === 'SOUMIS' ? '✓ ' : ''}${progressionMoyenne}%`
         : ''
 
       const values: any[] = [
@@ -1204,7 +1202,7 @@ export async function exportOpportunites(
         opp.autoriteContractante,
         STATUT_OPP_LABELS[opp.statut] ?? opp.statut,
         opp.montantEstime?.toNumber()  ?? '',
-        opp.montantPropose?.toNumber() ?? '',
+        totalMontantPropose(opp.lots)  ?? '',
         opp.dateLimite                 ? new Date(opp.dateLimite)                 : '',
         jDL !== null ? jDL : '',
         periodeStr,
@@ -1286,7 +1284,7 @@ export async function exportOpportunites(
       const entry = byStatut[opp.statut] ?? { count: 0, estimeTotal: 0, proposeTotal: 0 }
       entry.count++
       entry.estimeTotal  += opp.montantEstime?.toNumber()  || 0
-      entry.proposeTotal += opp.montantPropose?.toNumber() || 0
+      entry.proposeTotal += totalMontantPropose(opp.lots) ?? 0
       byStatut[opp.statut] = entry
     }
 
@@ -1315,7 +1313,7 @@ export async function exportOpportunites(
 
     // Ligne TOTAL
     const totalEstime  = opportunites.reduce((s, o) => s + (o.montantEstime?.toNumber()  || 0), 0)
-    const totalPropose = opportunites.reduce((s, o) => s + (o.montantPropose?.toNumber() || 0), 0)
+    const totalPropose = opportunites.reduce((s, o) => s + (totalMontantPropose(o.lots) ?? 0), 0)
     const totalData: any[] = ['TOTAL', opportunites.length, totalEstime || '', totalPropose || '']
     totalData.forEach((val, i) => {
       const cell = ws2.getRow(sr + 1).getCell(i + 1)

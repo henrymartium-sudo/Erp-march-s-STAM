@@ -14,9 +14,11 @@ import {
   type OpportuniteFilters,
   type OpportunitePhase,
 } from '@/lib/utils/opportunite-filters'
+import { serializeLot, type SerializedLot } from '@/lib/utils/serialize'
+import { preparerMarcheDepuisLots } from '@/lib/utils/lots'
 import type { ActionResult } from '@/types'
 import type { PaginatedResponse } from '@/types/pagination'
-import type { Opportunite, Marche, StatutOpportunite, StatutMarche } from '@prisma/client'
+import type { Opportunite, Marche, Lot, PieceOffre, StatutOpportunite, StatutMarche } from '@prisma/client'
 
 // ============================================================================
 // TYPES
@@ -24,6 +26,16 @@ import type { Opportunite, Marche, StatutOpportunite, StatutMarche } from '@pris
 
 export type OpportuniteWithMarche = Opportunite & {
   marche: Pick<Marche, 'id' | 'numero' | 'objet'> | null
+}
+
+export type OpportuniteDetail = OpportuniteWithMarche & {
+  lots: SerializedLot[]
+  piecesCommunes: PieceOffre[]
+}
+
+/** Ligne de la liste : pour chaque lot, seule la progression de son dossier est chargée. */
+export type OpportuniteListItem = OpportuniteWithMarche & {
+  lots: { montantPropose: Lot['montantPropose']; dossier: { progression: number } | null }[]
 }
 
 export interface GetOpportunitesOptions extends OpportuniteFilters {
@@ -37,7 +49,7 @@ export interface GetOpportunitesOptions extends OpportuniteFilters {
 
 export async function getOpportunites(
   options: GetOpportunitesOptions = {}
-): Promise<ActionResult<PaginatedResponse<OpportuniteWithMarche>>> {
+): Promise<ActionResult<PaginatedResponse<OpportuniteListItem>>> {
   try {
     await requireAuth()
 
@@ -52,6 +64,9 @@ export async function getOpportunites(
         include: {
           marche: {
             select: { id: true, numero: true, objet: true },
+          },
+          lots: {
+            select: { montantPropose: true, dossier: { select: { progression: true } } },
           },
         },
         orderBy: buildOpportuniteOrderBy(filters.tri, filters.echeance),
@@ -102,7 +117,7 @@ export async function getOpportunitesPhaseCounts(): Promise<
 
 export async function getOpportunite(
   id: string
-): Promise<ActionResult<OpportuniteWithMarche>> {
+): Promise<ActionResult<OpportuniteDetail>> {
   try {
     await requireAuth()
 
@@ -112,6 +127,11 @@ export async function getOpportunite(
         marche: {
           select: { id: true, numero: true, objet: true },
         },
+        lots: {
+          orderBy: { numero: 'asc' },
+          include: { dossier: { include: { pieces: { orderBy: { ordre: 'asc' } } } } },
+        },
+        piecesCommunes: { orderBy: { ordre: 'asc' } },
       },
     })
 
@@ -119,7 +139,10 @@ export async function getOpportunite(
       return { success: false, error: 'Opportunité introuvable' }
     }
 
-    return { success: true, data: opportunite }
+    return {
+      success: true,
+      data: { ...opportunite, lots: opportunite.lots.map(serializeLot) },
+    }
   } catch (error) {
     console.error('Erreur getOpportunite:', error)
     return { success: false, error: "Impossible de charger l'opportunité" }
@@ -305,8 +328,9 @@ export async function createMarcheFromOpportunite(
         statut: true,
         objet: true,
         autoriteContractante: true,
-        montantEstime: true,
         reference: true,
+        marcheId: true,
+        lots: { select: { numero: true, resultat: true, montantPropose: true }, orderBy: { numero: 'asc' } },
       },
     })
 
@@ -314,11 +338,20 @@ export async function createMarcheFromOpportunite(
       return { success: false, error: 'Opportunité introuvable.' }
     }
 
+    if (opportunite.marcheId) {
+      return { success: false, error: 'Un marché est déjà lié à cette opportunité.' }
+    }
+
     if (opportunite.statut !== 'GAGNEE') {
       return {
         success: false,
         error: 'Seule une opportunité en statut GAGNÉE peut générer un marché.',
       }
+    }
+
+    const depuisLots = preparerMarcheDepuisLots(opportunite.objet, opportunite.lots)
+    if (!depuisLots) {
+      return { success: false, error: "Aucun lot gagné : le marché ne peut pas être créé." }
     }
 
     // 2. Générer un numéro de marché temporaire unique
@@ -330,9 +363,9 @@ export async function createMarcheFromOpportunite(
       const newMarche = await tx.marche.create({
         data: {
           numero:                  numeroTemp,
-          objet:                   opportunite.objet,
+          objet:                   depuisLots.objet,
           type:                    'FOURNITURES',
-          montant:                 opportunite.montantEstime ?? 0,
+          montant:                 depuisLots.montant,
           dateNotification:        new Date(),
           delaiExecution:          0,
           statut:                  'ATTRIBUE_DEFINITIVEMENT' as StatutMarche,

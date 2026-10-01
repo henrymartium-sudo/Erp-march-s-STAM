@@ -9,6 +9,7 @@ import {
   isTransitionValidOpportunite,
   COMMENTAIRE_OBLIGATOIRE_OPPORTUNITE,
 } from '@/lib/utils/workflow-statuts-opportunite'
+import { STATUTS_PILOTES_PAR_LOTS, lotsSansMontantPropose, messageMontantsLotsManquants } from '@/lib/utils/lots'
 import { STATUT_OPPORTUNITE_LABELS } from '@/lib/validations/opportunite'
 import { logAction } from '@/lib/audit/logAction'
 import { AUDIT_ACTION, AUDIT_ENTITY } from '@/lib/audit/constants'
@@ -19,13 +20,6 @@ const changerStatutOpportuniteSchema = z.object({
   opportuniteId:          z.string().min(1),
   newStatut:              z.nativeEnum(StatutOpportunite),
   commentaire:            z.string().optional(),
-  // Champs optionnels si newStatut === 'PERDUE'
-  motifPerte:             z.string().optional().nullable(),
-  concurrentGagnant:      z.string().max(200).optional().nullable(),
-  montantOffreConcurrent: z.preprocess(
-    (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
-    z.number().positive().max(999999999999999).optional().nullable()
-  ),
   // Champs optionnels si newStatut === 'OFFRE_SOUMISE' (MOD-6)
   periodeValiditeDebut:    z.preprocess(
     (val) => (val === '' || val === null || val === undefined ? undefined : new Date(val as string)),
@@ -63,9 +57,6 @@ export async function changerStatutOpportunite(
       opportuniteId,
       newStatut,
       commentaire,
-      motifPerte,
-      concurrentGagnant,
-      montantOffreConcurrent,
       periodeValiditeDebut,
       periodeValiditeFin,
       echeanceAttributionProv,
@@ -89,6 +80,23 @@ export async function changerStatutOpportunite(
       }
     }
 
+    // Statuts désormais pilotés par les résultats des lots (les opportunités sans lot — cas
+    // impossible après reprise — gardent l'ancien comportement).
+    if (STATUTS_PILOTES_PAR_LOTS.includes(newStatut) && newStatut !== opportunite.statut) {
+      const nbLots = await prisma.lot.count({ where: { opportuniteId } })
+      if (nbLots > 0) {
+        return { success: false, error: 'Après attribution, le statut se déduit des résultats saisis sur chaque lot.' }
+      }
+    }
+
+    // Pas d'offre sans prix : chaque lot doit porter un montant proposé avant la soumission. Les opportunités sans lot
+    // (cas impossible après reprise) gardent l'ancien comportement.
+    if (newStatut === 'OFFRE_SOUMISE' && newStatut !== opportunite.statut) {
+      const lots = await prisma.lot.findMany({ where: { opportuniteId }, select: { numero: true, montantPropose: true } })
+      const sansMontant = lotsSansMontantPropose(lots)
+      if (sansMontant.length > 0) return { success: false, error: messageMontantsLotsManquants(sansMontant) }
+    }
+
     // 3. Commentaire obligatoire pour NO_GO et PERDUE
     if (
       COMMENTAIRE_OBLIGATOIRE_OPPORTUNITE.includes(newStatut) &&
@@ -102,11 +110,6 @@ export async function changerStatutOpportunite(
 
     // 4. Mise à jour
     const updateData: Record<string, unknown> = { statut: newStatut }
-    if (newStatut === 'PERDUE') {
-      updateData.motifPerte = motifPerte ?? null
-      updateData.concurrentGagnant = concurrentGagnant ?? null
-      updateData.montantOffreConcurrent = montantOffreConcurrent ?? null
-    }
     if (newStatut === 'OFFRE_SOUMISE') {
       updateData.periodeValiditeDebut = periodeValiditeDebut ?? null
       updateData.periodeValiditeFin = periodeValiditeFin ?? null
@@ -115,38 +118,43 @@ export async function changerStatutOpportunite(
       updateData.echeanceAttributionProv = echeanceAttributionProv ?? null
     }
 
-    await prisma.opportunite.update({
-      where: { id: opportuniteId },
-      data: updateData,
-    })
-
-    // 5. Auto-création DossierOffre si transition vers DOSSIER_EN_PREPARATION
-    if (newStatut === 'DOSSIER_EN_PREPARATION') {
-      const existingDossier = await prisma.dossierOffre.findFirst({
-        where: { opportuniteId },
+    // 5. Mise à jour du statut, et auto-création d'un dossier par lot + pièces communes si
+    //    transition vers DOSSIER_EN_PREPARATION — dans une seule transaction pour ne jamais
+    //    laisser l'opportunité passée en DOSSIER_EN_PREPARATION sans ses dossiers/pièces.
+    await prisma.$transaction(async (tx) => {
+      await tx.opportunite.update({
+        where: { id: opportuniteId },
+        data: updateData,
       })
 
-      if (!existingDossier) {
-        await prisma.dossierOffre.create({
+      if (newStatut !== 'DOSSIER_EN_PREPARATION') return
+
+      let lots = await tx.lot.findMany({ where: { opportuniteId }, include: { dossier: true }, orderBy: { numero: 'asc' } })
+      if (lots.length === 0) {
+        const lot = await tx.lot.create({ data: { opportuniteId, numero: 1, intitule: 'Lot unique' } })
+        lots = [{ ...lot, dossier: null }]
+      }
+      const piecesLot = CHECKLIST_STANDARD.filter((p) => p.portee === 'LOT')
+      for (const lot of lots) {
+        if (lot.dossier) continue
+        await tx.dossierOffre.create({
           data: {
-            titre: `Dossier — ${opportunite.objet}`,
+            titre: `Dossier — ${opportunite.objet} — Lot ${lot.numero}`,
             opportuniteId,
-            statut: 'EN_COURS',
-            progression: 0,
-            pieces: {
-              create: CHECKLIST_STANDARD.map((p) => ({
-                nom:         p.nom,
-                description: p.description,
-                obligatoire: p.obligatoire,
-                ordre:       p.ordre,
-                statut:      'ABSENT' as const,
-              })),
-            },
+            lotId: lot.id,
+            pieces: { create: piecesLot.map(({ nom, description, obligatoire, ordre }) => ({ nom, description, obligatoire, ordre, statut: 'ABSENT' as const })) },
           },
         })
-        revalidatePath('/dossiers-offre')
       }
-    }
+      const nbCommunes = await tx.pieceOffre.count({ where: { opportuniteId } })
+      if (nbCommunes === 0) {
+        await tx.pieceOffre.createMany({
+          data: CHECKLIST_STANDARD.filter((p) => p.portee === 'COMMUNE').map(({ nom, description, obligatoire, ordre }) => ({
+            opportuniteId, nom, description, obligatoire, ordre, statut: 'ABSENT' as const,
+          })),
+        })
+      }
+    }, { maxWait: 10000, timeout: 20000 })
 
     // 6. Audit log
     await logAction({

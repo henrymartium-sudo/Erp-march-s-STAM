@@ -637,6 +637,8 @@ model Opportunite {
   updatedAt              DateTime          @updatedAt
 
   dossiers               DossierOffre[]
+  lots                   Lot[]
+  piecesCommunes         PieceOffre[]      @relation("PiecesCommunes")
   // Marchés créés depuis cette opportunité (relation inverse MarcheOpportunite)
   marches                Marche[]          @relation("MarcheOpportunite")
 
@@ -657,6 +659,35 @@ enum StatutPiece {
   VALIDE
 }
 
+enum ResultatLot {
+  EN_COURS
+  ATTRIBUE_PROVISOIREMENT
+  GAGNE
+  PERDU
+  INFRUCTUEUX
+}
+
+model Lot {
+  id                     String        @id @default(cuid())
+  opportuniteId          String
+  opportunite            Opportunite   @relation(fields: [opportuniteId], references: [id], onDelete: Cascade)
+  numero                 Int
+  intitule               String
+  montantEstime          Decimal?      @db.Decimal(15, 2)
+  montantPropose         Decimal?      @db.Decimal(15, 2)
+  resultat               ResultatLot   @default(EN_COURS)
+  motifPerte             String?       @db.Text
+  concurrentGagnant      String?
+  montantOffreConcurrent Decimal?      @db.Decimal(15, 2)
+  dossier                DossierOffre?
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  @@unique([opportuniteId, numero])
+  @@index([opportuniteId])
+  @@map("lots")
+}
+
 model DossierOffre {
   id            String       @id @default(cuid())
   titre         String
@@ -669,6 +700,8 @@ model DossierOffre {
   pieces        PieceOffre[]
   opportunite   Opportunite? @relation(fields: [opportuniteId], references: [id], onDelete: SetNull)
   marche        Marche?      @relation(fields: [marcheId], references: [id], onDelete: SetNull)
+  lotId         String?      @unique
+  lot           Lot?         @relation(fields: [lotId], references: [id], onDelete: Cascade)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -678,17 +711,20 @@ model DossierOffre {
 }
 
 model PieceOffre {
-  id          String       @id @default(cuid())
-  dossierId   String
-  dossier     DossierOffre @relation(fields: [dossierId], references: [id], onDelete: Cascade)
-  nom         String
-  description String?
-  statut      StatutPiece  @default(ABSENT)
-  obligatoire Boolean      @default(true)
-  ordre       Int          @default(0)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id            String        @id @default(cuid())
+  dossierId     String?
+  dossier       DossierOffre? @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  opportuniteId String?
+  opportunite   Opportunite?  @relation("PiecesCommunes", fields: [opportuniteId], references: [id], onDelete: Cascade)
+  nom           String
+  description   String?
+  statut        StatutPiece   @default(ABSENT)
+  obligatoire   Boolean       @default(true)
+  ordre         Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   @@index([dossierId])
+  @@index([opportuniteId])
   @@map("pieces_offre")
 }

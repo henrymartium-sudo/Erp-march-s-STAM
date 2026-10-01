@@ -6,6 +6,7 @@ import type { Periode, PerformanceStats, FinancialStats, CapitalisationStats, SA
 import { STATUT_LABELS, TYPE_MARCHE_LABELS } from '@/lib/constants/marche'
 import { STATUT_OPPORTUNITE_LABELS } from '@/lib/validations/opportunite'
 import { StatutMarche, StatutFacture, StatutOpportunite } from '@prisma/client'
+import { totalMontantPropose, calculerStatsResultatsLots } from '@/lib/utils/lots'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
@@ -441,7 +442,7 @@ export async function getOpportunitesStats(periode: Periode): Promise<Opportunit
     by: ['statut'],
     where,
     _count: { id: true },
-    _sum: { montantEstime: true, montantPropose: true },
+    _sum: { montantEstime: true },
     orderBy: { _count: { id: 'desc' } },
   })
 
@@ -449,7 +450,13 @@ export async function getOpportunitesStats(periode: Periode): Promise<Opportunit
   const aggregate = await prisma.opportunite.aggregate({
     where,
     _count: { id: true },
-    _sum: { montantEstime: true, montantPropose: true },
+    _sum: { montantEstime: true },
+  })
+
+  // 2 bis. Lots des opportunités de la période (montants proposés et résultats)
+  const lots = await prisma.lot.findMany({
+    where: { opportunite: where },
+    select: { resultat: true, montantPropose: true, opportunite: { select: { statut: true } } },
   })
 
   // 3. Top 10 AC par nombre d'opportunités (avec montant estimé)
@@ -549,14 +556,16 @@ export async function getOpportunitesStats(periode: Periode): Promise<Opportunit
       totalOpportunites > 0 ? Math.round((totalGagnees / totalOpportunites) * 100) : 0,
     tauxGainGlobal,
     montantEstimeTotal: Number(aggregate._sum.montantEstime ?? 0),
-    montantProposeTotal: Number(aggregate._sum.montantPropose ?? 0),
+    montantProposeTotal: totalMontantPropose(lots) ?? 0,
     parStatut: parStatutRaw.map((s) => ({
       statut: s.statut,
       label: STATUT_OPPORTUNITE_LABELS[s.statut] ?? s.statut,
       count: s._count.id,
       montantEstime: Number(s._sum.montantEstime ?? 0),
-      montantPropose: Number(s._sum.montantPropose ?? 0),
+      montantPropose:
+        totalMontantPropose(lots.filter((l) => l.opportunite.statut === s.statut)) ?? 0,
     })),
+    lots: calculerStatsResultatsLots(lots.map((l) => l.resultat)),
     topAC: topACRaw.map((ac) => ({
       nom: ac.autoriteContractante,
       count: ac._count.id,

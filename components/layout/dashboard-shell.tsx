@@ -22,7 +22,6 @@ import {
   BarChart2,
   Receipt,
   Target,
-  FolderCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -58,7 +57,6 @@ const navItems = [
   { href: '/vehicules/sav',         label: 'SAV',          icon: Wrench },
   { href: '/factures',              label: 'Facturation',  icon: Receipt },
   { href: '/opportunites',          label: 'Opportunités',    icon: Target },
-  { href: '/dossiers-offre',        label: "Dossiers d'offre", icon: FolderCheck },
   { href: '/documents',             label: 'Documents',        icon: FolderOpen },
   { href: '/admin/alertes',         label: 'Alertes',      icon: Bell },
   { href: '/admin/utilisateurs',    label: 'Utilisateurs', icon: Users, roles: ['ADMIN'] },
@@ -74,7 +72,6 @@ const pageTitles: Record<string, string> = {
   '/vehicules/sav':      'SAV — Vue globale',
   '/factures':           'Facturation',
   '/opportunites':       'Opportunités',
-  '/dossiers-offre':     "Dossiers d'offre",
   '/documents':          'Documents',
   '/admin/alertes':      'Alertes & Notifications',
   '/admin/utilisateurs': 'Gestion des utilisateurs',

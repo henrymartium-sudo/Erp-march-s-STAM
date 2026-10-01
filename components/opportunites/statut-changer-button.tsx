@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { StatutOpportunite } from '@prisma/client'
 import { ArrowLeftRight, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -27,6 +28,7 @@ import {
   getAvailableStatutsOpportunite,
   COMMENTAIRE_OBLIGATOIRE_OPPORTUNITE,
 } from '@/lib/utils/workflow-statuts-opportunite'
+import { STATUTS_PILOTES_PAR_LOTS } from '@/lib/utils/lots'
 import {
   STATUT_OPPORTUNITE_LABELS,
   STATUT_OPPORTUNITE_COLORS,
@@ -37,20 +39,19 @@ import { toast } from '@/lib/utils/toast'
 interface StatutChangerOpportuniteButtonProps {
   opportuniteId: string
   currentStatut: StatutOpportunite
+  nbLots: number
   onStatutChanged?: (newStatut: StatutOpportunite) => void
 }
 
 export function StatutChangerOpportuniteButton({
   opportuniteId,
   currentStatut,
+  nbLots,
   onStatutChanged,
 }: StatutChangerOpportuniteButtonProps) {
   const [open, setOpen] = useState(false)
   const [selectedStatut, setSelectedStatut] = useState<StatutOpportunite | ''>('')
   const [commentaire, setCommentaire] = useState('')
-  const [motifPerte, setMotifPerte] = useState('')
-  const [concurrentGagnant, setConcurrentGagnant] = useState('')
-  const [montantConcurrent, setMontantConcurrent] = useState('')
   // MOD-6 — période de validité offre
   const [periodeValiditeDebut, setPeriodeValiditeDebut] = useState('')
   const [periodeValiditeFin, setPeriodeValiditeFin] = useState('')
@@ -58,15 +59,20 @@ export function StatutChangerOpportuniteButton({
   const [echeanceAttributionProv, setEcheanceAttributionProv] = useState('')
   const [isPending, startTransition] = useTransition()
 
-  const availableStatuts = getAvailableStatutsOpportunite(currentStatut).filter(
+  const transitions = getAvailableStatutsOpportunite(currentStatut).filter(
     (s) => s !== currentStatut
   )
+  // Avec des lots, l'attribution et son résultat se déduisent des résultats saisis par lot :
+  // ces statuts ne se choisissent plus ici, un lien renvoie vers la saisie par lot.
+  const availableStatuts =
+    nbLots > 0 ? transitions.filter((s) => !STATUTS_PILOTES_PAR_LOTS.includes(s)) : transitions
+  const lienResultatsParLot = availableStatuts.length < transitions.length
+  const peutChoisirStatut = availableStatuts.length > 0
 
   const needsComment =
     selectedStatut !== '' &&
     COMMENTAIRE_OBLIGATOIRE_OPPORTUNITE.includes(selectedStatut as StatutOpportunite)
 
-  const isPerdue = selectedStatut === 'PERDUE'
   const isOffreSoumise = selectedStatut === 'OFFRE_SOUMISE'
   const isAttributionProv = selectedStatut === 'ATTRIBUE_PROVISOIREMENT'
 
@@ -74,9 +80,6 @@ export function StatutChangerOpportuniteButton({
     setOpen(false)
     setSelectedStatut('')
     setCommentaire('')
-    setMotifPerte('')
-    setConcurrentGagnant('')
-    setMontantConcurrent('')
     setPeriodeValiditeDebut('')
     setPeriodeValiditeFin('')
     setEcheanceAttributionProv('')
@@ -95,11 +98,6 @@ export function StatutChangerOpportuniteButton({
         opportuniteId,
         newStatut: selectedStatut,
         commentaire: commentaire.trim() || undefined,
-        motifPerte: isPerdue ? motifPerte.trim() || null : null,
-        concurrentGagnant: isPerdue ? concurrentGagnant.trim() || null : null,
-        montantOffreConcurrent: isPerdue && montantConcurrent
-          ? parseFloat(montantConcurrent)
-          : null,
         periodeValiditeDebut: isOffreSoumise && periodeValiditeDebut
           ? periodeValiditeDebut
           : null,
@@ -127,7 +125,7 @@ export function StatutChangerOpportuniteButton({
         variant="outline"
         size="sm"
         onClick={() => setOpen(true)}
-        disabled={availableStatuts.length === 0}
+        disabled={!peutChoisirStatut && !lienResultatsParLot}
       >
         <ArrowLeftRight className="h-4 w-4 mr-1.5" />
         Statut
@@ -138,7 +136,9 @@ export function StatutChangerOpportuniteButton({
           <SheetHeader>
             <SheetTitle>Changer le statut</SheetTitle>
             <SheetDescription>
-              Sélectionnez le nouveau statut de l&apos;opportunité.
+              {peutChoisirStatut
+                ? "Sélectionnez le nouveau statut de l'opportunité."
+                : 'Après attribution, le statut se déduit des résultats saisis sur chaque lot.'}
             </SheetDescription>
           </SheetHeader>
 
@@ -152,24 +152,37 @@ export function StatutChangerOpportuniteButton({
             </div>
 
             {/* Select nouveau statut */}
-            <div className="space-y-1.5">
-              <Label htmlFor="new-statut">Nouveau statut *</Label>
-              <Select
-                value={selectedStatut}
-                onValueChange={(v) => setSelectedStatut(v as StatutOpportunite)}
+            {peutChoisirStatut && (
+              <div className="space-y-1.5">
+                <Label htmlFor="new-statut">Nouveau statut *</Label>
+                <Select
+                  value={selectedStatut}
+                  onValueChange={(v) => setSelectedStatut(v as StatutOpportunite)}
+                >
+                  <SelectTrigger id="new-statut">
+                    <SelectValue placeholder="Choisir un statut..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableStatuts.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {STATUT_OPPORTUNITE_LABELS[s]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Statuts pilotés par les lots : renvoi vers la saisie des résultats par lot */}
+            {lienResultatsParLot && (
+              <Link
+                href={`/opportunites/${opportuniteId}?onglet=lots`}
+                onClick={handleClose}
+                className="inline-block text-sm font-medium text-primary hover:underline"
               >
-                <SelectTrigger id="new-statut">
-                  <SelectValue placeholder="Choisir un statut..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableStatuts.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {STATUT_OPPORTUNITE_LABELS[s]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                Saisir les résultats par lot
+              </Link>
+            )}
 
             {/* Commentaire */}
             {selectedStatut && (
@@ -188,44 +201,6 @@ export function StatutChangerOpportuniteButton({
                   }
                   rows={3}
                 />
-              </div>
-            )}
-
-            {/* Champs spécifiques PERDUE */}
-            {isPerdue && (
-              <div className="space-y-3 border rounded-md p-3 bg-muted/30">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Informations sur la perte (optionnel)
-                </p>
-                <div className="space-y-1.5">
-                  <Label htmlFor="motif-perte">Motif de la perte</Label>
-                  <Textarea
-                    id="motif-perte"
-                    value={motifPerte}
-                    onChange={(e) => setMotifPerte(e.target.value)}
-                    placeholder="Prix trop élevé, délai non respecté..."
-                    rows={2}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="concurrent">Concurrent retenu</Label>
-                  <Input
-                    id="concurrent"
-                    value={concurrentGagnant}
-                    onChange={(e) => setConcurrentGagnant(e.target.value)}
-                    placeholder="Nom de l'entreprise gagnante"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="montant-concurrent">Montant de l&apos;offre concurrente (XOF)</Label>
-                  <Input
-                    id="montant-concurrent"
-                    type="number"
-                    value={montantConcurrent}
-                    onChange={(e) => setMontantConcurrent(e.target.value)}
-                    placeholder="45000000"
-                  />
-                </div>
               </div>
             )}
 
@@ -279,13 +254,15 @@ export function StatutChangerOpportuniteButton({
             <Button variant="outline" onClick={handleClose} disabled={isPending}>
               Annuler
             </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={!selectedStatut || isPending}
-            >
-              {isPending && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
-              Confirmer
-            </Button>
+            {peutChoisirStatut && (
+              <Button
+                onClick={handleSubmit}
+                disabled={!selectedStatut || isPending}
+              >
+                {isPending && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+                Confirmer
+              </Button>
+            )}
           </SheetFooter>
         </SheetContent>
       </Sheet>

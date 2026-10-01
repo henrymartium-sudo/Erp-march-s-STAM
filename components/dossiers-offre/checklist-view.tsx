@@ -1,14 +1,22 @@
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { PieceStatutButton } from './piece-statut-button'
+import { PieceStatutButton, type PieceStatutUpdater } from './piece-statut-button'
 import { CheckCircle2, AlertCircle, Clock, Circle } from 'lucide-react'
-import type { PieceOffre } from '@prisma/client'
+import { piecesModifiables } from '@/lib/utils/lots'
+import type { PieceOffre, StatutOpportunite } from '@prisma/client'
 
 interface ChecklistViewProps {
   pieces: PieceOffre[]
   progression: number
   canWrite: boolean
+  statutOpportunite?: StatutOpportunite | null
+  /** Titre de la carte. */
+  titre?: string
+  /** Message affiché quand la liste de pièces est vide. */
+  messageVide?: string
+  /** Action de mise à jour du statut d'une pièce ; par défaut, celle des pièces d'un dossier. */
+  onUpdate?: PieceStatutUpdater
 }
 
 const ICONE: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -25,7 +33,16 @@ const ICONE_COLOR: Record<string, string> = {
   VALIDE:    'text-green-500',
 }
 
-export function ChecklistView({ pieces, progression, canWrite }: ChecklistViewProps) {
+export function ChecklistView({
+  pieces,
+  progression,
+  canWrite,
+  statutOpportunite,
+  titre = 'Pièces du dossier',
+  messageVide = 'Aucune pièce dans ce dossier.',
+  onUpdate,
+}: ChecklistViewProps) {
+  const modifiable = statutOpportunite ? piecesModifiables(statutOpportunite) : true
   const nbDone   = pieces.filter((p) => p.statut === 'COMPLET' || p.statut === 'VALIDE').length
   const obligNonDone = pieces.filter(
     (p) => p.obligatoire && p.statut !== 'COMPLET' && p.statut !== 'VALIDE'
@@ -35,7 +52,7 @@ export function ChecklistView({ pieces, progression, canWrite }: ChecklistViewPr
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Pièces du dossier</CardTitle>
+          <CardTitle className="text-base">{titre}</CardTitle>
           <div className="flex items-center gap-2">
             {obligNonDone > 0 && (
               <Badge variant="danger" className="text-xs">
@@ -56,7 +73,7 @@ export function ChecklistView({ pieces, progression, canWrite }: ChecklistViewPr
       <CardContent>
         {pieces.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">
-            Aucune pièce dans ce dossier.
+            {messageVide}
           </p>
         ) : (
           <div className="space-y-1">
@@ -88,6 +105,8 @@ export function ChecklistView({ pieces, progression, canWrite }: ChecklistViewPr
                       pieceId={piece.id}
                       statut={piece.statut}
                       canWrite={canWrite}
+                      disabled={!modifiable}
+                      onUpdate={onUpdate}
                     />
                   </div>
                 </div>

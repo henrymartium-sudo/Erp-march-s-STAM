@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -7,7 +8,11 @@ import { BreadcrumbNav } from '@/components/shared/breadcrumb-nav'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { OpportuniteDeleteButton } from '@/components/opportunites/opportunite-delete-button'
 import { OpportuniteDetailActions } from '@/components/opportunites/opportunite-detail-actions'
+import { OpportuniteTabs } from '@/components/opportunites/opportunite-tabs'
+import { LotsSection } from '@/components/opportunites/lots-section'
+import { PiecesCommunes } from '@/components/opportunites/pieces-communes'
 import { getOpportunite } from '@/lib/actions/opportunites'
+import { calculerTotauxLots } from '@/lib/utils/lots'
 import { requireAuth, canWrite } from '@/lib/utils/permissions'
 import {
   STATUT_OPPORTUNITE_LABELS,
@@ -46,6 +51,7 @@ export default async function OpportuniteDetailPage({ params }: PageProps) {
   }
 
   const opp = result.data
+  const totauxLots = calculerTotauxLots(opp.lots)
 
   return (
     <div className="space-y-6">
@@ -68,9 +74,12 @@ export default async function OpportuniteDetailPage({ params }: PageProps) {
                   Modifier
                 </Link>
               </Button>
+              {/* key : le composant garde le statut en état local ; on le remonte quand le serveur le change (résultat de lot) */}
               <OpportuniteDetailActions
+                key={opp.statut}
                 opportuniteId={opp.id}
                 currentStatut={opp.statut}
+                nbLots={opp.lots.length}
                 hasMarcheLinked={!!opp.marche}
                 canWrite={userCanWrite}
               />
@@ -80,132 +89,141 @@ export default async function OpportuniteDetailPage({ params }: PageProps) {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Informations générales</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Statut</span>
-              <Badge variant={STATUT_OPPORTUNITE_COLORS[opp.statut] as 'success' | 'warning' | 'danger' | 'info' | 'muted'}>
-                {STATUT_OPPORTUNITE_LABELS[opp.statut]}
-              </Badge>
-            </div>
-            {opp.reference && (
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Référence</span>
-                <span className="text-sm font-medium">{opp.reference}</span>
-              </div>
-            )}
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Montant estimé</span>
-              <span className="text-sm font-medium">{formatMontant(opp.montantEstime)}</span>
-            </div>
-            {opp.montantPropose != null && ['OFFRE_SOUMISE', 'EN_ATTENTE_ATTRIBUTION', 'ATTRIBUE_PROVISOIREMENT', 'GAGNEE', 'PERDUE'].includes(opp.statut) && (
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Montant proposé</span>
-                <span className="text-sm font-semibold">{formatMontant(opp.montantPropose)}</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      <Suspense fallback={null}>
+        <OpportuniteTabs
+          nbLots={opp.lots.length}
+          infos={
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Informations générales</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Statut</span>
+                      <Badge variant={STATUT_OPPORTUNITE_COLORS[opp.statut] as 'success' | 'warning' | 'danger' | 'info' | 'muted'}>
+                        {STATUT_OPPORTUNITE_LABELS[opp.statut]}
+                      </Badge>
+                    </div>
+                    {opp.reference && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Référence</span>
+                        <span className="text-sm font-medium">{opp.reference}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Montant estimé</span>
+                      <span className="text-sm font-medium">{formatMontant(opp.montantEstime)}</span>
+                    </div>
+                  </CardContent>
+                </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Dates clés</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Date de publication</span>
-              <span className="text-sm">{formatDate(opp.datePublication)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Date limite de dépôt</span>
-              <span className="text-sm">{formatDate(opp.dateLimite)}</span>
-            </div>
-            {/* MOD-6 — période de validité offre */}
-            {(opp as unknown as { periodeValiditeDebut?: Date | null }).periodeValiditeDebut && (
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Début validité offre</span>
-                <span className="text-sm">{formatDate((opp as unknown as { periodeValiditeDebut: Date }).periodeValiditeDebut)}</span>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Dates clés</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Date de publication</span>
+                      <span className="text-sm">{formatDate(opp.datePublication)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Date limite de dépôt</span>
+                      <span className="text-sm">{formatDate(opp.dateLimite)}</span>
+                    </div>
+                    {/* MOD-6 — période de validité offre */}
+                    {(opp as unknown as { periodeValiditeDebut?: Date | null }).periodeValiditeDebut && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Début validité offre</span>
+                        <span className="text-sm">{formatDate((opp as unknown as { periodeValiditeDebut: Date }).periodeValiditeDebut)}</span>
+                      </div>
+                    )}
+                    {(opp as unknown as { periodeValiditeFin?: Date | null }).periodeValiditeFin && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Fin validité offre</span>
+                        <span className="text-sm">{formatDate((opp as unknown as { periodeValiditeFin: Date }).periodeValiditeFin)}</span>
+                      </div>
+                    )}
+                    {/* MOD-7 — échéance attribution provisoire */}
+                    {(opp as unknown as { echeanceAttributionProv?: Date | null }).echeanceAttributionProv && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Échéance attribution prov.</span>
+                        <span className="text-sm">{formatDate((opp as unknown as { echeanceAttributionProv: Date }).echeanceAttributionProv)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Marché lié</span>
+                      <span className="text-sm">
+                        {opp.marche ? (
+                          <Link href={`/marches/${opp.marche.id}`} className="text-primary hover:underline">
+                            {opp.marche.numero}
+                          </Link>
+                        ) : '—'}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-            )}
-            {(opp as unknown as { periodeValiditeFin?: Date | null }).periodeValiditeFin && (
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Fin validité offre</span>
-                <span className="text-sm">{formatDate((opp as unknown as { periodeValiditeFin: Date }).periodeValiditeFin)}</span>
-              </div>
-            )}
-            {/* MOD-7 — échéance attribution provisoire */}
-            {(opp as unknown as { echeanceAttributionProv?: Date | null }).echeanceAttributionProv && (
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Échéance attribution prov.</span>
-                <span className="text-sm">{formatDate((opp as unknown as { echeanceAttributionProv: Date }).echeanceAttributionProv)}</span>
-              </div>
-            )}
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Marché lié</span>
-              <span className="text-sm">
-                {opp.marche ? (
-                  <Link href={`/marches/${opp.marche.id}`} className="text-primary hover:underline">
-                    {opp.marche.numero}
-                  </Link>
-                ) : '—'}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
-      {opp.notes && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Notes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm whitespace-pre-wrap">{opp.notes}</p>
-          </CardContent>
-        </Card>
-      )}
+              {/* Agrégats des lots — remplace l'ancien affichage du résultat au niveau opportunité */}
+              {opp.lots.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Lots</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Nombre de lots</span>
+                      <span className="text-sm font-medium">{opp.lots.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Lots gagnés</span>
+                      <span className="text-sm font-medium">
+                        {totauxLots.nbGagnes} / {totauxLots.nbLots}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Montant total estimé</span>
+                      <span className="text-sm font-medium">{formatMontant(totauxLots.totalEstime)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Montant total proposé</span>
+                      <span className="text-sm font-semibold">{formatMontant(totauxLots.totalPropose)}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
-      {/* Informations sur la perte — visible uniquement si statut PERDUE et données renseignées */}
-      {opp.statut === 'PERDUE' && (
-        (opp as unknown as { motifPerte?: string | null }).motifPerte ||
-        (opp as unknown as { concurrentGagnant?: string | null }).concurrentGagnant
-      ) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Informations sur la perte</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {(opp as unknown as { motifPerte?: string | null }).motifPerte && (
-              <div>
-                <span className="text-sm text-muted-foreground block mb-1">Motif</span>
-                <p className="text-sm whitespace-pre-wrap">
-                  {(opp as unknown as { motifPerte: string }).motifPerte}
-                </p>
-              </div>
-            )}
-            {(opp as unknown as { concurrentGagnant?: string | null }).concurrentGagnant && (
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Concurrent retenu</span>
-                <span className="text-sm font-medium">
-                  {(opp as unknown as { concurrentGagnant: string }).concurrentGagnant}
-                </span>
-              </div>
-            )}
-            {(opp as unknown as { montantOffreConcurrent?: unknown }).montantOffreConcurrent != null && (
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Montant offre concurrente</span>
-                <span className="text-sm font-medium">
-                  {formatMontant((opp as unknown as { montantOffreConcurrent: unknown }).montantOffreConcurrent)}
-                </span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+              {opp.notes && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Notes</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm whitespace-pre-wrap">{opp.notes}</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          }
+          lots={
+            <LotsSection
+              opportuniteId={opp.id}
+              statutOpportunite={opp.statut}
+              lots={opp.lots}
+              canWrite={userCanWrite}
+            />
+          }
+          pieces={
+            <PiecesCommunes
+              pieces={opp.piecesCommunes}
+              canWrite={userCanWrite}
+              statutOpportunite={opp.statut}
+            />
+          }
+        />
+      </Suspense>
     </div>
   )
 }

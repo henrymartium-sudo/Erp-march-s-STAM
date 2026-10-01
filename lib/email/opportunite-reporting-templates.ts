@@ -7,17 +7,12 @@
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { formatMontant } from "@/lib/utils/format"
+import { calculerAvancementLots, totalMontantPropose } from "@/lib/utils/lots"
 import { STATUT_OPPORTUNITE_LABELS } from "@/lib/validations/opportunite"
 
 // ============================================================
 // TYPES
 // ============================================================
-
-interface DossierInfo {
-  id: string
-  progression: number
-  statut: string
-}
 
 export interface OpportuniteForReporting {
   id: string
@@ -26,13 +21,12 @@ export interface OpportuniteForReporting {
   autoriteContractante: string
   statut: string
   montantEstime: unknown
-  montantPropose: unknown
+  lots: { montantPropose: unknown; dossier: { progression: number } | null }[]
   dateLimite: Date | null
   periodeValiditeDebut: Date | null
   periodeValiditeFin: Date | null
   echeanceAttributionProv: Date | null
   notes: string | null
-  dossiers: DossierInfo[]
 }
 
 // ============================================================
@@ -120,9 +114,9 @@ function buildRow(opp: OpportuniteForReporting, today: Date, rowIndex: number): 
   const isTerminal = statut === "NO_GO" || statut === "PERDUE"
   const borderLeft = isTerminal ? "#d1d5db" : NAVY
 
-  const dossier = opp.dossiers[0]
-  const dossierStr = dossier
-    ? `✅ ${dossier.progression}%`
+  const { progressionMoyenne } = calculerAvancementLots(opp.lots)
+  const dossierStr = progressionMoyenne !== null
+    ? `✅ ${progressionMoyenne}%`
     : "—"
 
   const notesStr = opp.notes ?? "—"
@@ -141,7 +135,7 @@ function buildRow(opp: OpportuniteForReporting, today: Date, rowIndex: number): 
     ${td(opp.autoriteContractante,  { width: 120, bg: rowBg })}
     ${td(STATUT_OPPORTUNITE_LABELS[statut] ?? statut, { width: 100, bg: rowBg, nowrap: true })}
     ${td(montantStr(opp.montantEstime),  { width: 90, align: "right", bg: rowBg, nowrap: true })}
-    ${td(montantStr(opp.montantPropose), { width: 90, align: "right", bg: rowBg, nowrap: true })}
+    ${td(montantStr(totalMontantPropose(opp.lots)), { width: 90, align: "right", bg: rowBg, nowrap: true })}
     ${td(formatDate(opp.dateLimite),    { width: 72, align: "center", bg: rowBg, nowrap: true })}
     ${td(dateLimiteLabel,               { width: 72, align: "center", bg: rowBg, bold: true, color: dateLimiteColor, nowrap: true })}
     ${td(
@@ -287,7 +281,7 @@ export function buildOpportuniteReportingEmail(
   for (const opp of opportunites) {
     textLines.push(
       `- [${opp.reference ?? "—"}] ${opp.objet} | ${STATUT_OPPORTUNITE_LABELS[opp.statut] ?? opp.statut} | ` +
-      `Estimé: ${montantStr(opp.montantEstime)} | Proposé: ${montantStr(opp.montantPropose)} | ` +
+      `Estimé: ${montantStr(opp.montantEstime)} | Proposé: ${montantStr(totalMontantPropose(opp.lots))} | ` +
       `Date limite: ${formatDate(opp.dateLimite)}`
     )
   }

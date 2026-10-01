@@ -18,6 +18,9 @@ export const statutOpportuniteEnum = z.enum([
 
 export type StatutOpportuniteInput = z.infer<typeof statutOpportuniteEnum>
 
+// À la création, seuls les statuts d'analyse sont permis : les suivants passent par changerStatutOpportunite (transitions, lots, dossiers).
+export const STATUTS_CREATION = ['EN_ANALYSE', 'GO', 'NO_GO'] as const satisfies readonly StatutOpportuniteInput[]
+
 // ============================================================================
 // LABELS ET COULEURS
 // ============================================================================
@@ -61,6 +64,9 @@ const preprocessDate = (val: unknown) => {
 // SCHÉMAS
 // ============================================================================
 
+// Le montant proposé, le résultat et les informations de perte (motif, concurrent) se saisissent par lot :
+// voir lib/validations/lot.ts.
+
 // Pour react-hook-form (dates en tant que Date | null)
 export const formOpportuniteSchema = z.object({
   reference:              z.string().max(100).optional().nullable(),
@@ -69,14 +75,10 @@ export const formOpportuniteSchema = z.object({
   montantEstime:          z.number().positive('Le montant estimé doit être positif').max(999999999999999).optional().nullable(),
   datePublication:        z.date().optional().nullable(),
   dateLimite:             z.date().optional().nullable(),
+  echeanceAttributionProv: z.date().optional().nullable(),
   statut:                 statutOpportuniteEnum,
-  montantPropose:         z.number().positive().nullable().optional(),
   notes:                  z.string().optional().nullable(),
   marcheId:               z.string().optional().nullable(),
-  // Champs PERDUE
-  motifPerte:             z.string().optional().nullable(),
-  concurrentGagnant:      z.string().max(200).optional().nullable(),
-  montantOffreConcurrent: z.number().positive().max(999999999999999).optional().nullable(),
 })
 
 export type FormOpportuniteInput = z.infer<typeof formOpportuniteSchema>
@@ -105,29 +107,24 @@ export const createOpportuniteSchema = z.object({
   datePublication: z.preprocess(preprocessDate, z.date().optional().nullable()),
   dateLimite:      z.preprocess(preprocessDate, z.date().optional().nullable()),
 
-  statut: statutOpportuniteEnum.default('EN_ANALYSE'),
-
-  montantPropose: z.preprocess(
-    (val) => (val === '' || val === null || val === undefined ? null : Number(val)),
-    z.number().positive().nullable().optional()
-  ),
+  statut: z.enum(STATUTS_CREATION).default('EN_ANALYSE'),
 
   notes:   z.string().optional().nullable(),
   marcheId: z.preprocess(
     (val) => (val === '' ? null : val),
     z.string().optional().nullable()
   ),
-
-  motifPerte:             z.string().optional().nullable(),
-  concurrentGagnant:      z.string().max(200).optional().nullable(),
-  montantOffreConcurrent: z.preprocess(
-    (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
-    z.number().positive().max(999999999999999).optional().nullable()
-  ),
 })
 
-export const updateOpportuniteSchema = createOpportuniteSchema.partial().extend({
+// Le statut ne se change que par changerStatutOpportunite (transitions, commentaire, lots) : la clé est retirée avant .partial(), sinon son défaut réécrirait EN_ANALYSE.
+// Le lien vers le marché n'est pas modifiable ici non plus : le formulaire le renvoie tel qu'il l'a chargé, donc périmé si le marché a été créé depuis les lots entre-temps.
+export const updateOpportuniteSchema = createOpportuniteSchema.omit({ statut: true, marcheId: true }).partial().extend({
   id: z.string().cuid(),
+  // Vidable (null) contrairement aux autres dates : un champ absent reste inchangé, une chaîne vide ou null efface.
+  echeanceAttributionProv: z.preprocess(
+    (val) => (val === undefined ? undefined : val === '' || val === null ? null : val instanceof Date ? val : new Date(val as string)),
+    z.date().nullable().optional()
+  ),
 })
 
 // ============================================================================

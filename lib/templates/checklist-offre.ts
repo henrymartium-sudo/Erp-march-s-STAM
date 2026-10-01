@@ -5,6 +5,7 @@ export interface TemplatePiece {
   description: string
   obligatoire: boolean
   ordre: number
+  portee: 'COMMUNE' | 'LOT'
 }
 
 export const CHECKLIST_STANDARD: TemplatePiece[] = [
@@ -13,71 +14,83 @@ export const CHECKLIST_STANDARD: TemplatePiece[] = [
     description: 'Lettre de soumission signée et cachetée par le soumissionnaire',
     obligatoire: true,
     ordre: 1,
+    portee: 'LOT',
   },
   {
     nom: 'Caution de soumission',
     description: 'Caution bancaire de soumission du montant exigé par le DAO',
     obligatoire: true,
     ordre: 2,
+    portee: 'LOT',
   },
   {
     nom: 'Registre du commerce',
     description: 'Extrait du registre du commerce et du crédit mobilier (RCCM) en cours de validité',
     obligatoire: true,
     ordre: 3,
+    portee: 'COMMUNE',
   },
   {
     nom: 'Attestation fiscale',
     description: "Attestation de situation fiscale régulière délivrée par l'administration fiscale",
     obligatoire: true,
     ordre: 4,
+    portee: 'COMMUNE',
   },
   {
     nom: 'Attestation CNSS',
     description: 'Attestation de situation régulière vis-à-vis de la CNSS',
     obligatoire: true,
     ordre: 5,
+    portee: 'COMMUNE',
   },
   {
     nom: 'Statuts de la société',
     description: 'Copie des statuts de la société certifiée conforme',
     obligatoire: true,
     ordre: 6,
+    portee: 'COMMUNE',
   },
   {
     nom: 'Références techniques',
     description: "Liste des marchés similaires exécutés avec attestation de bonne fin d'exécution",
     obligatoire: true,
     ordre: 7,
+    portee: 'COMMUNE',
   },
   {
     nom: 'Bilans financiers',
     description: 'Bilans financiers certifiés des 3 dernières années',
     obligatoire: true,
     ordre: 8,
+    portee: 'COMMUNE',
   },
   {
     nom: 'Offre technique',
     description: 'Mémoire technique, planning, méthodologie et organisation',
     obligatoire: true,
     ordre: 9,
+    portee: 'LOT',
   },
   {
     nom: 'Offre financière (BPU/DQE)',
     description: 'Bordereau de prix unitaires et décompte quantitatif et estimatif',
     obligatoire: true,
     ordre: 10,
+    portee: 'LOT',
   },
   {
     nom: "Agrément ou autorisation d'exercice",
     description: "Agrément ou autorisation professionnelle délivrée par l'autorité compétente",
     obligatoire: false,
     ordre: 11,
+    portee: 'COMMUNE',
   },
   {
     nom: 'Attestation assurance RC',
     description: 'Attestation assurance responsabilité civile professionnelle en cours de validité',
     obligatoire: false,
     ordre: 12,
+    portee: 'COMMUNE',
   },
 ]

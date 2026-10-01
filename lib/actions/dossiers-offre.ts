@@ -9,6 +9,7 @@ import {
 } from '@/lib/validations/dossier-offre'
 import { CHECKLIST_STANDARD } from '@/lib/templates/checklist-offre'
 import { requireAuth, canWrite } from '@/lib/utils/permissions'
+import { calculerProgression, piecesModifiables } from '@/lib/utils/lots'
 import { logAction } from '@/lib/audit/logAction'
 import { AUDIT_ACTION, AUDIT_ENTITY } from '@/lib/audit/constants'
 import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
@@ -22,6 +23,7 @@ import type { DossierOffre, PieceOffre } from '@prisma/client'
 
 export type DossierOffreWithPieces = DossierOffre & {
   pieces: PieceOffre[]
+  opportunite?: { statut: import('@prisma/client').StatutOpportunite } | null
 }
 
 export interface GetDossiersOptions {
@@ -35,12 +37,17 @@ export interface GetDossiersOptions {
 // HELPERS
 // ============================================================================
 
-function calcProgression(pieces: PieceOffre[]): number {
-  if (pieces.length === 0) return 0
-  const done = pieces.filter(
-    (p) => p.statut === 'COMPLET' || p.statut === 'VALIDE'
-  ).length
-  return Math.round((done / pieces.length) * 100)
+/** Recalcule la progression de chaque dossier d'une opportunité (pièces du lot + pièces communes). */
+export async function recalculerProgressionOpportunite(opportuniteId: string): Promise<void> {
+  const [communes, dossiers] = await Promise.all([
+    prisma.pieceOffre.findMany({ where: { opportuniteId }, select: { statut: true } }),
+    prisma.dossierOffre.findMany({ where: { opportuniteId }, select: { id: true, pieces: { select: { statut: true } } } }),
+  ])
+  await Promise.all(
+    dossiers.map((d) =>
+      prisma.dossierOffre.update({ where: { id: d.id }, data: { progression: calculerProgression([...d.pieces, ...communes]) } })
+    )
+  )
 }
 
 // ============================================================================
@@ -64,7 +71,10 @@ export async function getDossiersOffre(
     const [dossiers, total] = await Promise.all([
       prisma.dossierOffre.findMany({
         where,
-        include: { pieces: { orderBy: { ordre: 'asc' } } },
+        include: {
+          pieces: { orderBy: { ordre: 'asc' } },
+          opportunite: { select: { statut: true } },
+        },
         orderBy: { createdAt: 'desc' },
         skip,
         take,
@@ -90,7 +100,10 @@ export async function getDossierOffre(
 
     const dossier = await prisma.dossierOffre.findUnique({
       where: { id },
-      include: { pieces: { orderBy: { ordre: 'asc' } } },
+      include: {
+        pieces: { orderBy: { ordre: 'asc' } },
+        opportunite: { select: { statut: true } },
+      },
     })
 
     if (!dossier) {
@@ -263,24 +276,47 @@ export async function updatePieceStatut(
       return { success: false, error: 'Données invalides' }
     }
 
-    // Mettre à jour le statut de la pièce
-    const piece = await prisma.pieceOffre.update({
+    const piece = await prisma.pieceOffre.findUnique({
       where: { id },
-      data: { statut },
+      select: {
+        dossierId: true,
+        dossier: { select: { opportuniteId: true, opportunite: { select: { statut: true } } } },
+      },
     })
 
-    // Recalculer la progression du dossier
-    const allPieces = await prisma.pieceOffre.findMany({
-      where: { dossierId: piece.dossierId },
-    })
-    const progression = calcProgression(allPieces)
+    if (!piece) {
+      return { success: false, error: 'Pièce introuvable' }
+    }
 
-    await prisma.dossierOffre.update({
-      where: { id: piece.dossierId },
-      data: { progression },
-    })
+    if (!piece.dossierId) {
+      return { success: false, error: 'Cette pièce est une pièce commune.' }
+    }
 
-    revalidatePath(`/dossiers-offre/${piece.dossierId}`)
+    const statutOpportunite = piece.dossier?.opportunite?.statut
+    if (statutOpportunite && !piecesModifiables(statutOpportunite)) {
+      return { success: false, error: 'Le dossier est déposé : les pièces ne sont plus modifiables.' }
+    }
+
+    await prisma.pieceOffre.update({ where: { id }, data: { statut } })
+
+    const opportuniteId = piece.dossier?.opportuniteId
+    if (opportuniteId) {
+      await recalculerProgressionOpportunite(opportuniteId)
+    } else if (piece.dossierId) {
+      // Dossier legacy sans opportunité rattachée : recalculer uniquement ce dossier
+      const allPieces = await prisma.pieceOffre.findMany({
+        where: { dossierId: piece.dossierId },
+        select: { statut: true },
+      })
+      await prisma.dossierOffre.update({
+        where: { id: piece.dossierId },
+        data: { progression: calculerProgression(allPieces) },
+      })
+    }
+
+    if (piece.dossierId) {
+      revalidatePath(`/dossiers-offre/${piece.dossierId}`)
+    }
     return { success: true, data: undefined }
   } catch (error) {
     console.error('Erreur updatePieceStatut:', error)

@@ -268,6 +268,10 @@ export async function exportAnalytiquesExcel(
       ['Taux de gain global (Offres → Gagnées)', oppData.tauxGainGlobal / 100],
       ['Montant estimatif total pipeline', oppData.montantEstimeTotal],
       ['Montant proposé total', oppData.montantProposeTotal],
+      ['Lots gagnés', oppData.lots.gagnes],
+      ['Lots perdus', oppData.lots.perdus],
+      ['Lots infructueux', oppData.lots.infructueux],
+      ['Taux de réussite des lots', oppData.lots.tauxReussite / 100],
     ]
     oppKpis.forEach(([label, val], i) => {
       const row = wsOpp.addRow([label, val])

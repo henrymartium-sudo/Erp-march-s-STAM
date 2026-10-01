@@ -11,12 +11,19 @@ import {
 import { toast } from '@/lib/utils/toast'
 import { updatePieceStatut } from '@/lib/actions/dossiers-offre'
 import { STATUT_PIECE_LABELS } from '@/lib/validations/dossier-offre'
+import type { ActionResult } from '@/types'
 import type { StatutPiece } from '@prisma/client'
+
+/** Action serveur qui persiste le nouveau statut d'une pièce (pièce de dossier ou pièce commune). */
+export type PieceStatutUpdater = (id: string, statut: StatutPiece) => Promise<ActionResult<unknown>>
 
 interface PieceStatutButtonProps {
   pieceId: string
   statut: StatutPiece
   canWrite: boolean
+  disabled?: boolean
+  /** Par défaut : mise à jour d'une pièce de dossier. */
+  onUpdate?: PieceStatutUpdater
 }
 
 const STATUTS: StatutPiece[] = ['ABSENT', 'INCOMPLET', 'COMPLET', 'VALIDE']
@@ -28,14 +35,14 @@ const STATUT_STYLE: Record<string, string> = {
   VALIDE:    'text-green-600',
 }
 
-export function PieceStatutButton({ pieceId, statut, canWrite }: PieceStatutButtonProps) {
+export function PieceStatutButton({ pieceId, statut, canWrite, disabled, onUpdate = updatePieceStatut }: PieceStatutButtonProps) {
   const [current, setCurrent] = useState<StatutPiece>(statut)
   const [loading, setLoading] = useState(false)
 
   async function handleChange(value: string) {
     const newStatut = value as StatutPiece
     setLoading(true)
-    const result = await updatePieceStatut(pieceId, newStatut)
+    const result = await onUpdate(pieceId, newStatut)
     setLoading(false)
     if (result.success) {
       setCurrent(newStatut)
@@ -44,7 +51,7 @@ export function PieceStatutButton({ pieceId, statut, canWrite }: PieceStatutButt
     }
   }
 
-  if (!canWrite) {
+  if (!canWrite || disabled) {
     return (
       <span className={`text-xs font-medium ${STATUT_STYLE[current]}`}>
         {STATUT_PIECE_LABELS[current]}
