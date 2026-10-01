@@ -1,0 +1,45 @@
+name: CI
+
+# Gate qualité : typage, lint, tests unitaires et build. Aucune base de données, aucun secret.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Valeurs factices : l'installation (prisma generate) et le build lisent ces variables, sans jamais s'y connecter.
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installation
+        run: npm ci
+
+      - name: Typage
+        run: npm run typecheck
+
+      - name: Lint (zéro erreur, avertissements plafonnés)
+        run: npm run lint
+
+      - name: Tests unitaires
+        run: npm run test:unit
+
+      - name: Build
+        run: npm run build
