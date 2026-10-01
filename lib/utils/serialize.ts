@@ -7,7 +7,13 @@
  */
 
 import type { SerializedMarche, SerializedCaution, SerializedVehicule, SerializedIntervention } from '@/types/serialized'
-import type { Lot, DossierOffre, PieceOffre } from '@prisma/client'
+import type { Lot, DossierOffre, PieceOffre, VehiculePropose } from '@prisma/client'
+
+export type SerializedVehiculePropose = Omit<VehiculePropose, 'prixUnitaire' | 'createdAt' | 'updatedAt'> & {
+  prixUnitaire: number
+  createdAt: string
+  updatedAt: string
+}
 
 /**
  * Lot sérialisé (Decimal -> number, Date -> ISO string), avec son dossier et les pièces
@@ -24,6 +30,7 @@ export type SerializedLot = Omit<Lot, 'montantEstime' | 'montantPropose' | 'mont
     updatedAt: string
     pieces: PieceOffre[]
   }) | null
+  vehiculesProposes: SerializedVehiculePropose[]
 }
 
 /**
@@ -234,6 +241,12 @@ export function serializeLot(lot: any): SerializedLot {
       updatedAt: lot.dossier.updatedAt instanceof Date ? lot.dossier.updatedAt.toISOString() : String(lot.dossier.updatedAt),
       pieces: lot.dossier.pieces ?? [],
     } : null,
+    vehiculesProposes: (lot.vehiculesProposes ?? []).map((v: any) => ({
+      ...v,
+      prixUnitaire: Number(v.prixUnitaire),
+      createdAt: v.createdAt instanceof Date ? v.createdAt.toISOString() : String(v.createdAt),
+      updatedAt: v.updatedAt instanceof Date ? v.updatedAt.toISOString() : String(v.updatedAt),
+    })),
   }
 }
 

@@ -51,7 +51,16 @@ export async function updateLot(id: string, data: unknown): Promise<ActionResult
     if (!STATUTS_EDITION_LOTS.includes(lot.opportunite.statut)) {
       return { success: false, error: "Les lots ne sont plus modifiables après le dépôt de l'offre." }
     }
-    await prisma.lot.update({ where: { id }, data: parsed.data })
+    // Montant proposé calculé depuis les véhicules : la saisie manuelle est ignorée dès qu'il y en a (design §4).
+    // Sous le verrou de l'opportunité (comme setVehiculesProposes) : sinon une saisie de véhicules validée entre le
+    // décompte et la mise à jour serait écrasée par le montant manuel.
+    await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM opportunites WHERE id = ${lot.opportuniteId} FOR UPDATE`
+      const nbVehicules = await tx.vehiculePropose.count({ where: { lotId: id } })
+      const sansMontantPropose = { ...parsed.data }
+      delete sansMontantPropose.montantPropose
+      await tx.lot.update({ where: { id }, data: nbVehicules > 0 ? sansMontantPropose : parsed.data })
+    }, { maxWait: 10000, timeout: 20000 })
     await logAction({ userId: user.id, userEmail: user.email, action: AUDIT_ACTION.UPDATE, entityType: AUDIT_ENTITY.LOT, entityId: id })
     revalidatePath(`/opportunites/${lot.opportuniteId}`)
     return { success: true, data: { id } }

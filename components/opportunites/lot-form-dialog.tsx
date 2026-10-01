@@ -44,9 +44,11 @@ interface LotFormDialogProps {
   }
   /** Numéro proposé à la création (ignoré en modification). */
   numeroParDefaut?: number
+  /** Le montant proposé découle des véhicules proposés du lot : il n'est plus saisi à la main. */
+  montantCalcule?: boolean
 }
 
-export function LotFormDialog({ opportuniteId, lot, numeroParDefaut = 1 }: LotFormDialogProps) {
+export function LotFormDialog({ opportuniteId, lot, numeroParDefaut = 1, montantCalcule }: LotFormDialogProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -184,8 +186,10 @@ export function LotFormDialog({ opportuniteId, lot, numeroParDefaut = 1 }: LotFo
                       {...field}
                       value={(field.value ?? '') as string | number}
                       onChange={(e) => field.onChange(e.target.value === '' ? null : e.target.value)}
+                      disabled={montantCalcule}
                     />
                   </FormControl>
+                  {montantCalcule && <p className="text-xs text-muted-foreground">Calculé à partir des véhicules proposés.</p>}
                   <FormMessage />
                 </FormItem>
               )}

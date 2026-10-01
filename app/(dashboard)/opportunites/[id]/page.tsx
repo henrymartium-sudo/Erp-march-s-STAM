@@ -12,7 +12,7 @@ import { OpportuniteTabs } from '@/components/opportunites/opportunite-tabs'
 import { LotsSection } from '@/components/opportunites/lots-section'
 import { PiecesCommunes } from '@/components/opportunites/pieces-communes'
 import { getOpportunite } from '@/lib/actions/opportunites'
-import { calculerTotauxLots } from '@/lib/utils/lots'
+import { calculerTotauxLots, vehiculesModifiables } from '@/lib/utils/lots'
 import { requireAuth, canWrite } from '@/lib/utils/permissions'
 import {
   STATUT_OPPORTUNITE_LABELS,
@@ -213,6 +213,7 @@ export default async function OpportuniteDetailPage({ params }: PageProps) {
               statutOpportunite={opp.statut}
               lots={opp.lots}
               canWrite={userCanWrite}
+              vehiculesModifiables={vehiculesModifiables(opp)}
             />
           }
           pieces={

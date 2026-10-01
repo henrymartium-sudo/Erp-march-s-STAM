@@ -16,6 +16,10 @@ import {
   resultatsLotsFiges,
   STATUTS_EDITION_LOTS,
   STATUTS_SAISIE_RESULTAT,
+  calculerMontantVehicules,
+  totalLigneVehicule,
+  vehiculesModifiables,
+  STATUTS_EDITION_VEHICULES,
 } from '../../lib/utils/lots'
 import { lotSchema, resultatLotSchema, formResultatLotSchema } from '../../lib/validations/lot'
 
@@ -331,4 +335,48 @@ test("resultatsLotsFiges : seul un marché créé après l'opportunité (depuis 
   expect(resultatsLotsFiges({ createdAt: opportunite, marche: { createdAt: new Date('2026-02-01T09:00:00Z') } })).toBe(false)
   // Marché créé depuis les lots : postérieur à l'opportunité → résultats figés
   expect(resultatsLotsFiges({ createdAt: opportunite, marche: { createdAt: new Date('2026-03-20T09:00:00Z') } })).toBe(true)
+})
+
+test.describe('calculerMontantVehicules', () => {
+  test('aucun véhicule → null', () => {
+    expect(calculerMontantVehicules([])).toBeNull()
+  })
+  test('somme des quantités × prix unitaires', () => {
+    expect(calculerMontantVehicules([
+      { quantite: 2, prixUnitaire: 30000000 },
+      { quantite: 1, prixUnitaire: 12500000.5 },
+    ])).toBe(72500000.5)
+  })
+  test('pas de dérive de virgule flottante', () => {
+    expect(calculerMontantVehicules([{ quantite: 3, prixUnitaire: 0.1 }])).toBe(0.3)
+  })
+  test('total d\'une ligne', () => {
+    expect(totalLigneVehicule({ quantite: 4, prixUnitaire: 250 })).toBe(1000)
+  })
+})
+
+test.describe('vehiculesModifiables', () => {
+  const avant = new Date('2026-01-01')
+  const apres = new Date('2026-02-01')
+  const base = { createdAt: avant, marche: null }
+
+  test('éditable de « Dossier en préparation » à « Gagnée »', () => {
+    for (const statut of ['DOSSIER_EN_PREPARATION', 'OFFRE_SOUMISE', 'SOUMISE', 'EN_ATTENTE_ATTRIBUTION', 'ATTRIBUE_PROVISOIREMENT', 'GAGNEE'] as const) {
+      expect(vehiculesModifiables({ ...base, statut }), statut).toBe(true)
+    }
+  })
+  test('non éditable avant la préparation, perdue, no-go', () => {
+    for (const statut of ['IDENTIFIEE', 'EN_ANALYSE', 'GO', 'NO_GO', 'PERDUE'] as const) {
+      expect(vehiculesModifiables({ ...base, statut }), statut).toBe(false)
+    }
+  })
+  test('figé quand le marché a été créé depuis les lots', () => {
+    expect(vehiculesModifiables({ statut: 'GAGNEE', createdAt: avant, marche: { createdAt: apres } })).toBe(false)
+  })
+  test('marché antérieur à l\'opportunité (converti) : ne fige pas', () => {
+    expect(vehiculesModifiables({ statut: 'GAGNEE', createdAt: apres, marche: { createdAt: avant } })).toBe(true)
+  })
+  test('STATUTS_EDITION_VEHICULES contient 6 statuts', () => {
+    expect(STATUTS_EDITION_VEHICULES).toHaveLength(6)
+  })
 })

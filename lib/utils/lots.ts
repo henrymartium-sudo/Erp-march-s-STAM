@@ -22,6 +22,37 @@ export function resultatsLotsFiges(opportunite: { createdAt: Date; marche: { cre
   return opportunite.marche !== null && opportunite.marche.createdAt > opportunite.createdAt
 }
 
+/** Statuts de l'opportunité dans lesquels les véhicules proposés d'un lot se saisissent (design §5). */
+export const STATUTS_EDITION_VEHICULES: StatutOpportunite[] = [
+  'DOSSIER_EN_PREPARATION',
+  'OFFRE_SOUMISE',
+  'SOUMISE',
+  'EN_ATTENTE_ATTRIBUTION',
+  'ATTRIBUE_PROVISOIREMENT',
+  'GAGNEE',
+]
+
+/** Les véhicules se modifient de la préparation à l'attribution, jusqu'à la création du marché depuis les lots. */
+export function vehiculesModifiables(opportunite: {
+  statut: StatutOpportunite
+  createdAt: Date
+  marche: { createdAt: Date } | null
+}): boolean {
+  return STATUTS_EDITION_VEHICULES.includes(opportunite.statut) && !resultatsLotsFiges(opportunite)
+}
+
+/** Total d'une ligne en centimes entiers, pour éviter la dérive des flottants. */
+export function totalLigneVehicule(v: { quantite: number; prixUnitaire: number }): number {
+  return (Math.round(v.prixUnitaire * 100) * v.quantite) / 100
+}
+
+/** Montant proposé d'un lot déduit de ses véhicules ; null s'il n'y en a aucun. */
+export function calculerMontantVehicules(vehicules: { quantite: number; prixUnitaire: number }[]): number | null {
+  if (vehicules.length === 0) return null
+  const centimes = vehicules.reduce((somme, v) => somme + Math.round(v.prixUnitaire * 100) * v.quantite, 0)
+  return centimes / 100
+}
+
 /** Statuts de l'opportunité qui ne se fixent plus à la main mais via les résultats des lots. */
 export const STATUTS_PILOTES_PAR_LOTS: StatutOpportunite[] = [
   'ATTRIBUE_PROVISOIREMENT',

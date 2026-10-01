@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table'
 import { LotFormDialog } from './lot-form-dialog'
 import { LotResultatDialog } from './lot-resultat-dialog'
+import { VehiculesProposeDialog } from './vehicules-propose-dialog'
 import { ChecklistView } from '@/components/dossiers-offre/checklist-view'
 import { RESULTAT_LOT_LABELS } from '@/lib/validations/lot'
 import {
@@ -38,6 +39,7 @@ interface LotsSectionProps {
   statutOpportunite: StatutOpportunite
   lots: SerializedLot[]
   canWrite: boolean
+  vehiculesModifiables: boolean
 }
 
 function formatMontant(val: number | null): string {
@@ -45,10 +47,11 @@ function formatMontant(val: number | null): string {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(val)
 }
 
-export function LotsSection({ opportuniteId, statutOpportunite, lots, canWrite }: LotsSectionProps) {
+export function LotsSection({ opportuniteId, statutOpportunite, lots, canWrite, vehiculesModifiables }: LotsSectionProps) {
   const peutEditerLots = canWrite && STATUTS_EDITION_LOTS.includes(statutOpportunite)
   const peutSaisirResultat = canWrite && STATUTS_SAISIE_RESULTAT.includes(statutOpportunite)
-  const avecActions = peutEditerLots || peutSaisirResultat
+  const peutEditerVehicules = canWrite && vehiculesModifiables
+  const avecActions = peutEditerLots || peutSaisirResultat || peutEditerVehicules
 
   const { nbLots, nbGagnes, totalEstime, totalPropose } = calculerTotauxLots(lots)
   const libelleGagnes = `${nbGagnes} lot${nbGagnes > 1 ? 's' : ''} gagné${nbGagnes > 1 ? 's' : ''} / ${nbLots}`
@@ -96,6 +99,13 @@ export function LotsSection({ opportuniteId, statutOpportunite, lots, canWrite }
                     <TableCell className="align-top">
                       <span className="font-medium">Lot {lot.numero}</span>
                       <p className="text-sm text-muted-foreground">{lot.intitule}</p>
+                      {lot.vehiculesProposes.length > 0 && (
+                        <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground" aria-label={`Véhicules proposés du lot ${lot.numero}`}>
+                          {lot.vehiculesProposes.map((v) => (
+                            <li key={v.id}>{v.quantite} × {v.marque} {v.modele} — {formatMontant(v.prixUnitaire)}</li>
+                          ))}
+                        </ul>
+                      )}
                       {/* Colonnes masquées sur petit écran : leur contenu passe sous l'intitulé */}
                       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs xl:hidden">
                         <Badge variant={RESULTAT_LOT_COLORS[lot.resultat]} className="whitespace-nowrap">
@@ -133,28 +143,34 @@ export function LotsSection({ opportuniteId, statutOpportunite, lots, canWrite }
                     </TableCell>
                     {avecActions && (
                       <TableCell className="align-top">
-                        {peutEditerLots && (
-                          <LotFormDialog
-                            opportuniteId={opportuniteId}
-                            lot={{
-                              id: lot.id,
-                              numero: lot.numero,
-                              intitule: lot.intitule,
-                              montantEstime: lot.montantEstime,
-                              montantPropose: lot.montantPropose,
-                            }}
-                          />
-                        )}
-                        {peutSaisirResultat && (
-                          <LotResultatDialog
-                            lotId={lot.id}
-                            numeroLot={lot.numero}
-                            resultatActuel={lot.resultat}
-                            motifPerte={lot.motifPerte}
-                            concurrentGagnant={lot.concurrentGagnant}
-                            montantOffreConcurrent={lot.montantOffreConcurrent}
-                          />
-                        )}
+                        <div className="flex flex-wrap gap-1">
+                          {peutEditerVehicules && (
+                            <VehiculesProposeDialog lotId={lot.id} numeroLot={lot.numero} vehicules={lot.vehiculesProposes} />
+                          )}
+                          {peutEditerLots && (
+                            <LotFormDialog
+                              opportuniteId={opportuniteId}
+                              lot={{
+                                id: lot.id,
+                                numero: lot.numero,
+                                intitule: lot.intitule,
+                                montantEstime: lot.montantEstime,
+                                montantPropose: lot.montantPropose,
+                              }}
+                              montantCalcule={lot.vehiculesProposes.length > 0}
+                            />
+                          )}
+                          {peutSaisirResultat && (
+                            <LotResultatDialog
+                              lotId={lot.id}
+                              numeroLot={lot.numero}
+                              resultatActuel={lot.resultat}
+                              motifPerte={lot.motifPerte}
+                              concurrentGagnant={lot.concurrentGagnant}
+                              montantOffreConcurrent={lot.montantOffreConcurrent}
+                            />
+                          )}
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>

@@ -680,12 +680,30 @@ model Lot {
   concurrentGagnant      String?
   montantOffreConcurrent Decimal?      @db.Decimal(15, 2)
   dossier                DossierOffre?
+  vehiculesProposes      VehiculePropose[]
   createdAt              DateTime      @default(now())
   updatedAt              DateTime      @updatedAt
 
   @@unique([opportuniteId, numero])
   @@index([opportuniteId])
   @@map("lots")
+}
+
+model VehiculePropose {
+  id           String   @id @default(cuid())
+  lotId        String
+  lot          Lot      @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  marque       String
+  modele       String
+  quantite     Int      @default(1)
+  prixUnitaire Decimal  @db.Decimal(15, 2)
+  ordre        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([lotId])
+  @@index([marque, modele])
+  @@map("vehicules_proposes")
 }
 
 model DossierOffre {
