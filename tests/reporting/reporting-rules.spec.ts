@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import type { Cookie } from '@playwright/test';
+import type { Browser, Cookie, Page } from '@playwright/test';
 import { TEST_USERS } from '../helpers/auth';
 
 /**
@@ -40,7 +40,7 @@ let adminCookies: Cookie[] = [];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-async function loginAsAdmin(browser: Parameters<typeof test.beforeAll>[0] extends (args: infer A) => unknown ? A extends { browser: infer B } ? B : never : never) {
+async function loginAsAdmin(browser: Browser) {
   const context = await browser.newContext();
   const page = await context.newPage();
   page.setDefaultNavigationTimeout(60000);
@@ -59,7 +59,7 @@ async function loginAsAdmin(browser: Parameters<typeof test.beforeAll>[0] extend
 }
 
 /** Ouvre le dialog "Nouvelle règle" et attend qu'il soit visible */
-async function openNewRuleDialog(page: Parameters<typeof test>[1] extends (args: infer A) => unknown ? A extends { page: infer P } ? P : never : never) {
+async function openNewRuleDialog(page: Page) {
   await page.goto('/admin/reporting');
   await page.waitForLoadState('networkidle');
   const btn = page.getByRole('button', { name: 'Nouvelle règle', exact: true }).first();
@@ -69,7 +69,7 @@ async function openNewRuleDialog(page: Parameters<typeof test>[1] extends (args:
 }
 
 /** Supprime toutes les règles de test ([E2E]) si elles existent */
-async function cleanupTestRules(page: Parameters<typeof test>[1] extends (args: infer A) => unknown ? A extends { page: infer P } ? P : never : never) {
+async function cleanupTestRules(page: Page) {
   await page.goto('/admin/reporting');
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(1000);

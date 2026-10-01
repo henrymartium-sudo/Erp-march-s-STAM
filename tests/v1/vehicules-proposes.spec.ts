@@ -307,7 +307,7 @@ test.describe.serial('Véhicules proposés par lot', () => {
       // Le marché reprend le montant du lot gagné calculé depuis ses véhicules : 2 × 30 000 000 + 1 × 15 000 000
       const marches = await requeteLocale<{ montant: string }>('select montant from marches where "opportuniteId" = $1', [oppId])
       expect(marches).toHaveLength(1)
-      expect(Number(marches[0].montant)).toBe(75000000)
+      expect(Number(marches[0]?.montant)).toBe(75000000)
 
       // Après : plus de bouton, la liste reste lisible
       await allerA(page, `/opportunites/${oppId}?onglet=lots`)
