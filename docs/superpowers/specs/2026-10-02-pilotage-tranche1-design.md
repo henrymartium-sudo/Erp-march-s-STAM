@@ -56,7 +56,8 @@ Compteurs cliquables vers la liste concernée :
 - marchés attribués sans aucune facture ;
 - marchés à échéance dépassée sans changement de statut ;
 - échecs sans motif renseigné ;
-- marchés exclus d'un calcul faute de date de référence (jamais exclus en silence).
+- marchés exclus d'un calcul faute de date de référence (jamais exclus en silence) ;
+- marchés dont le TTC facturé dépasse le montant contractuel de plus de 2 %.
 
 ### REQ-006 — User SHALL drill down from each indicator to its source records
 
@@ -67,7 +68,7 @@ Chaque indicateur ouvre la liste des marchés qui le composent. Aucun chiffre sa
 - **`lib/actions/pilotage.ts`** : Server Actions, une fonction par indicateur, `requireRole(['ADMIN', 'AVANCE'])` dans chacune, validation Zod des paramètres de période.
 - Réutilisation de `STATUTS_GAGNES`, `STATUTS_DEPOSES` et de la règle par lot existante — pas de recopie.
 - **Période** : sélecteur, année civile par défaut. Date de référence : date de dépôt de l'offre pour REQ-003, date d'attribution pour REQ-002. La règle est affichée sur la page.
-- **Base de montant** : une seule (HT) pour tous les ratios — voir prérequis bloquant.
+- **Base de montant** : montant contractuel vs TTC facturé — voir « Règle de base de montant ».
 - Exports PDF et Excel déplacés avec l'onglet Analyses ; les fonctions de `lib/actions/analytics.ts` restent tant qu'un export en dépend.
 
 ## Interface
@@ -89,9 +90,13 @@ Chaque indicateur ouvre la liste des marchés qui le composent. Aucun chiffre sa
 
 Aucune migration, aucun e-mail. Branche dédiée → PR → gate qualité → validation → fusion (déploiement automatique). Retour arrière : revert du commit de fusion.
 
-## Prérequis bloquant
+## Règle de base de montant (tranchée le 2026-10-02)
 
-**Le `montant` du marché est-il saisi HT ou TTC ?** Le code ne l'établit pas (seules les factures portent HT et TTC). À trancher par le métier avant d'implémenter REQ-002 et REQ-004.
+Le `montant` du marché est le **montant contractuel**, c'est-à-dire ce que l'acheteur s'engage à payer ; il n'est pas qualifié HT/TTC dans le schéma. Les DAO imposent parfois un prix TTC, et certains véhicules neufs (hybrides, électriques) sont exonérés de TVA au Togo, alors que la maintenance y est soumise.
+
+- **REQ-002** compare le montant contractuel au **TTC des factures** (ce que l'acheteur paie). Exonéré : HT = TTC, la comparaison tient ; prix TTC imposé : elle tient aussi.
+- **REQ-004** compare deux offres répondant au même DAO, donc sur la même base fiscale : pas de conversion.
+- **Garde-fou (REQ-005)** : tout marché dont le TTC facturé dépasse le montant contractuel de plus de 2 % est signalé dans le bloc « Qualité des données » (indice d'un montant saisi HT face à des factures TTC).
 
 ## Hors périmètre (tranches suivantes)
 
