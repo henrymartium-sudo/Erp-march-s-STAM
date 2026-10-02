@@ -24,7 +24,7 @@ export async function exportAnalytiquesExcel(
   periode: Periode
 ): Promise<ActionResult<{ buffer: number[]; filename: string }>> {
   try {
-    const session = await requireRole(['ADMIN'])
+    const session = await requireRole(['ADMIN', 'AVANCE'])
     const data = await getAllAnalyticsData(periode)
     const ExcelJS = (await import('exceljs')).default
     const workbook = new ExcelJS.Workbook()
@@ -420,7 +420,7 @@ export async function exportAnalytiquesPDF(
   periode: Periode
 ): Promise<ActionResult<{ buffer: number[]; filename: string }>> {
   try {
-    const session = await requireRole(['ADMIN'])
+    const session = await requireRole(['ADMIN', 'AVANCE'])
     const data = await getAllAnalyticsData(periode)
 
     // Rapport capitalisation (tableau principal : Top AC)

@@ -53,7 +53,7 @@ const STATUTS_OFFRE_SOUMISE_OPP: string[] = [
 ]
 
 export async function getPerformanceStats(periode: Periode): Promise<PerformanceStats> {
-  await requireRole(['ADMIN'])
+  await requireRole(['ADMIN', 'AVANCE'])
 
   const where = {
     dateNotification: { gte: periode.dateDebut, lte: periode.dateFin },
@@ -152,7 +152,7 @@ export async function getPerformanceStats(periode: Periode): Promise<Performance
 }
 
 export async function getFinancialStats(periode: Periode): Promise<FinancialStats> {
-  await requireRole(['ADMIN'])
+  await requireRole(['ADMIN', 'AVANCE'])
 
   const wherePeriode = {
     dateNotification: { gte: periode.dateDebut, lte: periode.dateFin },
@@ -224,7 +224,7 @@ export async function getFinancialStats(periode: Periode): Promise<FinancialStat
 }
 
 export async function getCapitalisationStats(periode: Periode): Promise<CapitalisationStats> {
-  await requireRole(['ADMIN'])
+  await requireRole(['ADMIN', 'AVANCE'])
 
   const where = {
     dateNotification: { gte: periode.dateDebut, lte: periode.dateFin },
@@ -319,7 +319,7 @@ export async function getCapitalisationStats(periode: Periode): Promise<Capitali
 }
 
 export async function getSAVStats(periode: Periode): Promise<SAVStats> {
-  await requireRole(['ADMIN'])
+  await requireRole(['ADMIN', 'AVANCE'])
 
   const where = {
     signaleAt: { gte: periode.dateDebut, lte: periode.dateFin },
@@ -431,7 +431,7 @@ export async function getSAVStats(periode: Periode): Promise<SAVStats> {
 }
 
 export async function getOpportunitesStats(periode: Periode): Promise<OpportunitesStats> {
-  await requireRole(['ADMIN'])
+  await requireRole(['ADMIN', 'AVANCE'])
 
   const where = {
     createdAt: { gte: periode.dateDebut, lte: periode.dateFin },
