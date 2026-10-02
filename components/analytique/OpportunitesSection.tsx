@@ -82,7 +82,7 @@ export function OpportunitesSection({ data }: Props) {
         ))}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* Bar : répartition par statut */}
         {data.parStatut.length > 0 && (
           <Card>
@@ -90,7 +90,7 @@ export function OpportunitesSection({ data }: Props) {
               <CardTitle className="text-sm">Répartition par statut</CardTitle>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={{}} className="h-[260px]">
+              <ChartContainer config={{}} className="h-[260px] w-full">
                 <BarChart data={data.parStatut} layout="vertical" onClick={handleStatutClick} style={{ cursor: 'pointer' }}>
                   <XAxis type="number" allowDecimals={false} />
                   <YAxis type="category" dataKey="label" width={145} tick={{ fontSize: 11 }} />
@@ -113,7 +113,7 @@ export function OpportunitesSection({ data }: Props) {
               <CardTitle className="text-sm">Top 10 Autorités Contractantes</CardTitle>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={{}} className="h-[260px]">
+              <ChartContainer config={{}} className="h-[260px] w-full">
                 <BarChart data={data.topAC} layout="vertical" onClick={handleACClick} style={{ cursor: 'pointer' }}>
                   <XAxis type="number" allowDecimals={false} />
                   <YAxis type="category" dataKey="nom" width={140} tick={{ fontSize: 11 }} />
