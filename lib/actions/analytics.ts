@@ -212,9 +212,6 @@ export async function getFinancialStats(periode: Periode): Promise<FinancialStat
     caEnAttente,
     cautionsActives: Number(cautionsActives._sum.montant || 0),
     cautionsLiberees: Number(cautionsLiberees._sum.montant || 0),
-    tauxRecouvrement: caContractualiseVal > 0
-      ? Math.round((caEncaisse / caContractualiseVal) * 100)
-      : 0,
     facturesParStatut: facturesParStatutRaw.map((f) => ({
       statut: f.statut,
       count: f._count.id,
