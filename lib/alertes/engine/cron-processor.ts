@@ -98,6 +98,14 @@ export async function runDailyAlertsCron(): Promise<{
           autoriteContractanteNom: true,
         },
       },
+      // Caution d'opportunité (sans marché) : affichée à la place du marché dans le digest
+      opportunite: {
+        select: {
+          reference: true,
+          objet: true,
+          autoriteContractante: true,
+        },
+      },
     },
   })
 
@@ -140,7 +148,10 @@ export async function runDailyAlertsCron(): Promise<{
       (c.dateEcheance.getTime() - today.getTime()) / 86400000
     ),
     marcheReference: c.marche?.numero ?? null,
-    autoriteContractanteNom: c.marche?.autoriteContractanteNom ?? null,
+    autoriteContractanteNom:
+      c.marche?.autoriteContractanteNom ?? c.opportunite?.autoriteContractante ?? null,
+    opportuniteReference: c.opportunite?.reference ?? null,
+    opportuniteObjet: c.opportunite?.objet ?? null,
   }))
 
   const rawMarches: RawMarcheForDigest[] = marchesDb.map((m) => {

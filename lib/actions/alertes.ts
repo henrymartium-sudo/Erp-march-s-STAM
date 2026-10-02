@@ -50,6 +50,13 @@ export async function getAlertsCautionsExpiring(): Promise<
             autoriteContractanteNom: true,
           },
         },
+        opportunite: {
+          select: {
+            reference: true,
+            objet: true,
+            autoriteContractante: true,
+          },
+        },
       },
       orderBy: {
         dateEcheance: "asc",
@@ -72,7 +79,10 @@ export async function getAlertsCautionsExpiring(): Promise<
         dateEcheance: caution.dateEcheance,
         joursRestants,
         marcheReference: caution.marche?.numero,
-        autoriteContractante: caution.marche?.autoriteContractanteNom ?? undefined,
+        autoriteContractante:
+          caution.marche?.autoriteContractanteNom ?? caution.opportunite?.autoriteContractante ?? undefined,
+        opportuniteReference: caution.opportunite?.reference ?? undefined,
+        opportuniteObjet: caution.opportunite?.objet,
         niveau,
       };
     });

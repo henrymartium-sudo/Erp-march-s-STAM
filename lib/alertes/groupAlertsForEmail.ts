@@ -25,6 +25,9 @@ export interface RawCautionForDigest {
   marcheReference?: string | null
   /** Correspond à Marche.autoriteContractanteNom (via relation) */
   autoriteContractanteNom?: string | null
+  /** Caution rattachée à une opportunité (sans marché) : référence (peut être absente) et objet */
+  opportuniteReference?: string | null
+  opportuniteObjet?: string | null
 }
 
 export interface RawMarcheForDigest {
@@ -82,6 +85,8 @@ export function groupAlerts(
       joursRestants: c.joursRestants,
       marcheReference: c.marcheReference ?? undefined,
       autoriteContractante: c.autoriteContractanteNom ?? undefined,
+      opportuniteReference: c.opportuniteReference ?? undefined,
+      opportuniteObjet: c.opportuniteObjet ?? undefined,
       niveau: (c.joursRestants <= 7 ? "CRITIQUE" : "ATTENTION") as
         | "CRITIQUE"
         | "ATTENTION",

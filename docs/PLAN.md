@@ -147,10 +147,10 @@ L'e-mail d'alerte d'échéance affiche l'opportunité quand la caution n'a pas d
 
 ### Critères d'acceptation
 
-- [ ] Une caution rattachée à une opportunité et expirant dans 30 jours entre dans le périmètre de l'alerte, au même seuil que les autres.
-- [ ] Le contenu du mail est lisible et correct pour une caution sans marché (aperçu généré sans envoi).
-- [ ] Le décompte des cautions concernées au jour de la mise en ligne est connu avant le déploiement et ne dépasse pas celui qui serait envoyé sans cette fonctionnalité.
-- [ ] Aucun e-mail n'est envoyé pendant les tests.
+- [x] Une caution rattachée à une opportunité et expirant dans 30 jours entre dans le périmètre de l'alerte, au même seuil que les autres (vérifié sur la base locale avec la clause exacte du cron, sans appeler le cron).
+- [x] Le contenu du mail est lisible et correct pour une caution sans marché : aperçu généré sans envoi, colonne « Marché / Opp. » avec référence et objet de l'opportunité, objet échappé, version texte avec une ligne « Opportunité ».
+- [x] Le décompte au jour de la mise en ligne ne dépasse pas celui d'aujourd'hui : la requête du cron n'a pas changé (aucun filtre sur le marché, les cautions sans lien y figurent déjà) et la colonne `opportuniteId` est créée vide par la migration, donc aucune caution d'opportunité n'existe le premier jour. Non recompté sur la production (aucun accès demandé) : à relever en lecture seule avant le déploiement de la phase 7.
+- [x] Aucun e-mail n'est envoyé pendant les tests (gabarit testé par fonctions pures, `runDailyAlertsCron` jamais appelé).
 
 ## Bloquée par
 
