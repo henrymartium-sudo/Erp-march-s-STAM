@@ -51,6 +51,7 @@ export type CautionFormValues = {
   banqueNom: string;
   banqueContact?: string;
   marcheId: string;
+  opportuniteId?: string;
 };
 import {
   TYPE_CAUTION_OPTIONS,
@@ -65,6 +66,10 @@ import {
 interface CautionFormProps {
   caution?: any; // Données sérialisées depuis le Server Component (Decimal -> number, Date -> string)
   marcheId?: string;
+  /** Création depuis une opportunité : la caution lui est rattachée d'avance. */
+  opportuniteId?: string;
+  /** Restreint la liste des types proposés (ex. opportunité : soumission et capacité financière). */
+  typesAutorises?: readonly TypeCaution[];
   montantMarche?: number;
   onSubmit: (data: CautionFormValues) => Promise<void>;
   onCancel?: () => void;
@@ -78,6 +83,8 @@ interface CautionFormProps {
 export function CautionForm({
   caution,
   marcheId,
+  opportuniteId,
+  typesAutorises,
   montantMarche,
   onSubmit,
   onCancel,
@@ -109,10 +116,12 @@ export function CautionForm({
           statut: caution.statut,
           banqueNom: caution.banqueNom,
           banqueContact: caution.banqueContact || undefined,
-          marcheId: caution.marcheId,
+          marcheId: caution.marcheId ?? '',
+          opportuniteId: caution.opportuniteId ?? '',
         }
       : {
           marcheId: marcheId || '',
+          opportuniteId: opportuniteId || '',
           statut: 'ACTIVE',
         },
   });
@@ -123,7 +132,7 @@ export function CautionForm({
   const watchDateEcheance = form.watch('dateEcheance');
 
   // --- Brouillons Auto-Save (create mode uniquement) ---
-  const DRAFT_KEY = 'draft:caution:new';
+  const DRAFT_KEY = opportuniteId ? `draft:caution:opportunite:${opportuniteId}` : 'draft:caution:new';
 
   // Restauration du brouillon au montage (client uniquement)
   useEffect(() => {
@@ -245,7 +254,9 @@ export function CautionForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {TYPE_CAUTION_OPTIONS.map((option) => (
+                    {TYPE_CAUTION_OPTIONS.filter(
+                      (option) => !typesAutorises || typesAutorises.includes(option.value)
+                    ).map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>

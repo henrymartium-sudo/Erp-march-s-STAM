@@ -26,6 +26,9 @@ export type CautionAlert = {
   marcheNumero: string;
   marcheObjet: string;
   autoriteContractante?: string;
+  /** Caution rattachée à une opportunité (sans marché) */
+  opportuniteReference?: string;
+  opportuniteObjet?: string;
 };
 
 export type MarcheAlert = {
@@ -85,6 +88,13 @@ export async function getAlertesActuelles(): Promise<
             autoriteContractanteNom: true,
           },
         },
+        opportunite: {
+          select: {
+            reference: true,
+            objet: true,
+            autoriteContractante: true,
+          },
+        },
       },
       orderBy: { dateEcheance: "asc" },
     });
@@ -117,9 +127,15 @@ export async function getAlertesActuelles(): Promise<
         montant: Number(caution.montant),
         dateEcheance: caution.dateEcheance,
         joursRestants,
-        marcheNumero: caution.marche?.numero || 'N/A',
-        marcheObjet: caution.marche?.objet || 'Aucun marché associé',
-        autoriteContractante: caution.marche?.autoriteContractanteNom ?? undefined,
+        // Sans marché : l'opportunité d'origine remplace le marché (tableau de bord et e-mail)
+        marcheNumero:
+          caution.marche?.numero ||
+          (caution.opportunite ? (caution.opportunite.reference ? `Opp. ${caution.opportunite.reference}` : 'Opportunité') : 'N/A'),
+        marcheObjet: caution.marche?.objet || caution.opportunite?.objet || 'Aucun marché associé',
+        autoriteContractante:
+          caution.marche?.autoriteContractanteNom ?? caution.opportunite?.autoriteContractante ?? undefined,
+        opportuniteReference: caution.marche ? undefined : caution.opportunite?.reference ?? undefined,
+        opportuniteObjet: caution.marche ? undefined : caution.opportunite?.objet,
       };
     });
 
@@ -325,7 +341,8 @@ export async function previewAlertEmail(): Promise<
     // Adapter les données au format attendu par les templates
     const cautionsForEmail: EmailCautionAlert[] = cautions.map((c) => ({
       ...c,
-      marcheReference: c.marcheNumero,
+      // Caution d'opportunité : le gabarit affiche l'opportunité, pas le libellé du tableau de bord
+      marcheReference: c.opportuniteObjet !== undefined ? undefined : c.marcheNumero,
     }));
 
     const marchesForEmail: EmailMarcheAlert[] = marches.map((m) => ({
@@ -405,7 +422,8 @@ export async function sendAlertEmailManual(
     // Adapter les données au format attendu par les templates
     const cautionsForEmail: EmailCautionAlert[] = cautions.map((c) => ({
       ...c,
-      marcheReference: c.marcheNumero,
+      // Caution d'opportunité : le gabarit affiche l'opportunité, pas le libellé du tableau de bord
+      marcheReference: c.opportuniteObjet !== undefined ? undefined : c.marcheNumero,
     }));
 
     const marchesForEmail: EmailMarcheAlert[] = marches.map((m) => ({

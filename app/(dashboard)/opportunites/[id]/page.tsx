@@ -11,7 +11,10 @@ import { OpportuniteDetailActions } from '@/components/opportunites/opportunite-
 import { OpportuniteTabs } from '@/components/opportunites/opportunite-tabs'
 import { LotsSection } from '@/components/opportunites/lots-section'
 import { PiecesCommunes } from '@/components/opportunites/pieces-communes'
+import { CautionsSection } from '@/components/opportunites/cautions-section'
 import { getOpportunite } from '@/lib/actions/opportunites'
+import { getCautionsByOpportunite } from '@/lib/actions/cautions'
+import { cautionsOpportuniteVisibles } from '@/lib/utils/cautions-opportunite'
 import { calculerTotauxLots, vehiculesModifiables } from '@/lib/utils/lots'
 import { requireAuth, canWrite } from '@/lib/utils/permissions'
 import {
@@ -52,6 +55,9 @@ export default async function OpportuniteDetailPage({ params }: PageProps) {
 
   const opp = result.data
   const totauxLots = calculerTotauxLots(opp.lots)
+  const afficherCautions = cautionsOpportuniteVisibles(opp.statut)
+  const cautionsResult = afficherCautions ? await getCautionsByOpportunite(id) : null
+  const cautions = cautionsResult?.success ? cautionsResult.data : []
 
   return (
     <div className="space-y-6">
@@ -92,6 +98,8 @@ export default async function OpportuniteDetailPage({ params }: PageProps) {
       <Suspense fallback={null}>
         <OpportuniteTabs
           nbLots={opp.lots.length}
+          nbCautions={cautions.length}
+          cautions={afficherCautions ? <CautionsSection opportuniteId={opp.id} cautions={cautions} canWrite={userCanWrite} /> : undefined}
           infos={
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

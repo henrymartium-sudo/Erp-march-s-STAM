@@ -1,7 +1,8 @@
 import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { requireAuth } from "@/lib/utils/permissions";
-import { getCaution } from "@/lib/actions/cautions";
+import { getCaution, getContexteCautionsMarche } from "@/lib/actions/cautions";
+import { typesCautionProposesSurMarche } from "@/lib/utils/cautions-opportunite";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RetryButton } from "@/components/shared/retry-button";
 import { Button } from "@/components/ui/button";
@@ -96,6 +97,14 @@ export default async function EditCautionPage({
     } : undefined,
   };
 
+  // Caution d'un marché issu d'une opportunité : types d'après attribution, plus le type déjà saisi (qui reste modifiable)
+  let typesAutorises;
+  if (rawCaution.marcheId && !rawCaution.opportuniteId) {
+    const contexte = await getContexteCautionsMarche(rawCaution.marcheId);
+    const proposes = contexte.success ? typesCautionProposesSurMarche(contexte.data.issuDOpportunite) : undefined;
+    typesAutorises = proposes && Array.from(new Set([...proposes, rawCaution.type]));
+  }
+
   return (
     <div className="container mx-auto py-8 max-w-4xl space-y-6">
       {/* Header */}
@@ -124,7 +133,7 @@ export default async function EditCautionPage({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <EditCautionContent caution={caution} />
+          <EditCautionContent caution={caution} typesAutorises={typesAutorises} />
         </CardContent>
       </Card>
     </div>

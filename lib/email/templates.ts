@@ -21,6 +21,9 @@ export interface CautionAlert {
   joursRestants: number;
   marcheReference?: string;
   autoriteContractante?: string;
+  /** Caution rattachée à une opportunité (sans marché) : affichée à la place du marché. */
+  opportuniteReference?: string;
+  opportuniteObjet?: string;
   niveau?: "CRITIQUE" | "ATTENTION";
 }
 
@@ -113,14 +116,40 @@ function baseEmailTemplate(content: string): string {
 // ============================================================
 const CAUTION_COLS = [
   { label: "Référence",      width: 90,  align: "left",   color: "#ffffff", nowrap: true,  gold: false },
-  { label: "Banque",         width: 100, align: "left",   color: "#ffffff", nowrap: false, gold: false },
-  { label: "Type",           width: 100, align: "left",   color: "#ffffff", nowrap: false, gold: false },
-  { label: "Montant",        width: 110, align: "right",  color: "#ffffff", nowrap: true,  gold: false },
+  { label: "Banque",         width: 90,  align: "left",   color: "#ffffff", nowrap: false, gold: false },
+  { label: "Type",           width: 90,  align: "left",   color: "#ffffff", nowrap: false, gold: false },
+  { label: "Montant",        width: 100, align: "right",  color: "#ffffff", nowrap: true,  gold: false },
   { label: "Échéance",       width: 82,  align: "center", color: "#ffffff", nowrap: true,  gold: false },
   { label: "J. rest.",       width: 62,  align: "center", color: "#C49A1A", nowrap: true,  gold: true  },
-  { label: "Marché",         width: 90,  align: "left",   color: "#ffffff", nowrap: true,  gold: false },
-  { label: "Autorité contr.",width: 110, align: "left",   color: "#ffffff", nowrap: false, gold: false },
+  { label: "Marché / Opp.",  width: 130, align: "left",   color: "#ffffff", nowrap: true,  gold: false },
+  { label: "Autorité contr.",width: 100, align: "left",   color: "#ffffff", nowrap: false, gold: false },
 ] as const;
+
+function escapeHtml(valeur: string): string {
+  return valeur
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function tronquer(valeur: string, max: number): string {
+  return valeur.length > max ? `${valeur.slice(0, max - 1)}…` : valeur;
+}
+
+/** Libellé court d'une opportunité : sa référence, ou « Opportunité » si elle n'en a pas. */
+function libelleOpportunite(reference?: string): string {
+  return reference ? `Opp. ${reference}` : "Opportunité";
+}
+
+/** Cellule « Marché / Opp. » : le marché, sinon l'opportunité (référence et objet), sinon un tiret. */
+function celluleMarcheOuOpportunite(c: CautionAlert): string {
+  if (c.marcheReference) return escapeHtml(c.marcheReference);
+  if (c.opportuniteObjet !== undefined) {
+    return `<span style="white-space: normal; word-break: break-word;">${escapeHtml(libelleOpportunite(c.opportuniteReference))}<br><span style="font-size: 10px; color: #9ca3af;">${escapeHtml(tronquer(c.opportuniteObjet, 60))}</span></span>`;
+  }
+  return "—";
+}
 
 // ============================================================
 // COLONNES MARCHÉS — 7 colonnes, total = TABLE_WIDTH (744px)
@@ -187,7 +216,7 @@ function buildCautionsSection(cautions: CautionAlert[]): string {
           <td style="${tdStyle({ width: CAUTION_COLS[3].width, bg: rowBg, align: "right" })}">${formatMontant(c.montant)}</td>
           <td style="${tdStyle({ width: CAUTION_COLS[4].width, bg: rowBg, align: "center" })}">${format(c.dateEcheance, "dd/MM/yyyy")}</td>
           <td style="${tdStyle({ width: CAUTION_COLS[5].width, bg: rowBg, align: "center", bold: true, color: joursColor })}">${joursLabel}</td>
-          <td style="${tdStyle({ width: CAUTION_COLS[6].width, bg: rowBg, color: "#6b7280" })}">${c.marcheReference ?? "—"}</td>
+          <td style="${tdStyle({ width: CAUTION_COLS[6].width, bg: rowBg, color: "#6b7280" })}">${celluleMarcheOuOpportunite(c)}</td>
           <td style="${tdStyle({ width: CAUTION_COLS[7].width, bg: rowBg })}">${c.autoriteContractante ?? "—"}</td>
         </tr>
       `;
@@ -327,6 +356,9 @@ function buildCautionsText(cautions: CautionAlert[]): string {
         `  Échéance : ${format(c.dateEcheance, "dd/MM/yyyy")}`,
         `  Jours restants : ${c.joursRestants}`,
         c.marcheReference ? `  Marché : ${c.marcheReference}` : "",
+        !c.marcheReference && c.opportuniteObjet !== undefined
+          ? `  Opportunité : ${libelleOpportunite(c.opportuniteReference)} — ${c.opportuniteObjet}`
+          : "",
         c.autoriteContractante
           ? `  Autorité : ${c.autoriteContractante}`
           : "",
