@@ -20,9 +20,13 @@ import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
 import { ALERTE_CAUTION_SEUILS } from '@/lib/constants/caution'
 import type { NiveauAlerte } from '@/lib/utils/caution'
 import {
+  MESSAGE_TYPE_MARCHE_ISSU_OPPORTUNITE,
+  TYPES_CAUTION_MARCHE_ISSU_OPPORTUNITE,
   TYPES_CAUTION_OPPORTUNITE,
   cautionsOpportuniteVisibles,
+  typeCautionAutoriseSurMarche,
   typeCautionAutoriseSurOpportunite,
+  verdictRattachementMarche,
   verdictRattachementOpportunite,
 } from '@/lib/utils/cautions-opportunite'
 import { serializeCaution } from '@/lib/utils/serialize'
@@ -41,6 +45,26 @@ export type CautionWithRelations = Caution & {
   } | null
 }
 
+export type ContexteCautionsMarche = {
+  /** Vrai si le marché a une opportunité d'origine (lien dans l'un ou l'autre sens). */
+  issuDOpportunite: boolean
+  opportunite: { id: string; objet: string } | null
+}
+
+/** Origine d'un marché, qui détermine les types de caution qu'il porte ; `null` si le marché n'existe pas. */
+async function contexteMarche(marcheId: string): Promise<ContexteCautionsMarche | null> {
+  const marche = await prisma.marche.findUnique({
+    where: { id: marcheId },
+    select: { opportunite: { select: { id: true, objet: true } } },
+  })
+  if (!marche) return null
+  // Les deux chemins de création posent les deux liens ; on lit les deux par prudence pour d'éventuelles données anciennes
+  const opportunite =
+    marche.opportunite ??
+    (await prisma.opportunite.findFirst({ where: { marcheId }, select: { id: true, objet: true } }))
+  return { issuDOpportunite: opportunite !== null, opportunite }
+}
+
 // ============================================================================
 // CREATE
 // ============================================================================
@@ -55,15 +79,17 @@ export async function createCaution(data: unknown): Promise<ActionResult<Caution
 
     // 3. Vérification que le marché existe (si marcheId est fourni)
     if (validatedData.marcheId && validatedData.marcheId !== '') {
-      const marche = await prisma.marche.findUnique({
-        where: { id: validatedData.marcheId },
-      })
+      const contexte = await contexteMarche(validatedData.marcheId)
 
-      if (!marche) {
+      if (!contexte) {
         return {
           success: false,
           error: 'Le marché associé n\'existe pas',
         }
+      }
+      // Marché issu d'une opportunité : soumission et capacité financière se gèrent depuis l'opportunité
+      if (!typeCautionAutoriseSurMarche(validatedData.type, contexte.issuDOpportunite)) {
+        return { success: false, error: MESSAGE_TYPE_MARCHE_ISSU_OPPORTUNITE }
       }
     }
 
@@ -249,6 +275,20 @@ export async function updateCaution(data: unknown): Promise<ActionResult<Caution
           success: false,
           error: 'Le marché associé n\'existe pas',
         }
+      }
+    }
+
+    // 4 bis. Marché issu d'une opportunité : types limités. Le type d'une caution existante n'est remis en cause
+    // que s'il change ou si la caution change de marché (une caution déjà saisie reste modifiable)
+    const marcheCibleId = updateData.marcheId ?? existingCaution.marcheId
+    const typeFinal = updateData.type ?? existingCaution.type
+    if (
+      marcheCibleId &&
+      (typeFinal !== existingCaution.type || marcheCibleId !== existingCaution.marcheId)
+    ) {
+      const contexte = await contexteMarche(marcheCibleId)
+      if (contexte && !typeCautionAutoriseSurMarche(typeFinal, contexte.issuDOpportunite)) {
+        return { success: false, error: MESSAGE_TYPE_MARCHE_ISSU_OPPORTUNITE }
       }
     }
 
@@ -903,6 +943,162 @@ export async function detacherCautionOpportunite(cautionId: string): Promise<Act
       entityType: AUDIT_ENTITY.CAUTION,
       entityId:   cautionId,
       metadata:   { reference: detachee.reference, detachement: 'opportunite', opportuniteId: caution.opportuniteId },
+    })
+
+    return { success: true, data: detachee }
+  } catch (error) {
+    return erreurRattachement(error, 'Une erreur inattendue est survenue lors du détachement de la caution')
+  }
+}
+
+// ============================================================================
+// CAUTIONS D'UN MARCHÉ : ORIGINE, RATTACHEMENT, DÉTACHEMENT
+// ============================================================================
+
+/**
+ * Origine du marché (lecture : tous les rôles authentifiés) : détermine les types de caution proposés
+ * et le renvoi vers l'opportunité d'origine.
+ */
+export async function getContexteCautionsMarche(
+  marcheId: string
+): Promise<ActionResult<ContexteCautionsMarche>> {
+  try {
+    await requireAuth()
+
+    const contexte = await contexteMarche(marcheId)
+    if (!contexte) {
+      return { success: false, error: 'Le marché n\'existe pas' }
+    }
+    return { success: true, data: contexte }
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Non authentifié')) {
+      return { success: false, error: 'Vous devez être connecté pour consulter les cautions d\'un marché' }
+    }
+    console.error('Erreur lors de la lecture de l\'origine du marché:', error)
+    return { success: false, error: 'Une erreur inattendue est survenue lors de la lecture du marché' }
+  }
+}
+
+/**
+ * Cautions que l'on peut rattacher à un marché : sans lien et d'un type compatible avec son origine.
+ */
+export async function getCautionsRattachablesMarche(
+  marcheId: string
+): Promise<ActionResult<SerializedCaution[]>> {
+  try {
+    await requireMarcheWrite()
+
+    const contexte = await contexteMarche(marcheId)
+    if (!contexte) {
+      return { success: false, error: 'Le marché n\'existe pas' }
+    }
+
+    const cautions = await prisma.caution.findMany({
+      where: {
+        marcheId: null,
+        opportuniteId: null,
+        ...(contexte.issuDOpportunite ? { type: { in: TYPES_CAUTION_MARCHE_ISSU_OPPORTUNITE } } : {}),
+      },
+      orderBy: { dateEcheance: 'asc' },
+    })
+
+    return { success: true, data: cautions.map(serializeCaution) }
+  } catch (error) {
+    return erreurRattachement(error, 'Impossible de charger les cautions disponibles')
+  }
+}
+
+/**
+ * Rattache une caution existante et sans lien à un marché.
+ */
+export async function rattacherCautionMarche(
+  cautionId: string,
+  marcheId: string
+): Promise<ActionResult<Caution>> {
+  try {
+    const session = await requireMarcheWrite()
+
+    const caution = await prisma.caution.findUnique({ where: { id: cautionId } })
+    if (!caution) {
+      return { success: false, error: 'La caution n\'existe pas' }
+    }
+
+    const contexte = await contexteMarche(marcheId)
+    if (!contexte) {
+      return { success: false, error: 'Le marché n\'existe pas' }
+    }
+
+    const verdict = verdictRattachementMarche(caution, contexte.issuDOpportunite)
+    if (!verdict.ok) {
+      return { success: false, error: verdict.error }
+    }
+
+    // Conditionnel : si quelqu'un l'a rattachée entre-temps, rien n'est modifié
+    const { count } = await prisma.caution.updateMany({
+      where: { id: cautionId, marcheId: null, opportuniteId: null },
+      data: { marcheId },
+    })
+    if (count === 0) {
+      return { success: false, error: 'Cette caution vient d\'être rattachée ailleurs' }
+    }
+
+    const rattachee = await prisma.caution.findUniqueOrThrow({ where: { id: cautionId } })
+
+    revalidatePath('/cautions')
+    revalidatePath(`/cautions/${cautionId}`)
+    revalidatePath(`/marches/${marcheId}`)
+
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.UPDATE,
+      entityType: AUDIT_ENTITY.CAUTION,
+      entityId:   cautionId,
+      metadata:   { reference: rattachee.reference, rattachement: 'marche', marcheId },
+    })
+
+    return { success: true, data: rattachee }
+  } catch (error) {
+    return erreurRattachement(error, 'Une erreur inattendue est survenue lors du rattachement de la caution')
+  }
+}
+
+/**
+ * Détache une caution de son marché : elle redevient sans lien, sans être supprimée.
+ */
+export async function detacherCautionMarche(cautionId: string): Promise<ActionResult<Caution>> {
+  try {
+    const session = await requireMarcheWrite()
+
+    const caution = await prisma.caution.findUnique({ where: { id: cautionId } })
+    if (!caution) {
+      return { success: false, error: 'La caution n\'existe pas' }
+    }
+    if (!caution.marcheId) {
+      return { success: false, error: 'Cette caution n\'est rattachée à aucun marché' }
+    }
+
+    const { count } = await prisma.caution.updateMany({
+      where: { id: cautionId, marcheId: caution.marcheId },
+      data: { marcheId: null },
+    })
+    if (count === 0) {
+      return { success: false, error: 'Cette caution vient d\'être modifiée, rechargez la page' }
+    }
+
+    const detachee = await prisma.caution.findUniqueOrThrow({ where: { id: cautionId } })
+
+    revalidatePath('/cautions')
+    revalidatePath(`/cautions/${cautionId}`)
+    revalidatePath(`/marches/${caution.marcheId}`)
+
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.UPDATE,
+      entityType: AUDIT_ENTITY.CAUTION,
+      entityId:   cautionId,
+      metadata:   { reference: detachee.reference, detachement: 'marche', marcheId: caution.marcheId },
     })
 
     return { success: true, data: detachee }

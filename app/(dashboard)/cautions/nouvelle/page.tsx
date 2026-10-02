@@ -4,7 +4,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { requireAuth } from "@/lib/utils/permissions";
 import { prisma } from "@/lib/db/prisma";
-import { cautionsOpportuniteVisibles } from "@/lib/utils/cautions-opportunite";
+import { getContexteCautionsMarche } from "@/lib/actions/cautions";
+import { cautionsOpportuniteVisibles, typesCautionProposesSurMarche } from "@/lib/utils/cautions-opportunite";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { NouvelleCautionContent } from "./_components/nouvelle-caution-content";
@@ -44,6 +45,13 @@ export default async function NouvelleCautionPage({
     opportunite = { id: trouvee.id, objet: trouvee.objet };
   }
 
+  // Création depuis un marché : un marché issu d'une opportunité ne porte que les cautions d'après attribution
+  let typesAutorises;
+  if (params.marcheId && !opportunite) {
+    const contexte = await getContexteCautionsMarche(params.marcheId);
+    if (contexte.success) typesAutorises = typesCautionProposesSurMarche(contexte.data.issuDOpportunite);
+  }
+
   return (
     <div className="container mx-auto py-8 max-w-4xl space-y-4">
       {opportunite && (
@@ -65,7 +73,7 @@ export default async function NouvelleCautionPage({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <NouvelleCautionContent marcheId={params.marcheId} opportuniteId={opportunite?.id} />
+          <NouvelleCautionContent marcheId={params.marcheId} opportuniteId={opportunite?.id} typesAutorises={typesAutorises} />
         </CardContent>
       </Card>
     </div>

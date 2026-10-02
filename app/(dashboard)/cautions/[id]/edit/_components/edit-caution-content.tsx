@@ -6,11 +6,15 @@ import { CautionForm } from "@/components/cautions";
 import type { CautionFormValues } from "@/components/cautions";
 import { updateCaution } from "@/lib/actions/cautions";
 import { TYPES_CAUTION_OPPORTUNITE } from "@/lib/utils/cautions-opportunite";
+import type { TypeCaution } from "@prisma/client";
+
 interface EditCautionContentProps {
   caution: any; // Données sérialisées depuis le Server Component
+  /** Types proposés pour une caution de marché issu d'une opportunité ; absent = les cinq. */
+  typesAutorises?: readonly TypeCaution[];
 }
 
-export function EditCautionContent({ caution }: EditCautionContentProps) {
+export function EditCautionContent({ caution, typesAutorises }: EditCautionContentProps) {
   const router = useRouter();
 
   const handleSubmit = async (data: CautionFormValues) => {
@@ -38,7 +42,7 @@ export function EditCautionContent({ caution }: EditCautionContentProps) {
   return (
     <CautionForm
       caution={caution}
-      typesAutorises={caution.opportuniteId ? TYPES_CAUTION_OPPORTUNITE : undefined}
+      typesAutorises={caution.opportuniteId ? TYPES_CAUTION_OPPORTUNITE : typesAutorises}
       onSubmit={handleSubmit}
     />
   );

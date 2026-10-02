@@ -123,13 +123,13 @@ Les cautions déjà saisies sur des marchés gardent leur type et restent modifi
 
 ### Critères d'acceptation
 
-- [ ] Marché issu d'une opportunité : seuls trois types sont proposés, et le serveur refuse les deux autres.
-- [ ] Marché sans opportunité d'origine : les cinq types sont proposés.
-- [ ] Une caution existante dont le type n'est plus proposé reste visible et modifiable avec son type.
-- [ ] Le rattachement ne propose que des cautions sans lien et de type compatible avec ce marché.
-- [ ] Détacher remet la caution sans lien, sans suppression.
-- [ ] Le lien d'ajout existant (« Ajouter ») continue de fonctionner.
-- [ ] Droits ADMIN/AVANCE vérifiés côté serveur.
+- [x] Marché issu d'une opportunité : seuls trois types sont proposés (vérifié dans le formulaire) ; le refus serveur des deux autres est codé (`createCaution`, `updateCaution`, `rattacherCautionMarche`) et la règle est couverte par les tests unitaires, mais le refus n'a pas été provoqué de bout en bout (les types sont masqués dans l'interface).
+- [x] Marché sans opportunité d'origine : les cinq types sont proposés (vérifié dans le formulaire).
+- [ ] Une caution existante dont le type n'est plus proposé reste visible et modifiable avec son type (codé : la page de modification ajoute le type déjà saisi aux types proposés ; non vérifié dans le navigateur, aucune caution de ce cas dans la base de test).
+- [x] Le rattachement ne propose que des cautions sans lien et de type compatible avec ce marché (vérifié : la soumission libre n'est pas proposée sur un marché issu d'une opportunité).
+- [x] Détacher remet la caution sans lien, sans suppression (vérifié en base, avec les deux lignes d'audit).
+- [x] Le lien d'ajout existant continue de fonctionner (le bouton s'appelle désormais « Créer », même lien `/cautions/nouvelle?marcheId=`).
+- [x] Droits ADMIN/AVANCE vérifiés côté serveur (`requireMarcheWrite`) ; boutons masqués pour les autres rôles (codé, non essayé avec un compte VISITEUR dans cette phase).
 
 ## Bloquée par
 

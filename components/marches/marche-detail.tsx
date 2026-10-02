@@ -536,7 +536,7 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
       <MarcheDocumentsSection marcheId={marche.id} />
 
       {/* Section Cautions */}
-      <MarcheCautionsSection marcheId={marche.id} />
+      <MarcheCautionsSection marcheId={marche.id} canWrite={canWrite} />
 
       {/* Section Dossiers d'offre */}
       <MarcheDossiersSection marcheId={marche.id} />

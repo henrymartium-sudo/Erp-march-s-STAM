@@ -17,13 +17,28 @@ import { toast } from '@/lib/utils/toast'
 import { formatMontant } from '@/lib/utils/format'
 import { formatDateCourte } from '@/lib/utils/caution'
 import {
+  getCautionsRattachablesMarche,
   getCautionsRattachablesOpportunite,
+  rattacherCautionMarche,
   rattacherCautionOpportunite,
 } from '@/lib/actions/cautions'
 import type { SerializedCaution } from '@/types/serialized'
 
-/** Rattache à l'opportunité une caution déjà créée dans le module et encore sans lien. */
-export function RattacherCautionDialog({ opportuniteId }: { opportuniteId: string }) {
+/**
+ * Rattache à une opportunité ou à un marché (l'un des deux props) une caution déjà créée dans le module et encore sans lien.
+ * `onDone` recharge la liste quand le parent charge lui-même ses données (par défaut : rafraîchit la page).
+ */
+export function RattacherCautionDialog({
+  opportuniteId,
+  marcheId,
+  onDone,
+}: {
+  opportuniteId?: string
+  marcheId?: string
+  onDone?: () => void
+}) {
+  const versMarche = Boolean(marcheId)
+  const cible = versMarche ? 'ce marché' : 'cette opportunité'
   const router = useRouter()
   const [ouvert, setOuvert] = useState(false)
   const [chargement, setChargement] = useState(false)
@@ -36,7 +51,9 @@ export function RattacherCautionDialog({ opportuniteId }: { opportuniteId: strin
     if (!valeur) return
     setChargement(true)
     setErreur(null)
-    const resultat = await getCautionsRattachablesOpportunite()
+    const resultat = marcheId
+      ? await getCautionsRattachablesMarche(marcheId)
+      : await getCautionsRattachablesOpportunite()
     setChargement(false)
     if (!resultat.success) {
       setErreur(resultat.error ?? 'Impossible de charger les cautions disponibles')
@@ -47,15 +64,18 @@ export function RattacherCautionDialog({ opportuniteId }: { opportuniteId: strin
 
   async function rattacher(cautionId: string) {
     setEnCours(cautionId)
-    const resultat = await rattacherCautionOpportunite(cautionId, opportuniteId)
+    const resultat = marcheId
+      ? await rattacherCautionMarche(cautionId, marcheId)
+      : await rattacherCautionOpportunite(cautionId, opportuniteId ?? '')
     setEnCours(null)
     if (!resultat.success) {
       toast.error('Erreur', { description: resultat.error })
       return
     }
-    toast.success('Caution rattachée', { description: 'La caution est maintenant rattachée à cette opportunité.' })
+    toast.success('Caution rattachée', { description: `La caution est maintenant rattachée à ${cible}.` })
     setOuvert(false)
-    router.refresh()
+    if (onDone) onDone()
+    else router.refresh()
   }
 
   return (
@@ -69,7 +89,9 @@ export function RattacherCautionDialog({ opportuniteId }: { opportuniteId: strin
           <DialogHeader>
             <DialogTitle>Rattacher une caution existante</DialogTitle>
             <DialogDescription>
-              Cautions de soumission ou de capacité financière qui ne sont encore rattachées ni à une opportunité ni à un marché.
+              {versMarche
+                ? 'Cautions compatibles avec ce marché qui ne sont encore rattachées ni à une opportunité ni à un marché.'
+                : 'Cautions de soumission ou de capacité financière qui ne sont encore rattachées ni à une opportunité ni à un marché.'}
             </DialogDescription>
           </DialogHeader>
 

@@ -6,15 +6,19 @@ import { CautionForm } from "@/components/cautions";
 import type { CautionFormValues } from "@/components/cautions";
 import { createCaution } from "@/lib/actions/cautions";
 import { TYPES_CAUTION_OPPORTUNITE } from "@/lib/utils/cautions-opportunite";
+import type { TypeCaution } from "@prisma/client";
 
 interface NouvelleCautionContentProps {
   marcheId?: string;
   opportuniteId?: string;
+  /** Types proposés pour un marché issu d'une opportunité ; absent = les cinq. */
+  typesAutorises?: readonly TypeCaution[];
 }
 
 export function NouvelleCautionContent({
   marcheId,
   opportuniteId,
+  typesAutorises,
 }: NouvelleCautionContentProps) {
   const router = useRouter();
 
@@ -44,7 +48,7 @@ export function NouvelleCautionContent({
     <CautionForm
       marcheId={marcheId}
       opportuniteId={opportuniteId}
-      typesAutorises={opportuniteId ? TYPES_CAUTION_OPPORTUNITE : undefined}
+      typesAutorises={opportuniteId ? TYPES_CAUTION_OPPORTUNITE : typesAutorises}
       onSubmit={handleSubmit}
     />
   );

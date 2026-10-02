@@ -6,6 +6,10 @@ import {
   cautionsOpportuniteVisibles,
   typeCautionAutoriseSurOpportunite,
   verdictRattachementOpportunite,
+  TYPES_CAUTION_MARCHE_ISSU_OPPORTUNITE,
+  typeCautionAutoriseSurMarche,
+  typesCautionProposesSurMarche,
+  verdictRattachementMarche,
 } from '../../lib/utils/cautions-opportunite'
 
 test.describe('cautionsOpportuniteVisibles', () => {
@@ -76,5 +80,53 @@ test.describe('verdictRattachementOpportunite', () => {
   test("type d'après attribution → refusée", () => {
     const v = verdictRattachementOpportunite({ type: 'BONNE_EXECUTION', marcheId: null, opportuniteId: null })
     expect(v.ok).toBe(false)
+  })
+})
+
+test.describe('types de caution sur un marché', () => {
+  const avantDepot: TypeCaution[] = ['SOUMISSION', 'CAPACITE_FINANCIERE']
+  const apresAttribution: TypeCaution[] = ['BONNE_EXECUTION', 'AVANCE_DEMARRAGE', 'RETENUE_GARANTIE']
+
+  test("marché issu d'une opportunité : trois types proposés", () => {
+    expect([...(typesCautionProposesSurMarche(true) ?? [])].sort()).toEqual([...apresAttribution].sort())
+    expect([...TYPES_CAUTION_MARCHE_ISSU_OPPORTUNITE].sort()).toEqual([...apresAttribution].sort())
+  })
+
+  test('marché sans opportunité : aucune restriction (les cinq types)', () => {
+    expect(typesCautionProposesSurMarche(false)).toBeUndefined()
+  })
+
+  for (const type of avantDepot) {
+    test(`${type} : refusé sur un marché issu d'une opportunité, accepté sinon`, () => {
+      expect(typeCautionAutoriseSurMarche(type, true)).toBe(false)
+      expect(typeCautionAutoriseSurMarche(type, false)).toBe(true)
+    })
+  }
+
+  for (const type of apresAttribution) {
+    test(`${type} : accepté dans les deux cas`, () => {
+      expect(typeCautionAutoriseSurMarche(type, true)).toBe(true)
+      expect(typeCautionAutoriseSurMarche(type, false)).toBe(true)
+    })
+  }
+})
+
+test.describe('verdictRattachementMarche', () => {
+  const libre = { marcheId: null, opportuniteId: null }
+
+  test('caution libre de type compatible → ok', () => {
+    expect(verdictRattachementMarche({ type: 'BONNE_EXECUTION', ...libre }, true)).toEqual({ ok: true })
+    expect(verdictRattachementMarche({ type: 'SOUMISSION', ...libre }, false)).toEqual({ ok: true })
+  })
+
+  test("soumission sur marché issu d'une opportunité → refus avec renvoi vers l'opportunité", () => {
+    const v = verdictRattachementMarche({ type: 'SOUMISSION', ...libre }, true)
+    expect(v.ok).toBe(false)
+    if (!v.ok) expect(v.error).toContain('opportunité')
+  })
+
+  test('caution déjà rattachée (marché ou opportunité) → refus', () => {
+    expect(verdictRattachementMarche({ type: 'BONNE_EXECUTION', marcheId: 'm1', opportuniteId: null }, false).ok).toBe(false)
+    expect(verdictRattachementMarche({ type: 'BONNE_EXECUTION', marcheId: null, opportuniteId: 'o1' }, false).ok).toBe(false)
   })
 })
