@@ -19,6 +19,8 @@ export interface MarchePilotage {
   /** motif de résiliation / annulation / infructueux renseigné selon le statut */
   motifRenseigne: boolean
   dateFinPrevue: Date | null
+  /** vrai si une opportunité est liée au marché (dans un sens ou dans l'autre) */
+  aOpportunite: boolean
 }
 
 export interface ResultatConversion {
@@ -26,6 +28,7 @@ export interface ResultatConversion {
   facture: number
   encaisse: number
   perduApresAttribution: number
+  nbPerdusApresAttribution: number
   taux: number | null
   tauxEncaisse: number | null
   alerte: boolean
@@ -70,7 +73,7 @@ export function montantFacture(m: MarchePilotage): number {
 export function calculerConversion(marches: MarchePilotage[], periode: Periode): ResultatConversion {
   const exclusSansDate: string[] = []
   const retenus: ResultatConversion['marches'] = []
-  let valeurAttribuee = 0, facture = 0, encaisse = 0, perduApresAttribution = 0
+  let valeurAttribuee = 0, facture = 0, encaisse = 0, perduApresAttribution = 0, nbPerdusApresAttribution = 0
 
   for (const m of marches) {
     if (!m.attribueUnJour) continue
@@ -82,20 +85,20 @@ export function calculerConversion(marches: MarchePilotage[], periode: Periode):
     valeurAttribuee += m.montant
     facture += fac
     encaisse += m.factures.filter((f) => f.statut === 'PAYEE').reduce((s, f) => s + f.montantTTC, 0)
-    if (perdu) perduApresAttribution += m.montant
+    if (perdu) { perduApresAttribution += m.montant; nbPerdusApresAttribution++ }
     retenus.push({ id: m.id, numero: m.numero, objet: m.objet, montant: m.montant, facture: fac, perdu })
   }
 
   const taux = pourcentage(facture, valeurAttribuee)
   return {
-    valeurAttribuee, facture, encaisse, perduApresAttribution,
+    valeurAttribuee, facture, encaisse, perduApresAttribution, nbPerdusApresAttribution,
     taux, tauxEncaisse: pourcentage(encaisse, valeurAttribuee),
     alerte: taux !== null && taux < SEUIL_CONVERSION,
     marches: retenus, exclusSansDate,
   }
 }
 
-// ── Échecs et écart de prix ─────────────────────────────────────────────────
+// ── Issue des offres et écart de prix ─────────────────────────────────────────────────
 
 export interface LotPilotage {
   id: string
@@ -112,18 +115,22 @@ export interface LotPilotage {
   motifRenseigne: boolean
 }
 
-export interface ResultatEchecs {
+export interface Repartition { nombre: number; valeur: number }
+
+export interface ResultatIssueOffres {
   lotsSoumis: number
-  lotsGagnes: number
-  lotsPerdus: number
-  lotsInfructueux: number
-  valeurPerdue: number
-  marchesAnnulesOuResilies: number
-  valeurMarchesPerdus: number
-  tauxEchec: number | null
+  gagnes: Repartition
+  perdus: Repartition
+  /** lots infructueux : procédure sans suite, hors taux */
+  sansSuite: Repartition
+  /** lots en cours ou attribués provisoirement : issue inconnue, hors taux */
+  enAttente: Repartition
+  /** perdus ÷ (gagnés + perdus), sur les seuls dossiers clos */
+  tauxPerte: number | null
+  /** complément exact du taux de perte (règle « Résultats par lot ») */
   tauxSucces: number | null
   exclusSansDate: string[]
-  /** lots perdus / infructueux et marchés annulés ou résiliés de la période (drill-down) */
+  /** lots perdus et sans suite de la période (drill-down) */
   detail: { id: string; libelle: string; resultat: string }[]
 }
 
@@ -136,35 +143,30 @@ export interface ResultatEcartPrix {
 
 export const MIN_CAS_ECART = 3
 
-export function calculerEchecs(lots: LotPilotage[], marches: MarchePilotage[], periode: Periode): ResultatEchecs {
+export function calculerIssueOffres(lots: LotPilotage[], periode: Periode): ResultatIssueOffres {
   const exclusSansDate: string[] = []
-  const detail: ResultatEchecs['detail'] = []
-  let soumis = 0, gagnes = 0, perdus = 0, infructueux = 0, valeurPerdue = 0
+  const detail: ResultatIssueOffres['detail'] = []
+  const vide = (): Repartition => ({ nombre: 0, valeur: 0 })
+  const gagnes = vide(), perdus = vide(), sansSuite = vide(), enAttente = vide()
+  let soumis = 0
 
   for (const l of lots) {
     if (!l.soumis) continue
     if (!l.dateDepot) { exclusSansDate.push(l.libelle); continue }
     if (!dansPeriode(l.dateDepot, periode)) continue
     soumis++
-    if (l.resultat === 'GAGNE') gagnes++
-    if (l.resultat === 'PERDU') { perdus++; valeurPerdue += l.montantPropose ?? 0; detail.push({ id: l.id, libelle: l.libelle, resultat: 'Perdu' }) }
-    if (l.resultat === 'INFRUCTUEUX') { infructueux++; detail.push({ id: l.id, libelle: l.libelle, resultat: 'Infructueux' }) }
+    const cible = l.resultat === 'GAGNE' ? gagnes : l.resultat === 'PERDU' ? perdus : l.resultat === 'INFRUCTUEUX' ? sansSuite : enAttente
+    cible.nombre++
+    cible.valeur += l.montantPropose ?? 0
+    if (l.resultat === 'PERDU') detail.push({ id: l.id, libelle: l.libelle, resultat: 'Perdu' })
+    if (l.resultat === 'INFRUCTUEUX') detail.push({ id: l.id, libelle: l.libelle, resultat: 'Sans suite' })
   }
 
-  let marchesAnnulesOuResilies = 0, valeurMarchesPerdus = 0
-  for (const m of marches) {
-    if (!m.attribueUnJour || !STATUTS_PERDUS.includes(m.statut)) continue
-    if (!m.dateAttribution || !dansPeriode(m.dateAttribution, periode)) continue
-    marchesAnnulesOuResilies++
-    valeurMarchesPerdus += m.montant
-    detail.push({ id: m.id, libelle: m.numero, resultat: m.statut === 'RESILIE' ? 'Résilié' : 'Annulé' })
-  }
-
+  const tauxPerte = pourcentage(perdus.nombre, gagnes.nombre + perdus.nombre)
   return {
-    lotsSoumis: soumis, lotsGagnes: gagnes, lotsPerdus: perdus, lotsInfructueux: infructueux, valeurPerdue,
-    marchesAnnulesOuResilies, valeurMarchesPerdus,
-    tauxEchec: pourcentage(perdus + infructueux, soumis),
-    tauxSucces: pourcentage(gagnes, gagnes + perdus),
+    lotsSoumis: soumis, gagnes, perdus, sansSuite, enAttente,
+    tauxPerte,
+    tauxSucces: tauxPerte === null ? null : 100 - tauxPerte,
     exclusSansDate,
     detail,
   }
@@ -186,7 +188,7 @@ export function calculerEcartPrix(lots: LotPilotage[], periode: Periode): Result
 // ── Qualité des données ─────────────────────────────────────────────────────
 
 export interface ElementQualite {
-  cle: 'SANS_FACTURE' | 'ECHEANCE_DEPASSEE' | 'ECHEC_SANS_MOTIF' | 'SANS_DATE' | 'FACTURE_SUPERIEURE'
+  cle: 'SANS_FACTURE' | 'ECHEANCE_DEPASSEE' | 'ECHEC_SANS_MOTIF' | 'SANS_DATE' | 'FACTURE_SUPERIEURE' | 'SANS_OPPORTUNITE'
   libelle: string
   elements: string[]
 }
@@ -195,12 +197,13 @@ export const TOLERANCE_FACTURE = 1.02
 const STATUTS_DEVANT_ETRE_FACTURES = ['EN_EXECUTION', 'EXECUTE_ATTENTE_GARANTIES', 'CLOTURE']
 const STATUTS_EN_COURS_EXECUTION = ['ATTRIBUE_DEFINITIVEMENT', 'EN_ATTENTE_LIVRAISON_OS', 'EN_EXECUTION']
 const STATUTS_ECHEC_MARCHE = ['ANNULE', 'RESILIE', 'INFRUCTUEUX']
+const STATUTS_AVANT_DEPOT = ['OPPORTUNITE_IDENTIFIEE', 'DOSSIER_EN_PREPARATION']
 
 export function calculerQualite(
   marches: MarchePilotage[],
   lots: LotPilotage[],
   conversion: ResultatConversion,
-  echecs: ResultatEchecs,
+  offres: ResultatIssueOffres,
   aujourdHui: Date,
 ): ElementQualite[] {
   return [
@@ -229,12 +232,17 @@ export function calculerQualite(
     {
       cle: 'SANS_DATE',
       libelle: 'Exclus des calculs faute de date (attribution ou dépôt)',
-      elements: [...conversion.exclusSansDate, ...echecs.exclusSansDate],
+      elements: [...conversion.exclusSansDate, ...offres.exclusSansDate],
     },
     {
       cle: 'FACTURE_SUPERIEURE',
       libelle: 'Facturé TTC supérieur au montant contractuel (+2 %)',
       elements: marches.filter((m) => montantFacture(m) > m.montant * TOLERANCE_FACTURE).map((m) => m.numero),
+    },
+    {
+      cle: 'SANS_OPPORTUNITE',
+      libelle: "Marchés sans opportunité liée (absents de l'issue des offres)",
+      elements: marches.filter((m) => !m.aOpportunite && !STATUTS_AVANT_DEPOT.includes(m.statut)).map((m) => m.numero),
     },
   ]
 }

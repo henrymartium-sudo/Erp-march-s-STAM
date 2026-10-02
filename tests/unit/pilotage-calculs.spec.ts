@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import {
-  calculerConversion, calculerEchecs, calculerEcartPrix, calculerQualite, estAttribueUnJour,
+  calculerConversion, calculerIssueOffres, calculerEcartPrix, calculerQualite, estAttribueUnJour,
   type MarchePilotage, type LotPilotage,
 } from '../../lib/pilotage/calculs'
 
@@ -12,6 +12,7 @@ function marche(p: Partial<MarchePilotage>): MarchePilotage {
     montant: p.montant ?? 1000, dateAttribution: p.dateAttribution === undefined ? new Date('2026-03-01') : p.dateAttribution,
     dateDepotOffre: p.dateDepotOffre ?? null, attribueUnJour: p.attribueUnJour ?? true,
     factures: p.factures ?? [], motifRenseigne: p.motifRenseigne ?? false, dateFinPrevue: p.dateFinPrevue ?? null,
+    aOpportunite: p.aOpportunite ?? true,
   }
 }
 
@@ -37,6 +38,7 @@ test.describe('calculerConversion', () => {
     ], PERIODE)
     expect(r.valeurAttribuee).toBe(2000)
     expect(r.perduApresAttribution).toBe(1000)
+    expect(r.nbPerdusApresAttribution).toBe(1)
     expect(r.taux).toBe(13) // 250 / 2000 = 12,5 → arrondi 13
     expect(r.alerte).toBe(true)
   })
@@ -67,29 +69,34 @@ function lot(p: Partial<LotPilotage>): LotPilotage {
   }
 }
 
-test.describe('calculerEchecs', () => {
-  test('cumule perdus + infructueux sur les lots soumis, succès selon la règle par lot', () => {
-    const r = calculerEchecs([
-      lot({ id: '1', resultat: 'GAGNE' }), lot({ id: '2', resultat: 'PERDU' }),
-      lot({ id: '3', resultat: 'INFRUCTUEUX' }), lot({ id: '4', resultat: 'EN_COURS' }),
-      lot({ id: '5', resultat: 'PERDU', soumis: false }),
-    ], [], PERIODE)
-    expect(r.lotsSoumis).toBe(4)
-    expect(r.tauxEchec).toBe(50)  // (1 perdu + 1 infructueux) / 4
-    expect(r.tauxSucces).toBe(50) // 1 gagné / (1 gagné + 1 perdu)
+test.describe('calculerIssueOffres', () => {
+  test('répartit les lots soumis en nombre et en valeur ; taux de perte sur les seuls dossiers clos', () => {
+    const r = calculerIssueOffres([
+      lot({ id: '1', resultat: 'GAGNE', montantPropose: 3000 }),
+      lot({ id: '2', resultat: 'PERDU', montantPropose: 1000 }),
+      lot({ id: '3', resultat: 'PERDU', montantPropose: 500 }),
+      lot({ id: '4', resultat: 'INFRUCTUEUX', montantPropose: 700 }),
+      lot({ id: '5', resultat: 'EN_COURS', montantPropose: 9000 }),
+      lot({ id: '6', resultat: 'ATTRIBUE_PROVISOIREMENT', montantPropose: 100 }),
+      lot({ id: '7', resultat: 'PERDU', soumis: false }),
+    ], PERIODE)
+    expect(r.gagnes).toEqual({ nombre: 1, valeur: 3000 })
+    expect(r.perdus).toEqual({ nombre: 2, valeur: 1500 })
+    expect(r.sansSuite).toEqual({ nombre: 1, valeur: 700 })
+    expect(r.enAttente).toEqual({ nombre: 2, valeur: 9100 })
+    expect(r.lotsSoumis).toBe(6)
+    expect(r.tauxPerte).toBe(67)  // 2 perdus / (1 gagné + 2 perdus) ; en attente et infructueux hors taux
+    expect(r.tauxSucces).toBe(33) // complément exact du taux de perte
   })
 
-  test('compte les marchés annulés ou résiliés après attribution', () => {
-    const r = calculerEchecs([], [
-      marche({ id: 'a', statut: 'RESILIE', montant: 500 }),
-      marche({ id: 'b', statut: 'ANNULE', attribueUnJour: false }),
-    ], PERIODE)
-    expect(r.marchesAnnulesOuResilies).toBe(1)
-    expect(r.valeurMarchesPerdus).toBe(500)
+  test('aucun dossier clos : pas de taux', () => {
+    const r = calculerIssueOffres([lot({ resultat: 'EN_COURS' }), lot({ id: '2', resultat: 'INFRUCTUEUX' })], PERIODE)
+    expect(r.tauxPerte).toBeNull()
+    expect(r.tauxSucces).toBeNull()
   })
 
   test('lot soumis sans date de dépôt signalé', () => {
-    const r = calculerEchecs([lot({ libelle: 'Lot X', dateDepot: null })], [], PERIODE)
+    const r = calculerIssueOffres([lot({ libelle: 'Lot X', dateDepot: null })], PERIODE)
     expect(r.lotsSoumis).toBe(0)
     expect(r.exclusSansDate).toEqual(['Lot X'])
   })
@@ -122,17 +129,20 @@ test('calculerQualite signale chaque anomalie', () => {
     marche({ numero: 'RETARD', statut: 'EN_EXECUTION', dateFinPrevue: new Date('2026-01-01'), factures: [{ statut: 'EMISE', montantTTC: 10 }] }),
     marche({ numero: 'RESIL', statut: 'RESILIE', motifRenseigne: false }),
     marche({ numero: 'SURFAC', montant: 1000, factures: [{ statut: 'PAYEE', montantTTC: 1030 }] }),
+    marche({ numero: 'ANCIEN', statut: 'INFRUCTUEUX', motifRenseigne: true, aOpportunite: false }),
+    marche({ numero: 'PREPA', statut: 'DOSSIER_EN_PREPARATION', aOpportunite: false }),
   ]
   const lots = [lot({ libelle: 'Lot sans motif', resultat: 'PERDU', motifRenseigne: false })]
   const conversion = calculerConversion(marches, PERIODE)
-  const echecs = calculerEchecs(lots, marches, PERIODE)
-  const q = calculerQualite(marches, lots, conversion, echecs, new Date('2026-10-02'))
+  const offres = calculerIssueOffres(lots, PERIODE)
+  const q = calculerQualite(marches, lots, conversion, offres, new Date('2026-10-02'))
   const par = Object.fromEntries(q.map((e) => [e.cle, e.elements]))
   expect(par.SANS_FACTURE).toEqual(['SANSFAC'])
   expect(par.ECHEANCE_DEPASSEE).toEqual(['RETARD'])
   expect(par.ECHEC_SANS_MOTIF).toEqual(['RESIL', 'Lot sans motif'])
   expect(par.SANS_DATE).toEqual([])
   expect(par.FACTURE_SUPERIEURE).toEqual(['SURFAC'])
+  expect(par.SANS_OPPORTUNITE).toEqual(['ANCIEN']) // offre déposée sans opportunité liée ; PREPA pas encore déposé
 })
 
 test('un marché résilié a toujours été attribué, même sans date ni historique', () => {

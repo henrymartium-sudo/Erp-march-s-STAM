@@ -49,7 +49,7 @@ export function PilotageClient() {
               sousLignes={[
                 `Facturé ${formatMontant(data.conversion.facture)} sur ${formatMontant(data.conversion.valeurAttribuee)}`,
                 `dont encaissé : ${pct(data.conversion.tauxEncaisse)}`,
-                `Perdu après attribution : ${formatMontant(data.conversion.perduApresAttribution)}`,
+                `Perdu après attribution (annulé ou résilié) : ${data.conversion.nbPerdusApresAttribution} marché(s), ${formatMontant(data.conversion.perduApresAttribution)}`,
               ]}
               explication={`Part de la valeur attribuée déjà facturée (TTC). Alerte sous ${SEUIL_CONVERSION} %.`}
               detail={data.conversion.marches.length > 0 ? (
@@ -64,17 +64,19 @@ export function PilotageClient() {
               ) : undefined}
             />
             <IndicateurCard
-              titre="Cumul des échecs"
-              valeur={pct(data.echecs.tauxEchec)}
+              titre="Issue des offres"
+              valeur={data.offres.tauxPerte === null ? '—' : `${data.offres.tauxPerte} % perdus`}
               sousLignes={[
-                `${data.echecs.lotsPerdus} lot(s) perdu(s), ${data.echecs.lotsInfructueux} infructueux sur ${data.echecs.lotsSoumis} soumis`,
-                `${data.echecs.marchesAnnulesOuResilies} marché(s) annulé(s) ou résilié(s) après attribution`,
-                `Taux de succès (par lot) : ${pct(data.echecs.tauxSucces)}`,
+                `Gagnés : ${data.offres.gagnes.nombre} lot(s), ${formatMontant(data.offres.gagnes.valeur)}`,
+                `Perdus : ${data.offres.perdus.nombre} lot(s), ${formatMontant(data.offres.perdus.valeur)}`,
+                `Sans suite (infructueux) : ${data.offres.sansSuite.nombre} lot(s), ${formatMontant(data.offres.sansSuite.valeur)}`,
+                `En attente d'issue : ${data.offres.enAttente.nombre} lot(s), ${formatMontant(data.offres.enAttente.valeur)}`,
+                `Taux de succès (par lot) : ${pct(data.offres.tauxSucces)}`,
               ]}
-              explication="Lots perdus et infructueux rapportés aux lots soumis sur la période (date de dépôt)."
-              detail={data.echecs.detail.length > 0 ? (
+              explication="Lots soumis sur la période (date de dépôt). Taux de perte = perdus ÷ (gagnés + perdus) : les lots sans suite ou en attente n'entrent pas dans le taux. Les pertes après attribution figurent dans la conversion."
+              detail={data.offres.detail.length > 0 ? (
                 <ul className="space-y-1">
-                  {data.echecs.detail.map((d) => (
+                  {data.offres.detail.map((d) => (
                     <li key={d.id} className="flex justify-between gap-2">
                       <span className="truncate">{d.libelle}</span>
                       <span>{d.resultat}</span>

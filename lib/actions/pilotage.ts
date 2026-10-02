@@ -5,14 +5,14 @@ import { StatutMarche, StatutOpportunite } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 import { requireRole } from '@/lib/utils/permissions'
 import {
-  calculerConversion, calculerEchecs, calculerEcartPrix, calculerQualite, estAttribueUnJour, STATUTS_ATTRIBUES,
+  calculerConversion, calculerIssueOffres, calculerEcartPrix, calculerQualite, estAttribueUnJour, STATUTS_ATTRIBUES,
   type MarchePilotage, type LotPilotage, type StatutFactureLite,
-  type ResultatConversion, type ResultatEchecs, type ResultatEcartPrix, type ElementQualite,
+  type ResultatConversion, type ResultatIssueOffres, type ResultatEcartPrix, type ElementQualite,
 } from '@/lib/pilotage/calculs'
 
 export interface PilotageData {
   conversion: ResultatConversion
-  echecs: ResultatEchecs
+  offres: ResultatIssueOffres
   ecartPrix: ResultatEcartPrix
   qualite: ElementQualite[]
 }
@@ -38,6 +38,7 @@ export async function getPilotageData(input: { dateDebut: string; dateFin: strin
     select: {
       id: true, numero: true, objet: true, statut: true, montant: true,
       dateAttributionDefinitive: true, dateDepotOffre: true, dateFinPrevue: true,
+      opportuniteId: true, opportunites: { select: { id: true }, take: 1 },
       motifsResiliation: true, motifsAnnulation: true, motifsInfructueux: true,
       factures: { select: { statut: true, montantTTC: true } },
       historiqueStatuts: {
@@ -62,6 +63,7 @@ export async function getPilotageData(input: { dateDebut: string; dateFin: strin
       factures: m.factures.map((f) => ({ statut: f.statut as StatutFactureLite, montantTTC: Number(f.montantTTC) })),
       motifRenseigne: renseigne(motif),
       dateFinPrevue: m.dateFinPrevue,
+      aOpportunite: m.opportuniteId !== null || m.opportunites.length > 0,
     }
   })
 
@@ -85,11 +87,11 @@ export async function getPilotageData(input: { dateDebut: string; dateFin: strin
   }))
 
   const conversion = calculerConversion(marches, periode)
-  const echecs = calculerEchecs(lots, marches, periode)
+  const offres = calculerIssueOffres(lots, periode)
   return {
     conversion,
-    echecs,
+    offres,
     ecartPrix: calculerEcartPrix(lots, periode),
-    qualite: calculerQualite(marches, lots, conversion, echecs, new Date()),
+    qualite: calculerQualite(marches, lots, conversion, offres, new Date()),
   }
 }
