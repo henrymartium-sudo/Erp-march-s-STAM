@@ -5,7 +5,7 @@ import { StatutMarche, StatutOpportunite } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 import { requireRole } from '@/lib/utils/permissions'
 import {
-  calculerConversion, calculerEchecs, calculerEcartPrix, calculerQualite,
+  calculerConversion, calculerEchecs, calculerEcartPrix, calculerQualite, estAttribueUnJour, STATUTS_ATTRIBUES,
   type MarchePilotage, type LotPilotage, type StatutFactureLite,
   type ResultatConversion, type ResultatEchecs, type ResultatEcartPrix, type ElementQualite,
 } from '@/lib/pilotage/calculs'
@@ -19,9 +19,6 @@ export interface PilotageData {
 
 const periodeSchema = z.object({ dateDebut: z.string().datetime(), dateFin: z.string().datetime() })
 
-const STATUTS_ATTRIBUES: StatutMarche[] = [
-  'ATTRIBUE_DEFINITIVEMENT', 'EN_ATTENTE_LIVRAISON_OS', 'EN_EXECUTION', 'EXECUTE_ATTENTE_GARANTIES', 'CLOTURE',
-]
 const STATUTS_OPP_SOUMISES: StatutOpportunite[] = [
   'SOUMISE', 'OFFRE_SOUMISE', 'EN_ATTENTE_ATTRIBUTION', 'ATTRIBUE_PROVISOIREMENT', 'GAGNEE', 'PERDUE',
 ]
@@ -44,7 +41,7 @@ export async function getPilotageData(input: { dateDebut: string; dateFin: strin
       motifsResiliation: true, motifsAnnulation: true, motifsInfructueux: true,
       factures: { select: { statut: true, montantTTC: true } },
       historiqueStatuts: {
-        where: { nouveauStatut: { in: STATUTS_ATTRIBUES } },
+        where: { nouveauStatut: { in: [...STATUTS_ATTRIBUES] as StatutMarche[] } },
         select: { createdAt: true },
         orderBy: { createdAt: 'asc' },
         take: 1,
@@ -61,7 +58,7 @@ export async function getPilotageData(input: { dateDebut: string; dateFin: strin
       id: m.id, numero: m.numero, objet: m.objet, statut: m.statut, montant: Number(m.montant),
       dateAttribution: m.dateAttributionDefinitive ?? premierPassage,
       dateDepotOffre: m.dateDepotOffre,
-      attribueUnJour: m.dateAttributionDefinitive !== null || STATUTS_ATTRIBUES.includes(m.statut) || premierPassage !== null,
+      attribueUnJour: estAttribueUnJour(m.statut, m.dateAttributionDefinitive, premierPassage),
       factures: m.factures.map((f) => ({ statut: f.statut as StatutFactureLite, montantTTC: Number(f.montantTTC) })),
       motifRenseigne: renseigne(motif),
       dateFinPrevue: m.dateFinPrevue,

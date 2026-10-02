@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import {
-  calculerConversion, calculerEchecs, calculerEcartPrix, calculerQualite,
+  calculerConversion, calculerEchecs, calculerEcartPrix, calculerQualite, estAttribueUnJour,
   type MarchePilotage, type LotPilotage,
 } from '../../lib/pilotage/calculs'
 
@@ -133,4 +133,16 @@ test('calculerQualite signale chaque anomalie', () => {
   expect(par.ECHEC_SANS_MOTIF).toEqual(['RESIL', 'Lot sans motif'])
   expect(par.SANS_DATE).toEqual([])
   expect(par.FACTURE_SUPERIEURE).toEqual(['SURFAC'])
+})
+
+test('un marché résilié a toujours été attribué, même sans date ni historique', () => {
+  expect(estAttribueUnJour('RESILIE', null, null)).toBe(true)
+  expect(estAttribueUnJour('ANNULE', null, null)).toBe(false)
+  expect(estAttribueUnJour('ANNULE', null, new Date('2026-03-01'))).toBe(true)
+  expect(estAttribueUnJour('EN_EXECUTION', null, null)).toBe(true)
+  expect(estAttribueUnJour('INFRUCTUEUX', null, null)).toBe(false)
+  expect(estAttribueUnJour('INFRUCTUEUX', new Date('2026-03-01'), null)).toBe(true)
+  // Résilié sans date : signalé dans « exclus faute de date », jamais exclu en silence
+  const r = calculerConversion([marche({ numero: 'RES-SANS-DATE', statut: 'RESILIE', dateAttribution: null, attribueUnJour: estAttribueUnJour('RESILIE', null, null) })], PERIODE)
+  expect(r.exclusSansDate).toEqual(['RES-SANS-DATE'])
 })

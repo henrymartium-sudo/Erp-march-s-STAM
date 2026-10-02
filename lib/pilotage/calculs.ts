@@ -37,6 +37,22 @@ export const SEUIL_CONVERSION = 30
 const STATUTS_FACTURES_COMPTEES: StatutFactureLite[] = ['EMISE', 'EN_ATTENTE', 'PAYEE']
 const STATUTS_PERDUS = ['RESILIE', 'ANNULE']
 
+/** Statuts qui supposent une attribution définitive (utilisés aussi pour lire l'historique). */
+export const STATUTS_ATTRIBUES = [
+  'ATTRIBUE_DEFINITIVEMENT', 'EN_ATTENTE_LIVRAISON_OS', 'EN_EXECUTION', 'EXECUTE_ATTENTE_GARANTIES', 'CLOTURE',
+] as const
+
+/**
+ * Vrai si le marché a été attribué un jour. Une résiliation suppose toujours une attribution
+ * préalable (règle métier STAM) ; une annulation peut survenir avant : l'historique tranche.
+ */
+export function estAttribueUnJour(statut: string, dateAttributionDefinitive: Date | null, premierPassage: Date | null): boolean {
+  return dateAttributionDefinitive !== null
+    || statut === 'RESILIE'
+    || (STATUTS_ATTRIBUES as readonly string[]).includes(statut)
+    || premierPassage !== null
+}
+
 function dansPeriode(d: Date, p: Periode): boolean {
   return d >= p.dateDebut && d <= p.dateFin
 }
