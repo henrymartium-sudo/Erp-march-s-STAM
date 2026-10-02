@@ -168,10 +168,10 @@ Sauvegarde de la base de production, migration additive, déploiement, puis vér
 
 ### Critères d'acceptation
 
-- [ ] Une sauvegarde de production datée existe avant la migration, et son emplacement est consigné.
-- [ ] La migration est additive et n'a modifié aucune donnée existante : décomptes de cautions et de marchés identiques avant et après.
-- [ ] Les parcours des phases 1 à 6 sont vérifiés en production, sur 1920, 768 et 375 pixels, sans erreur de console.
-- [ ] Aucun e-mail d'alerte supplémentaire n'est parti lors du déploiement.
+- [x] Une sauvegarde de production datée existe avant la migration (2026-10-02, 11h43 UTC, SHA-256 conforme, 0 écart avec la base) ; elle est rangée hors dépôt, dans le dossier local de sauvegardes (dépôt public : aucun chemin consigné ici). Le SQL d'annulation testé est rangé au même endroit.
+- [x] La migration est additive et n'a modifié aucune donnée existante : décomptes de cautions, marchés, opportunités, lots, documents, comptes, règles d'alerte et journal identiques avant et après ; colonne, index et 2 contraintes présents ; 0 caution rattachée. Répétée avant sur une copie restaurée de la sauvegarde, annulation testée (schéma identique).
+- [ ] Les parcours des phases 1 à 6 sont vérifiés en production, sur 1920, 768 et 375 pixels, sans erreur de console : fait en lecture seule (section Cautions d'un marché issu d'une opportunité, fenêtre de rattachement vide, types du formulaire, onglet Cautions de l'opportunité ; 768 et 375 px sans débordement ; console vide). Non fait : créer, rattacher, détacher, modifier en production (aucune donnée de test voulue en production) ; ces gestes sont vérifiés en local.
+- [ ] Aucun e-mail d'alerte supplémentaire n'est parti lors du déploiement : aucun envoi déclenché, périmètre du cron relevé avant (1 caution, avec marché, contenu inchangé) ; premier passage du cron suivant à observer.
 - [ ] Le Journal de décisions est mis à jour avec ta validation.
 
 ## Bloquée par
