@@ -5,6 +5,7 @@ import { toast } from '@/lib/utils/toast';
 import { CautionForm } from "@/components/cautions";
 import type { CautionFormValues } from "@/components/cautions";
 import { updateCaution } from "@/lib/actions/cautions";
+import { TYPES_CAUTION_OPPORTUNITE } from "@/lib/utils/cautions-opportunite";
 interface EditCautionContentProps {
   caution: any; // Données sérialisées depuis le Server Component
 }
@@ -26,13 +27,18 @@ export function EditCautionContent({ caution }: EditCautionContentProps) {
       description: "La caution a été modifiée avec succès.",
     });
 
-    // Rediriger vers la page de détail
-    router.push(`/cautions/${caution.id}`);
+    // Caution d'opportunité : retour sur l'onglet Cautions de l'opportunité ; sinon page de détail
+    router.push(
+      caution.opportuniteId
+        ? `/opportunites/${caution.opportuniteId}?onglet=cautions`
+        : `/cautions/${caution.id}`
+    );
   };
 
   return (
     <CautionForm
       caution={caution}
+      typesAutorises={caution.opportuniteId ? TYPES_CAUTION_OPPORTUNITE : undefined}
       onSubmit={handleSubmit}
     />
   );

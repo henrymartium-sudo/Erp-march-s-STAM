@@ -68,6 +68,7 @@ Les personnes de STAM qui montent les dossiers d'offre et suivent les cautions. 
 - Les cautions d'une opportunité s'affichent sur la page du marché qui en est issu, marquées comme venant de l'opportunité. Elles se modifient depuis la caution elle-même, pas depuis deux endroits qui divergeraient.
 - Détacher une caution la remet sans lien. Elle n'est pas supprimée.
 - Le montant, la banque, les dates et les statuts sont ceux du module actuel.
+- Une caution de soumission rattachée à une opportunité peut passer au statut « Libérée », pour la suivre jusqu'à sa libération. L'interdiction actuelle de libérer une caution de soumission reste en vigueur pour les cautions de marché.
 - Un état vide explicite s'affiche quand il n'y a aucune caution.
 - Les droits suivent ceux de l'opportunité : ADMIN et AVANCE écrivent, les autres consultent.
 

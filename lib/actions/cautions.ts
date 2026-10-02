@@ -19,6 +19,7 @@ import type { PaginatedResponse } from '@/types/pagination'
 import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
 import { ALERTE_CAUTION_SEUILS } from '@/lib/constants/caution'
 import type { NiveauAlerte } from '@/lib/utils/caution'
+import { cautionsOpportuniteVisibles, typeCautionAutoriseSurOpportunite } from '@/lib/utils/cautions-opportunite'
 
 // ============================================================================
 // TYPES
@@ -59,6 +60,36 @@ export async function createCaution(data: unknown): Promise<ActionResult<Caution
       }
     }
 
+    // 3 bis. Rattachement à une opportunité : exclusif avec le marché, types et statut contrôlés côté serveur
+    const opportuniteId = validatedData.opportuniteId || undefined
+    if (opportuniteId) {
+      if (validatedData.marcheId) {
+        return {
+          success: false,
+          error: 'Une caution est rattachée à une opportunité ou à un marché, pas aux deux',
+        }
+      }
+      if (!typeCautionAutoriseSurOpportunite(validatedData.type)) {
+        return {
+          success: false,
+          error: 'Seules la caution de soumission et la caution de capacité financière se créent depuis une opportunité',
+        }
+      }
+      const opportunite = await prisma.opportunite.findUnique({
+        where: { id: opportuniteId },
+        select: { statut: true },
+      })
+      if (!opportunite) {
+        return { success: false, error: 'L\'opportunité associée n\'existe pas' }
+      }
+      if (!cautionsOpportuniteVisibles(opportunite.statut)) {
+        return {
+          success: false,
+          error: 'Les cautions se saisissent à partir du statut « Dossier en préparation »',
+        }
+      }
+    }
+
     // 4. Création dans Prisma avec userId
     // Si marcheId est vide, on ne l'envoie pas à Prisma (undefined)
     const cautionData: any = {
@@ -77,6 +108,9 @@ export async function createCaution(data: unknown): Promise<ActionResult<Caution
     if (validatedData.marcheId && validatedData.marcheId !== '') {
       cautionData.marcheId = validatedData.marcheId
     }
+    if (opportuniteId) {
+      cautionData.opportuniteId = opportuniteId
+    }
 
     const caution = await prisma.caution.create({
       data: cautionData,
@@ -87,6 +121,9 @@ export async function createCaution(data: unknown): Promise<ActionResult<Caution
     if (validatedData.marcheId && validatedData.marcheId !== '') {
       revalidatePath(`/marches/${validatedData.marcheId}`)
     }
+    if (opportuniteId) {
+      revalidatePath(`/opportunites/${opportuniteId}`)
+    }
 
     // Audit log
     await logAction({
@@ -95,7 +132,12 @@ export async function createCaution(data: unknown): Promise<ActionResult<Caution
       action:     AUDIT_ACTION.CREATE,
       entityType: AUDIT_ENTITY.CAUTION,
       entityId:   caution.id,
-      metadata:   { reference: caution.reference, type: caution.type, montant: caution.montant?.toString() },
+      metadata:   {
+        reference: caution.reference,
+        type: caution.type,
+        montant: caution.montant?.toString(),
+        ...(opportuniteId ? { opportuniteId } : {}),
+      },
     })
 
     // 6. Retour succès
@@ -157,7 +199,9 @@ export async function updateCaution(data: unknown): Promise<ActionResult<Caution
 
     // 2. Validation avec Zod
     const validatedData = updateCautionServerSchema.parse(data)
-    const { id, ...updateData } = validatedData
+    // Le rattachement à une opportunité ne se modifie pas ici ; un lien vide (« ») ne change rien
+    const { id, opportuniteId: _opportuniteId, ...fields } = validatedData
+    const updateData = { ...fields, marcheId: fields.marcheId || undefined }
 
     // 3. Vérification que la caution existe
     const existingCaution = await prisma.caution.findUnique({
@@ -168,6 +212,22 @@ export async function updateCaution(data: unknown): Promise<ActionResult<Caution
       return {
         success: false,
         error: 'La caution n\'existe pas',
+      }
+    }
+
+    // 3 bis. Une caution d'opportunité reste du côté de l'opportunité : pas de marché, types limités
+    if (existingCaution.opportuniteId) {
+      if (updateData.marcheId) {
+        return {
+          success: false,
+          error: 'Une caution est rattachée à une opportunité ou à un marché, pas aux deux',
+        }
+      }
+      if (updateData.type && !typeCautionAutoriseSurOpportunite(updateData.type)) {
+        return {
+          success: false,
+          error: 'Une caution d\'opportunité est une caution de soumission ou de capacité financière',
+        }
       }
     }
 
@@ -197,6 +257,9 @@ export async function updateCaution(data: unknown): Promise<ActionResult<Caution
     revalidatePath(`/marches/${caution.marcheId}`)
     if (existingCaution.marcheId !== caution.marcheId) {
       revalidatePath(`/marches/${existingCaution.marcheId}`)
+    }
+    if (caution.opportuniteId) {
+      revalidatePath(`/opportunites/${caution.opportuniteId}`)
     }
 
     // Audit log

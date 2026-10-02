@@ -25,6 +25,7 @@ export interface SerializedCaution {
   banqueNom: string
   banqueContact: string | null
   marcheId: string
+  opportuniteId?: string | null
   userId: string
   createdAt: string // Date -> ISO string
   updatedAt: string // Date -> ISO string

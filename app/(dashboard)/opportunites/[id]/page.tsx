@@ -99,7 +99,7 @@ export default async function OpportuniteDetailPage({ params }: PageProps) {
         <OpportuniteTabs
           nbLots={opp.lots.length}
           nbCautions={cautions.length}
-          cautions={afficherCautions ? <CautionsSection cautions={cautions} /> : undefined}
+          cautions={afficherCautions ? <CautionsSection opportuniteId={opp.id} cautions={cautions} canWrite={userCanWrite} /> : undefined}
           infos={
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

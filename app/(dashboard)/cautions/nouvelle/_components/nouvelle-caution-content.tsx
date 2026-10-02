@@ -5,13 +5,16 @@ import { toast } from '@/lib/utils/toast';
 import { CautionForm } from "@/components/cautions";
 import type { CautionFormValues } from "@/components/cautions";
 import { createCaution } from "@/lib/actions/cautions";
+import { TYPES_CAUTION_OPPORTUNITE } from "@/lib/utils/cautions-opportunite";
 
 interface NouvelleCautionContentProps {
   marcheId?: string;
+  opportuniteId?: string;
 }
 
 export function NouvelleCautionContent({
   marcheId,
+  opportuniteId,
 }: NouvelleCautionContentProps) {
   const router = useRouter();
 
@@ -29,13 +32,19 @@ export function NouvelleCautionContent({
       description: "La caution a été créée avec succès.",
     });
 
-    // Rediriger vers la page de détail
-    router.push(`/cautions/${result.data.id}`);
+    // Depuis une opportunité : retour sur son onglet Cautions ; sinon page de détail
+    router.push(
+      opportuniteId
+        ? `/opportunites/${opportuniteId}?onglet=cautions`
+        : `/cautions/${result.data.id}`
+    );
   };
 
   return (
     <CautionForm
       marcheId={marcheId}
+      opportuniteId={opportuniteId}
+      typesAutorises={opportuniteId ? TYPES_CAUTION_OPPORTUNITE : undefined}
       onSubmit={handleSubmit}
     />
   );

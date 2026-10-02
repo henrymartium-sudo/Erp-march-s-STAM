@@ -81,6 +81,9 @@ const baseCautionSchema = z.object({
 
   // Relation avec le marché (optionnelle - une caution peut être créée sans marché)
   marcheId: z.string().cuid('ID de marché invalide').optional().or(z.literal('')),
+
+  // Rattachement à une opportunité (caution de soumission ou de capacité financière) ; exclusif avec le marché
+  opportuniteId: z.string().cuid('ID d\'opportunité invalide').optional().or(z.literal('')),
 })
 
 // Schéma avec refinements pour la validation complète
@@ -94,8 +97,9 @@ export const cautionSchema = baseCautionSchema.superRefine((data, ctx) => {
     })
   }
 
-  // Validation : les cautions de SOUMISSION ne peuvent pas avoir le statut LIBEREE
-  if (data.type === 'SOUMISSION' && data.statut === 'LIBEREE') {
+  // Validation : les cautions de SOUMISSION d'un marché ne peuvent pas avoir le statut LIBEREE.
+  // Une caution de soumission rattachée à une opportunité peut être libérée : elle se suit jusqu'à sa libération.
+  if (data.type === 'SOUMISSION' && data.statut === 'LIBEREE' && !data.opportuniteId) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: 'Une caution de soumission ne peut pas être libérée (elle est remplacée par la caution de bonne exécution)',

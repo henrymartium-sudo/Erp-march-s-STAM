@@ -1,33 +1,66 @@
+import Link from 'next/link'
+import { Plus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CautionCard } from '@/components/cautions/caution-card'
+import { CautionsListe } from '@/components/opportunites/cautions-liste'
 import { serializeCaution } from '@/lib/utils/serialize'
 import type { Caution } from '@prisma/client'
 
-/** Cautions rattachées à l'opportunité, en lecture (la création et le rattachement arrivent aux phases suivantes). */
-export function CautionsSection({ cautions }: { cautions: Caution[] }) {
+/** Cautions rattachées à l'opportunité (le rattachement d'une caution existante arrive à la phase suivante). */
+export function CautionsSection({
+  opportuniteId,
+  cautions,
+  canWrite,
+}: {
+  opportuniteId: string
+  cautions: Caution[]
+  canWrite: boolean
+}) {
   const serialisees = cautions.map(serializeCaution)
   const actives = serialisees.filter((c) => c.statut === 'ACTIVE').length
+  const lienCreation = `/cautions/nouvelle?opportuniteId=${opportuniteId}`
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Cautions &amp; Garanties</CardTitle>
-        <CardDescription>
-          {serialisees.length === 0
-            ? 'Aucune caution rattachée à cette opportunité'
-            : `${serialisees.length} caution${serialisees.length > 1 ? 's' : ''} • ${actives} active${actives > 1 ? 's' : ''}`}
-        </CardDescription>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <CardTitle>Cautions &amp; Garanties</CardTitle>
+            <CardDescription>
+              {serialisees.length === 0
+                ? 'Aucune caution rattachée à cette opportunité'
+                : `${serialisees.length} caution${serialisees.length > 1 ? 's' : ''} • ${actives} active${actives > 1 ? 's' : ''}`}
+            </CardDescription>
+          </div>
+          {canWrite && (
+            <Button asChild size="sm">
+              <Link href={lienCreation}>
+                <Plus className="h-4 w-4 mr-2" />
+                Créer
+              </Link>
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         {serialisees.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {serialisees.map((caution) => (
-              <CautionCard key={caution.id} caution={caution} mode="compact" />
-            ))}
-          </div>
+          <CautionsListe cautions={serialisees} canWrite={canWrite} />
         ) : (
           <div className="py-12 text-center text-muted-foreground">
             <p>Aucune caution rattachée à cette opportunité.</p>
+            {canWrite && (
+              <>
+                <p className="mt-1 text-sm">
+                  Enregistrez la caution de soumission ou de capacité financière dès que la banque vous la remet.
+                </p>
+                <Button asChild className="mt-4" variant="outline">
+                  <Link href={lienCreation}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Créer la première caution
+                  </Link>
+                </Button>
+              </>
+            )}
           </div>
         )}
       </CardContent>
