@@ -1,0 +1,100 @@
+# Pilotage — tranche 1 : indicateurs de décision sur données existantes
+
+**Date** : 2026-10-02 · **Statut** : design validé, en attente de relecture de la spec
+
+## Purpose
+
+Le taux de succès (offres gagnées ÷ offres déposées) est aujourd'hui l'indicateur le plus visible de l'application. Il ne dit pas si la valeur gagnée se transforme en chiffre d'affaires, ni si les échecs (offres perdues, marchés annulés ou résiliés) sont maîtrisés. Cette tranche crée une page `/pilotage` qui met en avant des indicateurs de décision calculés **uniquement sur les données déjà saisies**, sans migration.
+
+## Contexte et décisions prises
+
+| # | Question | Décision |
+|---|----------|----------|
+| 1 | Public | Deux vues : un tableau de bord opérationnel quotidien (tranche 3) et une page « Pilotage » mensuelle/trimestrielle (cette tranche) |
+| 2 | « CA livré » | Facturé (factures `EMISE`, `EN_ATTENTE`, `PAYEE`) en indicateur principal, encaissé (`PAYEE`) en ligne secondaire |
+| 3 | Valeur attribuée | Tout ce qui a été attribué un jour, y compris résilié ou annulé après attribution, avec une ligne « dont perdu après attribution » |
+| 4 | Alertes | Cycle de vie (acquitter / résoudre / file de correction) et fusion des échéances dans le tableau de bord opérationnel — **tranche 3** |
+| 5 | Renouvellement par autorité contractante | **Reporté** : autorité saisie en texte libre, risque de doublons. Relevé en lecture seule d'abord |
+| 6 | Post-mortem | Le dialogue existant (motif, concurrent gagnant, montant retenu) est conservé ; ajout d'une catégorie de cause en liste fermée — **tranche 2** |
+| 7 | Accès | Rôles `ADMIN` et `AVANCE` |
+
+## Requirements
+
+### REQ-001 — User SHALL access a dedicated Pilotage page
+
+Page `/pilotage` dans le menu principal, accessible aux rôles `ADMIN` et `AVANCE` (contrôle dans chaque Server Action et dans la page). L'onglet « Analyses » de Reporting Email y est **déplacé** ; Reporting Email ne conserve que la configuration des règles d'envoi et le suivi des opportunités.
+
+**Scénarios**
+- Un utilisateur `AVANCE` ouvre `/pilotage` → la page s'affiche.
+- Un utilisateur `VISITEUR` ou `EXPLOITATION` ouvre `/pilotage` → accès refusé.
+- L'onglet « Analyses » n'apparaît plus dans Reporting Email.
+
+### REQ-002 — System SHALL compute the awarded-to-invoiced conversion rate
+
+- **Dénominateur** : somme des montants des marchés attribués sur la période, c'est-à-dire ayant atteint `ATTRIBUE_DEFINITIVEMENT` ou un statut ultérieur, **y compris** ceux passés ensuite à `RESILIE` ou `ANNULE`. L'attribution antérieure d'un marché annulé ou résilié est établie par `HistoriqueStatut`.
+- **Numérateur** : somme des factures `EMISE`, `EN_ATTENTE`, `PAYEE` de ces marchés.
+- **Lignes secondaires** : « dont encaissé » (factures `PAYEE`) ; « dont perdu après attribution » (valeur des marchés résiliés ou annulés après attribution).
+- **Seuil visuel** : alerte sous 30 %.
+- Remplace `tauxRecouvrement` (qui excluait résiliés/annulés et comparait du TTC à un montant de marché de nature non établie).
+
+**Scénarios**
+- Un marché résilié après attribution, sans facture → compte au dénominateur, pas au numérateur, apparaît dans « perdu après attribution ».
+- Un marché annulé **avant** attribution → exclu du calcul.
+- Une facture `BROUILLON`, `REJETEE` ou `ANNULEE` → ignorée.
+
+### REQ-003 — System SHALL compute the cumulative failure count
+
+Nombre et valeur des offres perdues, infructueuses, annulées et résiliées, rapportés aux offres déposées sur la période. Le taux de succès reste affiché en ligne secondaire. Les marchés à plusieurs lots suivent la règle « Résultats par lot » déjà en production (gagnés ÷ (gagnés + perdus), infructueux à part).
+
+### REQ-004 — System SHALL compute the average price gap against the winning bidder
+
+(notre offre − offre gagnante) ÷ offre gagnante, en moyenne sur les échecs où `montantOffreConcurrent` est renseigné. Le nombre de cas est affiché. Sous 3 cas, l'indicateur affiche « Pas assez de données (n = …) » au lieu d'un pourcentage.
+
+### REQ-005 — System SHALL expose a data-quality block
+
+Compteurs cliquables vers la liste concernée :
+- marchés attribués sans aucune facture ;
+- marchés à échéance dépassée sans changement de statut ;
+- échecs sans motif renseigné ;
+- marchés exclus d'un calcul faute de date de référence (jamais exclus en silence).
+
+### REQ-006 — User SHALL drill down from each indicator to its source records
+
+Chaque indicateur ouvre la liste des marchés qui le composent. Aucun chiffre sans accès à sa source.
+
+## Architecture
+
+- **`lib/actions/pilotage.ts`** : Server Actions, une fonction par indicateur, `requireRole(['ADMIN', 'AVANCE'])` dans chacune, validation Zod des paramètres de période.
+- Réutilisation de `STATUTS_GAGNES`, `STATUTS_DEPOSES` et de la règle par lot existante — pas de recopie.
+- **Période** : sélecteur, année civile par défaut. Date de référence : date de dépôt de l'offre pour REQ-003, date d'attribution pour REQ-002. La règle est affichée sur la page.
+- **Base de montant** : une seule (HT) pour tous les ratios — voir prérequis bloquant.
+- Exports PDF et Excel déplacés avec l'onglet Analyses ; les fonctions de `lib/actions/analytics.ts` restent tant qu'un export en dépend.
+
+## Interface
+
+1. Barre de filtres : période + exports.
+2. Rangée de 3 indicateurs (valeur, seuil, évolution vs période précédente, phrase d'explication).
+3. Détail par indicateur (liste des marchés).
+4. Bloc « Qualité des données ».
+
+États : données insuffisantes, vide, erreur **par bloc** (un calcul en échec ne fait pas tomber la page), chargement par squelette. Responsive : 3 colonnes (1920), 2 (768), 1 (375). Design guidé par les skills `dataviz` et `ui-ux-pro-max` à l'implémentation, dans le respect de shadcn/ui.
+
+## Tests
+
+- **Unitaires** (Vitest, gate CI) par indicateur : résilié après attribution, annulé avant attribution, marché multi-lots, facture brouillon/rejetée, montant concurrent manquant.
+- **E2E** (Playwright contre la base de test locale) : affichage, drill-down, refus `VISITEUR`, accès `AVANCE`, viewports 1920 / 768 / 375.
+- **Rapprochement** : calcul manuel en SQL sur une copie restaurée localement de la sauvegarde de production, comparé à la page ; écarts soumis à validation avant mise en production.
+
+## Mise en production
+
+Aucune migration, aucun e-mail. Branche dédiée → PR → gate qualité → validation → fusion (déploiement automatique). Retour arrière : revert du commit de fusion.
+
+## Prérequis bloquant
+
+**Le `montant` du marché est-il saisi HT ou TTC ?** Le code ne l'établit pas (seules les factures portent HT et TTC). À trancher par le métier avant d'implémenter REQ-002 et REQ-004.
+
+## Hors périmètre (tranches suivantes)
+
+- **Tranche 2** : catégorie de cause d'échec (enum + colonne, migration additive avec sauvegarde préalable), file de qualification des échecs anciens, taux de post-mortem documentés.
+- **Tranche 3** : tableau de bord opérationnel, cycle de vie des alertes, fusion avec « Cautions à surveiller ». Touche l'envoi d'e-mails : tests exclusivement sur la base de test.
+- **Relevé** en lecture seule des noms d'autorités contractantes et de concurrents, puis décision sur un référentiel.
