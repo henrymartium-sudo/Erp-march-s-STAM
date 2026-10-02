@@ -728,6 +728,44 @@ export async function getCautionsByOpportunite(
   }
 }
 
+/**
+ * Cautions des opportunités liées à un marché (lecture : tous les rôles authentifiés).
+ * Le lien existe dans les deux sens (marché → opportunité d'origine, opportunité → marché) ;
+ * on lit les deux pour ne rien manquer.
+ */
+export async function getCautionsOpportuniteByMarche(
+  marcheId: string
+): Promise<ActionResult<(Caution & { opportunite: { id: string; objet: string } | null })[]>> {
+  try {
+    await requireAuth()
+
+    const cautions = await prisma.caution.findMany({
+      where: {
+        opportunite: {
+          OR: [{ marcheId }, { marches: { some: { id: marcheId } } }],
+        },
+      },
+      include: { opportunite: { select: { id: true, objet: true } } },
+      orderBy: { dateEcheance: 'asc' },
+    })
+
+    return { success: true, data: cautions }
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Non authentifié')) {
+      return {
+        success: false,
+        error: "Vous devez être connecté pour consulter les cautions de l'opportunité",
+      }
+    }
+
+    console.error("Erreur lors de la récupération des cautions de l'opportunité du marché:", error)
+    return {
+      success: false,
+      error: 'Une erreur inattendue est survenue lors de la récupération des cautions',
+    }
+  }
+}
+
 // ============================================================================
 // RATTACHEMENT À UNE OPPORTUNITÉ
 // ============================================================================

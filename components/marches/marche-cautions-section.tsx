@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CautionCard, CautionTimeline } from "@/components/cautions";
-import { getCautionsByMarche } from "@/lib/actions/cautions";
+import { getCautionsByMarche, getCautionsOpportuniteByMarche } from "@/lib/actions/cautions";
 import type { SerializedCaution } from "@/types/serialized";
 import { formatMontant } from "@/lib/utils/format";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -54,6 +54,8 @@ export function MarcheCautionsSection({
   marcheId,
 }: MarcheCautionsSectionProps) {
   const [cautions, setCautions] = useState<SerializedCaution[]>([]);
+  // Cautions des opportunités liées au marché (soumission, capacité financière), en lecture ici
+  const [cautionsOpportunite, setCautionsOpportunite] = useState<SerializedCaution[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,7 +64,10 @@ export function MarcheCautionsSection({
       setLoading(true);
       setError(null);
 
-      const result = await getCautionsByMarche(marcheId);
+      const [result, resultOpportunite] = await Promise.all([
+        getCautionsByMarche(marcheId),
+        getCautionsOpportuniteByMarche(marcheId),
+      ]);
 
       if (!result.success) {
         setError(result.error || "Erreur lors du chargement des cautions");
@@ -71,6 +76,10 @@ export function MarcheCautionsSection({
       }
 
       setCautions(result.data.map(serializeCautionFromAction));
+      // Un échec de lecture des cautions d'opportunité ne masque pas celles du marché
+      setCautionsOpportunite(
+        resultOpportunite.success ? resultOpportunite.data.map(serializeCautionFromAction) : []
+      );
       setLoading(false);
     };
 
@@ -110,19 +119,33 @@ export function MarcheCautionsSection({
     );
   }
 
-  // Statistiques des cautions (les montants sont déjà des numbers après sérialisation)
-  const cautionsActives = cautions.filter((c) => c.statut === "ACTIVE");
+  // Statistiques : les cautions du marché et celles de son opportunité d'origine
+  // (les montants sont déjà des numbers après sérialisation)
+  const toutes = [...cautions, ...cautionsOpportunite];
+  const cautionsActives = toutes.filter((c) => c.statut === "ACTIVE");
   const montantTotal = cautionsActives.reduce(
     (sum, c) => sum + c.montant,
     0
   );
-  const cautionsCritiques = cautions.filter((c) => {
+  const cautionsCritiques = toutes.filter((c) => {
     if (c.statut !== "ACTIVE" || !c.dateEcheance) return false;
     const jours = Math.ceil(
       (new Date(c.dateEcheance).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
     );
     return jours <= 7 && jours >= 0;
   });
+
+  // Regroupement des cautions d'opportunité par opportunité (en pratique une seule)
+  const groupesOpportunite = Object.values(
+    cautionsOpportunite.reduce<Record<string, { opportunite: { id: string; objet: string }; cautions: SerializedCaution[] }>>(
+      (acc, c) => {
+        if (!c.opportunite) return acc;
+        (acc[c.opportunite.id] ??= { opportunite: c.opportunite, cautions: [] }).cautions.push(c);
+        return acc;
+      },
+      {}
+    )
+  );
 
   return (
     <Card>
@@ -131,9 +154,9 @@ export function MarcheCautionsSection({
           <div>
             <CardTitle>Cautions & Garanties</CardTitle>
             <CardDescription>
-              {cautions.length === 0
+              {toutes.length === 0
                 ? "Aucune caution associée à ce marché"
-                : `${cautions.length} caution${cautions.length > 1 ? "s" : ""} • ${cautionsActives.length} active${cautionsActives.length > 1 ? "s" : ""}`}
+                : `${toutes.length} caution${toutes.length > 1 ? "s" : ""} • ${cautionsActives.length} active${cautionsActives.length > 1 ? "s" : ""}`}
             </CardDescription>
           </div>
           <Button asChild size="sm">
@@ -146,7 +169,7 @@ export function MarcheCautionsSection({
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Statistiques */}
-        {cautions.length > 0 && (
+        {toutes.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card>
               <CardHeader className="pb-2">
@@ -186,20 +209,49 @@ export function MarcheCautionsSection({
         )}
 
         {/* Liste des cautions */}
-        {cautions.length > 0 ? (
-          <div>
-            <h3 className="text-sm font-medium mb-3">
-              Toutes les cautions ({cautions.length})
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {cautions.map((caution) => (
-                <CautionCard
-                  key={caution.id}
-                  caution={caution}
-                  mode="compact"
-                />
-              ))}
-            </div>
+        {toutes.length > 0 ? (
+          <div className="space-y-6">
+            {cautions.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium mb-3">
+                  Cautions du marché ({cautions.length})
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {cautions.map((caution) => (
+                    <CautionCard
+                      key={caution.id}
+                      caution={caution}
+                      mode="compact"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Cautions de l'opportunité d'origine : marquées comme telles, avec un lien vers elle */}
+            {groupesOpportunite.map((groupe) => (
+              <div key={groupe.opportunite.id}>
+                <h3 className="text-sm font-medium mb-1">
+                  Issues de l&apos;opportunité ({groupe.cautions.length})
+                </h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  <Link
+                    href={`/opportunites/${groupe.opportunite.id}?onglet=cautions`}
+                    className="text-primary hover:underline"
+                  >
+                    {groupe.opportunite.objet}
+                  </Link>
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {groupe.cautions.map((caution) => (
+                    <CautionCard
+                      key={caution.id}
+                      caution={caution}
+                      mode="compact"
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="text-center py-12 text-muted-foreground">
