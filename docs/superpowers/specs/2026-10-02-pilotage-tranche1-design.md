@@ -33,7 +33,7 @@ Page `/pilotage` dans le menu principal, accessible aux rôles `ADMIN` et `AVANC
 
 - **Dénominateur** : somme des montants des marchés attribués sur la période, c'est-à-dire ayant atteint `ATTRIBUE_DEFINITIVEMENT` ou un statut ultérieur, **y compris** ceux passés ensuite à `RESILIE` ou `ANNULE`. L'attribution antérieure d'un marché annulé ou résilié est établie par `HistoriqueStatut`.
 - **Numérateur** : somme des factures `EMISE`, `EN_ATTENTE`, `PAYEE` de ces marchés.
-- **Lignes secondaires** : « dont encaissé » (factures `PAYEE`) ; « dont perdu après attribution » (valeur des marchés résiliés ou annulés après attribution).
+- **Lignes secondaires** : « dont encaissé » (factures `PAYEE`) ; « dont perdu après attribution » (nombre et valeur des marchés résiliés ou annulés après attribution — seul endroit où ces pertes sont comptées).
 - **Seuil visuel** : alerte sous 30 %.
 - Remplace `tauxRecouvrement` (qui excluait résiliés/annulés et comparait du TTC à un montant de marché de nature non établie).
 
@@ -42,9 +42,22 @@ Page `/pilotage` dans le menu principal, accessible aux rôles `ADMIN` et `AVANC
 - Un marché annulé **avant** attribution → exclu du calcul.
 - Une facture `BROUILLON`, `REJETEE` ou `ANNULEE` → ignorée.
 
-### REQ-003 — System SHALL compute the cumulative failure count
+### REQ-003 — System SHALL compute the outcome of submitted bids
 
-Nombre et valeur des offres perdues, infructueuses, annulées et résiliées, rapportés aux offres déposées sur la période. Le taux de succès reste affiché en ligne secondaire. Les marchés à plusieurs lots suivent la règle « Résultats par lot » déjà en production (gagnés ÷ (gagnés + perdus), infructueux à part).
+**Amendé le 2026-10-02 après revue finale, sur décision d'Abel** (la version initiale, « cumul des échecs », mélangeait des lots déposés et des marchés attribués dans un même taux, comptait les lots en attente au dénominateur et l'infructueux comme un échec).
+
+Carte « Issue des offres », calculée **par lot** (règle « Résultats par lot » déjà en production), sur les lots soumis de la période (date de dépôt) :
+- **Indicateur principal** : taux de perte = perdus ÷ (gagnés + perdus), sur les seuls dossiers clos. Le taux de succès, son complément exact, est affiché en ligne secondaire.
+- **Répartition en nombre et en valeur** (montant proposé) : gagnés, perdus, sans suite (infructueux : procédure sans suite, pas un échec de STAM), en attente d'issue. Sans suite et en attente n'entrent pas dans le taux.
+- **Les pertes après attribution** (marchés annulés ou résiliés après attribution) relèvent de l'exécution, pas de l'offre : elles sont affichées dans la conversion (REQ-002), en nombre et en valeur, et ne sont pas recomptées ici. Une même perte n'est comptée qu'une fois.
+- **Couverture** : les marchés sans opportunité liée (saisis avant le module Opportunités) n'entrent pas dans l'issue des offres ; ils sont listés dans la qualité des données (REQ-005).
+
+**Règle métier** : un marché résilié a toujours été attribué auparavant (une procédure arrêtée avant attribution est une annulation). Un marché annulé n'est compté comme attribué que si l'historique ou la date d'attribution l'établit.
+
+**Scénarios**
+- 1 lot gagné, 2 perdus, 1 infructueux, 2 en cours → taux de perte 67 %, taux de succès 33 %.
+- Aucun lot clos → pas de taux (« — »).
+- Un marché résilié sans date ni historique → compté comme attribué, signalé dans « exclus faute de date ».
 
 ### REQ-004 — System SHALL compute the average price gap against the winning bidder
 
@@ -57,7 +70,8 @@ Compteurs cliquables vers la liste concernée :
 - marchés à échéance dépassée sans changement de statut ;
 - échecs sans motif renseigné ;
 - marchés exclus d'un calcul faute de date de référence (jamais exclus en silence) ;
-- marchés dont le TTC facturé dépasse le montant contractuel de plus de 2 %.
+- marchés dont le TTC facturé dépasse le montant contractuel de plus de 2 % ;
+- marchés au-delà du dépôt sans opportunité liée, donc absents de l'issue des offres (ajout du 2026-10-02).
 
 ### REQ-006 — User SHALL drill down from each indicator to its source records
 
