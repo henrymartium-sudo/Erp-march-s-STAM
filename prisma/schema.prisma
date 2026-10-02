@@ -198,6 +198,11 @@ model Caution {
   marcheId          String?
   marche            Marche?        @relation(fields: [marcheId], references: [id], onDelete: Cascade)
 
+  // Une caution est rattachée à une opportunité OU à un marché, jamais aux deux (contrainte CHECK en base).
+  // Supprimer l'opportunité détache la caution, elle n'est jamais supprimée avec elle.
+  opportuniteId     String?
+  opportunite       Opportunite?   @relation(fields: [opportuniteId], references: [id], onDelete: SetNull)
+
   // Gestion
   userId            String
   user              User           @relation(fields: [userId], references: [id])
@@ -208,6 +213,7 @@ model Caution {
   @@index([dateEcheance])
   @@index([statut])
   @@index([marcheId])
+  @@index([opportuniteId])
   @@map("cautions")
 }
 
@@ -641,6 +647,7 @@ model Opportunite {
   piecesCommunes         PieceOffre[]      @relation("PiecesCommunes")
   // Marchés créés depuis cette opportunité (relation inverse MarcheOpportunite)
   marches                Marche[]          @relation("MarcheOpportunite")
+  cautions               Caution[]
 
   @@index([statut])
   @@index([dateLimite])

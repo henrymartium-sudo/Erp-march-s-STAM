@@ -627,6 +627,37 @@ export async function getCautionsByMarche(
   }
 }
 
+/**
+ * Cautions rattachées à une opportunité (lecture : tous les rôles authentifiés).
+ */
+export async function getCautionsByOpportunite(
+  opportuniteId: string
+): Promise<ActionResult<Caution[]>> {
+  try {
+    await requireAuth()
+
+    const cautions = await prisma.caution.findMany({
+      where: { opportuniteId },
+      orderBy: { dateEcheance: 'asc' },
+    })
+
+    return { success: true, data: cautions }
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Non authentifié')) {
+      return {
+        success: false,
+        error: "Vous devez être connecté pour consulter les cautions d'une opportunité",
+      }
+    }
+
+    console.error("Erreur lors de la récupération des cautions de l'opportunité:", error)
+    return {
+      success: false,
+      error: 'Une erreur inattendue est survenue lors de la récupération des cautions',
+    }
+  }
+}
+
 // ============================================================================
 // STATISTICS
 // ============================================================================
