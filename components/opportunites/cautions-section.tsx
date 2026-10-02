@@ -3,10 +3,11 @@ import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CautionsListe } from '@/components/opportunites/cautions-liste'
+import { RattacherCautionDialog } from '@/components/opportunites/rattacher-caution-dialog'
 import { serializeCaution } from '@/lib/utils/serialize'
 import type { Caution } from '@prisma/client'
 
-/** Cautions rattachées à l'opportunité (le rattachement d'une caution existante arrive à la phase suivante). */
+/** Cautions rattachées à l'opportunité : création, rattachement d'une caution existante, modification, détachement. */
 export function CautionsSection({
   opportuniteId,
   cautions,
@@ -33,12 +34,15 @@ export function CautionsSection({
             </CardDescription>
           </div>
           {canWrite && (
-            <Button asChild size="sm">
-              <Link href={lienCreation}>
-                <Plus className="h-4 w-4 mr-2" />
-                Créer
-              </Link>
-            </Button>
+            <div className="flex items-center gap-2">
+              <RattacherCautionDialog opportuniteId={opportuniteId} />
+              <Button asChild size="sm">
+                <Link href={lienCreation}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Créer
+                </Link>
+              </Button>
+            </div>
           )}
         </div>
       </CardHeader>
@@ -51,14 +55,17 @@ export function CautionsSection({
             {canWrite && (
               <>
                 <p className="mt-1 text-sm">
-                  Enregistrez la caution de soumission ou de capacité financière dès que la banque vous la remet.
+                  Enregistrez la caution de soumission ou de capacité financière dès que la banque vous la remet, ou rattachez-en une déjà créée.
                 </p>
-                <Button asChild className="mt-4" variant="outline">
-                  <Link href={lienCreation}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Créer la première caution
-                  </Link>
-                </Button>
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                  <Button asChild variant="outline">
+                    <Link href={lienCreation}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Créer la première caution
+                    </Link>
+                  </Button>
+                  <RattacherCautionDialog opportuniteId={opportuniteId} />
+                </div>
               </>
             )}
           </div>

@@ -19,7 +19,14 @@ import type { PaginatedResponse } from '@/types/pagination'
 import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
 import { ALERTE_CAUTION_SEUILS } from '@/lib/constants/caution'
 import type { NiveauAlerte } from '@/lib/utils/caution'
-import { cautionsOpportuniteVisibles, typeCautionAutoriseSurOpportunite } from '@/lib/utils/cautions-opportunite'
+import {
+  TYPES_CAUTION_OPPORTUNITE,
+  cautionsOpportuniteVisibles,
+  typeCautionAutoriseSurOpportunite,
+  verdictRattachementOpportunite,
+} from '@/lib/utils/cautions-opportunite'
+import { serializeCaution } from '@/lib/utils/serialize'
+import type { SerializedCaution } from '@/types/serialized'
 
 // ============================================================================
 // TYPES
@@ -718,6 +725,151 @@ export async function getCautionsByOpportunite(
       success: false,
       error: 'Une erreur inattendue est survenue lors de la récupération des cautions',
     }
+  }
+}
+
+// ============================================================================
+// RATTACHEMENT À UNE OPPORTUNITÉ
+// ============================================================================
+
+function erreurRattachement(error: unknown, defaut: string): { success: false; error: string } {
+  if (error instanceof Error && error.message.includes('Non authentifié')) {
+    return { success: false, error: 'Vous devez être connecté pour modifier une caution' }
+  }
+  if (error instanceof Error && error.message.includes('Non autorisé')) {
+    return { success: false, error: 'Vous n\'avez pas les permissions pour modifier une caution' }
+  }
+  console.error(defaut, error)
+  return { success: false, error: defaut }
+}
+
+/**
+ * Cautions que l'on peut rattacher à une opportunité : sans lien et d'un type d'avant dépôt.
+ */
+export async function getCautionsRattachablesOpportunite(): Promise<ActionResult<SerializedCaution[]>> {
+  try {
+    await requireMarcheWrite()
+
+    const cautions = await prisma.caution.findMany({
+      where: {
+        marcheId: null,
+        opportuniteId: null,
+        type: { in: TYPES_CAUTION_OPPORTUNITE },
+      },
+      orderBy: { dateEcheance: 'asc' },
+    })
+
+    return { success: true, data: cautions.map(serializeCaution) }
+  } catch (error) {
+    return erreurRattachement(error, 'Impossible de charger les cautions disponibles')
+  }
+}
+
+/**
+ * Rattache une caution existante et sans lien à une opportunité.
+ */
+export async function rattacherCautionOpportunite(
+  cautionId: string,
+  opportuniteId: string
+): Promise<ActionResult<Caution>> {
+  try {
+    const session = await requireMarcheWrite()
+
+    const caution = await prisma.caution.findUnique({ where: { id: cautionId } })
+    if (!caution) {
+      return { success: false, error: 'La caution n\'existe pas' }
+    }
+
+    const verdict = verdictRattachementOpportunite(caution)
+    if (!verdict.ok) {
+      return { success: false, error: verdict.error }
+    }
+
+    const opportunite = await prisma.opportunite.findUnique({
+      where: { id: opportuniteId },
+      select: { statut: true },
+    })
+    if (!opportunite) {
+      return { success: false, error: 'L\'opportunité n\'existe pas' }
+    }
+    if (!cautionsOpportuniteVisibles(opportunite.statut)) {
+      return {
+        success: false,
+        error: 'Les cautions se rattachent à partir du statut « Dossier en préparation »',
+      }
+    }
+
+    // Conditionnel : si quelqu'un l'a rattachée entre-temps, rien n'est modifié
+    const { count } = await prisma.caution.updateMany({
+      where: { id: cautionId, marcheId: null, opportuniteId: null },
+      data: { opportuniteId },
+    })
+    if (count === 0) {
+      return { success: false, error: 'Cette caution vient d\'être rattachée ailleurs' }
+    }
+
+    const rattachee = await prisma.caution.findUniqueOrThrow({ where: { id: cautionId } })
+
+    revalidatePath('/cautions')
+    revalidatePath(`/cautions/${cautionId}`)
+    revalidatePath(`/opportunites/${opportuniteId}`)
+
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.UPDATE,
+      entityType: AUDIT_ENTITY.CAUTION,
+      entityId:   cautionId,
+      metadata:   { reference: rattachee.reference, rattachement: 'opportunite', opportuniteId },
+    })
+
+    return { success: true, data: rattachee }
+  } catch (error) {
+    return erreurRattachement(error, 'Une erreur inattendue est survenue lors du rattachement de la caution')
+  }
+}
+
+/**
+ * Détache une caution de son opportunité : elle redevient sans lien, sans être supprimée.
+ */
+export async function detacherCautionOpportunite(cautionId: string): Promise<ActionResult<Caution>> {
+  try {
+    const session = await requireMarcheWrite()
+
+    const caution = await prisma.caution.findUnique({ where: { id: cautionId } })
+    if (!caution) {
+      return { success: false, error: 'La caution n\'existe pas' }
+    }
+    if (!caution.opportuniteId) {
+      return { success: false, error: 'Cette caution n\'est rattachée à aucune opportunité' }
+    }
+
+    const { count } = await prisma.caution.updateMany({
+      where: { id: cautionId, opportuniteId: caution.opportuniteId },
+      data: { opportuniteId: null },
+    })
+    if (count === 0) {
+      return { success: false, error: 'Cette caution vient d\'être modifiée, rechargez la page' }
+    }
+
+    const detachee = await prisma.caution.findUniqueOrThrow({ where: { id: cautionId } })
+
+    revalidatePath('/cautions')
+    revalidatePath(`/cautions/${cautionId}`)
+    revalidatePath(`/opportunites/${caution.opportuniteId}`)
+
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.UPDATE,
+      entityType: AUDIT_ENTITY.CAUTION,
+      entityId:   cautionId,
+      metadata:   { reference: detachee.reference, detachement: 'opportunite', opportuniteId: caution.opportuniteId },
+    })
+
+    return { success: true, data: detachee }
+  } catch (error) {
+    return erreurRattachement(error, 'Une erreur inattendue est survenue lors du détachement de la caution')
   }
 }
 

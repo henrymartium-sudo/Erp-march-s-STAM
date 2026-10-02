@@ -21,3 +21,26 @@ export const TYPES_CAUTION_OPPORTUNITE: TypeCaution[] = ['SOUMISSION', 'CAPACITE
 export function typeCautionAutoriseSurOpportunite(type: TypeCaution): boolean {
   return TYPES_CAUTION_OPPORTUNITE.includes(type)
 }
+
+export type VerdictRattachement = { ok: true } | { ok: false; error: string }
+
+/** Une caution se rattache à une opportunité si elle est sans lien et d'un type d'avant dépôt. */
+export function verdictRattachementOpportunite(caution: {
+  type: TypeCaution
+  marcheId: string | null
+  opportuniteId: string | null
+}): VerdictRattachement {
+  if (caution.opportuniteId) {
+    return { ok: false, error: 'Cette caution est déjà rattachée à une opportunité' }
+  }
+  if (caution.marcheId) {
+    return { ok: false, error: 'Cette caution est déjà rattachée à un marché' }
+  }
+  if (!typeCautionAutoriseSurOpportunite(caution.type)) {
+    return {
+      ok: false,
+      error: 'Seules la caution de soumission et la caution de capacité financière se rattachent à une opportunité',
+    }
+  }
+  return { ok: true }
+}

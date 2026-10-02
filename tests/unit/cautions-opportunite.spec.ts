@@ -5,6 +5,7 @@ import {
   TYPES_CAUTION_OPPORTUNITE,
   cautionsOpportuniteVisibles,
   typeCautionAutoriseSurOpportunite,
+  verdictRattachementOpportunite,
 } from '../../lib/utils/cautions-opportunite'
 
 test.describe('cautionsOpportuniteVisibles', () => {
@@ -54,5 +55,26 @@ test.describe('typeCautionAutoriseSurOpportunite', () => {
 
   test('la liste exportée contient exactement les deux types d\'avant dépôt', () => {
     expect([...TYPES_CAUTION_OPPORTUNITE].sort()).toEqual([...autorises].sort())
+  })
+})
+
+test.describe('verdictRattachementOpportunite', () => {
+  test('caution de soumission sans lien → rattachable', () => {
+    expect(verdictRattachementOpportunite({ type: 'SOUMISSION', marcheId: null, opportuniteId: null })).toEqual({ ok: true })
+  })
+  test('caution de capacité financière sans lien → rattachable', () => {
+    expect(verdictRattachementOpportunite({ type: 'CAPACITE_FINANCIERE', marcheId: null, opportuniteId: null })).toEqual({ ok: true })
+  })
+  test('déjà rattachée à une opportunité → refusée', () => {
+    const v = verdictRattachementOpportunite({ type: 'SOUMISSION', marcheId: null, opportuniteId: 'opp1' })
+    expect(v.ok).toBe(false)
+  })
+  test('déjà rattachée à un marché → refusée', () => {
+    const v = verdictRattachementOpportunite({ type: 'SOUMISSION', marcheId: 'm1', opportuniteId: null })
+    expect(v.ok).toBe(false)
+  })
+  test("type d'après attribution → refusée", () => {
+    const v = verdictRattachementOpportunite({ type: 'BONNE_EXECUTION', marcheId: null, opportuniteId: null })
+    expect(v.ok).toBe(false)
   })
 })
