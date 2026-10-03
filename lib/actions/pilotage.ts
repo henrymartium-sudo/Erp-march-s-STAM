@@ -37,17 +37,17 @@ export async function getPilotageData(input: { dateDebut: string; dateFin: strin
       opportuniteId: true, opportunites: { select: { id: true }, take: 1 },
       motifsResiliation: true, motifsAnnulation: true, motifsInfructueux: true,
       factures: { select: { statut: true, montantTTC: true } },
+      // Pas de filtre SQL sur nouveauStatut : la colonne est en TEXT en production (enum dans le
+      // schéma), la comparaison text = "StatutMarche" y échoue. Filtrage en mémoire ci-dessous.
       historiqueStatuts: {
-        where: { nouveauStatut: { in: STATUTS_ATTRIBUES } },
-        select: { createdAt: true },
+        select: { createdAt: true, nouveauStatut: true },
         orderBy: { createdAt: 'asc' },
-        take: 1,
       },
     },
   })
 
   const marches: MarchePilotage[] = marchesRaw.map((m) => {
-    const premierPassage = m.historiqueStatuts[0]?.createdAt ?? null
+    const premierPassage = m.historiqueStatuts.find((h) => STATUTS_ATTRIBUES.includes(h.nouveauStatut))?.createdAt ?? null
     const motif = m.statut === 'RESILIE' ? m.motifsResiliation
       : m.statut === 'ANNULE' ? m.motifsAnnulation
       : m.statut === 'INFRUCTUEUX' ? m.motifsInfructueux : null
