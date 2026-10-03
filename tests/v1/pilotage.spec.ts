@@ -7,7 +7,7 @@ test.describe('Pilotage', () => {
     await page.goto('/pilotage')
     await expect(page.getByRole('heading', { name: 'Pilotage' })).toBeVisible()
     await expect(page.getByText('Conversion attribué → facturé')).toBeVisible()
-    await expect(page.getByText('Issue des offres')).toBeVisible()
+    await expect(page.getByText('Issue des offres', { exact: true })).toBeVisible()
     await expect(page.getByText('Écart de prix face au gagnant')).toBeVisible()
     await expect(page.getByText('Qualité des données')).toBeVisible()
   })

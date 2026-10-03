@@ -62,7 +62,7 @@ test.describe.serial('V2 — Reporting Analytique', () => {
     const zone = await ouvrirAnalyses(page)
 
     await expect(
-      zone.getByRole('button', { name: /1 an/i }).or(zone.getByText('Analyse Financière'))
+      zone.getByRole('button', { name: /1 an/i }).or(zone.getByText('Analyse Financière')).first()
     ).toBeVisible({ timeout: 10000 })
   })
 
