@@ -59,7 +59,7 @@ export function CapitalisationSection({ data }: Props) {
         ))}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* BarChart top 10 autorités contractantes (montants + win rate) */}
         {topAC.length > 0 && (
           <Card>
@@ -67,7 +67,7 @@ export function CapitalisationSection({ data }: Props) {
               <CardTitle className="text-sm">Top 10 Autorités Contractantes</CardTitle>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={{}} className="h-[260px]">
+              <ChartContainer config={{}} className="h-[260px] w-full">
                 <BarChart data={topAC.slice(0, 10)} layout="vertical">
                   <XAxis type="number" fontSize={10} tickFormatter={fmtAbrege} />
                   <YAxis
@@ -101,7 +101,7 @@ export function CapitalisationSection({ data }: Props) {
               <CardTitle className="text-sm">Win rate par segment (%)</CardTitle>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={{}} className="h-[260px]">
+              <ChartContainer config={{}} className="h-[260px] w-full">
                 <BarChart data={parSegment} layout="vertical">
                   <XAxis type="number" domain={[0, 100]} unit="%" fontSize={11} />
                   <YAxis
@@ -127,7 +127,7 @@ export function CapitalisationSection({ data }: Props) {
             <CardTitle className="text-sm">Saisonnalité des appels d&apos;offres (par mois)</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{}} className="h-[200px]">
+            <ChartContainer config={{}} className="h-[200px] w-full">
               <LineChart data={saisonnalite}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis

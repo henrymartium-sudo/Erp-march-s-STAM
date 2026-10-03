@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/db/prisma'
+import { STATUTS_ATTRIBUES, STATUTS_OPPORTUNITE_OFFRE_SOUMISE } from '@/lib/constants/marche'
 import { requireRole } from '@/lib/utils/permissions'
 import type { Periode, PerformanceStats, FinancialStats, CapitalisationStats, SAVStats, OpportunitesStats } from '@/lib/analytics/types'
 import { STATUT_LABELS, TYPE_MARCHE_LABELS } from '@/lib/constants/marche'
@@ -23,14 +24,8 @@ const STATUTS_DEPOSES: StatutMarche[] = [
   StatutMarche.RESILIE,
 ]
 
-// Statuts considérés comme "marchés gagnés" (attribués)
-const STATUTS_GAGNES: StatutMarche[] = [
-  StatutMarche.ATTRIBUE_DEFINITIVEMENT,
-  StatutMarche.EN_ATTENTE_LIVRAISON_OS,
-  StatutMarche.EN_EXECUTION,
-  StatutMarche.EXECUTE_ATTENTE_GARANTIES,
-  StatutMarche.CLOTURE,
-]
+// Statuts considérés comme "marchés gagnés" (attribués) : référence commune avec le pilotage
+const STATUTS_GAGNES = STATUTS_ATTRIBUES
 
 // Statuts "en cours" pour le module Opportunités (actives, hors NO_GO et PERDUE)
 const STATUTS_EN_COURS_OPP: StatutOpportunite[] = [
@@ -43,17 +38,10 @@ const STATUTS_EN_COURS_OPP: StatutOpportunite[] = [
 ]
 
 // Statuts "offre soumise ou ultérieure" (pour calcul taux de gain global)
-const STATUTS_OFFRE_SOUMISE_OPP: string[] = [
-  'SOUMISE',               // legacy alias
-  'OFFRE_SOUMISE',
-  'EN_ATTENTE_ATTRIBUTION',
-  'ATTRIBUE_PROVISOIREMENT',
-  'GAGNEE',
-  'PERDUE',
-]
+const STATUTS_OFFRE_SOUMISE_OPP = STATUTS_OPPORTUNITE_OFFRE_SOUMISE
 
 export async function getPerformanceStats(periode: Periode): Promise<PerformanceStats> {
-  await requireRole(['ADMIN'])
+  await requireRole(['ADMIN', 'AVANCE'])
 
   const where = {
     dateNotification: { gte: periode.dateDebut, lte: periode.dateFin },
@@ -152,7 +140,7 @@ export async function getPerformanceStats(periode: Periode): Promise<Performance
 }
 
 export async function getFinancialStats(periode: Periode): Promise<FinancialStats> {
-  await requireRole(['ADMIN'])
+  await requireRole(['ADMIN', 'AVANCE'])
 
   const wherePeriode = {
     dateNotification: { gte: periode.dateDebut, lte: periode.dateFin },
@@ -212,9 +200,6 @@ export async function getFinancialStats(periode: Periode): Promise<FinancialStat
     caEnAttente,
     cautionsActives: Number(cautionsActives._sum.montant || 0),
     cautionsLiberees: Number(cautionsLiberees._sum.montant || 0),
-    tauxRecouvrement: caContractualiseVal > 0
-      ? Math.round((caEncaisse / caContractualiseVal) * 100)
-      : 0,
     facturesParStatut: facturesParStatutRaw.map((f) => ({
       statut: f.statut,
       count: f._count.id,
@@ -224,7 +209,7 @@ export async function getFinancialStats(periode: Periode): Promise<FinancialStat
 }
 
 export async function getCapitalisationStats(periode: Periode): Promise<CapitalisationStats> {
-  await requireRole(['ADMIN'])
+  await requireRole(['ADMIN', 'AVANCE'])
 
   const where = {
     dateNotification: { gte: periode.dateDebut, lte: periode.dateFin },
@@ -319,7 +304,7 @@ export async function getCapitalisationStats(periode: Periode): Promise<Capitali
 }
 
 export async function getSAVStats(periode: Periode): Promise<SAVStats> {
-  await requireRole(['ADMIN'])
+  await requireRole(['ADMIN', 'AVANCE'])
 
   const where = {
     signaleAt: { gte: periode.dateDebut, lte: periode.dateFin },
@@ -431,7 +416,7 @@ export async function getSAVStats(periode: Periode): Promise<SAVStats> {
 }
 
 export async function getOpportunitesStats(periode: Periode): Promise<OpportunitesStats> {
-  await requireRole(['ADMIN'])
+  await requireRole(['ADMIN', 'AVANCE'])
 
   const where = {
     createdAt: { gte: periode.dateDebut, lte: periode.dateFin },

@@ -59,14 +59,14 @@ export function FinanciereSection({ data }: Props) {
         ))}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* BarChart CA contractualisé vs encaissé vs en attente */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">CA contractualisé vs encaissé vs en attente</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{}} className="h-[250px]">
+            <ChartContainer config={{}} className="h-[250px] w-full">
               <BarChart data={caData}>
                 <XAxis dataKey="label" fontSize={11} />
                 <YAxis fontSize={11} tickFormatter={(v) => fmtAbrege(v)} />
@@ -88,7 +88,7 @@ export function FinanciereSection({ data }: Props) {
               <CardTitle className="text-sm">Factures par statut</CardTitle>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={{}} className="h-[250px]">
+              <ChartContainer config={{}} className="h-[250px] w-full">
                 <BarChart data={data.facturesParStatut} layout="vertical">
                   <XAxis type="number" fontSize={11} allowDecimals={false} />
                   <YAxis type="category" dataKey="statut" width={110} fontSize={10} />

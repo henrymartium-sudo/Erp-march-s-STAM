@@ -5,7 +5,6 @@ import { getReportingRules } from "@/lib/actions/reporting-rules"
 import { getOpportuniteReportingRules } from "@/lib/actions/opportunite-reporting-rules"
 import { ReportingRulesClient } from "./ReportingRulesClient"
 import { OpportuniteReportingRulesClient } from "./OpportuniteReportingRulesClient"
-import { AnalytiquesTab } from "./AnalytiquesTab"
 import { redirect } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
@@ -41,7 +40,7 @@ export default async function ReportingPage() {
       <div>
         <h1 className="text-2xl font-bold text-[#1E3A5F]">Reporting</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Gestion des règles de reporting email et analyses analytiques
+          Gestion des règles de reporting email
         </p>
       </div>
 
@@ -49,7 +48,6 @@ export default async function ReportingPage() {
         <TabsList>
           <TabsTrigger value="reporting">Règles email</TabsTrigger>
           <TabsTrigger value="opportunites">Suivi Opportunités</TabsTrigger>
-          <TabsTrigger value="analyses">Analyses</TabsTrigger>
         </TabsList>
 
         <TabsContent value="reporting" className="mt-4">
@@ -58,10 +56,6 @@ export default async function ReportingPage() {
 
         <TabsContent value="opportunites" className="mt-4">
           <OpportuniteReportingRulesClient initialRules={serializedOpportuniteRules} />
-        </TabsContent>
-
-        <TabsContent value="analyses" className="mt-4">
-          <AnalytiquesTab />
         </TabsContent>
       </Tabs>
     </div>
