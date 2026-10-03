@@ -1,11 +1,11 @@
 'use server'
 
 import { z } from 'zod'
-import { StatutMarche, StatutOpportunite } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 import { requireRole } from '@/lib/utils/permissions'
+import { STATUTS_ATTRIBUES, STATUTS_OPPORTUNITE_OFFRE_SOUMISE } from '@/lib/constants/marche'
 import {
-  calculerConversion, calculerIssueOffres, calculerEcartPrix, calculerQualite, estAttribueUnJour, STATUTS_ATTRIBUES,
+  calculerConversion, calculerIssueOffres, calculerEcartPrix, calculerQualite, estAttribueUnJour,
   type MarchePilotage, type LotPilotage, type StatutFactureLite,
   type ResultatConversion, type ResultatIssueOffres, type ResultatEcartPrix, type ElementQualite,
 } from '@/lib/pilotage/calculs'
@@ -18,10 +18,6 @@ export interface PilotageData {
 }
 
 const periodeSchema = z.object({ dateDebut: z.string().datetime(), dateFin: z.string().datetime() })
-
-const STATUTS_OPP_SOUMISES: StatutOpportunite[] = [
-  'SOUMISE', 'OFFRE_SOUMISE', 'EN_ATTENTE_ATTRIBUTION', 'ATTRIBUE_PROVISOIREMENT', 'GAGNEE', 'PERDUE',
-]
 
 function renseigne(s: string | null | undefined): boolean {
   return !!s && s.trim().length > 0
@@ -42,7 +38,7 @@ export async function getPilotageData(input: { dateDebut: string; dateFin: strin
       motifsResiliation: true, motifsAnnulation: true, motifsInfructueux: true,
       factures: { select: { statut: true, montantTTC: true } },
       historiqueStatuts: {
-        where: { nouveauStatut: { in: [...STATUTS_ATTRIBUES] as StatutMarche[] } },
+        where: { nouveauStatut: { in: STATUTS_ATTRIBUES } },
         select: { createdAt: true },
         orderBy: { createdAt: 'asc' },
         take: 1,
@@ -82,7 +78,7 @@ export async function getPilotageData(input: { dateDebut: string; dateFin: strin
     montantPropose: l.montantPropose === null ? null : Number(l.montantPropose),
     montantOffreConcurrent: l.montantOffreConcurrent === null ? null : Number(l.montantOffreConcurrent),
     dateDepot: l.opportunite.dateLimite,
-    soumis: STATUTS_OPP_SOUMISES.includes(l.opportunite.statut),
+    soumis: STATUTS_OPPORTUNITE_OFFRE_SOUMISE.includes(l.opportunite.statut),
     motifRenseigne: renseigne(l.motifPerte),
   }))
 

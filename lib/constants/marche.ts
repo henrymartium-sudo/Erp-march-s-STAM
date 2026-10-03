@@ -152,6 +152,25 @@ export const STATUTS_TERMINES: StatutMarche[] = [
   'INFRUCTUEUX',
 ] as const
 
+/** Marchés attribués (définitivement) : référence commune des analyses et du pilotage. */
+export const STATUTS_ATTRIBUES: StatutMarche[] = [
+  'ATTRIBUE_DEFINITIVEMENT',
+  'EN_ATTENTE_LIVRAISON_OS',
+  'EN_EXECUTION',
+  'EXECUTE_ATTENTE_GARANTIES',
+  'CLOTURE',
+]
+
+/** Opportunités dont l'offre a été soumise (ou au-delà) ; 'SOUMISE' = alias historique. */
+export const STATUTS_OPPORTUNITE_OFFRE_SOUMISE: string[] = [
+  'SOUMISE',
+  'OFFRE_SOUMISE',
+  'EN_ATTENTE_ATTRIBUTION',
+  'ATTRIBUE_PROVISOIREMENT',
+  'GAGNEE',
+  'PERDUE',
+]
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================

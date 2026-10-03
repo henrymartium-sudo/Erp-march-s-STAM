@@ -4,7 +4,7 @@ import type { ElementQualite } from '@/lib/pilotage/calculs'
 export function QualiteDonnees({ elements }: { elements: ElementQualite[] }) {
   return (
     <Card>
-      <CardHeader><CardTitle className="text-base">Qualité des données</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="text-base">Qualité des données <span className="text-sm font-normal text-muted-foreground">(toutes périodes)</span></CardTitle></CardHeader>
       <CardContent className="space-y-3">
         {elements.map((e) => (
           <details key={e.cle} className="rounded-lg border p-3">
