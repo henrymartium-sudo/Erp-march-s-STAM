@@ -3,6 +3,7 @@ import {
   calculerConversion, calculerIssueOffres, calculerEcartPrix, calculerQualite, estAttribueUnJour,
   type MarchePilotage, type LotPilotage,
 } from '../../lib/pilotage/calculs'
+import { calculerStatsResultatsLots } from '../../lib/utils/lots'
 
 const PERIODE = { dateDebut: new Date('2026-01-01'), dateFin: new Date('2026-12-31T23:59:59') }
 
@@ -155,4 +156,31 @@ test('un marché résilié a toujours été attribué, même sans date ni histor
   // Résilié sans date : signalé dans « exclus faute de date », jamais exclu en silence
   const r = calculerConversion([marche({ numero: 'RES-SANS-DATE', statut: 'RESILIE', dateAttribution: null, attribueUnJour: estAttribueUnJour('RESILIE', null, null) })], PERIODE)
   expect(r.exclusSansDate).toEqual(['RES-SANS-DATE'])
+})
+
+test('multi-lots : chaque lot d\'une même opportunité compte pour lui-même', () => {
+  const r = calculerIssueOffres([
+    lot({ id: 'a', resultat: 'GAGNE', montantPropose: 100 }),
+    lot({ id: 'b', resultat: 'PERDU', montantPropose: 200 }),
+    lot({ id: 'c', resultat: 'INFRUCTUEUX', montantPropose: 300 }),
+  ], PERIODE) // même opportunité 'o1' pour les trois
+  expect(r.gagnes.nombre).toBe(1)
+  expect(r.perdus.nombre).toBe(1)
+  expect(r.sansSuite.nombre).toBe(1)
+  // Cohérence avec la règle « Résultats par lot » déjà en production
+  expect(r.tauxSucces).toBe(calculerStatsResultatsLots(['GAGNE', 'PERDU', 'INFRUCTUEUX']).tauxReussite)
+})
+
+test('garde-fou facture : 2 % tolérés, au-delà signalé', () => {
+  const ms = [
+    marche({ numero: 'PILE', montant: 1000, factures: [{ statut: 'PAYEE', montantTTC: 1020 }] }),
+    marche({ numero: 'AU-DELA', montant: 1000, factures: [{ statut: 'PAYEE', montantTTC: 1021 }] }),
+  ]
+  const q = calculerQualite(ms, [], calculerConversion(ms, PERIODE), calculerIssueOffres([], PERIODE), new Date('2026-10-02'))
+  expect(q.find((e) => e.cle === 'FACTURE_SUPERIEURE')?.elements).toEqual(['AU-DELA'])
+})
+
+test('écart de prix : un lot perdu d\'une offre non soumise est ignoré', () => {
+  const r = calculerEcartPrix([lot({ id: '1' }), lot({ id: '2', soumis: false })], PERIODE)
+  expect(r.n).toBe(1)
 })

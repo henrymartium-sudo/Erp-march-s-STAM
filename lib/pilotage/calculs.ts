@@ -1,5 +1,7 @@
 // Calculs du module Pilotage — fonctions pures, sans accès base (testées en unitaire).
 
+import { STATUTS_ATTRIBUES } from '@/lib/constants/marche'
+
 export type StatutFactureLite = 'BROUILLON' | 'EMISE' | 'EN_ATTENTE' | 'PAYEE' | 'REJETEE' | 'ANNULEE'
 
 export interface Periode { dateDebut: Date; dateFin: Date }
@@ -40,11 +42,6 @@ export const SEUIL_CONVERSION = 30
 const STATUTS_FACTURES_COMPTEES: StatutFactureLite[] = ['EMISE', 'EN_ATTENTE', 'PAYEE']
 const STATUTS_PERDUS = ['RESILIE', 'ANNULE']
 
-/** Statuts qui supposent une attribution définitive (utilisés aussi pour lire l'historique). */
-export const STATUTS_ATTRIBUES = [
-  'ATTRIBUE_DEFINITIVEMENT', 'EN_ATTENTE_LIVRAISON_OS', 'EN_EXECUTION', 'EXECUTE_ATTENTE_GARANTIES', 'CLOTURE',
-] as const
-
 /**
  * Vrai si le marché a été attribué un jour. Une résiliation suppose toujours une attribution
  * préalable (règle métier STAM) ; une annulation peut survenir avant : l'historique tranche.
@@ -52,7 +49,7 @@ export const STATUTS_ATTRIBUES = [
 export function estAttribueUnJour(statut: string, dateAttributionDefinitive: Date | null, premierPassage: Date | null): boolean {
   return dateAttributionDefinitive !== null
     || statut === 'RESILIE'
-    || (STATUTS_ATTRIBUES as readonly string[]).includes(statut)
+    || (STATUTS_ATTRIBUES as string[]).includes(statut)
     || premierPassage !== null
 }
 
@@ -175,7 +172,7 @@ export function calculerIssueOffres(lots: LotPilotage[], periode: Periode): Resu
 export function calculerEcartPrix(lots: LotPilotage[], periode: Periode): ResultatEcartPrix {
   const cas: ResultatEcartPrix['cas'] = []
   for (const l of lots) {
-    if (l.resultat !== 'PERDU' || !l.dateDepot || !dansPeriode(l.dateDepot, periode)) continue
+    if (!l.soumis || l.resultat !== 'PERDU' || !l.dateDepot || !dansPeriode(l.dateDepot, periode)) continue
     if (!l.montantPropose || !l.montantOffreConcurrent) continue
     const ecart = ((l.montantPropose - l.montantOffreConcurrent) / l.montantOffreConcurrent) * 100
     cas.push({ id: l.id, libelle: l.libelle, notreOffre: l.montantPropose, offreGagnante: l.montantOffreConcurrent, ecart: Math.round(ecart) })
