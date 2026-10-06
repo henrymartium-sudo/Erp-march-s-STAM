@@ -24,7 +24,7 @@ export async function exportAnalytiquesExcel(
   periode: Periode
 ): Promise<ActionResult<{ buffer: number[]; filename: string }>> {
   try {
-    const session = await requireRole(['ADMIN'])
+    const session = await requireRole(['ADMIN', 'AVANCE'])
     const data = await getAllAnalyticsData(periode)
     const ExcelJS = (await import('exceljs')).default
     const workbook = new ExcelJS.Workbook()
@@ -72,7 +72,6 @@ export async function exportAnalytiquesExcel(
       ['Montant total contractualisé', data.performance.montantTotal],
       ['Taux de succès (Win Rate)', data.performance.winRate / 100],
       ['CA encaissé', data.financiere.caEncaisse],
-      ['Taux de recouvrement', data.financiere.tauxRecouvrement / 100],
       ['Total interventions SAV', data.sav.totalInterventions],
       ['Coût total SAV', data.sav.coutTotal],
     ]
@@ -80,7 +79,7 @@ export async function exportAnalytiquesExcel(
       const row = wsSynth.addRow([label, val])
       if (label === 'Montant total contractualisé' || label === 'CA encaissé' || label === 'Coût total SAV') {
         row.getCell(2).numFmt = MONTANT_FMT
-      } else if (label === 'Taux de succès (Win Rate)' || label === 'Taux de recouvrement') {
+      } else if (label === 'Taux de succès (Win Rate)') {
         row.getCell(2).numFmt = PCT_FMT
       }
       applyAltRow(row, i)
@@ -185,13 +184,12 @@ export async function exportAnalytiquesExcel(
       ['CA contractualisé', data.financiere.caContractualise],
       ['CA encaissé', data.financiere.caEncaisse],
       ['CA en attente', data.financiere.caEnAttente],
-      ['Taux de recouvrement', data.financiere.tauxRecouvrement / 100],
       ['Cautions actives', data.financiere.cautionsActives],
       ['Cautions libérées', data.financiere.cautionsLiberees],
     ]
     finKpis.forEach(([label, val], i) => {
       const row = wsFin.addRow([label, val])
-      row.getCell(2).numFmt = label === 'Taux de recouvrement' ? PCT_FMT : MONTANT_FMT
+      row.getCell(2).numFmt = MONTANT_FMT
       applyAltRow(row, i)
     })
 
@@ -420,7 +418,7 @@ export async function exportAnalytiquesPDF(
   periode: Periode
 ): Promise<ActionResult<{ buffer: number[]; filename: string }>> {
   try {
-    const session = await requireRole(['ADMIN'])
+    const session = await requireRole(['ADMIN', 'AVANCE'])
     const data = await getAllAnalyticsData(periode)
 
     // Rapport capitalisation (tableau principal : Top AC)
@@ -446,7 +444,6 @@ export async function exportAnalytiquesPDF(
       { label: 'Taux de succès global', value: data.performance.winRate + '%' },
       { label: 'CA contractualisé', value: formatMontantFCFA(data.performance.montantTotal) },
       { label: 'CA encaissé', value: formatMontantFCFA(data.financiere.caEncaisse) },
-      { label: 'Taux recouvrement', value: data.financiere.tauxRecouvrement + '%' },
       { label: 'Cautions actives', value: formatMontantFCFA(data.financiere.cautionsActives) },
       { label: 'Interventions SAV', value: data.sav.totalInterventions },
       { label: 'Taux résolution SAV', value: data.sav.tauxResolution + '%' },

@@ -1,4 +1,4 @@
-// app/(dashboard)/admin/reporting/AnalytiquesTab.tsx
+// components/analytique/AnalytiquesTab.tsx — analyses détaillées, affichées sur /pilotage
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'

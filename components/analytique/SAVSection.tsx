@@ -52,7 +52,7 @@ export function SAVSection({ data }: Props) {
         ))}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* BarChart interventions par type */}
         {data.parType.length > 0 && (
           <Card>
@@ -60,7 +60,7 @@ export function SAVSection({ data }: Props) {
               <CardTitle className="text-sm">Interventions par type</CardTitle>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={{}} className="h-[250px]">
+              <ChartContainer config={{}} className="h-[250px] w-full">
                 <BarChart data={data.parType} layout="vertical">
                   <XAxis type="number" fontSize={11} allowDecimals={false} />
                   <YAxis
@@ -96,7 +96,7 @@ export function SAVSection({ data }: Props) {
               <CardTitle className="text-sm">Interventions par statut</CardTitle>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={{}} className="h-[250px]">
+              <ChartContainer config={{}} className="h-[250px] w-full">
                 <BarChart data={data.parStatut} layout="vertical">
                   <XAxis type="number" fontSize={11} allowDecimals={false} />
                   <YAxis

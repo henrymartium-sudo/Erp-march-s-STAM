@@ -30,7 +30,6 @@ export interface FinancialStats {
   caEnAttente: number         // SUM montantTTC factures EMISE + EN_ATTENTE
   cautionsActives: number     // SUM montant cautions ACTIVE
   cautionsLiberees: number    // SUM montant cautions LIBEREE
-  tauxRecouvrement: number    // caEncaisse / caContractualise * 100
   facturesParStatut: { statut: string; count: number; montant: number }[]
 }
 

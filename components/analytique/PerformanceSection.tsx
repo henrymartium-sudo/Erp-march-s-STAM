@@ -62,14 +62,14 @@ export function PerformanceSection({ data }: Props) {
         ))}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* Donut répartition statuts */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Répartition par statut</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{}} className="h-[250px]">
+            <ChartContainer config={{}} className="h-[250px] w-full">
               <PieChart>
                 <Pie
                   data={data.parStatut}
@@ -100,7 +100,7 @@ export function PerformanceSection({ data }: Props) {
             <CardTitle className="text-sm">Win rate par type (%)</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{}} className="h-[250px]">
+            <ChartContainer config={{}} className="h-[250px] w-full">
               <BarChart data={data.parType} layout="vertical">
                 <XAxis type="number" domain={[0, 100]} unit="%" fontSize={11} />
                 <YAxis type="category" dataKey="label" width={120} fontSize={11} />
