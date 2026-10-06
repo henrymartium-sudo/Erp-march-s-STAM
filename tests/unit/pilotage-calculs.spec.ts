@@ -1,11 +1,18 @@
 import { test, expect } from '@playwright/test'
 import {
-  calculerConversion, calculerIssueOffres, calculerEcartPrix, calculerQualite, estAttribueUnJour,
+  calculerConversion, calculerIssueOffres, calculerEcartPrix, calculerQualite, calculerEvolutionPoints, estAttribueUnJour,
   type MarchePilotage, type LotPilotage,
 } from '../../lib/pilotage/calculs'
 import { calculerStatsResultatsLots } from '../../lib/utils/lots'
 
 const PERIODE = { dateDebut: new Date('2026-01-01'), dateFin: new Date('2026-12-31T23:59:59') }
+
+test('calculerEvolutionPoints retourne la variation en points et exige deux valeurs', () => {
+  expect(calculerEvolutionPoints(35, 28)).toBe(7)
+  expect(calculerEvolutionPoints(28, 35)).toBe(-7)
+  expect(calculerEvolutionPoints(null, 35)).toBeNull()
+  expect(calculerEvolutionPoints(35, null)).toBeNull()
+})
 
 function marche(p: Partial<MarchePilotage>): MarchePilotage {
   return {

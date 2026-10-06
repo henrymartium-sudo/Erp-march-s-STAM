@@ -17,6 +17,7 @@ Le taux de succès (offres gagnées ÷ offres déposées) est aujourd'hui l'indi
 | 5 | Renouvellement par autorité contractante | **Reporté** : autorité saisie en texte libre, risque de doublons. Relevé en lecture seule d'abord |
 | 6 | Post-mortem | Le dialogue existant (motif, concurrent gagnant, montant retenu) est conservé ; ajout d'une catégorie de cause en liste fermée — **tranche 2** |
 | 7 | Accès | Rôles `ADMIN` et `AVANCE` |
+| 8 | Comparaison d'évolution | Comparer chaque indicateur aux mêmes dates calendaires de l'année précédente ; exprimer l'écart en points. Décision Abel du 2026-10-06 |
 
 ## Requirements
 
@@ -88,11 +89,11 @@ Chaque indicateur ouvre la liste des marchés qui le composent. Aucun chiffre sa
 ## Interface
 
 1. Barre de filtres : période + exports.
-2. Rangée de 3 indicateurs (valeur, seuil, évolution vs période précédente, phrase d'explication).
+2. Rangée de 3 indicateurs (valeur, seuil, évolution vs les mêmes dates de l'année précédente en points, phrase d'explication).
 3. Détail par indicateur (liste des marchés).
 4. Bloc « Qualité des données ».
 
-États : données insuffisantes, vide, erreur **par bloc** (un calcul en échec ne fait pas tomber la page), chargement par squelette. Responsive : 3 colonnes (1920), 2 (768), 1 (375). Design guidé par les skills `dataviz` et `ui-ux-pro-max` à l'implémentation, dans le respect de shadcn/ui.
+États : données insuffisantes, vide, erreur **par bloc** (une défaillance d'un chargement ou d'un calcul ne masque pas les autres blocs), chargement par squelette. Le bloc en erreur affiche un message explicite et une reprise ; les résultats des autres blocs restent visibles. Si la période équivalente ne contient pas assez de données pour calculer un indicateur, afficher « Évolution indisponible » sans inventer de valeur. Responsive : 3 colonnes (1920), 2 (768), 1 (375). Design guidé par les skills `dataviz` et `ui-ux-pro-max` à l'implémentation, dans le respect de shadcn/ui.
 
 ## Tests
 

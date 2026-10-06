@@ -70,6 +70,7 @@ export function PeriodSelector({ value, onChange, disabled }: PeriodSelectorProp
           key={preset.label}
           variant={isPresetActive(preset) ? 'default' : 'outline'}
           size="sm"
+          className="min-h-11 lg:min-h-9"
           disabled={disabled}
           onClick={() => onChange(preset.getValue())}
         >
@@ -80,7 +81,7 @@ export function PeriodSelector({ value, onChange, disabled }: PeriodSelectorProp
       {/* Personnalisé */}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" disabled={disabled}>
+          <Button variant="outline" size="sm" className="min-h-11 lg:min-h-9" disabled={disabled}>
             <CalendarIcon className="mr-2 h-3.5 w-3.5" />
             {format(value.dateDebut, 'dd/MM/yyyy', { locale: fr })}
             {' – '}

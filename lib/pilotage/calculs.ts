@@ -61,6 +61,10 @@ function pourcentage(num: number, den: number): number | null {
   return den > 0 ? Math.round((num / den) * 100) : null
 }
 
+export function calculerEvolutionPoints(valeurActuelle: number | null, valeurReference: number | null): number | null {
+  return valeurActuelle === null || valeurReference === null ? null : valeurActuelle - valeurReference
+}
+
 export function montantFacture(m: MarchePilotage): number {
   return m.factures
     .filter((f) => STATUTS_FACTURES_COMPTEES.includes(f.statut))

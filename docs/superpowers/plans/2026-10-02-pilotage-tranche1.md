@@ -1039,12 +1039,18 @@ test.describe('Pilotage', () => {
 })
 ```
 
-- [ ] **Step 2 : Lancer contre la base de test**
+- [x] **Step 2 : Lancer contre la base de test**
 
-Run : `npx playwright test tests/v1/pilotage.spec.ts`
-Attendu : 6 passed.
+Run : `npx playwright test tests/v1/pilotage.spec.ts --project=chromium` contre le build local de production et la base `.env.test` ; `AUTH_TRUST_HOST` et la heap Node sont configurés dans le processus uniquement.
+Résultat : 8 tests Chromium réussis.
 
-- [ ] **Step 3 : Navigation clavier (manuel, Browser pane)** : Tab jusqu'à « Voir le détail », Entrée l'ouvre, `aria-expanded` passe à `true`.
+- [x] **Step 3 : Navigation clavier** : couverte par Playwright sur les trois indicateurs ; Entrée ouvre et referme le panneau, `aria-expanded` suit l'état.
+
+**Revue UI/UX et dataviz (2026-10-06) :** correction du contraste des compteurs qualité, des cibles tactiles sur mobile/tablette et de l'état d'erreur (reprise explicite, disparition du squelette bloqué). L'évolution compare désormais les mêmes dates calendaires de l'année précédente, en points, sur décision d'Abel. Le build local de production réussit avec une heap Node portée à 4 Go pour ce processus seulement. Après activation temporaire d'`AUTH_TRUST_HOST` (le serveur local rejetait `localhost` sinon), les huit scénarios E2E Chromium passent contre le build local de production et la base de test. Le serveur `next dev` épuisait sa mémoire sur cette machine ; aucun timeout n'a été augmenté.
+
+**Revue visuelle Playwright (2026-10-06) :** pages inspectées à 1920×1080, 768×1024 et 375×667 sur le serveur local et la base de test. La grille passe de 3 à 2+1 puis 1 colonne ; les filtres se replient sans débordement horizontal. Le drill-down, la référence annuelle et le bloc qualité restent lisibles. Console navigateur : 0 erreur, 0 avertissement. Aucun écart visuel bloquant observé.
+
+**Isolation d'erreur par bloc :** chaque lecture source (marchés / lots) et chaque calcul est capturé séparément. L'action renvoie un état explicite par indicateur ; un bloc en erreur est journalisé côté serveur et n'empêche pas les autres résultats d'être affichés. Le bouton de reprise relance les calculs. Tests unitaires Pilotage : 16/16 réussis, dont le test de non-propagation d'une erreur vers les autres blocs. Les E2E existants passent 8/8 ; ils vérifient l'erreur de chargement globale et la reprise, pas une panne isolée d'une source.
 
 - [ ] **Step 4 : Commit**
 
@@ -1059,11 +1065,11 @@ git commit -m "test(pilotage): E2E accès, contenu et responsive"
 
 **Files:** aucun fichier du dépôt. Script et résultats dans le dossier `scratch` hors dépôt (jamais commités : données réelles).
 
-- [ ] **Step 1** : Restaurer la dernière sauvegarde de production dans la base de test locale (procédure de la mémoire « Sauvegarde prod (Supabase plan gratuit) »).
-- [ ] **Step 2** : Calculer à la main en SQL, pour l'année civile : valeur attribuée, facturé TTC (EMISE/EN_ATTENTE/PAYEE), encaissé, lots soumis/perdus/infructueux, écart moyen sur lots perdus renseignés.
-- [ ] **Step 3** : Ouvrir `/pilotage` sur `dev-test` avec la même période ; comparer chiffre à chiffre.
-- [ ] **Step 4** : Présenter à Abel le tableau de rapprochement et la liste qualité des données. **Arrêt** : aucune PR avant sa validation.
-- [ ] **Step 5** : Remettre la base de test dans son état de test (re-seed) pour ne pas laisser de données réelles en local au-delà du besoin.
+- [x] **Step 1** : Restaurer la dernière sauvegarde de production dans une copie PostgreSQL 17 locale isolée ; la base de test PostgreSQL 15 sur le port 5433 est restée intacte.
+- [x] **Step 2** : Calculer à la main en SQL, pour l'année civile : valeur attribuée, facturé TTC (EMISE/EN_ATTENTE/PAYEE), encaissé, lots soumis/perdus/infructueux, écart moyen sur lots perdus renseignés et contrôles qualité.
+- [x] **Step 3** : Ouvrir `/pilotage` sur le build local avec la même période ; tous les chiffres et les six compteurs qualité correspondent au SQL.
+- [x] **Step 4** : Présenter à Abel le tableau de rapprochement et la liste détaillée qualité ; les indicateurs, compteurs et dossiers signalés ont été présentés et validés dans le fil. Aucun écart n'a été signalé.
+- [x] **Step 5** : Supprimer le clone temporaire PostgreSQL 17 et son volume anonyme ; le conteneur et le volume de test PostgreSQL 15 sont restés intacts, donc aucun re-seed n'était nécessaire.
 
 ---
 
