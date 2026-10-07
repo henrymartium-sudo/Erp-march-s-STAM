@@ -1,14 +1,6 @@
 import type { Metadata } from "next";
-import { DM_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
-
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  variable: "--font-dm-sans",
-  weight: ["300", "400", "500", "600", "700"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "STAM — Marchés Publics",
@@ -22,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body className={`${dmSans.variable} font-sans antialiased`}>
+      <body className="font-sans antialiased">
         {children}
         <Toaster position="bottom-right" richColors />
       </body>
