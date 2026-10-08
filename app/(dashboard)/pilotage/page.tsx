@@ -1,5 +1,6 @@
 // app/(dashboard)/pilotage/page.tsx
 
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { requireRole } from '@/lib/utils/permissions'
 import { PilotageClient } from './PilotageClient'
@@ -18,7 +19,9 @@ export default async function PilotagePage() {
           Indicateurs de décision : ce que la valeur gagnée devient, et pourquoi on perd.
         </p>
       </div>
-      <PilotageClient />
+      <Suspense fallback={null}>
+        <PilotageClient />
+      </Suspense>
     </div>
   )
 }
