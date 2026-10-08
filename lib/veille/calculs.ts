@@ -1,5 +1,7 @@
 // Calculs de la Veille concurrentielle — fonctions pures, sans accès base (testées en unitaire).
 
+import type { ElementLie, Periode } from '@/lib/pilotage/calculs'
+
 // ── Normalisation des noms ──────────────────────────────────────────────────────────────
 
 /** Formes juridiques courantes, en minuscules sans accents (liste fermée, testée). */
@@ -76,4 +78,118 @@ export function trouverDoublons(groupes: GroupeNom[]): DoublonPossible[] {
     }
   }
   return resultat
+}
+
+// ── Pertes ──────────────────────────────────────────────────────────────────────────────
+
+export interface LotVeille {
+  id: string
+  opportuniteId: string
+  /** « <référence ou objet> — Lot <n> » (intituleLot) */
+  libelle: string
+  autorite: string
+  resultat: 'EN_COURS' | 'ATTRIBUE_PROVISOIREMENT' | 'GAGNE' | 'PERDU' | 'INFRUCTUEUX'
+  /** opportunité au statut offre soumise ou ultérieur */
+  soumis: boolean
+  /** dateLimite de l'opportunité */
+  dateDepot: Date | null
+  montantPropose: number | null
+  montantOffreConcurrent: number | null
+  concurrentGagnant: string | null
+  motif: string | null
+  vehicules: { marque: string; modele: string }[]
+}
+
+export type ElementManquant = 'concurrent' | 'montant du concurrent' | 'notre montant' | 'motif' | 'véhicule'
+
+export interface PerteVeille {
+  id: string
+  opportuniteId: string
+  libelle: string
+  autorite: string
+  /** nom brut du concurrent gagnant, null si non renseigné */
+  concurrent: string | null
+  /** forme normalisée du nom (clé de regroupement), null si non renseigné */
+  concurrentCle: string | null
+  notreMontant: number | null
+  montantConcurrent: number | null
+  /** écart en %, non arrondi ; null si un des deux montants manque */
+  ecartPct: number | null
+  ecartFcfa: number | null
+  motif: string | null
+  /** libellé affiché des véhicules proposés */
+  vehicules: string
+  /** clé de regroupement des véhicules, vide si aucun */
+  vehiculesCle: string
+  /** date de dépôt, ISO 8601 */
+  dateDepot: string
+  documentee: boolean
+  manquants: ElementManquant[]
+}
+
+const positif = (v: number | null): v is number => v !== null && v > 0
+const dansPeriode = (d: Date, p: Periode): boolean => d >= p.dateDebut && d <= p.dateFin
+const texte = (s: string | null): string | null => (s && s.trim().length > 0 ? s.trim() : null)
+
+/** Clé et libellé d'une combinaison de véhicules : triés, sans doublon, indépendants de la casse. */
+export function cleVehicules(vehicules: { marque: string; modele: string }[]): { cle: string; libelle: string } {
+  const parCle = new Map<string, string>()
+  for (const v of vehicules) {
+    const libelle = `${v.marque.trim()} ${v.modele.trim()}`.trim()
+    const cle = normaliserTexte(libelle)
+    if (cle && !parCle.has(cle)) parCle.set(cle, libelle)
+  }
+  if (parCle.size === 0) return { cle: '', libelle: 'Véhicule non renseigné' }
+  const triees = [...parCle.entries()].sort(([a], [b]) => a.localeCompare(b, 'fr'))
+  return { cle: triees.map(([c]) => c).join(' + '), libelle: triees.map(([, l]) => l).join(' + ') }
+}
+
+export function construirePertes(
+  lots: LotVeille[],
+  periode: Periode,
+): { pertes: PerteVeille[]; exclusSansDate: ElementLie[] } {
+  const pertes: PerteVeille[] = []
+  const exclusSansDate: ElementLie[] = []
+
+  for (const l of lots) {
+    if (!l.soumis || l.resultat !== 'PERDU') continue
+    if (!l.dateDepot) {
+      exclusSansDate.push({ libelle: l.libelle, href: `/opportunites/${l.opportuniteId}` })
+      continue
+    }
+    if (!dansPeriode(l.dateDepot, periode)) continue
+
+    const concurrent = texte(l.concurrentGagnant)
+    const motif = texte(l.motif)
+    const propose = positif(l.montantPropose) ? l.montantPropose : null
+    const gagnant = positif(l.montantOffreConcurrent) ? l.montantOffreConcurrent : null
+    const vehicules = cleVehicules(l.vehicules)
+
+    const manquants: ElementManquant[] = []
+    if (!concurrent) manquants.push('concurrent')
+    if (gagnant === null) manquants.push('montant du concurrent')
+    if (propose === null) manquants.push('notre montant')
+    if (!motif) manquants.push('motif')
+    if (vehicules.cle === '') manquants.push('véhicule')
+
+    pertes.push({
+      id: l.id,
+      opportuniteId: l.opportuniteId,
+      libelle: l.libelle,
+      autorite: l.autorite,
+      concurrent,
+      concurrentCle: concurrent ? normaliserNom(concurrent) : null,
+      notreMontant: propose,
+      montantConcurrent: gagnant,
+      ecartPct: propose !== null && gagnant !== null ? ((propose - gagnant) / gagnant) * 100 : null,
+      ecartFcfa: propose !== null && gagnant !== null ? propose - gagnant : null,
+      motif,
+      vehicules: vehicules.libelle,
+      vehiculesCle: vehicules.cle,
+      dateDepot: l.dateDepot.toISOString(),
+      documentee: concurrent !== null && propose !== null && gagnant !== null,
+      manquants,
+    })
+  }
+  return { pertes, exclusSansDate }
 }

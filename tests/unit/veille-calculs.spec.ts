@@ -1,7 +1,23 @@
 import { test, expect } from '@playwright/test'
 import {
   normaliserTexte, normaliserNom, distanceLevenshtein, libelleRetenu, trouverDoublons,
+  construirePertes, cleVehicules, type LotVeille,
 } from '../../lib/veille/calculs'
+
+const PERIODE = { dateDebut: new Date('2026-01-01'), dateFin: new Date('2026-12-31T23:59:59') }
+
+function lot(p: Partial<LotVeille> = {}): LotVeille {
+  return {
+    id: p.id ?? 'l1', opportuniteId: p.opportuniteId ?? 'o1', libelle: p.libelle ?? 'AO test — Lot 1',
+    autorite: p.autorite ?? 'Mairie A', resultat: p.resultat ?? 'PERDU', soumis: p.soumis ?? true,
+    dateDepot: p.dateDepot === undefined ? new Date('2026-03-01') : p.dateDepot,
+    montantPropose: p.montantPropose === undefined ? 1000 : p.montantPropose,
+    montantOffreConcurrent: p.montantOffreConcurrent === undefined ? 800 : p.montantOffreConcurrent,
+    concurrentGagnant: p.concurrentGagnant === undefined ? 'Auto Plus' : p.concurrentGagnant,
+    motif: p.motif === undefined ? 'Prix' : p.motif,
+    vehicules: p.vehicules ?? [{ marque: 'Toyota', modele: 'Hilux' }],
+  }
+}
 
 test.describe('normalisation des noms', () => {
   test('ignore la casse, les accents, la ponctuation et les espaces multiples', () => {
@@ -72,5 +88,73 @@ test.describe('trouverDoublons', () => {
 
   test('ne compare pas un groupe avec lui-même', () => {
     expect(trouverDoublons([g('auto plus')])).toHaveLength(0)
+  })
+})
+
+test.describe('cleVehicules', () => {
+  test('la clé ne dépend ni de l’ordre ni de la casse ni des doublons', () => {
+    const a = cleVehicules([{ marque: 'Toyota', modele: 'Hilux' }, { marque: 'Isuzu', modele: 'D-Max' }])
+    const b = cleVehicules([{ marque: 'isuzu', modele: 'd-max' }, { marque: 'TOYOTA', modele: 'HILUX' }, { marque: 'Toyota', modele: 'Hilux' }])
+    expect(a.cle).toBe(b.cle)
+    expect(a.libelle).toBe('Isuzu D-Max + Toyota Hilux')
+  })
+  test('aucun véhicule : clé vide et libellé explicite', () => {
+    expect(cleVehicules([])).toEqual({ cle: '', libelle: 'Véhicule non renseigné' })
+  })
+})
+
+test.describe('construirePertes', () => {
+  test('ne garde que les lots perdus, soumis, dans la période', () => {
+    const { pertes } = construirePertes([
+      lot({ id: 'a' }),
+      lot({ id: 'gagne', resultat: 'GAGNE' }),
+      lot({ id: 'nonsoumis', soumis: false }),
+      lot({ id: 'hors', dateDepot: new Date('2025-06-01') }),
+    ], PERIODE)
+    expect(pertes.map((p) => p.id)).toEqual(['a'])
+  })
+
+  test('un lot perdu sans date de dépôt est exclu et signalé avec son lien', () => {
+    const r = construirePertes([lot({ id: 'a', opportuniteId: 'opp9', libelle: 'AO — Lot 2', dateDepot: null })], PERIODE)
+    expect(r.pertes).toHaveLength(0)
+    expect(r.exclusSansDate).toEqual([{ libelle: 'AO — Lot 2', href: '/opportunites/opp9' }])
+  })
+
+  test('un lot complet est documenté, avec son écart non arrondi', () => {
+    const { pertes } = construirePertes([lot({ montantPropose: 1000, montantOffreConcurrent: 800 })], PERIODE)
+    const p = pertes[0]!
+    expect(p.documentee).toBe(true)
+    expect(p.manquants).toEqual([])
+    expect(p.ecartPct).toBeCloseTo(25, 10)
+    expect(p.ecartFcfa).toBe(200)
+  })
+
+  test('chaque information manquante rend le lot non documenté (sauf le motif et le véhicule)', () => {
+    const cas: [Partial<LotVeille>, string[], boolean][] = [
+      [{ concurrentGagnant: null }, ['concurrent'], false],
+      [{ concurrentGagnant: '   ' }, ['concurrent'], false],
+      [{ montantOffreConcurrent: null }, ['montant du concurrent'], false],
+      [{ montantOffreConcurrent: 0 }, ['montant du concurrent'], false],
+      [{ montantPropose: null }, ['notre montant'], false],
+      [{ motif: null }, ['motif'], true],
+      [{ vehicules: [] }, ['véhicule'], true],
+    ]
+    for (const [surcharge, manquants, documentee] of cas) {
+      const p = construirePertes([lot(surcharge)], PERIODE).pertes[0]!
+      expect(p.manquants, JSON.stringify(surcharge)).toEqual(manquants)
+      expect(p.documentee, JSON.stringify(surcharge)).toBe(documentee)
+    }
+  })
+
+  test('sans montant du concurrent, aucun écart n’est calculé', () => {
+    const p = construirePertes([lot({ montantOffreConcurrent: null })], PERIODE).pertes[0]!
+    expect(p.ecartPct).toBeNull()
+    expect(p.ecartFcfa).toBeNull()
+  })
+
+  test('la clé du concurrent est la forme normalisée du nom', () => {
+    const p = construirePertes([lot({ concurrentGagnant: ' Société AUTO-PLUS SARL ' })], PERIODE).pertes[0]!
+    expect(p.concurrent).toBe('Société AUTO-PLUS SARL')
+    expect(p.concurrentCle).toBe('auto plus')
   })
 })
