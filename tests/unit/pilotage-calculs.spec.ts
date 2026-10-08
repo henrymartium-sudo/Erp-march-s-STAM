@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import {
   calculerConversion, calculerIssueOffres, calculerEcartPrix, calculerQualite, estAttribueUnJour, intituleLot,
+  calculerMarchesHistoriques, issueMarcheHistorique,
   type MarchePilotage, type LotPilotage,
 } from '../../lib/pilotage/calculs'
 import { calculerStatsResultatsLots } from '../../lib/utils/lots'
@@ -16,6 +17,8 @@ function marche(p: Partial<MarchePilotage>): MarchePilotage {
     dateDepotOffre: p.dateDepotOffre ?? null, attribueUnJour: p.attribueUnJour ?? true,
     factures: p.factures ?? [], motifRenseigne: p.motifRenseigne ?? false, dateFinPrevue: p.dateFinPrevue ?? null,
     aOpportunite: p.aOpportunite ?? true,
+    concurrentGagnant: p.concurrentGagnant ?? null,
+    dateDernierStatut: p.dateDernierStatut ?? null,
   }
 }
 
@@ -259,4 +262,64 @@ test('garde-fou facture : 2 % tolérés, au-delà signalé', () => {
 test('écart de prix : un lot perdu d\'une offre non soumise est ignoré', () => {
   const r = calculerEcartPrix([lot({ id: '1' }), lot({ id: '2', soumis: false })], PERIODE)
   expect(r.n).toBe(1)
+})
+
+test.describe('marchés historiques', () => {
+  const hist = (p: Partial<MarchePilotage>) => marche({ aOpportunite: false, ...p })
+
+  test('le statut détermine l’issue, le concurrent renseigné ne change rien', () => {
+    expect(issueMarcheHistorique(hist({ statut: 'CLOTURE' }))).toBe('GAGNE')
+    expect(issueMarcheHistorique(hist({ statut: 'EN_EXECUTION', concurrentGagnant: 'X' }))).toBe('GAGNE')
+    expect(issueMarcheHistorique(hist({ statut: 'RESILIE' }))).toBe('PERDU_APRES_ATTRIBUTION')
+    expect(issueMarcheHistorique(hist({ statut: 'ANNULE', attribueUnJour: true }))).toBe('PERDU_APRES_ATTRIBUTION')
+    expect(issueMarcheHistorique(hist({ statut: 'ANNULE', attribueUnJour: false }))).toBe('SANS_SUITE')
+    expect(issueMarcheHistorique(hist({ statut: 'INFRUCTUEUX' }))).toBe('SANS_SUITE')
+    expect(issueMarcheHistorique(hist({ statut: 'OFFRE_DEPOSEE', concurrentGagnant: 'X' }))).toBe('A_QUALIFIER')
+    expect(issueMarcheHistorique(hist({ statut: 'EN_ATTENTE_ATTRIBUTION' }))).toBe('A_QUALIFIER')
+    expect(issueMarcheHistorique(hist({ statut: 'ATTRIBUE_PROVISOIREMENT' }))).toBe('A_QUALIFIER')
+    expect(issueMarcheHistorique(hist({ statut: 'DOSSIER_EN_PREPARATION' }))).toBeNull()
+  })
+
+  test('répartit par issue sans jamais produire de perdu au sens des lots', () => {
+    const r = calculerMarchesHistoriques([
+      hist({ id: 'a', statut: 'CLOTURE', montant: 100 }),
+      hist({ id: 'b', statut: 'EN_EXECUTION', montant: 200 }),
+      hist({ id: 'c', statut: 'RESILIE', montant: 50 }),
+      hist({ id: 'd', statut: 'INFRUCTUEUX', montant: 70, dateAttribution: null, dateDernierStatut: new Date('2026-05-01') }),
+      hist({ id: 'e', statut: 'OFFRE_DEPOSEE', montant: 30, dateAttribution: null, dateDernierStatut: new Date('2026-06-01') }),
+    ], PERIODE)
+    expect(r.parIssue.GAGNE).toEqual({ nombre: 2, valeur: 300 })
+    expect(r.parIssue.PERDU_APRES_ATTRIBUTION).toEqual({ nombre: 1, valeur: 50 })
+    expect(r.parIssue.SANS_SUITE).toEqual({ nombre: 1, valeur: 70 })
+    expect(r.parIssue.A_QUALIFIER).toEqual({ nombre: 1, valeur: 30 })
+    expect(r.total).toEqual({ nombre: 5, valeur: 450 })
+    expect(r.lignes).toHaveLength(5)
+    expect(r.lignes[0]?.href).toBe('/marches/a')
+  })
+
+  test('un marché lié à une opportunité n’est jamais compté', () => {
+    const r = calculerMarchesHistoriques([marche({ aOpportunite: true, statut: 'CLOTURE' })], PERIODE)
+    expect(r.total.nombre).toBe(0)
+  })
+
+  test('hors période exclu ; sans aucune date signalé', () => {
+    const r = calculerMarchesHistoriques([
+      hist({ id: 'hors', statut: 'CLOTURE', dateAttribution: new Date('2025-06-01') }),
+      hist({ id: 'sd', numero: 'M-SD', statut: 'INFRUCTUEUX', dateAttribution: null, dateDernierStatut: null }),
+    ], PERIODE)
+    expect(r.total.nombre).toBe(0)
+    expect(libelles(r.exclusSansDate)).toEqual(['M-SD'])
+  })
+})
+
+test('qualité : compteur d’incohérence statut / concurrent et libellé historiques', () => {
+  const ms = [
+    marche({ id: 'i1', numero: 'INC', aOpportunite: false, statut: 'CLOTURE', concurrentGagnant: 'X' }),
+    marche({ id: 'i2', numero: 'OK', aOpportunite: false, statut: 'CLOTURE' }),
+    marche({ id: 'i3', numero: 'QUAL', aOpportunite: false, statut: 'OFFRE_DEPOSEE', concurrentGagnant: 'X' }),
+  ]
+  const q = calculerQualite(ms, [], calculerConversion(ms, PERIODE), calculerIssueOffres([], PERIODE), new Date('2026-10-02'))
+  const par = Object.fromEntries(q.map((e) => [e.cle, libelles(e.elements)]))
+  expect(par.STATUT_CONCURRENT_INCOHERENT).toEqual(['INC'])
+  expect(q.find((e) => e.cle === 'SANS_OPPORTUNITE')?.libelle).toContain('présentés à part')
 })

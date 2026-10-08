@@ -26,6 +26,10 @@ export interface MarchePilotage {
   dateFinPrevue: Date | null
   /** vrai si une opportunité est liée au marché (dans un sens ou dans l'autre) */
   aOpportunite: boolean
+  /** concurrent gagnant renseigné sur le marché (texte libre), sinon null */
+  concurrentGagnant: string | null
+  /** date du dernier changement de statut (date propre au statut, sinon dernière ligne d'historique) */
+  dateDernierStatut: Date | null
 }
 
 export interface ResultatConversion {
@@ -232,7 +236,7 @@ export function calculerEcartPrix(lots: LotPilotage[], periode: Periode): Result
 // ── Qualité des données ─────────────────────────────────────────────────────
 
 export interface ElementQualite {
-  cle: 'SANS_FACTURE' | 'ECHEANCE_DEPASSEE' | 'ECHEC_SANS_MOTIF' | 'SANS_DATE' | 'FACTURE_SUPERIEURE' | 'SANS_OPPORTUNITE'
+  cle: 'SANS_FACTURE' | 'ECHEANCE_DEPASSEE' | 'ECHEC_SANS_MOTIF' | 'SANS_DATE' | 'FACTURE_SUPERIEURE' | 'SANS_OPPORTUNITE' | 'STATUT_CONCURRENT_INCOHERENT'
   libelle: string
   elements: ElementLie[]
 }
@@ -242,6 +246,68 @@ const STATUTS_DEVANT_ETRE_FACTURES = ['EN_EXECUTION', 'EXECUTE_ATTENTE_GARANTIES
 const STATUTS_EN_COURS_EXECUTION = ['ATTRIBUE_DEFINITIVEMENT', 'EN_ATTENTE_LIVRAISON_OS', 'EN_EXECUTION']
 const STATUTS_ECHEC_MARCHE = ['ANNULE', 'RESILIE', 'INFRUCTUEUX']
 const STATUTS_AVANT_DEPOT = ['OPPORTUNITE_IDENTIFIEE', 'DOSSIER_EN_PREPARATION']
+
+// ── Marchés historiques (sans opportunité liée), présentés à part, sans taux ──────────
+
+export type IssueHistorique = 'GAGNE' | 'PERDU_APRES_ATTRIBUTION' | 'SANS_SUITE' | 'A_QUALIFIER'
+
+export interface LigneHistorique {
+  id: string
+  numero: string
+  objet: string
+  montant: number
+  issue: IssueHistorique
+  href: string
+}
+
+export interface ResultatMarchesHistoriques {
+  total: Repartition
+  parIssue: Record<IssueHistorique, Repartition>
+  lignes: LigneHistorique[]
+  exclusSansDate: ElementLie[]
+}
+
+const STATUTS_A_QUALIFIER = ['OFFRE_DEPOSEE', 'EN_ATTENTE_ATTRIBUTION', 'ATTRIBUE_PROVISOIREMENT']
+
+export function estMarcheHistorique(m: MarchePilotage): boolean {
+  return !m.aOpportunite && !STATUTS_AVANT_DEPOT.includes(m.statut)
+}
+
+/** Le statut prime sur le concurrent gagnant. Une annulation avant attribution est une procédure sans suite. */
+export function issueMarcheHistorique(m: MarchePilotage): IssueHistorique | null {
+  if ((STATUTS_ATTRIBUES as string[]).includes(m.statut)) return 'GAGNE'
+  if (m.statut === 'RESILIE' || (m.statut === 'ANNULE' && m.attribueUnJour)) return 'PERDU_APRES_ATTRIBUTION'
+  if (m.statut === 'INFRUCTUEUX' || m.statut === 'ANNULE') return 'SANS_SUITE'
+  if (STATUTS_A_QUALIFIER.includes(m.statut)) return 'A_QUALIFIER'
+  return null
+}
+
+const dateRattachement = (m: MarchePilotage): Date | null => m.dateAttribution ?? m.dateDernierStatut
+
+export function calculerMarchesHistoriques(marches: MarchePilotage[], periode: Periode): ResultatMarchesHistoriques {
+  const vide = (): Repartition => ({ nombre: 0, valeur: 0 })
+  const parIssue: Record<IssueHistorique, Repartition> = {
+    GAGNE: vide(), PERDU_APRES_ATTRIBUTION: vide(), SANS_SUITE: vide(), A_QUALIFIER: vide(),
+  }
+  const total = vide()
+  const lignes: LigneHistorique[] = []
+  const exclusSansDate: ElementLie[] = []
+
+  for (const m of marches) {
+    if (!estMarcheHistorique(m)) continue
+    const issue = issueMarcheHistorique(m)
+    if (issue === null) continue
+    const date = dateRattachement(m)
+    if (!date) { exclusSansDate.push(lienMarche(m)); continue }
+    if (!dansPeriode(date, periode)) continue
+    parIssue[issue].nombre++
+    parIssue[issue].valeur += m.montant
+    total.nombre++
+    total.valeur += m.montant
+    lignes.push({ id: m.id, numero: m.numero, objet: m.objet, montant: m.montant, issue, href: `/marches/${m.id}` })
+  }
+  return { total, parIssue, lignes, exclusSansDate }
+}
 
 export function calculerQualite(
   marches: MarchePilotage[],
@@ -276,7 +342,11 @@ export function calculerQualite(
     {
       cle: 'SANS_DATE',
       libelle: 'Exclus des calculs faute de date (attribution ou dépôt)',
-      elements: [...conversion.exclusSansDate, ...offres.exclusSansDate],
+      elements: [
+        ...conversion.exclusSansDate,
+        ...offres.exclusSansDate,
+        ...marches.filter((m) => estMarcheHistorique(m) && issueMarcheHistorique(m) !== null && dateRattachement(m) === null).map(lienMarche),
+      ],
     },
     {
       cle: 'FACTURE_SUPERIEURE',
@@ -285,8 +355,16 @@ export function calculerQualite(
     },
     {
       cle: 'SANS_OPPORTUNITE',
-      libelle: "Marchés sans opportunité liée (absents de l'issue des offres)",
-      elements: marches.filter((m) => !m.aOpportunite && !STATUTS_AVANT_DEPOT.includes(m.statut)).map(lienMarche),
+      libelle: 'Marchés historiques (sans opportunité liée), présentés à part, sans taux',
+      elements: marches.filter(estMarcheHistorique).map(lienMarche),
+    },
+    {
+      cle: 'STATUT_CONCURRENT_INCOHERENT',
+      libelle: 'Marchés historiques au statut tranché mais avec un concurrent gagnant renseigné',
+      elements: marches
+        .filter((m) => estMarcheHistorique(m) && m.concurrentGagnant !== null
+          && ['GAGNE', 'PERDU_APRES_ATTRIBUTION', 'SANS_SUITE'].includes(issueMarcheHistorique(m) ?? ''))
+        .map(lienMarche),
     },
   ]
 }
