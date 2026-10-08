@@ -9,7 +9,7 @@ Les commits locaux du 03/10 (`feat/pilotage-tranche1`) servent de référence, p
 1. Les exports PDF et Excel des analyses détaillées perdent aussi les anciens taux (`winRate`, `tauxConversion`, `tauxGainGlobal`) : un seul chiffre par notion, y compris dans les fichiers.
 2. Période par défaut : **12 mois glissants**. Le sélecteur unique garde les préréglages existants (30 jours, 90 jours, 6 mois, 1 an) et les dates libres.
 3. Conflit statut / concurrent gagnant sur un marché historique : **le statut prime** ; l'incohérence est signalée par un compteur de qualité des données.
-4. Approche de A2 : un **type unique « dossier d'offre »** (lot d'opportunité ou marché historique) et un seul calcul d'issue. Pas de deux calculs sommés, pas de vue SQL.
+4. Approche de A2 (révisée le 2026-10-08) : marchés historiques **présentés à part, sans taux** ; taux de succès et de perte sur les seuls lots. Pas de type consolidé, pas de vue SQL.
 
 ## Tranche A1 — sans changement des règles de calcul
 
@@ -33,7 +33,7 @@ Les commits locaux du 03/10 (`feat/pilotage-tranche1`) servent de référence, p
 ### Détails complets (lots)
 - `calculerIssueOffres` : `detail` liste **toutes** les issues (gagné, perdu, en attente, sans suite) ; chaque ligne porte `intitule`, `autorite`, `montantPropose`, `issue`, `concurrentGagnant`, `montantOffreConcurrent`, `ecartFcfa`, `ecartPct`, `motif`, `lien`.
 - Intitulé : référence de l'opportunité, sinon objet ; puis « Lot n » ; puis autorité contractante. Une ligne ne s'affiche jamais sans intitulé (repli : objet, puis « Sans intitulé »).
-- Lien : `/opportunites/<id>` pour un lot ; `/marches/<id>` pour un marché (A2).
+- Lien : `/opportunites/<id>` pour un lot ; `/marches/<id>` pour un marché historique (A2).
 - `LotPilotage` s'enrichit de `autorite`, `concurrentGagnant`, `motif`.
 - Écart de prix : le détail reprend les mêmes lignes que l'issue ; le nombre de lignes égale le nombre annoncé.
 
@@ -46,46 +46,35 @@ Les commits locaux du 03/10 (`feat/pilotage-tranche1`) servent de référence, p
 - Période vide : message explicite. Moins de `MIN_CAS_ECART` (3) lots : « Pas assez de données » (déjà en place pour l'écart ; étendu au taux de succès par lot).
 - Qualité des données : compteurs « toutes périodes », étiquetés comme tels, chacun avec un lien vers la liste des marchés concernés.
 
-## Tranche A2 — portefeuille consolidé
+## Tranche A2 — portefeuille consolidé (révisée le 2026-10-08 après mesure de couverture)
 
-### Type unique
-```ts
-interface DossierOffre {
-  source: 'LOT' | 'MARCHE_HISTORIQUE'
-  id: string
-  intitule: string
-  autorite: string
-  montant: number | null
-  issue: 'GAGNE' | 'PERDU' | 'PERDU_APRES_ATTRIBUTION' | 'SANS_SUITE' | 'EN_ATTENTE' | 'A_QUALIFIER'
-  dateRattachement: Date | null
-  concurrentGagnant: string | null
-  montantOffreConcurrent: number | null
-  motif: string | null
-  lien: string
-}
-```
-- Les lots d'opportunités et les marchés sans opportunité liée (`aOpportunite = false`, hors statuts avant dépôt) sont convertis en `DossierOffre` à la lecture. Un marché lié à une opportunité n'est jamais compté deux fois : ses lots le représentent.
-- Un seul `calculerIssueOffres(dossiers, periode)` produit : total consolidé, répartition par issue, part des marchés historiques (en nombre et en montant), « à qualifier », « exclus faute de date ».
+### Constat qui change la conception
+Mesure faite sur une copie locale du dump de production du 2026-10-02 (lecture seule) : la quasi-totalité des marchés sans opportunité liée n'a **aucun** `concurrentGagnant` renseigné ; le seul cas renseigné est un marché infructueux (le statut prime). La règle « perdu = concurrent gagnant renseigné » ne classe donc aucun marché historique en perdu. Les offres perdues d'avant les lots n'ont jamais été saisies comme marchés. Consolider un taux unique ajouterait des gagnés sans aucun perdu (biais de survie) et ferait grimper le taux de succès de façon trompeuse. Décision d'Abel : **séparer** (option 1).
+
+### Principe
+- Le **taux de succès et le taux de perte restent calculés sur les seuls lots** (données complètes). Aucun marché historique n'y entre.
+- Les **marchés historiques** (sans opportunité liée, hors statuts avant dépôt) forment un bloc distinct « Marchés historiques » : nombre et montant par issue, **sans taux**, avec la mention explicite que les offres perdues d'avant les lots ne sont pas saisies.
+- Un marché lié à une opportunité n'est jamais compté deux fois : ses lots le représentent.
+- Pas de type consolidé `DossierOffre` ni de calcul unique : un seul calcul d'issue par lots (déjà en place) et une fonction de répartition des marchés historiques par issue.
 
 ### Issues d'un marché historique (le statut prime)
 1. Statut attribué ou au-delà (`STATUTS_ATTRIBUES`) → `GAGNE`.
 2. `ANNULE` ou `RESILIE` → `PERDU_APRES_ATTRIBUTION`.
 3. `INFRUCTUEUX` → `SANS_SUITE`.
-4. Sinon, `concurrentGagnant` renseigné → `PERDU`.
-5. Sinon, `OFFRE_DEPOSEE`, `EN_ATTENTE_ATTRIBUTION` ou `ATTRIBUE_PROVISOIREMENT` → `A_QUALIFIER`.
-6. Un marché aux étapes 1 à 3 qui porte aussi un `concurrentGagnant` est compté selon son statut **et** ajouté au nouveau compteur de qualité `STATUT_CONCURRENT_INCOHERENT`.
+4. `OFFRE_DEPOSEE`, `EN_ATTENTE_ATTRIBUTION` ou `ATTRIBUE_PROVISOIREMENT` → `A_QUALIFIER`.
+5. Un `concurrentGagnant` renseigné sur un marché des étapes 1 à 3 est compté selon son statut **et** ajouté au compteur de qualité `STATUT_CONCURRENT_INCOHERENT`. Sur un marché de l'étape 4, il ne change pas l'issue : le marché reste « à qualifier ».
 
 ### Rattachement à la période
 - Date d'attribution, sinon date du dernier changement de statut (lue dans `historiqueStatuts`), sinon « exclu faute de date ».
-- `historique_statuts.nouveauStatut` est en TEXT en production : toute comparaison de statut reste faite en mémoire (comme dans `pilotage.ts` actuel), jamais en SQL.
+- `historique_statuts.nouveauStatut` est en TEXT en production : toute comparaison de statut reste faite en mémoire, jamais en SQL.
 
-### Qualité des données
-- `SANS_OPPORTUNITE` ne dit plus « absents de l'issue des offres » (ils y entrent désormais) ; le libellé devient « Marchés historiques (sans opportunité liée), comptés par marché ».
-- Nouveau compteur `STATUT_CONCURRENT_INCOHERENT`.
+### Affichage
+- Bloc « Marchés historiques » sous l'issue des offres, avec lien par ligne vers `/marches/<id>`.
+- Le libellé de qualité « Marchés sans opportunité liée (absents de l'issue des offres) » devient « Marchés historiques (sans opportunité liée), présentés à part, sans taux ».
+- Nouveau compteur de qualité `STATUT_CONCURRENT_INCOHERENT`.
 
 ### Recoupement avant mise en ligne
-- Calcul indépendant (requête SQL en lecture seule sur une copie de la base de production, ou dump restauré en local) des totaux de conversion, facturé, encaissé, nombre de dossiers par issue. Écart attendu : nul.
-- Mesure de la couverture réelle de `concurrentGagnant` sur les marchés historiques **avant** de figer la règle « perdu » (angle mort du PRD).
+- Calcul indépendant (SQL en lecture seule sur une copie restaurée du dump) du nombre et du montant de marchés historiques par issue. Écart attendu : nul.
 
 ## Tests
 - Unitaires (`tests/unit/pilotage-calculs.spec.ts`) : une table de cas par règle d'issue, par règle de rattachement, par seuil (3 lots, 30 jours, +2 %), conflit statut/concurrent, marché lié à une opportunité non doublé.

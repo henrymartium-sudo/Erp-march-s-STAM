@@ -9,9 +9,21 @@ test.describe('Pilotage', () => {
     await expect(page.getByText('Conversion attribué → facturé')).toBeVisible()
     await expect(page.getByText('Issue des offres', { exact: true })).toBeVisible()
     await expect(page.getByText('Écart de prix face au gagnant')).toBeVisible()
+    await expect(page.getByText('Marchés historiques', { exact: true })).toBeVisible()
     await expect(page.getByText('Qualité des données')).toBeVisible()
     await expect(page.getByText(/Évolution/)).toHaveCount(0)
     await expect(page.getByText(/mêmes dates/)).toHaveCount(0)
+  })
+
+  test('le bloc des marchés historiques n’affiche aucun taux', async ({ page }) => {
+    await login(page, TEST_USERS.avance)
+    await page.goto('/pilotage')
+    const card = page.locator('div.rounded-lg.border.bg-card').filter({
+      has: page.getByText('Marchés historiques', { exact: true }),
+    })
+    await expect(card).toBeVisible()
+    await expect(card.getByText('sans taux')).toBeVisible()
+    await expect(card.getByText('%')).toHaveCount(0)
   })
 
   test('un seul sélecteur de période pilote toute la page', async ({ page }) => {
@@ -31,6 +43,7 @@ test.describe('Pilotage', () => {
       'Conversion attribué → facturé',
       'Issue des offres',
       'Écart de prix face au gagnant',
+      'Marchés historiques',
     ]) {
       const card = page.locator('div.rounded-lg.border.bg-card').filter({
         has: page.getByText(titre, { exact: true }),

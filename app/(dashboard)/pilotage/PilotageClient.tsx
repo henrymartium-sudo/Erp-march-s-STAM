@@ -12,11 +12,19 @@ import { IndicateurCard } from '@/components/pilotage/IndicateurCard'
 import { QualiteDonnees } from '@/components/pilotage/QualiteDonnees'
 import { LigneIssue } from '@/components/pilotage/LigneIssue'
 import { getPilotageData, type PilotageData } from '@/lib/actions/pilotage'
-import { SEUIL_CONVERSION, MIN_CAS_ECART, JOURS_MARCHE_RECENT } from '@/lib/pilotage/calculs'
+import { SEUIL_CONVERSION, MIN_CAS_ECART, JOURS_MARCHE_RECENT, type IssueHistorique } from '@/lib/pilotage/calculs'
 import { formatMontant } from '@/lib/utils/format'
 import type { Periode } from '@/lib/analytics/types'
 
 const pct = (v: number | null) => (v === null ? '—' : `${v} %`)
+
+const LIBELLE_ISSUE_HISTORIQUE: Record<IssueHistorique, string> = {
+  GAGNE: 'Gagnés (attribués)',
+  PERDU_APRES_ATTRIBUTION: 'Perdus après attribution (annulés ou résiliés)',
+  SANS_SUITE: 'Sans suite (infructueux ou annulés avant attribution)',
+  A_QUALIFIER: 'À qualifier (offre déposée, issue non saisie)',
+}
+const ORDRE_ISSUES: IssueHistorique[] = ['GAGNE', 'PERDU_APRES_ATTRIBUTION', 'SANS_SUITE', 'A_QUALIFIER']
 
 export function PilotageClient() {
   const [periode, setPeriode] = useState<Periode>(() => ({
@@ -30,8 +38,9 @@ export function PilotageClient() {
   const conversion = data?.conversion.status === 'success' ? data.conversion.value : null
   const offres = data?.offres.status === 'success' ? data.offres.value : null
   const ecartPrix = data?.ecartPrix.status === 'success' ? data.ecartPrix.value : null
+  const historiques = data?.historiques.status === 'success' ? data.historiques.value : null
   const erreurPartielle = data !== null && [
-    data.conversion, data.offres, data.ecartPrix, data.qualite,
+    data.conversion, data.offres, data.ecartPrix, data.historiques, data.qualite,
   ].some((bloc) => bloc.status === 'error')
 
   useEffect(() => {
@@ -77,7 +86,7 @@ export function PilotageClient() {
         </div>
       ) : data && !erreur ? (
         <>
-          {conversion && offres && conversion.valeurAttribuee === 0 && offres.lotsSoumis === 0 && (
+          {conversion && offres && conversion.valeurAttribuee === 0 && offres.lotsSoumis === 0 && (historiques?.total.nombre ?? 0) === 0 && (
             <p role="status" className="text-sm text-muted-foreground">
               Aucune donnée sur cette période. Élargissez la période pour voir des indicateurs.
             </p>
@@ -147,6 +156,27 @@ export function PilotageClient() {
                       <Link href={`/opportunites/${c.opportuniteId}`} className="flex min-h-11 flex-wrap items-center justify-between gap-x-2 hover:underline focus-visible:underline">
                         <span className="break-words">{c.libelle}</span>
                         <span className="tabular-nums">{formatMontant(c.notreOffre)} / {formatMontant(c.offreGagnante)} : {c.ecart > 0 ? '+' : ''}{c.ecart} %</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : undefined}
+            />
+            <IndicateurCard
+              titre="Marchés historiques"
+              valeur={historiques ? `${historiques.total.nombre} marché(s)` : '—'}
+              erreur={data.historiques.status === 'error' ? data.historiques.message : undefined}
+              sousLignes={historiques
+                ? ORDRE_ISSUES.map((i) => `${LIBELLE_ISSUE_HISTORIQUE[i]} : ${historiques.parIssue[i].nombre}, ${formatMontant(historiques.parIssue[i].valeur)}`)
+                : []}
+              explication="Marchés sans opportunité liée, attribués ou arrêtés sur la période. Présentés à part, sans taux : les offres perdues d'avant les lots n'ont pas été saisies."
+              detail={historiques && historiques.lignes.length > 0 ? (
+                <ul className="space-y-1">
+                  {historiques.lignes.map((l) => (
+                    <li key={l.id}>
+                      <Link href={l.href} className="flex min-h-11 flex-wrap items-center justify-between gap-x-2 hover:underline focus-visible:underline">
+                        <span className="break-words">{l.numero} — {LIBELLE_ISSUE_HISTORIQUE[l.issue]}</span>
+                        <span className="tabular-nums">{formatMontant(l.montant)}</span>
                       </Link>
                     </li>
                   ))}
