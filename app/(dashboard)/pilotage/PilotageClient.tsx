@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { startOfYear, endOfDay } from 'date-fns'
+import { startOfDay, subYears, endOfDay, format } from 'date-fns'
+import { fr } from 'date-fns/locale'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { PeriodSelector } from '@/components/analytique/PeriodSelector'
@@ -16,7 +17,10 @@ import type { Periode } from '@/lib/analytics/types'
 const pct = (v: number | null) => (v === null ? '—' : `${v} %`)
 
 export function PilotageClient() {
-  const [periode, setPeriode] = useState<Periode>({ dateDebut: startOfYear(new Date()), dateFin: endOfDay(new Date()) })
+  const [periode, setPeriode] = useState<Periode>(() => ({
+    dateDebut: startOfDay(subYears(new Date(), 1)),
+    dateFin: endOfDay(new Date()),
+  }))
   const [data, setData] = useState<PilotageData | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const [retry, setRetry] = useState(0)
@@ -43,6 +47,10 @@ export function PilotageClient() {
   return (
     <div className="space-y-6">
       <PeriodSelector value={periode} onChange={setPeriode} disabled={enCours} />
+      <p className="text-sm text-muted-foreground">
+        Tous les chiffres de la page portent sur la période du{' '}
+        {format(periode.dateDebut, 'dd/MM/yyyy', { locale: fr })} au {format(periode.dateFin, 'dd/MM/yyyy', { locale: fr })}.
+      </p>
       {erreur && (
         <div className="flex flex-wrap items-center gap-3">
           <p role="alert" className="text-sm text-destructive">{erreur}</p>
@@ -141,7 +149,7 @@ export function PilotageClient() {
       ) : null}
       <section className="space-y-2">
         <h2 className="text-lg font-semibold">Analyses détaillées</h2>
-        <AnalytiquesTab />
+        <AnalytiquesTab periode={periode} />
       </section>
     </div>
   )
