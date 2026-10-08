@@ -13,11 +13,19 @@ import {
   type PDFColumn,
   type PDFSummaryItem,
 } from '@/lib/utils/pdf'
-import { formatMontantFCFA } from '@/lib/utils/format'
+import { formatMontant } from '@/lib/utils/format'
 import type * as ExcelJSTypes from 'exceljs'
 
 function periodeLabel(periode: Periode) {
   return `${format(periode.dateDebut, 'dd/MM/yyyy', { locale: fr })} – ${format(periode.dateFin, 'dd/MM/yyyy', { locale: fr })}`
+}
+
+const AUCUNE_DONNEE = 'Aucune donnée sur la période'
+const NON_DISPONIBLE = 'n.d.'
+
+/** Un délai moyen de 0 jour signifie « aucune donnée » (le calcul renvoie 0 faute d'échantillon). */
+function delaiOuND(jours: number): number | string {
+  return jours > 0 ? jours : NON_DISPONIBLE
 }
 
 export async function exportAnalytiquesExcel(
@@ -53,12 +61,16 @@ export async function exportAnalytiquesExcel(
     function applyAltRow(row: ExcelJSTypes.Row, idx: number) {
       if (idx % 2 === 0) row.eachCell((cell) => { cell.fill = altRowFill })
     }
+    /** Évite un tableau réduit à son en-tête : une ligne explicite quand il n'y a rien à lister. */
+    function ligneSiVide(ws: ExcelJSTypes.Worksheet, nbLignes: number) {
+      if (nbLignes === 0) ws.addRow([AUCUNE_DONNEE]).getCell(1).font = { italic: true, color: { argb: 'FF6B7280' } }
+    }
 
     // ── Onglet Synthèse (couverture) ────────────────────────────────────────
     const wsSynth = workbook.addWorksheet('Synthèse')
     wsSynth.properties.tabColor = { argb: 'FF1E3A5F' }
-    wsSynth.columns = [{ width: 32 }, { width: 24 }]
-    const titleRow = wsSynth.addRow(['Rapport Analytics STAM', ''])
+    wsSynth.columns = [{ width: 42 }, { width: 24 }]
+    const titleRow = wsSynth.addRow(['Rapport analytique — Marchés Publics', ''])
     titleRow.height = 36
     titleRow.getCell(1).font = { bold: true, size: 18, color: { argb: 'FF1E3A5F' } }
     wsSynth.addRow([])
@@ -67,16 +79,24 @@ export async function exportAnalytiquesExcel(
     wsSynth.addRow([])
     const kpiHeader = wsSynth.addRow(['Indicateur', 'Valeur'])
     applyHeaderStyle(kpiHeader)
+    // Deux notions distinctes, deux libellés : le CA contractualisé ne compte que les marchés
+    // attribués / en exécution / clôturés ; le montant total couvre tous les marchés de la période.
     const kpiRows = [
       ['Total marchés', data.performance.totalMarches],
-      ['Montant total contractualisé', data.performance.montantTotal],
+      ['CA contractualisé', data.financiere.caContractualise],
+      ['Montant total des marchés (tous statuts)', data.performance.montantTotal],
       ['CA encaissé', data.financiere.caEncaisse],
       ['Total interventions SAV', data.sav.totalInterventions],
       ['Coût total SAV', data.sav.coutTotal],
     ]
     kpiRows.forEach(([label, val], i) => {
       const row = wsSynth.addRow([label, val])
-      if (label === 'Montant total contractualisé' || label === 'CA encaissé' || label === 'Coût total SAV') {
+      if (
+        label === 'CA contractualisé' ||
+        label === 'Montant total des marchés (tous statuts)' ||
+        label === 'CA encaissé' ||
+        label === 'Coût total SAV'
+      ) {
         row.getCell(2).numFmt = MONTANT_FMT
       }
       applyAltRow(row, i)
@@ -114,7 +134,8 @@ export async function exportAnalytiquesExcel(
     wsPerf.views = [{ state: 'frozen', ySplit: 1 }]
 
     // KPIs section
-    wsPerf.columns = [{ width: 32 }, { width: 20 }]
+    // Largeurs fixées une seule fois : réaffecter `columns` plus bas écraserait les colonnes suivantes
+    wsPerf.columns = [{ width: 42 }, { width: 22 }, { width: 22 }]
     const perfTitle = wsPerf.addRow(['PERFORMANCE MARCHÉS — ' + periodeLabel(periode), ''])
     Object.assign(perfTitle.getCell(1), { style: sectionStyle })
     perfTitle.height = 20
@@ -126,13 +147,13 @@ export async function exportAnalytiquesExcel(
       ['Total marchés', data.performance.totalMarches],
       ['Marchés déposés', data.performance.marchesDeposes],
       ['Marchés gagnés', data.performance.marchesGagnes],
-      ['Montant total', data.performance.montantTotal],
+      ['Montant total des marchés (tous statuts)', data.performance.montantTotal],
       ['Montant moyen', data.performance.montantMoyen],
-      ['Délai moyen exécution', data.performance.delaiMoyenJours],
+      ['Délai moyen exécution', delaiOuND(data.performance.delaiMoyenJours)],
     ]
     perfKpis.forEach(([label, val], i) => {
       const row = wsPerf.addRow([label, val])
-      if (label === 'Montant total' || label === 'Montant moyen') row.getCell(2).numFmt = MONTANT_FMT
+      if (label === 'Montant total des marchés (tous statuts)' || label === 'Montant moyen') row.getCell(2).numFmt = MONTANT_FMT
       else if (label === 'Délai moyen exécution') row.getCell(2).numFmt = '0 "jours"'
       applyAltRow(row, i)
     })
@@ -145,10 +166,10 @@ export async function exportAnalytiquesExcel(
       const row = wsPerf.addRow([s.label, s.count])
       applyAltRow(row, i)
     })
+    ligneSiVide(wsPerf, data.performance.parStatut.length)
 
     // Par type
     wsPerf.addRow([])
-    wsPerf.columns = [{ width: 32 }, { width: 12 }, { width: 22 }]
     const perfTypeHdr = wsPerf.addRow(['Type', 'Total', 'Montant'])
     applyHeaderStyle(perfTypeHdr)
     data.performance.parType.forEach((t, i) => {
@@ -156,12 +177,13 @@ export async function exportAnalytiquesExcel(
       row.getCell(3).numFmt = MONTANT_FMT
       applyAltRow(row, i)
     })
+    ligneSiVide(wsPerf, data.performance.parType.length)
 
     // ── Onglet 2 : Finances ─────────────────────────────────────────────────
     const wsFin = workbook.addWorksheet('Finances')
     wsFin.properties.tabColor = { argb: 'FF10B981' }
     wsFin.views = [{ state: 'frozen', ySplit: 1 }]
-    wsFin.columns = [{ width: 32 }, { width: 22 }]
+    wsFin.columns = [{ width: 32 }, { width: 22 }, { width: 22 }]
 
     const finTitle = wsFin.addRow(['ANALYSE FINANCIÈRE — ' + periodeLabel(periode), ''])
     Object.assign(finTitle.getCell(1), { style: sectionStyle })
@@ -184,7 +206,6 @@ export async function exportAnalytiquesExcel(
     })
 
     wsFin.addRow([])
-    wsFin.columns = [{ width: 22 }, { width: 12 }, { width: 22 }]
     const finFactHdr = wsFin.addRow(['Statut Facture', 'Nombre', 'Montant TTC'])
     applyHeaderStyle(finFactHdr)
     data.financiere.facturesParStatut.forEach((f, i) => {
@@ -192,6 +213,7 @@ export async function exportAnalytiquesExcel(
       row.getCell(3).numFmt = MONTANT_FMT
       applyAltRow(row, i)
     })
+    ligneSiVide(wsFin, data.financiere.facturesParStatut.length)
 
     // ── Onglet 3 : Capitalisation ───────────────────────────────────────────
     const wsCap = workbook.addWorksheet('Capitalisation')
@@ -212,6 +234,7 @@ export async function exportAnalytiquesExcel(
       row.getCell(4).numFmt = MONTANT_FMT
       applyAltRow(row, i)
     })
+    ligneSiVide(wsCap, data.capitalisation.topAC.length)
 
     wsCap.addRow([])
     const capSegHdr = wsCap.addRow(['Segment', 'Total', 'Gagnés', 'Montant'])
@@ -221,6 +244,7 @@ export async function exportAnalytiquesExcel(
       row.getCell(4).numFmt = MONTANT_FMT
       applyAltRow(row, i)
     })
+    ligneSiVide(wsCap, data.capitalisation.parSegment.length)
 
     wsCap.addRow([])
     const capSaisHdr = wsCap.addRow(["Mois", "Appels d'offres"])
@@ -229,6 +253,7 @@ export async function exportAnalytiquesExcel(
       const row = wsCap.addRow([m.label, m.count])
       applyAltRow(row, i)
     })
+    ligneSiVide(wsCap, data.capitalisation.saisonnalite.length)
 
     // ── Onglet 4 : Opportunités ──────────────────────────────────────────────
     const wsOpp = workbook.addWorksheet('Opportunités')
@@ -241,7 +266,9 @@ export async function exportAnalytiquesExcel(
     wsOpp.addRow([])
 
     // A) Vue générale — KPIs
-    wsOpp.columns = [{ width: 44 }, { width: 24 }]
+    // Largeurs fixées une seule fois : réaffecter `columns` plus bas écrasait les colonnes C et D
+    // (retour à la largeur par défaut, donc « ######## » sur les montants en FCFA).
+    wsOpp.columns = [{ width: 44 }, { width: 22 }, { width: 22 }, { width: 22 }]
     const oppKpiHdr = wsOpp.addRow(['Indicateur', 'Valeur'])
     applyHeaderStyle(oppKpiHdr)
     const oppData = data.opportunites
@@ -263,7 +290,6 @@ export async function exportAnalytiquesExcel(
 
     // B) Répartition par statut (nombre + montants)
     wsOpp.addRow([])
-    wsOpp.columns = [{ width: 28 }, { width: 12 }, { width: 22 }, { width: 22 }]
     const oppStatutHdr = wsOpp.addRow(['Statut', 'Nombre', 'Montant estimé', 'Montant proposé'])
     applyHeaderStyle(oppStatutHdr)
     oppData.parStatut.forEach((s, i) => {
@@ -272,11 +298,11 @@ export async function exportAnalytiquesExcel(
       row.getCell(4).numFmt = MONTANT_FMT
       applyAltRow(row, i)
     })
+    ligneSiVide(wsOpp, oppData.parStatut.length)
 
     // C) Pipeline → Marchés : opportunités converties
     // RÈGLE MÉTIER : zéro doublon — ces opportunités ne comptent que dans les totaux Marchés.
     wsOpp.addRow([])
-    wsOpp.columns = [{ width: 42 }, { width: 22 }, { width: 22 }]
     const oppPipelineHdr = wsOpp.addRow(['Opportunité convertie', 'N° Marché', 'Montant contractualisé'])
     applyHeaderStyle(oppPipelineHdr)
     if (oppData.pipelineMarches.length > 0) {
@@ -291,7 +317,6 @@ export async function exportAnalytiquesExcel(
 
     // D) Top autorités contractantes
     wsOpp.addRow([])
-    wsOpp.columns = [{ width: 36 }, { width: 12 }, { width: 12 }, { width: 22 }]
     const oppACHdr = wsOpp.addRow(['Autorité Contractante', 'Total Opp.', 'Gagnées', 'Montant estimé'])
     applyHeaderStyle(oppACHdr)
     oppData.topAC.forEach((ac, i) => {
@@ -299,25 +324,25 @@ export async function exportAnalytiquesExcel(
       row.getCell(4).numFmt = MONTANT_FMT
       applyAltRow(row, i)
     })
+    ligneSiVide(wsOpp, oppData.topAC.length)
 
     // E) Évolution mensuelle des opportunités identifiées
     wsOpp.addRow([])
-    wsOpp.columns = [{ width: 20 }, { width: 22 }]
     const oppEvolHdr = wsOpp.addRow(['Mois', 'Opportunités identifiées'])
     applyHeaderStyle(oppEvolHdr)
     oppData.evolutionMensuelle.forEach((m, i) => {
       const row = wsOpp.addRow([m.label, m.count])
       applyAltRow(row, i)
     })
+    ligneSiVide(wsOpp, oppData.evolutionMensuelle.length)
 
     // F) Délais moyens
     wsOpp.addRow([])
-    wsOpp.columns = [{ width: 44 }, { width: 22 }]
     const oppDelaiHdr = wsOpp.addRow(['Indicateur délai', 'Valeur'])
     applyHeaderStyle(oppDelaiHdr)
-    const oppDelais: [string, number][] = [
-      ['Délai moyen identification → soumission', oppData.delaiMoyenIdentificationSoumissionJours],
-      ['Délai moyen soumission → attribution', oppData.delaiMoyenSoumissionAttributionJours],
+    const oppDelais: [string, number | string][] = [
+      ['Délai moyen identification → soumission', delaiOuND(oppData.delaiMoyenIdentificationSoumissionJours)],
+      ['Délai moyen soumission → attribution', delaiOuND(oppData.delaiMoyenSoumissionAttributionJours)],
     ]
     oppDelais.forEach(([label, val], i) => {
       const row = wsOpp.addRow([label, val])
@@ -329,7 +354,7 @@ export async function exportAnalytiquesExcel(
     const wsSAV = workbook.addWorksheet('SAV')
     wsSAV.properties.tabColor = { argb: 'FFEF4444' }
     wsSAV.views = [{ state: 'frozen', ySplit: 1 }]
-    wsSAV.columns = [{ width: 32 }, { width: 20 }]
+    wsSAV.columns = [{ width: 32 }, { width: 20 }, { width: 22 }, { width: 16 }, { width: 20 }]
 
     const savTitle = wsSAV.addRow(['SAV & INTERVENTIONS — ' + periodeLabel(periode)])
     Object.assign(savTitle.getCell(1), { style: sectionStyle })
@@ -338,11 +363,11 @@ export async function exportAnalytiquesExcel(
 
     const savKpiHdr = wsSAV.addRow(['Indicateur', 'Valeur'])
     applyHeaderStyle(savKpiHdr)
-    const savKpis: [string, number][] = [
+    const savKpis: [string, number | string][] = [
       ['Total interventions', data.sav.totalInterventions],
       ['Interventions résolues', data.sav.interventionsResolues],
-      ['Taux de résolution', data.sav.tauxResolution / 100],
-      ['Délai moyen résolution', data.sav.delaiMoyenResolutionJours],
+      ['Taux de résolution', data.sav.totalInterventions > 0 ? data.sav.tauxResolution / 100 : NON_DISPONIBLE],
+      ['Délai moyen résolution', delaiOuND(data.sav.delaiMoyenResolutionJours)],
       ['Coût total', data.sav.coutTotal],
     ]
     savKpis.forEach(([label, val], i) => {
@@ -354,7 +379,6 @@ export async function exportAnalytiquesExcel(
     })
 
     wsSAV.addRow([])
-    wsSAV.columns = [{ width: 32 }, { width: 12 }, { width: 20 }]
     const savTypeHdr = wsSAV.addRow(['Type d\'intervention', 'Nombre', 'Coût'])
     applyHeaderStyle(savTypeHdr)
     data.sav.parType.forEach((t, i) => {
@@ -362,9 +386,9 @@ export async function exportAnalytiquesExcel(
       row.getCell(3).numFmt = MONTANT_FMT
       applyAltRow(row, i)
     })
+    ligneSiVide(wsSAV, data.sav.parType.length)
 
     wsSAV.addRow([])
-    wsSAV.columns = [{ width: 18 }, { width: 16 }, { width: 22 }, { width: 16 }, { width: 20 }]
     const savVehHdr = wsSAV.addRow(['Immatriculation', 'Marque', 'Modèle', 'Nb interventions', 'Coût total'])
     applyHeaderStyle(savVehHdr)
     data.sav.topVehicules.forEach((v, i) => {
@@ -372,6 +396,7 @@ export async function exportAnalytiquesExcel(
       row.getCell(5).numFmt = MONTANT_FMT
       applyAltRow(row, i)
     })
+    ligneSiVide(wsSAV, data.sav.topVehicules.length)
 
     // Génération buffer — retourner un tableau de nombres (sérialisable en Server Action)
     const rawBuffer = await workbook.xlsx.writeBuffer()
@@ -419,11 +444,16 @@ export async function exportAnalytiquesPDF(
     const summary: PDFSummaryItem[] = [
       { label: 'Période analysée', value: periodeLabel(periode) },
       { label: 'Total marchés', value: data.performance.totalMarches },
-      { label: 'CA contractualisé', value: formatMontantFCFA(data.performance.montantTotal) },
-      { label: 'CA encaissé', value: formatMontantFCFA(data.financiere.caEncaisse) },
-      { label: 'Cautions actives', value: formatMontantFCFA(data.financiere.cautionsActives) },
+      // Même définition que l'Excel et la page : marchés attribués / en exécution / clôturés.
+      // Montants exacts (et non arrondis au million) : un rapport doit pouvoir se recouper.
+      { label: 'CA contractualisé', value: formatMontant(data.financiere.caContractualise) },
+      { label: 'CA encaissé', value: formatMontant(data.financiere.caEncaisse) },
+      { label: 'Cautions actives', value: formatMontant(data.financiere.cautionsActives) },
       { label: 'Interventions SAV', value: data.sav.totalInterventions },
-      { label: 'Taux résolution SAV', value: data.sav.tauxResolution + '%' },
+      {
+        label: 'Taux résolution SAV',
+        value: data.sav.totalInterventions > 0 ? data.sav.tauxResolution + '%' : NON_DISPONIBLE,
+      },
     ]
 
     const rawBuffer = await createPDFDocument({
