@@ -276,6 +276,13 @@ interface PDFTableProps {
   data: any[]
 }
 
+/**
+ * Les polices PDF standard (Helvetica, WinAnsi) n'ont pas l'espace fine insécable (U+202F)
+ * que produit Intl en fr-FR : elle sortait en « / » ("43/000/000"). On la remplace par
+ * l'espace insécable classique (U+00A0), présente dans WinAnsi.
+ */
+const pourPdf = (texte: string): string => texte.replace(/ /g, ' ')
+
 const PDFTable: React.FC<PDFTableProps> = ({ columns, data }) => {
   /**
    * Formatte une valeur selon le format de la colonne
@@ -296,11 +303,11 @@ const PDFTable: React.FC<PDFTableProps> = ({ columns, data }) => {
             : typeof value.toNumber === 'function'
               ? value.toNumber()
               : parseFloat(value)
-        return !isNaN(numValue) ? formatMontant(numValue) : ''
+        return !isNaN(numValue) ? pourPdf(formatMontant(numValue)) : ''
 
       case 'number':
         return typeof value === 'number'
-          ? value.toLocaleString('fr-FR')
+          ? pourPdf(value.toLocaleString('fr-FR'))
           : String(value)
 
       default:
@@ -396,7 +403,7 @@ const PDFSummary: React.FC<PDFSummaryProps> = ({
     {items.map((item, index) => (
       <View key={index} style={pdfStyles.summaryRow}>
         <Text style={pdfStyles.summaryLabel}>{item.label}</Text>
-        <Text style={pdfStyles.summaryValue}>{item.value}</Text>
+        <Text style={pdfStyles.summaryValue}>{pourPdf(String(item.value))}</Text>
       </View>
     ))}
   </View>
