@@ -47,7 +47,7 @@ Moyenne sur les lots documentés de la période, mêmes règles de seuil. Il peu
 
 - `getVeilleData({ dateDebut, dateFin })` : `requireRole(['ADMIN', 'AVANCE'])`, période validée par Zod (comme `getPilotageData`).
 - Lecture seule : `prisma.lot.findMany` avec `numero`, `resultat`, `montantPropose`, `montantOffreConcurrent`, `motifPerte`, `concurrentGagnant`, `vehiculesProposes { marque, modele }`, et l'opportunité (`id`, `reference`, `objet`, `statut`, `dateLimite`, `autoriteContractante`). Le filtre de période et de statut se fait **en mémoire** (volume de quelques centaines de lignes ; aucune comparaison SQL sur une colonne de statut, ce qui évite le piège texte/enum de `historique_statuts`).
-- Les erreurs sont isolées par bloc (`capturerOperation`) : un bloc en échec n'efface pas les autres ; message « Indicateur indisponible. Réessayez. » et bouton « Réessayer ».
+- Un seul calcul (`capturerOperation`) : en cas d'échec, la page affiche « Veille indisponible. Réessayez. » et un bouton « Réessayer ». Il n'y a pas d'isolation par bloc, contrairement à `/pilotage` : tous les angles viennent de la même liste de pertes.
 - Aucune modification de `lib/actions/pilotage.ts` ni de `lib/pilotage/calculs.ts`. Le seuil `MIN_CAS_ECART` est réutilisé par import.
 
 ## Page et navigation
@@ -57,7 +57,7 @@ Moyenne sur les lots documentés de la période, mêmes règles de seuil. Il peu
 - **Période dans l'URL** : un petit hook partagé `usePeriodeUrl` (défaut : 12 mois glissants, mêmes bornes que `/pilotage`) lit `debut` et `fin` des paramètres d'adresse, les écrit au changement du `PeriodSelector`, et ignore les valeurs invalides (retour au défaut). `PilotageClient` l'utilise à la place de son état local ; ses calculs ne changent pas. Les liens « Voir la veille » (depuis `/pilotage`) et « Retour au pilotage » (depuis `/veille`) portent les mêmes paramètres.
 - **Composition de la page** : en haut le sélecteur et le rappel des dates effectives ; la couverture ; le message sur les pertes d'avant les lots ; quatre onglets (Concurrent, Autorité, Véhicule, Chronologie) ; bloc « Non documentées » (liste avec ce qui manque) ; bloc « Doublons possibles ».
 - **États** : chargement (squelettes) ; période sans perte → message « Aucune perte sur cette période » (pas une panne) ; moins de 3 lots → « pas assez de lots » ; erreur partielle ou totale avec « Réessayer ».
-- **Responsive** : tableaux sur grand écran, **cartes** sous 768 px ; aucun défilement horizontal à 375, 768 et 1920 px ; contrôles de 44 px minimum, atteignables au clavier (onglets, liens, bouton « Réessayer »).
+- **Responsive** : lignes en grille sur grand écran, **cartes** empilées sous 768 px (un seul rendu, adapté par CSS) ; aucun défilement horizontal à 375, 768 et 1920 px ; contrôles de 44 px minimum, atteignables au clavier (onglets, liens, bouton « Réessayer »).
 
 ## Tests
 
