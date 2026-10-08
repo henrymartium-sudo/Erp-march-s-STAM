@@ -7,7 +7,7 @@ import type { Periode, PerformanceStats, FinancialStats, CapitalisationStats, SA
 import { STATUT_LABELS, TYPE_MARCHE_LABELS } from '@/lib/constants/marche'
 import { STATUT_OPPORTUNITE_LABELS } from '@/lib/validations/opportunite'
 import { StatutMarche, StatutFacture, StatutOpportunite } from '@prisma/client'
-import { totalMontantPropose, calculerStatsResultatsLots } from '@/lib/utils/lots'
+import { totalMontantPropose } from '@/lib/utils/lots'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
@@ -93,7 +93,7 @@ export async function getPerformanceStats(periode: Periode): Promise<Performance
     count: s._count.id,
   }))
 
-  // Post-traitement types — win rate par type
+  // Post-traitement types — répartition par type
   const typeMap = new Map<string, { total: number; gagnes: number; montant: number }>()
   for (const row of parTypeRaw) {
     const existing = typeMap.get(row.type) || { total: 0, gagnes: 0, montant: 0 }
@@ -110,10 +110,9 @@ export async function getPerformanceStats(periode: Periode): Promise<Performance
     label: TYPE_MARCHE_LABELS[type as keyof typeof TYPE_MARCHE_LABELS] || type,
     count: data.total,
     montant: data.montant,
-    winRate: data.total > 0 ? Math.round((data.gagnes / data.total) * 100) : 0,
   }))
 
-  // Calcul win rate global
+  // Totaux déposés et gagnés
   const totalDeposes = parStatutRaw
     .filter((s) => STATUTS_DEPOSES.includes(s.statut as StatutMarche))
     .reduce((sum, s) => sum + s._count.id, 0)
@@ -125,7 +124,6 @@ export async function getPerformanceStats(periode: Periode): Promise<Performance
     totalMarches: aggregate._count.id,
     marchesGagnes: totalGagnes,
     marchesDeposes: totalDeposes,
-    winRate: totalDeposes > 0 ? Math.round((totalGagnes / totalDeposes) * 100) : 0,
     montantTotal: Number(aggregate._sum.montant || 0),
     montantMoyen: aggregate._count.id > 0
       ? Math.round(Number(aggregate._sum.montant || 0) / aggregate._count.id)
@@ -217,7 +215,7 @@ export async function getCapitalisationStats(periode: Periode): Promise<Capitali
     statut: { not: StatutMarche.OPPORTUNITE_IDENTIFIEE },
   }
 
-  // 1. Tous les marchés de la période (pour calcul win rate par AC et par type)
+  // 1. Tous les marchés de la période (pour les répartitions par AC et par type)
   const marches = await prisma.marche.findMany({
     where,
     select: {
@@ -229,7 +227,7 @@ export async function getCapitalisationStats(periode: Periode): Promise<Capitali
     },
   })
 
-  // Win rate par AC
+  // Répartition par AC
   const acMap = new Map<string, { total: number; gagnes: number; montant: number }>()
   for (const m of marches) {
     const key = m.autoriteContractanteNom
@@ -261,13 +259,12 @@ export async function getCapitalisationStats(periode: Periode): Promise<Capitali
       total: data.total,
       gagnes: data.gagnes,
       montant: data.montant,
-      winRate: data.total > 0 ? Math.round((data.gagnes / data.total) * 100) : 0,
       opportunitesEnCours: oppEnCoursMap.get(nom) ?? 0,
     }))
     .sort((a, b) => b.montant - a.montant)
     .slice(0, 10)
 
-  // Win rate par segment (type)
+  // Répartition par segment (type)
   const segmentMap = new Map<string, { total: number; gagnes: number; montant: number }>()
   for (const m of marches) {
     const existing = segmentMap.get(m.type) || { total: 0, gagnes: 0, montant: 0 }
@@ -283,7 +280,6 @@ export async function getCapitalisationStats(periode: Periode): Promise<Capitali
     total: data.total,
     gagnes: data.gagnes,
     montant: data.montant,
-    winRate: data.total > 0 ? Math.round((data.gagnes / data.total) * 100) : 0,
   }))
 
   // Saisonnalité — marchés par mois (dateNotification)
@@ -438,10 +434,10 @@ export async function getOpportunitesStats(periode: Periode): Promise<Opportunit
     _sum: { montantEstime: true },
   })
 
-  // 2 bis. Lots des opportunités de la période (montants proposés et résultats)
+  // 2 bis. Lots des opportunités de la période (montants proposés)
   const lots = await prisma.lot.findMany({
     where: { opportunite: where },
-    select: { resultat: true, montantPropose: true, opportunite: { select: { statut: true } } },
+    select: { montantPropose: true, opportunite: { select: { statut: true } } },
   })
 
   // 3. Top 10 AC par nombre d'opportunités (avec montant estimé)
@@ -488,13 +484,10 @@ export async function getOpportunitesStats(periode: Periode): Promise<Opportunit
     .filter((s) => STATUTS_EN_COURS_OPP.includes(s.statut as StatutOpportunite))
     .reduce((sum, s) => sum + s._count.id, 0)
 
-  // Taux de gain global : offres soumises → gagnées
+  // Offres soumises
   const totalOffressoumises = parStatutRaw
     .filter((s) => STATUTS_OFFRE_SOUMISE_OPP.includes(s.statut))
     .reduce((sum, s) => sum + s._count.id, 0)
-  const tauxGainGlobal = totalOffressoumises > 0
-    ? Math.round((totalGagnees / totalOffressoumises) * 100)
-    : 0
 
   // ── Évolution mensuelle ──────────────────────────────────────────────────────
   const moisMap = new Map<string, { label: string; count: number }>()
@@ -537,9 +530,6 @@ export async function getOpportunitesStats(periode: Periode): Promise<Opportunit
     totalGagnees,
     totalEnCours,
     totalOffressoumises,
-    tauxConversion:
-      totalOpportunites > 0 ? Math.round((totalGagnees / totalOpportunites) * 100) : 0,
-    tauxGainGlobal,
     montantEstimeTotal: Number(aggregate._sum.montantEstime ?? 0),
     montantProposeTotal: totalMontantPropose(lots) ?? 0,
     parStatut: parStatutRaw.map((s) => ({
@@ -550,7 +540,6 @@ export async function getOpportunitesStats(periode: Periode): Promise<Opportunit
       montantPropose:
         totalMontantPropose(lots.filter((l) => l.opportunite.statut === s.statut)) ?? 0,
     })),
-    lots: calculerStatsResultatsLots(lots.map((l) => l.resultat)),
     topAC: topACRaw.map((ac) => ({
       nom: ac.autoriteContractante,
       count: ac._count.id,

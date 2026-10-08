@@ -18,7 +18,7 @@ const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || 'Admin123!'
 
 let adminCookies: Cookie[] = []
 
-// /pilotage porte deux sélecteurs de période : on cible celui de la section des analyses.
+// /pilotage porte un seul sélecteur de période, placé hors de la section des analyses.
 async function ouvrirAnalyses(page: Page) {
   await page.goto('/pilotage')
   await page.waitForLoadState('networkidle')
@@ -69,13 +69,13 @@ test.describe.serial('V2 — Reporting Analytique', () => {
   // ── T-C : PeriodSelector avec ses 4 presets ──────────────────────────────────
 
   test('T-C : Le PeriodSelector affiche les 4 presets de période', async ({ page }) => {
-    const zone = await ouvrirAnalyses(page)
+    await ouvrirAnalyses(page)
 
     // 4 boutons presets : 30j, 90j, 6m, 1 an
-    await expect(zone.getByRole('button', { name: /30\s*j/i })).toBeVisible({ timeout: 10000 })
-    await expect(zone.getByRole('button', { name: /90\s*j/i })).toBeVisible()
-    await expect(zone.getByRole('button', { name: /6\s*m/i })).toBeVisible()
-    await expect(zone.getByRole('button', { name: /1\s*an/i })).toBeVisible()
+    await expect(page.getByRole('button', { name: /30\s*j/i })).toBeVisible({ timeout: 10000 })
+    await expect(page.getByRole('button', { name: /90\s*j/i })).toBeVisible()
+    await expect(page.getByRole('button', { name: /6\s*m/i })).toBeVisible()
+    await expect(page.getByRole('button', { name: /1\s*an/i })).toBeVisible()
   })
 
   // ── T-D : Boutons PDF et Excel ────────────────────────────────────────────────
@@ -111,13 +111,13 @@ test.describe.serial('V2 — Reporting Analytique', () => {
   // ── T-F : Changer la période relance le chargement ────────────────────────────
 
   test('T-F : Changer le preset période (30j) relance le chargement', async ({ page }) => {
-    const zone = await ouvrirAnalyses(page)
+    await ouvrirAnalyses(page)
 
     // Attendre chargement initial
     await page.waitForTimeout(3000)
 
     // Cliquer sur preset 30j
-    await zone.getByRole('button', { name: /30\s*j/i }).click()
+    await page.getByRole('button', { name: /30\s*j/i }).click()
 
     // Vérifier simplement que la page ne crashe pas et que les sections restent visibles après
     await page.waitForTimeout(4000)

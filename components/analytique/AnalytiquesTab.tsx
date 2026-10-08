@@ -6,9 +6,7 @@ import { Loader2, FileText, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/lib/utils/toast'
-import { startOfDay, subYears, endOfDay } from 'date-fns'
 
-import { PeriodSelector } from '@/components/analytique/PeriodSelector'
 import { PerformanceSection } from '@/components/analytique/PerformanceSection'
 import { FinanciereSection } from '@/components/analytique/FinanciereSection'
 import { CapitalisationSection } from '@/components/analytique/CapitalisationSection'
@@ -19,13 +17,7 @@ import { getAllAnalyticsData } from '@/lib/actions/analytics'
 import { exportAnalytiquesPDF, exportAnalytiquesExcel } from '@/lib/actions/analytics-exports'
 import type { AllAnalyticsData, Periode } from '@/lib/analytics/types'
 
-const DEFAULT_PERIODE: Periode = {
-  dateDebut: startOfDay(subYears(new Date(), 1)),
-  dateFin: endOfDay(new Date()),
-}
-
-export function AnalytiquesTab() {
-  const [periode, setPeriode] = useState<Periode>(DEFAULT_PERIODE)
+export function AnalytiquesTab({ periode }: { periode: Periode }) {
   const [data, setData] = useState<AllAnalyticsData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isPending, startTransition] = useTransition()
@@ -88,33 +80,30 @@ export function AnalytiquesTab() {
 
   return (
     <div className="space-y-6">
-      {/* Barre de contrôle : PeriodSelector + boutons export */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <PeriodSelector value={periode} onChange={setPeriode} disabled={isLoading || isPending} />
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportPDF}
-            disabled={isLoading || isPending || !data}
-          >
-            {isPending
-              ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              : <FileText className="mr-2 h-4 w-4" />}
-            PDF
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportExcel}
-            disabled={isLoading || isPending || !data}
-          >
-            {isPending
-              ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              : <Download className="mr-2 h-4 w-4" />}
-            Excel
-          </Button>
-        </div>
+      {/* Barre de contrôle : boutons export (la période vient de la page) */}
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExportPDF}
+          disabled={isLoading || isPending || !data}
+        >
+          {isPending
+            ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            : <FileText className="mr-2 h-4 w-4" />}
+          PDF
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExportExcel}
+          disabled={isLoading || isPending || !data}
+        >
+          {isPending
+            ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            : <Download className="mr-2 h-4 w-4" />}
+          Excel
+        </Button>
       </div>
 
       {/* Contenu */}

@@ -10,9 +10,17 @@ test.describe('Pilotage', () => {
     await expect(page.getByText('Issue des offres', { exact: true })).toBeVisible()
     await expect(page.getByText('Écart de prix face au gagnant')).toBeVisible()
     await expect(page.getByText('Qualité des données')).toBeVisible()
-    const referenceYear = new Date().getFullYear() - 1
-    await expect(page.getByText(new RegExp(`mêmes dates.*${referenceYear}`))).toBeVisible()
-    await expect(page.getByText(/^Évolution/)).toHaveCount(3)
+    await expect(page.getByText(/Évolution/)).toHaveCount(0)
+    await expect(page.getByText(/mêmes dates/)).toHaveCount(0)
+  })
+
+  test('un seul sélecteur de période pilote toute la page', async ({ page }) => {
+    await login(page, TEST_USERS.avance)
+    await page.goto('/pilotage')
+    await expect(page.getByText('Conversion attribué → facturé')).toBeVisible()
+    await expect(page.getByText('Période :')).toHaveCount(1)
+    await expect(page.getByRole('button', { name: '30 jours', exact: true })).toHaveCount(1)
+    await expect(page.getByText(/Tous les chiffres de la page portent sur la période du \d{2}\/\d{2}\/\d{4} au \d{2}\/\d{2}\/\d{4}/)).toBeVisible()
   })
 
   test('chaque indicateur ouvre son détail au clavier', async ({ page }) => {
@@ -85,7 +93,7 @@ test.describe('Pilotage', () => {
       await expect(page.getByText('Conversion attribué → facturé')).toBeVisible()
       if (taille.width < 1024) {
         const presets = page.getByRole('button', { name: '30 jours', exact: true })
-        await expect(presets).toHaveCount(2)
+        await expect(presets).toHaveCount(1)
         for (const preset of await presets.all()) {
           await expect(preset).toHaveCSS('min-height', '44px')
         }

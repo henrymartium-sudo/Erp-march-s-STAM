@@ -31,14 +31,14 @@ export function CapitalisationSection({ data }: Props) {
   }
 
   const bestAC = topAC[0]
-  const bestWinRate = topAC.length > 0 ? Math.max(...topAC.map((ac) => ac.winRate)) : 0
+  const totalGagnes = topAC.reduce((somme, ac) => somme + ac.gagnes, 0)
   const segmentRentable = parSegment.length > 0
     ? parSegment.reduce((a, b) => (a.montant > b.montant ? a : b)).label
     : '—'
 
   const kpis = [
     { label: 'Nb Autorités Contractantes', value: topAC.length.toString() },
-    { label: 'Meilleur win rate', value: `${bestWinRate}%` },
+    { label: 'Marchés gagnés (top AC)', value: totalGagnes.toString() },
     { label: 'Segment le + rentable', value: segmentRentable },
     { label: 'Top organisme', value: bestAC?.nom ?? '—' },
   ]
@@ -60,7 +60,7 @@ export function CapitalisationSection({ data }: Props) {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {/* BarChart top 10 autorités contractantes (montants + win rate) */}
+        {/* BarChart top 10 autorités contractantes (montants) */}
         {topAC.length > 0 && (
           <Card>
             <CardHeader>
@@ -78,41 +78,13 @@ export function CapitalisationSection({ data }: Props) {
                     tickFormatter={(v) => v.length > 18 ? v.slice(0, 18) + '…' : v}
                   />
                   <Tooltip
-                    formatter={(val: number, name: string) => [
-                      name === 'montant' ? formatMontantFCFA(val as number) : `${val}%`,
-                      name === 'montant' ? 'Montant' : 'Win rate',
-                    ]}
+                    formatter={(val: number) => [formatMontantFCFA(val as number), 'Montant']}
                   />
                   <Bar dataKey="montant" name="montant" radius={[0, 4, 4, 0]}>
                     {topAC.slice(0, 10).map((_, i) => (
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Bar>
-                </BarChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* BarChart win rate par segment */}
-        {parSegment.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Win rate par segment (%)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer config={{}} className="h-[260px] w-full">
-                <BarChart data={parSegment} layout="vertical">
-                  <XAxis type="number" domain={[0, 100]} unit="%" fontSize={11} />
-                  <YAxis
-                    type="category"
-                    dataKey="label"
-                    width={130}
-                    fontSize={10}
-                    tickFormatter={(v) => v.length > 18 ? v.slice(0, 18) + '…' : v}
-                  />
-                  <Tooltip formatter={(val) => [`${val}%`, 'Win rate']} />
-                  <Bar dataKey="winRate" fill="#C49A1A" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ChartContainer>
             </CardContent>

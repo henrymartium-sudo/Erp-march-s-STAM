@@ -63,7 +63,7 @@ export function OpportunitesSection({ data }: Props) {
     { label: 'Total opportunités', value: data.totalOpportunites.toString() },
     { label: 'En cours', value: data.totalEnCours.toString() },
     { label: 'Gagnées', value: data.totalGagnees.toString() },
-    { label: 'Taux de conversion', value: `${data.tauxConversion} %` },
+    { label: 'Offres soumises', value: data.totalOffressoumises.toString() },
   ]
 
   return (
@@ -156,36 +156,6 @@ export function OpportunitesSection({ data }: Props) {
                     ? formatMontantFCFA(data.montantProposeTotal)
                     : '—'}
                 </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Résultats par lot */}
-      {data.lots.total > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Résultats par lot</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Lots gagnés</p>
-                <p className="text-lg font-bold text-[#1E3A5F]">{data.lots.gagnes}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Lots perdus</p>
-                <p className="text-lg font-bold text-[#1E3A5F]">{data.lots.perdus}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Lots infructueux</p>
-                <p className="text-lg font-bold text-[#1E3A5F]">{data.lots.infructueux}</p>
-                <p className="text-xs text-muted-foreground">comptés à part</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Taux de réussite</p>
-                <p className="text-lg font-bold text-[#C49A1A]">{data.lots.tauxReussite} %</p>
               </div>
             </div>
           </CardContent>

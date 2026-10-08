@@ -1,18 +1,13 @@
 import { test, expect } from '@playwright/test'
 import {
-  calculerConversion, calculerIssueOffres, calculerEcartPrix, calculerQualite, calculerEvolutionPoints, estAttribueUnJour,
+  calculerConversion, calculerIssueOffres, calculerEcartPrix, calculerQualite, estAttribueUnJour, intituleLot,
   type MarchePilotage, type LotPilotage,
 } from '../../lib/pilotage/calculs'
 import { calculerStatsResultatsLots } from '../../lib/utils/lots'
 
-const PERIODE = { dateDebut: new Date('2026-01-01'), dateFin: new Date('2026-12-31T23:59:59') }
+const libelles = (els: { libelle: string }[]) => els.map((e) => e.libelle)
 
-test('calculerEvolutionPoints retourne la variation en points et exige deux valeurs', () => {
-  expect(calculerEvolutionPoints(35, 28)).toBe(7)
-  expect(calculerEvolutionPoints(28, 35)).toBe(-7)
-  expect(calculerEvolutionPoints(null, 35)).toBeNull()
-  expect(calculerEvolutionPoints(35, null)).toBeNull()
-})
+const PERIODE = { dateDebut: new Date('2026-01-01'), dateFin: new Date('2026-12-31T23:59:59') }
 
 function marche(p: Partial<MarchePilotage>): MarchePilotage {
   return {
@@ -63,19 +58,90 @@ test.describe('calculerConversion', () => {
       marche({ id: 'sansdate', numero: 'M-SD', dateAttribution: null }),
     ], PERIODE)
     expect(r.valeurAttribuee).toBe(0)
-    expect(r.exclusSansDate).toEqual(['M-SD'])
+    expect(libelles(r.exclusSansDate)).toEqual(['M-SD'])
+    expect(r.exclusSansDate[0]!.href).toBe('/marches/sansdate')
   })
 })
 
 function lot(p: Partial<LotPilotage>): LotPilotage {
   return {
-    id: p.id ?? 'l1', opportuniteId: 'o1', libelle: p.libelle ?? 'Lot 1', resultat: p.resultat ?? 'PERDU',
+    id: p.id ?? 'l1', opportuniteId: p.opportuniteId ?? 'o1', libelle: p.libelle ?? 'Lot 1', resultat: p.resultat ?? 'PERDU',
     montantPropose: p.montantPropose === undefined ? 1100 : p.montantPropose,
     montantOffreConcurrent: p.montantOffreConcurrent === undefined ? 1000 : p.montantOffreConcurrent,
     dateDepot: p.dateDepot === undefined ? new Date('2026-02-01') : p.dateDepot,
     soumis: p.soumis ?? true, motifRenseigne: p.motifRenseigne ?? false,
+    autorite: p.autorite ?? 'Autorité Test', concurrentGagnant: p.concurrentGagnant === undefined ? 'Concurrent Test' : p.concurrentGagnant,
+    motif: p.motif === undefined ? null : p.motif,
   }
 }
+
+test('intituleLot : référence, sinon objet, sinon repli ; jamais vide', () => {
+  expect(intituleLot('AO-2026-01', 'Objet', 2)).toBe('AO-2026-01 — Lot 2')
+  expect(intituleLot('', 'Objet', 1)).toBe('Objet — Lot 1')
+  expect(intituleLot('   ', null, 3)).toBe('Sans intitulé — Lot 3')
+  expect(intituleLot(null, '  Objet  ', 1)).toBe('Objet — Lot 1')
+})
+
+test.describe('calculerIssueOffres — détail complet', () => {
+  test('toutes les issues figurent au détail et leur nombre égale les lots soumis', () => {
+    const r = calculerIssueOffres([
+      lot({ id: '1', resultat: 'GAGNE', montantPropose: 3000, concurrentGagnant: null }),
+      lot({ id: '2', resultat: 'PERDU', montantPropose: 1100, montantOffreConcurrent: 1000, motif: 'Prix trop élevé' }),
+      lot({ id: '3', resultat: 'INFRUCTUEUX', montantPropose: 700 }),
+      lot({ id: '4', resultat: 'EN_COURS', montantPropose: 900 }),
+      lot({ id: '5', resultat: 'PERDU', soumis: false }),
+    ], PERIODE)
+    expect(r.detail).toHaveLength(r.lotsSoumis)
+    expect(r.detail.map((d) => d.issue)).toEqual(['Gagné', 'Perdu', 'Sans suite', 'En attente'])
+    const perdu = r.detail.find((d) => d.id === '2')!
+    expect(perdu).toMatchObject({
+      autorite: 'Autorité Test', concurrentGagnant: 'Concurrent Test', montantOffreConcurrent: 1000,
+      ecartFcfa: 100, ecartPct: 10, motif: 'Prix trop élevé', opportuniteId: 'o1',
+    })
+  })
+
+  test("l'écart n'est calculé que pour un lot perdu avec les deux montants", () => {
+    const r = calculerIssueOffres([
+      lot({ id: 'a', resultat: 'PERDU', montantOffreConcurrent: null }),
+      lot({ id: 'b', resultat: 'GAGNE' }),
+    ], PERIODE)
+    expect(r.detail.find((d) => d.id === 'a')).toMatchObject({ ecartFcfa: null, ecartPct: null })
+    expect(r.detail.find((d) => d.id === 'b')).toMatchObject({ ecartFcfa: null, ecartPct: null })
+  })
+})
+
+test.describe('calculerConversion — drapeaux de ligne', () => {
+  const AUJOURDHUI = new Date('2026-06-10')
+
+  test('facturé au-delà du contractuel (+2 %) signalé sur la ligne', () => {
+    const r = calculerConversion([
+      marche({ id: 'ok', montant: 1000, factures: [{ statut: 'PAYEE', montantTTC: 1020 }] }),
+      marche({ id: 'trop', montant: 1000, factures: [{ statut: 'PAYEE', montantTTC: 1021 }] }),
+    ], PERIODE, AUJOURDHUI)
+    expect(r.marches.find((m) => m.id === 'ok')?.auDelaContractuel).toBe(false)
+    expect(r.marches.find((m) => m.id === 'trop')?.auDelaContractuel).toBe(true)
+  })
+
+  test('un marché attribué depuis moins de 30 jours et non facturé est « récent »', () => {
+    const r = calculerConversion([
+      marche({ id: 'recent', dateAttribution: new Date('2026-05-20') }),
+      marche({ id: 'ancien', dateAttribution: new Date('2026-03-01') }),
+      marche({ id: 'recent-facture', dateAttribution: new Date('2026-05-20'), factures: [{ statut: 'EMISE', montantTTC: 10 }] }),
+    ], PERIODE, AUJOURDHUI)
+    expect(r.marches.find((m) => m.id === 'recent')?.recent).toBe(true)
+    expect(r.marches.find((m) => m.id === 'ancien')?.recent).toBe(false)
+    expect(r.marches.find((m) => m.id === 'recent-facture')?.recent).toBe(false)
+  })
+})
+
+test("issue des offres : le taux n'est fiable qu'à partir de 3 dossiers clos", () => {
+  const peu = calculerIssueOffres([lot({ id: '1', resultat: 'GAGNE' }), lot({ id: '2', resultat: 'PERDU' })], PERIODE)
+  expect(peu.suffisant).toBe(false)
+  const assez = calculerIssueOffres([
+    lot({ id: '1', resultat: 'GAGNE' }), lot({ id: '2', resultat: 'PERDU' }), lot({ id: '3', resultat: 'PERDU' }),
+  ], PERIODE)
+  expect(assez.suffisant).toBe(true)
+})
 
 test.describe('calculerIssueOffres', () => {
   test('répartit les lots soumis en nombre et en valeur ; taux de perte sur les seuls dossiers clos', () => {
@@ -106,7 +172,8 @@ test.describe('calculerIssueOffres', () => {
   test('lot soumis sans date de dépôt signalé', () => {
     const r = calculerIssueOffres([lot({ libelle: 'Lot X', dateDepot: null })], PERIODE)
     expect(r.lotsSoumis).toBe(0)
-    expect(r.exclusSansDate).toEqual(['Lot X'])
+    expect(libelles(r.exclusSansDate)).toEqual(['Lot X'])
+    expect(r.exclusSansDate[0]!.href).toBe('/opportunites/o1')
   })
 })
 
@@ -144,7 +211,9 @@ test('calculerQualite signale chaque anomalie', () => {
   const conversion = calculerConversion(marches, PERIODE)
   const offres = calculerIssueOffres(lots, PERIODE)
   const q = calculerQualite(marches, lots, conversion, offres, new Date('2026-10-02'))
-  const par = Object.fromEntries(q.map((e) => [e.cle, e.elements]))
+  const par = Object.fromEntries(q.map((e) => [e.cle, libelles(e.elements)]))
+  expect(q.find((e) => e.cle === 'SANS_FACTURE')!.elements[0]!.href).toBe('/marches/m1')
+  expect(q.find((e) => e.cle === 'ECHEC_SANS_MOTIF')!.elements.at(-1)!.href).toBe('/opportunites/o1')
   expect(par.SANS_FACTURE).toEqual(['SANSFAC'])
   expect(par.ECHEANCE_DEPASSEE).toEqual(['RETARD'])
   expect(par.ECHEC_SANS_MOTIF).toEqual(['RESIL', 'Lot sans motif'])
@@ -162,7 +231,7 @@ test('un marché résilié a toujours été attribué, même sans date ni histor
   expect(estAttribueUnJour('INFRUCTUEUX', new Date('2026-03-01'), null)).toBe(true)
   // Résilié sans date : signalé dans « exclus faute de date », jamais exclu en silence
   const r = calculerConversion([marche({ numero: 'RES-SANS-DATE', statut: 'RESILIE', dateAttribution: null, attribueUnJour: estAttribueUnJour('RESILIE', null, null) })], PERIODE)
-  expect(r.exclusSansDate).toEqual(['RES-SANS-DATE'])
+  expect(libelles(r.exclusSansDate)).toEqual(['RES-SANS-DATE'])
 })
 
 test('multi-lots : chaque lot d\'une même opportunité compte pour lui-même', () => {
@@ -184,7 +253,7 @@ test('garde-fou facture : 2 % tolérés, au-delà signalé', () => {
     marche({ numero: 'AU-DELA', montant: 1000, factures: [{ statut: 'PAYEE', montantTTC: 1021 }] }),
   ]
   const q = calculerQualite(ms, [], calculerConversion(ms, PERIODE), calculerIssueOffres([], PERIODE), new Date('2026-10-02'))
-  expect(q.find((e) => e.cle === 'FACTURE_SUPERIEURE')?.elements).toEqual(['AU-DELA'])
+  expect(libelles(q.find((e) => e.cle === 'FACTURE_SUPERIEURE')!.elements)).toEqual(['AU-DELA'])
 })
 
 test('écart de prix : un lot perdu d\'une offre non soumise est ignoré', () => {
