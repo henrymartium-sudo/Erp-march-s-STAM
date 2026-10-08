@@ -34,11 +34,13 @@ export interface ResultatConversion {
   taux: number | null
   tauxEncaisse: number | null
   alerte: boolean
-  marches: { id: string; numero: string; objet: string; montant: number; facture: number; perdu: boolean }[]
+  marches: { id: string; numero: string; objet: string; montant: number; facture: number; perdu: boolean; auDelaContractuel: boolean; recent: boolean }[]
   exclusSansDate: string[]
 }
 
 export const SEUIL_CONVERSION = 30
+/** Un marché attribué depuis moins de ce nombre de jours et non encore facturé n'est pas un retard. */
+export const JOURS_MARCHE_RECENT = 30
 const STATUTS_FACTURES_COMPTEES: StatutFactureLite[] = ['EMISE', 'EN_ATTENTE', 'PAYEE']
 const STATUTS_PERDUS = ['RESILIE', 'ANNULE']
 
@@ -72,7 +74,7 @@ export function montantFacture(m: MarchePilotage): number {
     .reduce((s, f) => s + f.montantTTC, 0)
 }
 
-export function calculerConversion(marches: MarchePilotage[], periode: Periode): ResultatConversion {
+export function calculerConversion(marches: MarchePilotage[], periode: Periode, aujourdHui: Date = new Date()): ResultatConversion {
   const exclusSansDate: string[] = []
   const retenus: ResultatConversion['marches'] = []
   let valeurAttribuee = 0, facture = 0, encaisse = 0, perduApresAttribution = 0, nbPerdusApresAttribution = 0
@@ -88,7 +90,9 @@ export function calculerConversion(marches: MarchePilotage[], periode: Periode):
     facture += fac
     encaisse += m.factures.filter((f) => f.statut === 'PAYEE').reduce((s, f) => s + f.montantTTC, 0)
     if (perdu) { perduApresAttribution += m.montant; nbPerdusApresAttribution++ }
-    retenus.push({ id: m.id, numero: m.numero, objet: m.objet, montant: m.montant, facture: fac, perdu })
+    const auDelaContractuel = fac > m.montant * TOLERANCE_FACTURE
+    const recent = fac === 0 && (aujourdHui.getTime() - m.dateAttribution.getTime()) <= JOURS_MARCHE_RECENT * 86_400_000
+    retenus.push({ id: m.id, numero: m.numero, objet: m.objet, montant: m.montant, facture: fac, perdu, auDelaContractuel, recent })
   }
 
   const taux = pourcentage(facture, valeurAttribuee)
@@ -151,6 +155,8 @@ export interface ResultatIssueOffres {
   tauxPerte: number | null
   /** complément exact du taux de perte (règle « Résultats par lot ») */
   tauxSucces: number | null
+  /** vrai si au moins MIN_CAS_ECART dossiers clos : en dessous, le taux n'est pas fiable */
+  suffisant: boolean
   exclusSansDate: string[]
   /** toutes les issues des lots soumis de la période (drill-down) */
   detail: LigneIssue[]
@@ -198,6 +204,7 @@ export function calculerIssueOffres(lots: LotPilotage[], periode: Periode): Resu
     lotsSoumis: soumis, gagnes, perdus, sansSuite, enAttente,
     tauxPerte,
     tauxSucces: tauxPerte === null ? null : 100 - tauxPerte,
+    suffisant: gagnes.nombre + perdus.nombre >= MIN_CAS_ECART,
     exclusSansDate,
     detail,
   }

@@ -107,6 +107,39 @@ test.describe('calculerIssueOffres — détail complet', () => {
   })
 })
 
+test.describe('calculerConversion — drapeaux de ligne', () => {
+  const AUJOURDHUI = new Date('2026-06-10')
+
+  test('facturé au-delà du contractuel (+2 %) signalé sur la ligne', () => {
+    const r = calculerConversion([
+      marche({ id: 'ok', montant: 1000, factures: [{ statut: 'PAYEE', montantTTC: 1020 }] }),
+      marche({ id: 'trop', montant: 1000, factures: [{ statut: 'PAYEE', montantTTC: 1021 }] }),
+    ], PERIODE, AUJOURDHUI)
+    expect(r.marches.find((m) => m.id === 'ok')?.auDelaContractuel).toBe(false)
+    expect(r.marches.find((m) => m.id === 'trop')?.auDelaContractuel).toBe(true)
+  })
+
+  test('un marché attribué depuis moins de 30 jours et non facturé est « récent »', () => {
+    const r = calculerConversion([
+      marche({ id: 'recent', dateAttribution: new Date('2026-05-20') }),
+      marche({ id: 'ancien', dateAttribution: new Date('2026-03-01') }),
+      marche({ id: 'recent-facture', dateAttribution: new Date('2026-05-20'), factures: [{ statut: 'EMISE', montantTTC: 10 }] }),
+    ], PERIODE, AUJOURDHUI)
+    expect(r.marches.find((m) => m.id === 'recent')?.recent).toBe(true)
+    expect(r.marches.find((m) => m.id === 'ancien')?.recent).toBe(false)
+    expect(r.marches.find((m) => m.id === 'recent-facture')?.recent).toBe(false)
+  })
+})
+
+test("issue des offres : le taux n'est fiable qu'à partir de 3 dossiers clos", () => {
+  const peu = calculerIssueOffres([lot({ id: '1', resultat: 'GAGNE' }), lot({ id: '2', resultat: 'PERDU' })], PERIODE)
+  expect(peu.suffisant).toBe(false)
+  const assez = calculerIssueOffres([
+    lot({ id: '1', resultat: 'GAGNE' }), lot({ id: '2', resultat: 'PERDU' }), lot({ id: '3', resultat: 'PERDU' }),
+  ], PERIODE)
+  expect(assez.suffisant).toBe(true)
+})
+
 test.describe('calculerIssueOffres', () => {
   test('répartit les lots soumis en nombre et en valeur ; taux de perte sur les seuls dossiers clos', () => {
     const r = calculerIssueOffres([

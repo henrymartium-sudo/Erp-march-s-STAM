@@ -12,7 +12,7 @@ import { IndicateurCard } from '@/components/pilotage/IndicateurCard'
 import { QualiteDonnees } from '@/components/pilotage/QualiteDonnees'
 import { LigneIssue } from '@/components/pilotage/LigneIssue'
 import { getPilotageData, type PilotageData } from '@/lib/actions/pilotage'
-import { SEUIL_CONVERSION, MIN_CAS_ECART } from '@/lib/pilotage/calculs'
+import { SEUIL_CONVERSION, MIN_CAS_ECART, JOURS_MARCHE_RECENT } from '@/lib/pilotage/calculs'
 import { formatMontant } from '@/lib/utils/format'
 import type { Periode } from '@/lib/analytics/types'
 
@@ -77,6 +77,11 @@ export function PilotageClient() {
         </div>
       ) : data && !erreur ? (
         <>
+          {conversion && offres && conversion.valeurAttribuee === 0 && offres.lotsSoumis === 0 && (
+            <p role="status" className="text-sm text-muted-foreground">
+              Aucune donnée sur cette période. Élargissez la période pour voir des indicateurs.
+            </p>
+          )}
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <IndicateurCard
               titre="Conversion attribué → facturé"
@@ -92,8 +97,14 @@ export function PilotageClient() {
               detail={conversion && conversion.marches.length > 0 ? (
                 <ul className="space-y-1">
                   {conversion.marches.map((m) => (
-                    <li key={m.id} className="flex justify-between gap-2">
-                      <span className="truncate">{m.numero}{m.perdu ? ' (perdu)' : ''}</span>
+                    <li key={m.id} className="flex flex-wrap justify-between gap-x-2">
+                      <span>
+                        <Link href={`/marches/${m.id}`} className="inline-flex min-h-11 items-center hover:underline focus-visible:underline">
+                          {m.numero}{m.perdu ? ' (perdu)' : ''}
+                        </Link>
+                        {m.auDelaContractuel && <span> ⚠ facturé au-delà du contractuel</span>}
+                        {m.recent && <span className="text-muted-foreground"> (récent : attribué depuis moins de {JOURS_MARCHE_RECENT} jours)</span>}
+                      </span>
                       <span className="tabular-nums">{formatMontant(m.facture)} / {formatMontant(m.montant)}</span>
                     </li>
                   ))}
@@ -102,15 +113,18 @@ export function PilotageClient() {
             />
             <IndicateurCard
               titre="Issue des offres"
-              valeur={offres?.tauxPerte === null || !offres ? '—' : `${offres.tauxPerte} % perdus`}
+              valeur={!offres || offres.tauxPerte === null ? '—' : offres.suffisant ? `${offres.tauxPerte} % perdus` : 'Pas assez de données'}
               erreur={data.offres.status === 'error' ? data.offres.message : undefined}
               sousLignes={offres ? [
+                !offres.suffisant && offres.tauxPerte !== null
+                  ? `Taux calculé sur ${offres.gagnes.nombre + offres.perdus.nombre} dossier(s) clos (minimum ${MIN_CAS_ECART})`
+                  : null,
                 `Gagnés : ${offres.gagnes.nombre} lot(s), ${formatMontant(offres.gagnes.valeur)}`,
                 `Perdus : ${offres.perdus.nombre} lot(s), ${formatMontant(offres.perdus.valeur)}`,
                 `Sans suite (infructueux) : ${offres.sansSuite.nombre} lot(s), ${formatMontant(offres.sansSuite.valeur)}`,
                 `En attente d'issue : ${offres.enAttente.nombre} lot(s), ${formatMontant(offres.enAttente.valeur)}`,
-                `Taux de succès (par lot) : ${pct(offres.tauxSucces)}`,
-              ] : []}
+                `Taux de succès (par lot) : ${offres.suffisant ? pct(offres.tauxSucces) : '—'}`,
+              ].filter((l): l is string => l !== null) : []}
               explication="Lots soumis sur la période (date de dépôt). Taux de perte = perdus ÷ (gagnés + perdus) : les lots sans suite ou en attente n'entrent pas dans le taux. Les pertes après attribution figurent dans la conversion."
               detail={offres && offres.detail.length > 0 ? (
                 <ul className="space-y-2">
