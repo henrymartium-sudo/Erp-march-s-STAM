@@ -1,7 +1,5 @@
 // lib/analytics/types.ts
 
-import type { StatsLots } from '@/lib/utils/lots'
-
 export interface Periode {
   dateDebut: Date
   dateFin: Date
@@ -13,12 +11,11 @@ export interface PerformanceStats {
   totalMarches: number
   marchesGagnes: number       // statuts "attribués" et après
   marchesDeposes: number      // OFFRE_DEPOSEE et après (hors INFRUCTUEUX/ANNULE)
-  winRate: number             // 0-100
   montantTotal: number
   montantMoyen: number
   delaiMoyenJours: number
   parStatut: { statut: string; label: string; count: number }[]
-  parType: { type: string; label: string; count: number; montant: number; winRate: number }[]
+  parType: { type: string; label: string; count: number; montant: number }[]
   topConcurrents: { nom: string; count: number }[]
 }
 
@@ -41,7 +38,6 @@ export interface CapitalisationStats {
     total: number
     gagnes: number
     montant: number
-    winRate: number
     opportunitesEnCours: number  // enrichissement prospectif — pipeline actif par AC
   }[]
   parSegment: {
@@ -50,7 +46,6 @@ export interface CapitalisationStats {
     total: number
     gagnes: number
     montant: number
-    winRate: number
   }[]
   saisonnalite: { mois: string; label: string; count: number }[]
 }
@@ -82,13 +77,10 @@ export interface OpportunitesStats {
   totalGagnees: number
   totalEnCours: number              // statuts actifs (hors NO_GO, PERDUE)
   totalOffressoumises: number       // OFFRE_SOUMISE et statuts ultérieurs
-  tauxConversion: number            // GAGNEE / total * 100
-  tauxGainGlobal: number            // GAGNEE / totalOffressoumises * 100
   montantEstimeTotal: number
   montantProposeTotal: number
   parStatut: { statut: string; label: string; count: number; montantEstime: number; montantPropose: number }[]
   topAC: { nom: string; count: number; gagnees: number; montantEstime: number }[]
-  lots: StatsLots                   // résultats des lots des opportunités de la période
   // Données enrichies pour export Excel
   pipelineMarches: { objet: string; marcheNumero: string; marcheMontant: number }[]
   evolutionMensuelle: { mois: string; label: string; count: number }[]

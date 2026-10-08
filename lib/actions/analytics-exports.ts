@@ -70,7 +70,6 @@ export async function exportAnalytiquesExcel(
     const kpiRows = [
       ['Total marchés', data.performance.totalMarches],
       ['Montant total contractualisé', data.performance.montantTotal],
-      ['Taux de succès (Win Rate)', data.performance.winRate / 100],
       ['CA encaissé', data.financiere.caEncaisse],
       ['Total interventions SAV', data.sav.totalInterventions],
       ['Coût total SAV', data.sav.coutTotal],
@@ -79,8 +78,6 @@ export async function exportAnalytiquesExcel(
       const row = wsSynth.addRow([label, val])
       if (label === 'Montant total contractualisé' || label === 'CA encaissé' || label === 'Coût total SAV') {
         row.getCell(2).numFmt = MONTANT_FMT
-      } else if (label === 'Taux de succès (Win Rate)') {
-        row.getCell(2).numFmt = PCT_FMT
       }
       applyAltRow(row, i)
     })
@@ -99,8 +96,6 @@ export async function exportAnalytiquesExcel(
       ['Total opportunités actives (en cours)', opp.totalEnCours],
       ['Montant estimatif total (pipeline)', opp.montantEstimeTotal],
       ['Montant proposé total', opp.montantProposeTotal],
-      ['Taux de conversion (Opp → Offres soumises)', opp.tauxConversion / 100],
-      ['Taux de gain global (Offres → Gagnées)', opp.tauxGainGlobal / 100],
     ]
     pipelineRows.forEach(([label, val], i) => {
       const row = wsSynth.addRow([label, val])
@@ -109,8 +104,6 @@ export async function exportAnalytiquesExcel(
         label === 'Montant proposé total'
       ) {
         row.getCell(2).numFmt = MONTANT_FMT
-      } else if (String(label).startsWith('Taux')) {
-        row.getCell(2).numFmt = PCT_FMT
       }
       applyAltRow(row, i)
     })
@@ -133,7 +126,6 @@ export async function exportAnalytiquesExcel(
       ['Total marchés', data.performance.totalMarches],
       ['Marchés déposés', data.performance.marchesDeposes],
       ['Marchés gagnés', data.performance.marchesGagnes],
-      ['Taux de succès', data.performance.winRate / 100],
       ['Montant total', data.performance.montantTotal],
       ['Montant moyen', data.performance.montantMoyen],
       ['Délai moyen exécution', data.performance.delaiMoyenJours],
@@ -141,7 +133,6 @@ export async function exportAnalytiquesExcel(
     perfKpis.forEach(([label, val], i) => {
       const row = wsPerf.addRow([label, val])
       if (label === 'Montant total' || label === 'Montant moyen') row.getCell(2).numFmt = MONTANT_FMT
-      else if (label === 'Taux de succès') row.getCell(2).numFmt = PCT_FMT
       else if (label === 'Délai moyen exécution') row.getCell(2).numFmt = '0 "jours"'
       applyAltRow(row, i)
     })
@@ -157,13 +148,12 @@ export async function exportAnalytiquesExcel(
 
     // Par type
     wsPerf.addRow([])
-    wsPerf.columns = [{ width: 32 }, { width: 12 }, { width: 14 }, { width: 22 }]
-    const perfTypeHdr = wsPerf.addRow(['Type', 'Total', 'Win Rate', 'Montant'])
+    wsPerf.columns = [{ width: 32 }, { width: 12 }, { width: 22 }]
+    const perfTypeHdr = wsPerf.addRow(['Type', 'Total', 'Montant'])
     applyHeaderStyle(perfTypeHdr)
     data.performance.parType.forEach((t, i) => {
-      const row = wsPerf.addRow([t.label, t.count, t.winRate / 100, t.montant])
-      row.getCell(3).numFmt = PCT_FMT
-      row.getCell(4).numFmt = MONTANT_FMT
+      const row = wsPerf.addRow([t.label, t.count, t.montant])
+      row.getCell(3).numFmt = MONTANT_FMT
       applyAltRow(row, i)
     })
 
@@ -207,30 +197,28 @@ export async function exportAnalytiquesExcel(
     const wsCap = workbook.addWorksheet('Capitalisation')
     wsCap.properties.tabColor = { argb: 'FFC49A1A' }
     wsCap.views = [{ state: 'frozen', ySplit: 1 }]
-    // Colonne 6 : "Opp. en cours" — enrichissement prospectif (pipeline actif par AC)
-    wsCap.columns = [{ width: 36 }, { width: 10 }, { width: 10 }, { width: 14 }, { width: 22 }, { width: 14 }]
+    // Colonne 5 : "Opp. en cours" — enrichissement prospectif (pipeline actif par AC)
+    wsCap.columns = [{ width: 36 }, { width: 10 }, { width: 10 }, { width: 22 }, { width: 14 }]
 
     const capTitle = wsCap.addRow(['CAPITALISATION STRATÉGIQUE — ' + periodeLabel(periode)])
     Object.assign(capTitle.getCell(1), { style: sectionStyle })
     capTitle.height = 20
     wsCap.addRow([])
 
-    const capAChdr = wsCap.addRow(['Autorité Contractante', 'Total', 'Gagnés', 'Win Rate', 'Montant', 'Opp. en cours'])
+    const capAChdr = wsCap.addRow(['Autorité Contractante', 'Total', 'Gagnés', 'Montant', 'Opp. en cours'])
     applyHeaderStyle(capAChdr)
     data.capitalisation.topAC.forEach((ac, i) => {
-      const row = wsCap.addRow([ac.nom, ac.total, ac.gagnes, ac.winRate / 100, ac.montant, ac.opportunitesEnCours])
-      row.getCell(4).numFmt = PCT_FMT
-      row.getCell(5).numFmt = MONTANT_FMT
+      const row = wsCap.addRow([ac.nom, ac.total, ac.gagnes, ac.montant, ac.opportunitesEnCours])
+      row.getCell(4).numFmt = MONTANT_FMT
       applyAltRow(row, i)
     })
 
     wsCap.addRow([])
-    const capSegHdr = wsCap.addRow(['Segment', 'Total', 'Gagnés', 'Win Rate', 'Montant'])
+    const capSegHdr = wsCap.addRow(['Segment', 'Total', 'Gagnés', 'Montant'])
     applyHeaderStyle(capSegHdr)
     data.capitalisation.parSegment.forEach((s, i) => {
-      const row = wsCap.addRow([s.label, s.total, s.gagnes, s.winRate / 100, s.montant])
-      row.getCell(4).numFmt = PCT_FMT
-      row.getCell(5).numFmt = MONTANT_FMT
+      const row = wsCap.addRow([s.label, s.total, s.gagnes, s.montant])
+      row.getCell(4).numFmt = MONTANT_FMT
       applyAltRow(row, i)
     })
 
@@ -262,21 +250,13 @@ export async function exportAnalytiquesExcel(
       ['Opportunités actives (en cours)', oppData.totalEnCours],
       ['Opportunités gagnées', oppData.totalGagnees],
       ['Offres soumises', oppData.totalOffressoumises],
-      ['Taux de conversion (Opp → Offres)', oppData.tauxConversion / 100],
-      ['Taux de gain global (Offres → Gagnées)', oppData.tauxGainGlobal / 100],
       ['Montant estimatif total pipeline', oppData.montantEstimeTotal],
       ['Montant proposé total', oppData.montantProposeTotal],
-      ['Lots gagnés', oppData.lots.gagnes],
-      ['Lots perdus', oppData.lots.perdus],
-      ['Lots infructueux', oppData.lots.infructueux],
-      ['Taux de réussite des lots', oppData.lots.tauxReussite / 100],
     ]
     oppKpis.forEach(([label, val], i) => {
       const row = wsOpp.addRow([label, val])
       if (label === 'Montant estimatif total pipeline' || label === 'Montant proposé total') {
         row.getCell(2).numFmt = MONTANT_FMT
-      } else if (String(label).startsWith('Taux')) {
-        row.getCell(2).numFmt = PCT_FMT
       }
       applyAltRow(row, i)
     })
@@ -423,25 +403,22 @@ export async function exportAnalytiquesPDF(
 
     // Rapport capitalisation (tableau principal : Top AC)
     const columns: PDFColumn[] = [
-      { header: 'Autorité Contractante', key: 'nom', width: '40%', align: 'left' },
-      { header: 'Total', key: 'total', width: '12%', align: 'right', format: 'number' },
-      { header: 'Gagnés', key: 'gagnes', width: '12%', align: 'right', format: 'number' },
-      { header: 'Win Rate', key: 'winRateStr', width: '15%', align: 'right' },
-      { header: 'Montant', key: 'montant', width: '21%', align: 'right', format: 'currency' },
+      { header: 'Autorité Contractante', key: 'nom', width: '48%', align: 'left' },
+      { header: 'Total', key: 'total', width: '15%', align: 'right', format: 'number' },
+      { header: 'Gagnés', key: 'gagnes', width: '15%', align: 'right', format: 'number' },
+      { header: 'Montant', key: 'montant', width: '22%', align: 'right', format: 'currency' },
     ]
 
     const tableData = data.capitalisation.topAC.map((ac) => ({
       nom: ac.nom,
       total: ac.total,
       gagnes: ac.gagnes,
-      winRateStr: ac.winRate + '%',
       montant: ac.montant,
     }))
 
     const summary: PDFSummaryItem[] = [
       { label: 'Période analysée', value: periodeLabel(periode) },
       { label: 'Total marchés', value: data.performance.totalMarches },
-      { label: 'Taux de succès global', value: data.performance.winRate + '%' },
       { label: 'CA contractualisé', value: formatMontantFCFA(data.performance.montantTotal) },
       { label: 'CA encaissé', value: formatMontantFCFA(data.financiere.caEncaisse) },
       { label: 'Cautions actives', value: formatMontantFCFA(data.financiere.cautionsActives) },

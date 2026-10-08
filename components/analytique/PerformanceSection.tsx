@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ChartContainer } from '@/components/ui/chart'
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip,
+  Tooltip,
   PieChart, Pie, Cell, Legend,
 } from 'recharts'
 import type { PerformanceStats } from '@/lib/analytics/types'
@@ -49,7 +49,7 @@ export function PerformanceSection({ data }: Props) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: 'Total marchés', value: data.totalMarches },
-          { label: 'Taux de succès', value: `${data.winRate}%` },
+          { label: 'Marchés gagnés', value: data.marchesGagnes },
           { label: 'Montant total', value: formatMontantFCFA(data.montantTotal) },
           { label: 'Délai moyen', value: `${data.delaiMoyenJours}j` },
         ].map(({ label, value }) => (
@@ -62,7 +62,7 @@ export function PerformanceSection({ data }: Props) {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4">
         {/* Donut répartition statuts */}
         <Card>
           <CardHeader>
@@ -90,23 +90,6 @@ export function PerformanceSection({ data }: Props) {
                 <Tooltip formatter={(val) => [`${val}`, 'Marchés']} />
                 <Legend formatter={(val) => val.length > 20 ? val.slice(0, 20) + '…' : val} />
               </PieChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
-        {/* Bar win rate par type */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Win rate par type (%)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={{}} className="h-[250px] w-full">
-              <BarChart data={data.parType} layout="vertical">
-                <XAxis type="number" domain={[0, 100]} unit="%" fontSize={11} />
-                <YAxis type="category" dataKey="label" width={120} fontSize={11} />
-                <Tooltip formatter={(val) => [`${val}%`, 'Win rate']} />
-                <Bar dataKey="winRate" fill="#C49A1A" radius={[0, 4, 4, 0]} />
-              </BarChart>
             </ChartContainer>
           </CardContent>
         </Card>
