@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import {
-  calculerConversion, calculerIssueOffres, calculerEcartPrix, calculerQualite, estAttribueUnJour,
+  calculerConversion, calculerIssueOffres, calculerEcartPrix, calculerQualite, estAttribueUnJour, intituleLot,
   type MarchePilotage, type LotPilotage,
 } from '../../lib/pilotage/calculs'
 import { calculerStatsResultatsLots } from '../../lib/utils/lots'
@@ -62,13 +62,50 @@ test.describe('calculerConversion', () => {
 
 function lot(p: Partial<LotPilotage>): LotPilotage {
   return {
-    id: p.id ?? 'l1', opportuniteId: 'o1', libelle: p.libelle ?? 'Lot 1', resultat: p.resultat ?? 'PERDU',
+    id: p.id ?? 'l1', opportuniteId: p.opportuniteId ?? 'o1', libelle: p.libelle ?? 'Lot 1', resultat: p.resultat ?? 'PERDU',
     montantPropose: p.montantPropose === undefined ? 1100 : p.montantPropose,
     montantOffreConcurrent: p.montantOffreConcurrent === undefined ? 1000 : p.montantOffreConcurrent,
     dateDepot: p.dateDepot === undefined ? new Date('2026-02-01') : p.dateDepot,
     soumis: p.soumis ?? true, motifRenseigne: p.motifRenseigne ?? false,
+    autorite: p.autorite ?? 'Autorité Test', concurrentGagnant: p.concurrentGagnant === undefined ? 'Concurrent Test' : p.concurrentGagnant,
+    motif: p.motif === undefined ? null : p.motif,
   }
 }
+
+test('intituleLot : référence, sinon objet, sinon repli ; jamais vide', () => {
+  expect(intituleLot('AO-2026-01', 'Objet', 2)).toBe('AO-2026-01 — Lot 2')
+  expect(intituleLot('', 'Objet', 1)).toBe('Objet — Lot 1')
+  expect(intituleLot('   ', null, 3)).toBe('Sans intitulé — Lot 3')
+  expect(intituleLot(null, '  Objet  ', 1)).toBe('Objet — Lot 1')
+})
+
+test.describe('calculerIssueOffres — détail complet', () => {
+  test('toutes les issues figurent au détail et leur nombre égale les lots soumis', () => {
+    const r = calculerIssueOffres([
+      lot({ id: '1', resultat: 'GAGNE', montantPropose: 3000, concurrentGagnant: null }),
+      lot({ id: '2', resultat: 'PERDU', montantPropose: 1100, montantOffreConcurrent: 1000, motif: 'Prix trop élevé' }),
+      lot({ id: '3', resultat: 'INFRUCTUEUX', montantPropose: 700 }),
+      lot({ id: '4', resultat: 'EN_COURS', montantPropose: 900 }),
+      lot({ id: '5', resultat: 'PERDU', soumis: false }),
+    ], PERIODE)
+    expect(r.detail).toHaveLength(r.lotsSoumis)
+    expect(r.detail.map((d) => d.issue)).toEqual(['Gagné', 'Perdu', 'Sans suite', 'En attente'])
+    const perdu = r.detail.find((d) => d.id === '2')!
+    expect(perdu).toMatchObject({
+      autorite: 'Autorité Test', concurrentGagnant: 'Concurrent Test', montantOffreConcurrent: 1000,
+      ecartFcfa: 100, ecartPct: 10, motif: 'Prix trop élevé', opportuniteId: 'o1',
+    })
+  })
+
+  test("l'écart n'est calculé que pour un lot perdu avec les deux montants", () => {
+    const r = calculerIssueOffres([
+      lot({ id: 'a', resultat: 'PERDU', montantOffreConcurrent: null }),
+      lot({ id: 'b', resultat: 'GAGNE' }),
+    ], PERIODE)
+    expect(r.detail.find((d) => d.id === 'a')).toMatchObject({ ecartFcfa: null, ecartPct: null })
+    expect(r.detail.find((d) => d.id === 'b')).toMatchObject({ ecartFcfa: null, ecartPct: null })
+  })
+})
 
 test.describe('calculerIssueOffres', () => {
   test('répartit les lots soumis en nombre et en valeur ; taux de perte sur les seuls dossiers clos', () => {

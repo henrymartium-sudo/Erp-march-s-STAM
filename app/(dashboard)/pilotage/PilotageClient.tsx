@@ -3,12 +3,14 @@
 import { useEffect, useState, useTransition } from 'react'
 import { startOfDay, subYears, endOfDay, format } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import Link from 'next/link'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { PeriodSelector } from '@/components/analytique/PeriodSelector'
 import { AnalytiquesTab } from '@/components/analytique/AnalytiquesTab'
 import { IndicateurCard } from '@/components/pilotage/IndicateurCard'
 import { QualiteDonnees } from '@/components/pilotage/QualiteDonnees'
+import { LigneIssue } from '@/components/pilotage/LigneIssue'
 import { getPilotageData, type PilotageData } from '@/lib/actions/pilotage'
 import { SEUIL_CONVERSION, MIN_CAS_ECART } from '@/lib/pilotage/calculs'
 import { formatMontant } from '@/lib/utils/format'
@@ -111,13 +113,8 @@ export function PilotageClient() {
               ] : []}
               explication="Lots soumis sur la période (date de dépôt). Taux de perte = perdus ÷ (gagnés + perdus) : les lots sans suite ou en attente n'entrent pas dans le taux. Les pertes après attribution figurent dans la conversion."
               detail={offres && offres.detail.length > 0 ? (
-                <ul className="space-y-1">
-                  {offres.detail.map((d) => (
-                    <li key={d.id} className="flex justify-between gap-2">
-                      <span className="truncate">{d.libelle}</span>
-                      <span>{d.resultat}</span>
-                    </li>
-                  ))}
+                <ul className="space-y-2">
+                  {offres.detail.map((d) => <LigneIssue key={d.id} ligne={d} />)}
                 </ul>
               ) : undefined}
             />
@@ -132,9 +129,11 @@ export function PilotageClient() {
               detail={ecartPrix && ecartPrix.n > 0 ? (
                 <ul className="space-y-1">
                   {ecartPrix.cas.map((c) => (
-                    <li key={c.id} className="flex justify-between gap-2">
-                      <span className="truncate">{c.libelle}</span>
-                      <span className="tabular-nums">{c.ecart > 0 ? '+' : ''}{c.ecart} %</span>
+                    <li key={c.id}>
+                      <Link href={`/opportunites/${c.opportuniteId}`} className="flex min-h-11 flex-wrap items-center justify-between gap-x-2 hover:underline focus-visible:underline">
+                        <span className="break-words">{c.libelle}</span>
+                        <span className="tabular-nums">{formatMontant(c.notreOffre)} / {formatMontant(c.offreGagnante)} : {c.ecart > 0 ? '+' : ''}{c.ecart} %</span>
+                      </Link>
                     </li>
                   ))}
                 </ul>

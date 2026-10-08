@@ -6,7 +6,7 @@ import { requireRole } from '@/lib/utils/permissions'
 import { STATUTS_ATTRIBUES, STATUTS_OPPORTUNITE_OFFRE_SOUMISE } from '@/lib/constants/marche'
 import { capturerOperation, type ResultatOperation } from '@/lib/pilotage/capturer-operation'
 import {
-  calculerConversion, calculerIssueOffres, calculerEcartPrix, calculerQualite, estAttribueUnJour,
+  calculerConversion, calculerIssueOffres, calculerEcartPrix, calculerQualite, estAttribueUnJour, intituleLot,
   type MarchePilotage, type LotPilotage, type StatutFactureLite,
   type ResultatConversion, type ResultatIssueOffres, type ResultatEcartPrix, type ElementQualite,
 } from '@/lib/pilotage/calculs'
@@ -84,17 +84,21 @@ export async function getPilotageData(input: { dateDebut: string; dateFin: strin
       const lotsRaw = await prisma.lot.findMany({
         select: {
           id: true, numero: true, resultat: true, montantPropose: true, montantOffreConcurrent: true, motifPerte: true,
-          opportunite: { select: { id: true, reference: true, objet: true, statut: true, dateLimite: true } },
+          concurrentGagnant: true,
+          opportunite: { select: { id: true, reference: true, objet: true, statut: true, dateLimite: true, autoriteContractante: true } },
         },
       })
 
       return lotsRaw.map((l) => ({
         id: l.id,
         opportuniteId: l.opportunite.id,
-        libelle: `${l.opportunite.reference ?? l.opportunite.objet} — Lot ${l.numero}`,
+        libelle: intituleLot(l.opportunite.reference, l.opportunite.objet, l.numero),
+        autorite: l.opportunite.autoriteContractante,
         resultat: l.resultat,
         montantPropose: l.montantPropose === null ? null : Number(l.montantPropose),
         montantOffreConcurrent: l.montantOffreConcurrent === null ? null : Number(l.montantOffreConcurrent),
+        concurrentGagnant: renseigne(l.concurrentGagnant) ? l.concurrentGagnant!.trim() : null,
+        motif: renseigne(l.motifPerte) ? l.motifPerte!.trim() : null,
         dateDepot: l.opportunite.dateLimite,
         soumis: STATUTS_OPPORTUNITE_OFFRE_SOUMISE.includes(l.opportunite.statut),
         motifRenseigne: renseigne(l.motifPerte),
