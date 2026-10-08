@@ -5,6 +5,8 @@ import {
 } from '../../lib/pilotage/calculs'
 import { calculerStatsResultatsLots } from '../../lib/utils/lots'
 
+const libelles = (els: { libelle: string }[]) => els.map((e) => e.libelle)
+
 const PERIODE = { dateDebut: new Date('2026-01-01'), dateFin: new Date('2026-12-31T23:59:59') }
 
 function marche(p: Partial<MarchePilotage>): MarchePilotage {
@@ -56,7 +58,8 @@ test.describe('calculerConversion', () => {
       marche({ id: 'sansdate', numero: 'M-SD', dateAttribution: null }),
     ], PERIODE)
     expect(r.valeurAttribuee).toBe(0)
-    expect(r.exclusSansDate).toEqual(['M-SD'])
+    expect(libelles(r.exclusSansDate)).toEqual(['M-SD'])
+    expect(r.exclusSansDate[0]!.href).toBe('/marches/sansdate')
   })
 })
 
@@ -169,7 +172,8 @@ test.describe('calculerIssueOffres', () => {
   test('lot soumis sans date de dépôt signalé', () => {
     const r = calculerIssueOffres([lot({ libelle: 'Lot X', dateDepot: null })], PERIODE)
     expect(r.lotsSoumis).toBe(0)
-    expect(r.exclusSansDate).toEqual(['Lot X'])
+    expect(libelles(r.exclusSansDate)).toEqual(['Lot X'])
+    expect(r.exclusSansDate[0]!.href).toBe('/opportunites/o1')
   })
 })
 
@@ -207,7 +211,9 @@ test('calculerQualite signale chaque anomalie', () => {
   const conversion = calculerConversion(marches, PERIODE)
   const offres = calculerIssueOffres(lots, PERIODE)
   const q = calculerQualite(marches, lots, conversion, offres, new Date('2026-10-02'))
-  const par = Object.fromEntries(q.map((e) => [e.cle, e.elements]))
+  const par = Object.fromEntries(q.map((e) => [e.cle, libelles(e.elements)]))
+  expect(q.find((e) => e.cle === 'SANS_FACTURE')!.elements[0]!.href).toBe('/marches/m1')
+  expect(q.find((e) => e.cle === 'ECHEC_SANS_MOTIF')!.elements.at(-1)!.href).toBe('/opportunites/o1')
   expect(par.SANS_FACTURE).toEqual(['SANSFAC'])
   expect(par.ECHEANCE_DEPASSEE).toEqual(['RETARD'])
   expect(par.ECHEC_SANS_MOTIF).toEqual(['RESIL', 'Lot sans motif'])
@@ -225,7 +231,7 @@ test('un marché résilié a toujours été attribué, même sans date ni histor
   expect(estAttribueUnJour('INFRUCTUEUX', new Date('2026-03-01'), null)).toBe(true)
   // Résilié sans date : signalé dans « exclus faute de date », jamais exclu en silence
   const r = calculerConversion([marche({ numero: 'RES-SANS-DATE', statut: 'RESILIE', dateAttribution: null, attribueUnJour: estAttribueUnJour('RESILIE', null, null) })], PERIODE)
-  expect(r.exclusSansDate).toEqual(['RES-SANS-DATE'])
+  expect(libelles(r.exclusSansDate)).toEqual(['RES-SANS-DATE'])
 })
 
 test('multi-lots : chaque lot d\'une même opportunité compte pour lui-même', () => {
@@ -247,7 +253,7 @@ test('garde-fou facture : 2 % tolérés, au-delà signalé', () => {
     marche({ numero: 'AU-DELA', montant: 1000, factures: [{ statut: 'PAYEE', montantTTC: 1021 }] }),
   ]
   const q = calculerQualite(ms, [], calculerConversion(ms, PERIODE), calculerIssueOffres([], PERIODE), new Date('2026-10-02'))
-  expect(q.find((e) => e.cle === 'FACTURE_SUPERIEURE')?.elements).toEqual(['AU-DELA'])
+  expect(libelles(q.find((e) => e.cle === 'FACTURE_SUPERIEURE')!.elements)).toEqual(['AU-DELA'])
 })
 
 test('écart de prix : un lot perdu d\'une offre non soumise est ignoré', () => {

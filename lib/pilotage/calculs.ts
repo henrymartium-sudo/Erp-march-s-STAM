@@ -6,6 +6,9 @@ export type StatutFactureLite = 'BROUILLON' | 'EMISE' | 'EN_ATTENTE' | 'PAYEE' |
 
 export interface Periode { dateDebut: Date; dateFin: Date }
 
+/** Élément signalé, avec le lien vers sa fiche. */
+export interface ElementLie { libelle: string; href: string }
+
 export interface MarchePilotage {
   id: string
   numero: string
@@ -35,7 +38,7 @@ export interface ResultatConversion {
   tauxEncaisse: number | null
   alerte: boolean
   marches: { id: string; numero: string; objet: string; montant: number; facture: number; perdu: boolean; auDelaContractuel: boolean; recent: boolean }[]
-  exclusSansDate: string[]
+  exclusSansDate: ElementLie[]
 }
 
 export const SEUIL_CONVERSION = 30
@@ -64,6 +67,9 @@ export function intituleLot(reference: string | null, objet: string | null, nume
   return `${base} — Lot ${numero}`
 }
 
+const lienMarche = (m: MarchePilotage): ElementLie => ({ libelle: m.numero, href: `/marches/${m.id}` })
+const lienLot = (l: LotPilotage): ElementLie => ({ libelle: l.libelle, href: `/opportunites/${l.opportuniteId}` })
+
 function pourcentage(num: number, den: number): number | null {
   return den > 0 ? Math.round((num / den) * 100) : null
 }
@@ -75,13 +81,13 @@ export function montantFacture(m: MarchePilotage): number {
 }
 
 export function calculerConversion(marches: MarchePilotage[], periode: Periode, aujourdHui: Date = new Date()): ResultatConversion {
-  const exclusSansDate: string[] = []
+  const exclusSansDate: ElementLie[] = []
   const retenus: ResultatConversion['marches'] = []
   let valeurAttribuee = 0, facture = 0, encaisse = 0, perduApresAttribution = 0, nbPerdusApresAttribution = 0
 
   for (const m of marches) {
     if (!m.attribueUnJour) continue
-    if (!m.dateAttribution) { exclusSansDate.push(m.numero); continue }
+    if (!m.dateAttribution) { exclusSansDate.push(lienMarche(m)); continue }
     if (!dansPeriode(m.dateAttribution, periode)) continue
 
     const fac = montantFacture(m)
@@ -157,7 +163,7 @@ export interface ResultatIssueOffres {
   tauxSucces: number | null
   /** vrai si au moins MIN_CAS_ECART dossiers clos : en dessous, le taux n'est pas fiable */
   suffisant: boolean
-  exclusSansDate: string[]
+  exclusSansDate: ElementLie[]
   /** toutes les issues des lots soumis de la période (drill-down) */
   detail: LigneIssue[]
 }
@@ -172,7 +178,7 @@ export interface ResultatEcartPrix {
 export const MIN_CAS_ECART = 3
 
 export function calculerIssueOffres(lots: LotPilotage[], periode: Periode): ResultatIssueOffres {
-  const exclusSansDate: string[] = []
+  const exclusSansDate: ElementLie[] = []
   const detail: ResultatIssueOffres['detail'] = []
   const vide = (): Repartition => ({ nombre: 0, valeur: 0 })
   const gagnes = vide(), perdus = vide(), sansSuite = vide(), enAttente = vide()
@@ -180,7 +186,7 @@ export function calculerIssueOffres(lots: LotPilotage[], periode: Periode): Resu
 
   for (const l of lots) {
     if (!l.soumis) continue
-    if (!l.dateDepot) { exclusSansDate.push(l.libelle); continue }
+    if (!l.dateDepot) { exclusSansDate.push(lienLot(l)); continue }
     if (!dansPeriode(l.dateDepot, periode)) continue
     soumis++
     const cible = l.resultat === 'GAGNE' ? gagnes : l.resultat === 'PERDU' ? perdus : l.resultat === 'INFRUCTUEUX' ? sansSuite : enAttente
@@ -228,7 +234,7 @@ export function calculerEcartPrix(lots: LotPilotage[], periode: Periode): Result
 export interface ElementQualite {
   cle: 'SANS_FACTURE' | 'ECHEANCE_DEPASSEE' | 'ECHEC_SANS_MOTIF' | 'SANS_DATE' | 'FACTURE_SUPERIEURE' | 'SANS_OPPORTUNITE'
   libelle: string
-  elements: string[]
+  elements: ElementLie[]
 }
 
 export const TOLERANCE_FACTURE = 1.02
@@ -250,21 +256,21 @@ export function calculerQualite(
       libelle: 'Marchés en exécution ou clôturés sans facture',
       elements: marches
         .filter((m) => STATUTS_DEVANT_ETRE_FACTURES.includes(m.statut) && montantFacture(m) === 0)
-        .map((m) => m.numero),
+        .map(lienMarche),
     },
     {
       cle: 'ECHEANCE_DEPASSEE',
       libelle: 'Échéance dépassée sans changement de statut',
       elements: marches
         .filter((m) => STATUTS_EN_COURS_EXECUTION.includes(m.statut) && m.dateFinPrevue !== null && m.dateFinPrevue < aujourdHui)
-        .map((m) => m.numero),
+        .map(lienMarche),
     },
     {
       cle: 'ECHEC_SANS_MOTIF',
       libelle: 'Échecs sans motif renseigné',
       elements: [
-        ...marches.filter((m) => STATUTS_ECHEC_MARCHE.includes(m.statut) && !m.motifRenseigne).map((m) => m.numero),
-        ...lots.filter((l) => (l.resultat === 'PERDU' || l.resultat === 'INFRUCTUEUX') && !l.motifRenseigne).map((l) => l.libelle),
+        ...marches.filter((m) => STATUTS_ECHEC_MARCHE.includes(m.statut) && !m.motifRenseigne).map(lienMarche),
+        ...lots.filter((l) => (l.resultat === 'PERDU' || l.resultat === 'INFRUCTUEUX') && !l.motifRenseigne).map(lienLot),
       ],
     },
     {
@@ -275,12 +281,12 @@ export function calculerQualite(
     {
       cle: 'FACTURE_SUPERIEURE',
       libelle: 'Facturé TTC supérieur au montant contractuel (+2 %)',
-      elements: marches.filter((m) => montantFacture(m) > m.montant * TOLERANCE_FACTURE).map((m) => m.numero),
+      elements: marches.filter((m) => montantFacture(m) > m.montant * TOLERANCE_FACTURE).map(lienMarche),
     },
     {
       cle: 'SANS_OPPORTUNITE',
       libelle: "Marchés sans opportunité liée (absents de l'issue des offres)",
-      elements: marches.filter((m) => !m.aOpportunite && !STATUTS_AVANT_DEPOT.includes(m.statut)).map((m) => m.numero),
+      elements: marches.filter((m) => !m.aOpportunite && !STATUTS_AVANT_DEPOT.includes(m.statut)).map(lienMarche),
     },
   ]
 }
