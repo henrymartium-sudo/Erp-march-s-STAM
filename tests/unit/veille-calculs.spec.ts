@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test'
 import {
   normaliserTexte, normaliserNom, distanceLevenshtein, libelleRetenu, trouverDoublons,
-  construirePertes, cleVehicules, type LotVeille,
+  construirePertes, cleVehicules, calculerVeille, type LotVeille,
 } from '../../lib/veille/calculs'
+import { calculerEcartPrix, type LotPilotage } from '../../lib/pilotage/calculs'
 
 const PERIODE = { dateDebut: new Date('2026-01-01'), dateFin: new Date('2026-12-31T23:59:59') }
 
@@ -156,5 +157,113 @@ test.describe('construirePertes', () => {
     const p = construirePertes([lot({ concurrentGagnant: ' Société AUTO-PLUS SARL ' })], PERIODE).pertes[0]!
     expect(p.concurrent).toBe('Société AUTO-PLUS SARL')
     expect(p.concurrentCle).toBe('auto plus')
+  })
+})
+
+test.describe('calculerVeille', () => {
+  test('deux orthographes d’un même concurrent donnent une seule ligne', () => {
+    const r = calculerVeille([
+      lot({ id: '1', concurrentGagnant: 'AUTO PLUS' }),
+      lot({ id: '2', concurrentGagnant: 'Auto Plus' }),
+      lot({ id: '3', concurrentGagnant: 'auto-plus sarl' }),
+    ], PERIODE)
+    expect(r.parConcurrent).toHaveLength(1)
+    expect(r.parConcurrent[0]?.nombre).toBe(3)
+  })
+
+  test('le seuil de 3 lots s’applique à chaque ligne', () => {
+    const deux = calculerVeille([lot({ id: '1' }), lot({ id: '2' })], PERIODE)
+    expect(deux.parConcurrent[0]?.suffisant).toBe(false)
+    expect(deux.parConcurrent[0]?.ecartMoyenPct).toBeNull()
+    expect(deux.parConcurrent[0]?.pertes).toHaveLength(2)
+    expect(deux.ecartGlobal.suffisant).toBe(false)
+
+    const trois = calculerVeille([lot({ id: '1' }), lot({ id: '2' }), lot({ id: '3', montantOffreConcurrent: 1000 })], PERIODE)
+    const l = trois.parConcurrent[0]!
+    expect(l.suffisant).toBe(true)
+    // écarts : 25 %, 25 %, 0 % → moyenne 16,67 (non arrondie)
+    expect(l.ecartMoyenPct).toBeCloseTo(50 / 3, 10)
+    expect(l.ecartMoyenFcfa).toBeCloseTo((200 + 200 + 0) / 3, 10)
+    expect(trois.ecartGlobal.moyennePct).toBeCloseTo(50 / 3, 10)
+  })
+
+  test('chaque perte documentée figure une fois dans chaque angle, les autres uniquement dans « non documentées »', () => {
+    const lots = [
+      lot({ id: 'a', concurrentGagnant: 'Alpha Motors', autorite: 'Mairie A', vehicules: [{ marque: 'Toyota', modele: 'Hilux' }] }),
+      lot({ id: 'b', concurrentGagnant: 'Beta Auto', autorite: 'mairie a', vehicules: [{ marque: 'Toyota', modele: 'Hilux' }, { marque: 'Isuzu', modele: 'D-Max' }] }),
+      lot({ id: 'c', concurrentGagnant: 'Alpha Motors', autorite: 'Région B', vehicules: [] }),
+      lot({ id: 'd', concurrentGagnant: null }),
+      lot({ id: 'e', montantOffreConcurrent: null }),
+    ]
+    const r = calculerVeille(lots, PERIODE)
+    const ids = (lignes: { pertes: { id: string }[] }[]) => lignes.flatMap((l) => l.pertes.map((p) => p.id)).sort()
+    expect(ids(r.parConcurrent)).toEqual(['a', 'b', 'c'])
+    expect(ids(r.parAutorite)).toEqual(['a', 'b', 'c'])
+    expect(ids(r.parVehicule)).toEqual(['a', 'b', 'c'])
+    expect(r.nonDocumentees.map((p) => p.id).sort()).toEqual(['d', 'e'])
+    expect(r.chronologie.map((p) => p.id).sort()).toEqual(['a', 'b', 'c', 'd', 'e'])
+    // les autorités « Mairie A » et « mairie a » forment une seule ligne
+    expect(r.parAutorite.map((l) => l.nombre).sort()).toEqual([1, 2])
+    // trois combinaisons de véhicules distinctes, dont « Véhicule non renseigné »
+    expect(r.parVehicule.map((l) => l.libelle).sort()).toEqual(['Isuzu D-Max + Toyota Hilux', 'Toyota Hilux', 'Véhicule non renseigné'])
+  })
+
+  test('la couverture égale les lignes affichées', () => {
+    const r = calculerVeille([lot({ id: '1' }), lot({ id: '2', concurrentGagnant: null }), lot({ id: '3' })], PERIODE)
+    expect(r.couverture).toEqual({ documentees: 2, total: 3 })
+    expect(r.parConcurrent.reduce((s, l) => s + l.nombre, 0) + r.nonDocumentees.length).toBe(r.couverture.total)
+  })
+
+  test('une période sans perte donne des listes vides et une couverture nulle', () => {
+    const r = calculerVeille([lot({ resultat: 'GAGNE' })], PERIODE)
+    expect(r.couverture).toEqual({ documentees: 0, total: 0 })
+    expect(r.parConcurrent).toEqual([])
+    expect(r.chronologie).toEqual([])
+    expect(r.ecartGlobal.moyennePct).toBeNull()
+  })
+
+  test('la chronologie met la plus récente en premier', () => {
+    const r = calculerVeille([
+      lot({ id: 'ancien', dateDepot: new Date('2026-02-01') }),
+      lot({ id: 'recent', dateDepot: new Date('2026-09-01') }),
+      lot({ id: 'milieu', dateDepot: new Date('2026-05-01') }),
+    ], PERIODE)
+    expect(r.chronologie.map((p) => p.id)).toEqual(['recent', 'milieu', 'ancien'])
+  })
+
+  test('les doublons possibles viennent des groupes de concurrents', () => {
+    const r = calculerVeille([
+      lot({ id: '1', concurrentGagnant: 'Auto Plus' }),
+      lot({ id: '2', concurrentGagnant: 'Auto Pluss' }),
+    ], PERIODE)
+    expect(r.parConcurrent).toHaveLength(2)
+    expect(r.doublons).toHaveLength(1)
+  })
+
+  test('les valeurs et les associés sont agrégés par ligne', () => {
+    const r = calculerVeille([
+      lot({ id: '1', montantPropose: 1000, montantOffreConcurrent: 800, autorite: 'Mairie A' }),
+      lot({ id: '2', montantPropose: 2000, montantOffreConcurrent: 1500, autorite: 'Région B' }),
+    ], PERIODE)
+    const l = r.parConcurrent[0]!
+    expect(l.valeurPerdue).toBe(3000)
+    expect(l.valeurGagneeParLesConcurrents).toBe(2300)
+    expect(l.associes).toEqual(['Mairie A', 'Région B'])
+  })
+
+  test('l’écart global arrondi égale celui de /pilotage quand tous les lots avec montants ont un nom', () => {
+    const lots = [
+      lot({ id: '1', montantPropose: 1000, montantOffreConcurrent: 800 }),
+      lot({ id: '2', montantPropose: 2000, montantOffreConcurrent: 1900, concurrentGagnant: 'Beta Auto' }),
+      lot({ id: '3', montantPropose: 700, montantOffreConcurrent: 650, concurrentGagnant: 'Gamma' }),
+    ]
+    const pilotage: LotPilotage[] = lots.map((l) => ({
+      id: l.id, opportuniteId: l.opportuniteId, libelle: l.libelle, resultat: l.resultat,
+      montantPropose: l.montantPropose, montantOffreConcurrent: l.montantOffreConcurrent,
+      dateDepot: l.dateDepot, soumis: l.soumis, motifRenseigne: !!l.motif, autorite: l.autorite,
+      concurrentGagnant: l.concurrentGagnant, motif: l.motif,
+    }))
+    const veille = calculerVeille(lots, PERIODE)
+    expect(Math.round(veille.ecartGlobal.moyennePct!)).toBe(calculerEcartPrix(pilotage, PERIODE).ecartMoyen)
   })
 })

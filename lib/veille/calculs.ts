@@ -1,6 +1,6 @@
 // Calculs de la Veille concurrentielle — fonctions pures, sans accès base (testées en unitaire).
 
-import type { ElementLie, Periode } from '@/lib/pilotage/calculs'
+import { MIN_CAS_ECART, type ElementLie, type Periode } from '@/lib/pilotage/calculs'
 
 // ── Normalisation des noms ──────────────────────────────────────────────────────────────
 
@@ -192,4 +192,116 @@ export function construirePertes(
     })
   }
   return { pertes, exclusSansDate }
+}
+
+// ── Classements par angle ───────────────────────────────────────────────────────────────
+
+export interface LigneClassement {
+  cle: string
+  libelle: string
+  nombre: number
+  /** somme de nos offres perdues */
+  valeurPerdue: number
+  /** somme des offres gagnantes (celles des concurrents) */
+  valeurGagneeParLesConcurrents: number
+  /** valeurs liées distinctes : autorités (angle concurrent) ou concurrents (autres angles) */
+  associes: string[]
+  ecartMoyenPct: number | null
+  ecartMoyenFcfa: number | null
+  /** au moins MIN_CAS_ECART lots documentés */
+  suffisant: boolean
+  pertes: PerteVeille[]
+}
+
+export interface EcartGlobal { n: number; moyennePct: number | null; moyenneFcfa: number | null; suffisant: boolean }
+
+export interface ResultatVeille {
+  couverture: { documentees: number; total: number }
+  parConcurrent: LigneClassement[]
+  parAutorite: LigneClassement[]
+  parVehicule: LigneClassement[]
+  /** toutes les pertes, la plus récente d'abord */
+  chronologie: PerteVeille[]
+  nonDocumentees: PerteVeille[]
+  doublons: DoublonPossible[]
+  ecartGlobal: EcartGlobal
+  exclusSansDate: ElementLie[]
+}
+
+const somme = (valeurs: number[]): number => valeurs.reduce((s, v) => s + v, 0)
+const moyenne = (valeurs: number[]): number => somme(valeurs) / valeurs.length
+const parDateDecroissante = (a: PerteVeille, b: PerteVeille): number =>
+  b.dateDepot.localeCompare(a.dateDepot) || a.libelle.localeCompare(b.libelle, 'fr')
+
+function distincts(valeurs: string[]): string[] {
+  const parCle = new Map<string, string[]>()
+  for (const v of valeurs) {
+    const cle = normaliserTexte(v)
+    parCle.set(cle, [...(parCle.get(cle) ?? []), v])
+  }
+  return [...parCle.values()].map(libelleRetenu).sort((a, b) => a.localeCompare(b, 'fr'))
+}
+
+function statsEcart(pertes: PerteVeille[]): EcartGlobal {
+  const pcts = pertes.map((p) => p.ecartPct).filter((v): v is number => v !== null)
+  const fcfas = pertes.map((p) => p.ecartFcfa).filter((v): v is number => v !== null)
+  const suffisant = pcts.length >= MIN_CAS_ECART
+  return {
+    n: pcts.length,
+    moyennePct: suffisant ? moyenne(pcts) : null,
+    moyenneFcfa: suffisant ? moyenne(fcfas) : null,
+    suffisant,
+  }
+}
+
+function regrouper(
+  pertes: PerteVeille[],
+  cleDe: (p: PerteVeille) => string,
+  libelleBrutDe: (p: PerteVeille) => string,
+  associeDe: (p: PerteVeille) => string,
+): LigneClassement[] {
+  const groupes = new Map<string, PerteVeille[]>()
+  for (const p of pertes) {
+    const cle = cleDe(p)
+    groupes.set(cle, [...(groupes.get(cle) ?? []), p])
+  }
+  return [...groupes.entries()]
+    .map(([cle, ps]) => {
+      const stats = statsEcart(ps)
+      return {
+        cle,
+        libelle: libelleRetenu(ps.map(libelleBrutDe)),
+        nombre: ps.length,
+        valeurPerdue: somme(ps.map((p) => p.notreMontant ?? 0)),
+        valeurGagneeParLesConcurrents: somme(ps.map((p) => p.montantConcurrent ?? 0)),
+        associes: distincts(ps.map(associeDe)),
+        ecartMoyenPct: stats.moyennePct,
+        ecartMoyenFcfa: stats.moyenneFcfa,
+        suffisant: stats.suffisant,
+        pertes: [...ps].sort(parDateDecroissante),
+      }
+    })
+    .sort((a, b) => b.nombre - a.nombre || a.libelle.localeCompare(b.libelle, 'fr'))
+}
+
+export function calculerVeille(lots: LotVeille[], periode: Periode): ResultatVeille {
+  const { pertes, exclusSansDate } = construirePertes(lots, periode)
+  const documentees = pertes.filter((p) => p.documentee)
+  const nonDocumentees = pertes.filter((p) => !p.documentee).sort(parDateDecroissante)
+
+  const parConcurrent = regrouper(documentees, (p) => p.concurrentCle ?? '', (p) => p.concurrent ?? '', (p) => p.autorite)
+  const parAutorite = regrouper(documentees, (p) => normaliserTexte(p.autorite), (p) => p.autorite, (p) => p.concurrent ?? '')
+  const parVehicule = regrouper(documentees, (p) => p.vehiculesCle, (p) => p.vehicules, (p) => p.concurrent ?? '')
+
+  return {
+    couverture: { documentees: documentees.length, total: pertes.length },
+    parConcurrent,
+    parAutorite,
+    parVehicule,
+    chronologie: [...pertes].sort(parDateDecroissante),
+    nonDocumentees,
+    doublons: trouverDoublons(parConcurrent.map((l) => ({ cle: l.cle, libelle: l.libelle, nombre: l.nombre }))),
+    ecartGlobal: statsEcart(documentees),
+    exclusSansDate,
+  }
 }
