@@ -10,9 +10,8 @@ test.describe('Pilotage', () => {
     await expect(page.getByText('Issue des offres', { exact: true })).toBeVisible()
     await expect(page.getByText('Écart de prix face au gagnant')).toBeVisible()
     await expect(page.getByText('Qualité des données')).toBeVisible()
-    const referenceYear = new Date().getFullYear() - 1
-    await expect(page.getByText(new RegExp(`mêmes dates.*${referenceYear}`))).toBeVisible()
-    await expect(page.getByText(/^Évolution/)).toHaveCount(3)
+    await expect(page.getByText(/Évolution/)).toHaveCount(0)
+    await expect(page.getByText(/mêmes dates/)).toHaveCount(0)
   })
 
   test('chaque indicateur ouvre son détail au clavier', async ({ page }) => {

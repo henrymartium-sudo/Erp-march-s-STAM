@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { startOfYear, endOfDay, format } from 'date-fns'
-import { fr } from 'date-fns/locale'
+import { startOfYear, endOfDay } from 'date-fns'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { PeriodSelector } from '@/components/analytique/PeriodSelector'
@@ -16,24 +15,15 @@ import type { Periode } from '@/lib/analytics/types'
 
 const pct = (v: number | null) => (v === null ? '—' : `${v} %`)
 
-function libelleEvolution(delta: number | null): string {
-  if (delta === null) return 'Évolution indisponible (données insuffisantes).'
-  const valeur = `${delta > 0 ? '+' : ''}${delta} ${Math.abs(delta) === 1 ? 'point' : 'points'}`
-  return `Évolution : ${valeur}.`
-}
-
 export function PilotageClient() {
   const [periode, setPeriode] = useState<Periode>({ dateDebut: startOfYear(new Date()), dateFin: endOfDay(new Date()) })
   const [data, setData] = useState<PilotageData | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const [retry, setRetry] = useState(0)
   const [enCours, startTransition] = useTransition()
-  const conversion = data?.conversion.status === 'success' ? data.conversion.value.resultat : null
-  const conversionEvolution = data?.conversion.status === 'success' ? data.conversion.value.evolution : null
-  const offres = data?.offres.status === 'success' ? data.offres.value.resultat : null
-  const offresEvolution = data?.offres.status === 'success' ? data.offres.value.evolution : null
-  const ecartPrix = data?.ecartPrix.status === 'success' ? data.ecartPrix.value.resultat : null
-  const ecartPrixEvolution = data?.ecartPrix.status === 'success' ? data.ecartPrix.value.evolution : null
+  const conversion = data?.conversion.status === 'success' ? data.conversion.value : null
+  const offres = data?.offres.status === 'success' ? data.offres.value : null
+  const ecartPrix = data?.ecartPrix.status === 'success' ? data.ecartPrix.value : null
   const erreurPartielle = data !== null && [
     data.conversion, data.offres, data.ecartPrix, data.qualite,
   ].some((bloc) => bloc.status === 'error')
@@ -77,19 +67,10 @@ export function PilotageClient() {
         </div>
       ) : data && !erreur ? (
         <>
-          <p className="text-sm text-muted-foreground">
-            Référence : mêmes dates de l’année précédente
-            {' ('}
-            {format(new Date(data.evolution.periodeReference.dateDebut), 'dd/MM/yyyy', { locale: fr })}
-            {' – '}
-            {format(new Date(data.evolution.periodeReference.dateFin), 'dd/MM/yyyy', { locale: fr })}
-            {').'}
-          </p>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <IndicateurCard
               titre="Conversion attribué → facturé"
               valeur={pct(conversion?.taux ?? null)}
-              evolution={libelleEvolution(conversionEvolution)}
               erreur={data.conversion.status === 'error' ? data.conversion.message : undefined}
               alerte={conversion?.alerte}
               sousLignes={conversion ? [
@@ -112,7 +93,6 @@ export function PilotageClient() {
             <IndicateurCard
               titre="Issue des offres"
               valeur={offres?.tauxPerte === null || !offres ? '—' : `${offres.tauxPerte} % perdus`}
-              evolution={libelleEvolution(offresEvolution)}
               erreur={data.offres.status === 'error' ? data.offres.message : undefined}
               sousLignes={offres ? [
                 `Gagnés : ${offres.gagnes.nombre} lot(s), ${formatMontant(offres.gagnes.valeur)}`,
@@ -138,7 +118,6 @@ export function PilotageClient() {
               valeur={ecartPrix?.suffisant && ecartPrix.ecartMoyen !== null
                 ? `${ecartPrix.ecartMoyen > 0 ? '+' : ''}${ecartPrix.ecartMoyen} %`
                 : 'Pas assez de données'}
-              evolution={libelleEvolution(ecartPrixEvolution)}
               erreur={data.ecartPrix.status === 'error' ? data.ecartPrix.message : undefined}
               sousLignes={ecartPrix ? [`n = ${ecartPrix.n} lot(s) perdu(s) avec montant concurrent (minimum ${MIN_CAS_ECART})`] : []}
               explication="Positif : notre offre était plus chère que celle du gagnant."

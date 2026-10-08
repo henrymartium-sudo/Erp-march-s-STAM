@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button'
 interface Props {
   titre: string
   valeur: string
-  evolution: string
   sousLignes: string[]
   explication: string
   erreur?: string
@@ -16,7 +15,7 @@ interface Props {
   detail?: ReactNode
 }
 
-export function IndicateurCard({ titre, valeur, evolution, sousLignes, explication, erreur, alerte, detail }: Props) {
+export function IndicateurCard({ titre, valeur, sousLignes, explication, erreur, alerte, detail }: Props) {
   const [ouvert, setOuvert] = useState(false)
   const detailId = useId()
   return (
@@ -33,7 +32,6 @@ export function IndicateurCard({ titre, valeur, evolution, sousLignes, explicati
               <span className="text-3xl font-bold tabular-nums">{valeur}</span>
               {alerte && <AlertTriangle className="h-5 w-5 text-destructive" aria-label="Sous le seuil" />}
             </div>
-            <p className="text-sm font-medium tabular-nums">{evolution}</p>
             {sousLignes.map((l) => <p key={l} className="text-sm text-muted-foreground tabular-nums">{l}</p>)}
             <p className="text-sm text-muted-foreground">{explication}</p>
             <Button
