@@ -6,9 +6,9 @@ import { requireRole } from '@/lib/utils/permissions'
 import { STATUTS_ATTRIBUES, STATUTS_OPPORTUNITE_OFFRE_SOUMISE } from '@/lib/constants/marche'
 import { capturerOperation, type ResultatOperation } from '@/lib/pilotage/capturer-operation'
 import {
-  calculerConversion, calculerIssueOffres, calculerEcartPrix, calculerQualite, estAttribueUnJour, intituleLot,
+  calculerConversion, calculerIssueOffres, calculerEcartPrix, calculerQualite, calculerMarchesHistoriques, estAttribueUnJour, intituleLot,
   type MarchePilotage, type LotPilotage, type StatutFactureLite,
-  type ResultatConversion, type ResultatIssueOffres, type ResultatEcartPrix, type ElementQualite,
+  type ResultatConversion, type ResultatIssueOffres, type ResultatEcartPrix, type ResultatMarchesHistoriques, type ElementQualite,
 } from '@/lib/pilotage/calculs'
 
 export type BlocPilotage<T> =
@@ -19,6 +19,7 @@ export interface PilotageData {
   conversion: BlocPilotage<ResultatConversion>
   offres: BlocPilotage<ResultatIssueOffres>
   ecartPrix: BlocPilotage<ResultatEcartPrix>
+  historiques: BlocPilotage<ResultatMarchesHistoriques>
   qualite: BlocPilotage<ElementQualite[]>
 }
 
@@ -53,6 +54,7 @@ export async function getPilotageData(input: { dateDebut: string; dateFin: strin
           dateAttributionDefinitive: true, dateDepotOffre: true, dateFinPrevue: true,
           opportuniteId: true, opportunites: { select: { id: true }, take: 1 },
           motifsResiliation: true, motifsAnnulation: true, motifsInfructueux: true,
+          concurrentGagnant: true, dateInfructueux: true, dateAnnulation: true, dateResiliation: true,
           factures: { select: { statut: true, montantTTC: true } },
           // Pas de filtre SQL sur nouveauStatut : la colonne est en TEXT en production (enum dans le
           // schéma), la comparaison text = "StatutMarche" y échoue. Filtrage en mémoire ci-dessous.
@@ -68,6 +70,11 @@ export async function getPilotageData(input: { dateDebut: string; dateFin: strin
         const motif = m.statut === 'RESILIE' ? m.motifsResiliation
           : m.statut === 'ANNULE' ? m.motifsAnnulation
           : m.statut === 'INFRUCTUEUX' ? m.motifsInfructueux : null
+        const dateStatut = m.statut === 'INFRUCTUEUX' ? m.dateInfructueux
+          : m.statut === 'ANNULE' ? m.dateAnnulation
+          : m.statut === 'RESILIE' ? m.dateResiliation : null
+        // historiqueStatuts est trié par createdAt croissant : le dernier élément est le plus récent.
+        const dernierHistorique = m.historiqueStatuts.at(-1)?.createdAt ?? null
         return {
           id: m.id, numero: m.numero, objet: m.objet, statut: m.statut, montant: Number(m.montant),
           dateAttribution: m.dateAttributionDefinitive ?? premierPassage,
@@ -77,6 +84,8 @@ export async function getPilotageData(input: { dateDebut: string; dateFin: strin
           motifRenseigne: renseigne(motif),
           dateFinPrevue: m.dateFinPrevue,
           aOpportunite: m.opportuniteId !== null || m.opportunites.length > 0,
+          concurrentGagnant: renseigne(m.concurrentGagnant) ? m.concurrentGagnant!.trim() : null,
+          dateDernierStatut: dateStatut ?? dernierHistorique,
         }
       })
     }),
@@ -121,6 +130,11 @@ export async function getPilotageData(input: { dateDebut: string; dateFin: strin
     return calculerEcartPrix(lotsCapture.value, periode)
   })
 
+  const historiquesCapture = await capturerOperation(() => {
+    if (marchesCapture.status === 'error') throw marchesCapture.error
+    return calculerMarchesHistoriques(marchesCapture.value, periode)
+  })
+
   const qualiteCapture = await capturerOperation(() => {
     if (marchesCapture.status === 'error') throw marchesCapture.error
     if (lotsCapture.status === 'error') throw lotsCapture.error
@@ -139,6 +153,7 @@ export async function getPilotageData(input: { dateDebut: string; dateFin: strin
     conversion: publierBloc('conversion', conversionCapture, 'Indicateur indisponible. Réessayez.'),
     offres: publierBloc('issue des offres', offresCapture, 'Indicateur indisponible. Réessayez.'),
     ecartPrix: publierBloc('écart de prix', ecartPrixCapture, 'Indicateur indisponible. Réessayez.'),
+    historiques: publierBloc('marchés historiques', historiquesCapture, 'Indicateur indisponible. Réessayez.'),
     qualite: publierBloc('qualité des données', qualiteCapture, 'Qualité des données indisponible. Réessayez.'),
   }
 }
