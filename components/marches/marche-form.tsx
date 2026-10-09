@@ -243,6 +243,9 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
       if (!data.motifsInfructueux || data.motifsInfructueux.length < 10) {
         warnings.push('les motifs (minimum 10 caractères)')
       }
+      if (!data.concurrentGagnant || data.concurrentGagnant.trim().length === 0) {
+        warnings.push('le concurrent gagnant')
+      }
     }
 
     if (warnings.length > 0) {
@@ -1075,7 +1078,7 @@ export function MarcheForm({ marche, onSuccess }: MarcheFormProps) {
                       name="concurrentGagnant"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Concurrent gagnant</FormLabel>
+                          <FormLabel>Concurrent gagnant *</FormLabel>
                           <FormControl>
                             <Input
                               placeholder="Nom du concurrent qui a remporté le marché"
