@@ -221,6 +221,13 @@ const marcheRefinements = (data: MarcheRefinementData, ctx: z.RefinementCtx) => 
         path: ['motifsInfructueux'],
       })
     }
+    if (!data.concurrentGagnant || data.concurrentGagnant.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Le concurrent gagnant est requis pour un marché infructueux',
+        path: ['concurrentGagnant'],
+      })
+    }
   }
 
   // Validation cross-field : dateAttributionDefinitive >= dateAttributionProvisoire
