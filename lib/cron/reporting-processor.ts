@@ -11,6 +11,7 @@ import { getMarchesForReporting, groupMarchesByStatut } from "./getMarchesForRep
 import { buildReportingEmail } from "@/lib/email/reporting-templates"
 import { buildOpportuniteReportingEmail } from "@/lib/email/opportunite-reporting-templates"
 import { createEmailTransport } from "@/lib/config/email"
+import { envoyerEcheancesMatin } from "@/lib/cron/echeances-matin"
 
 // ============================================================
 // TYPE
@@ -182,6 +183,23 @@ export async function runOpportuniteReportingCron(currentHour: number): Promise<
     if (recipients.length === 0) {
       console.warn(`⚠️ Règle Opp. "${rule.name}" : aucun destinataire valide`)
       skipped++
+      continue
+    }
+
+    if (rule.reportType === "ECHEANCES_MATIN") {
+      try {
+        const resultat = await envoyerEcheancesMatin(recipients, now)
+        if (resultat.echecs.length > 0) {
+          console.error(`❌ Échéances "${rule.name}" : ${resultat.echecs.length} envoi(s) en échec`)
+          failed++
+        } else {
+          console.log(`✅ Échéances "${rule.name}" envoyé à ${resultat.envoyes} destinataire(s)`)
+          sent++
+        }
+      } catch (err) {
+        console.error(`❌ Échec échéances "${rule.name}":`, err)
+        failed++
+      }
       continue
     }
 

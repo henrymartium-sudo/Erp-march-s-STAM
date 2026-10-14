@@ -531,10 +531,16 @@ model ReportingRule {
   @@map("reporting_rules")
 }
 
+enum TypeRapportOpportunite {
+  SUIVI             // Suivi complet de toutes les opportunités (comportement historique)
+  ECHEANCES_MATIN   // Offres à rendre dans les 7 jours
+}
+
 model OpportuniteReportingRule {
   id              String   @id @default(cuid())
   name            String
   description     String?
+  reportType      TypeRapportOpportunite @default(SUIVI)
   recipientEmails String[]   // Emails destinataires
   scheduleConfig  Json?      // ReportingScheduleConfig | null (null = MANUAL)
   isActive        Boolean  @default(true)

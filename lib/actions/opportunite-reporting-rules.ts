@@ -15,27 +15,9 @@ import type { ActionResult } from "@/types"
 import { z } from "zod"
 import { buildOpportuniteReportingEmail } from "@/lib/email/opportunite-reporting-templates"
 import { createEmailTransport } from "@/lib/config/email"
+import { OpportuniteReportingRuleSchema } from "@/lib/validations/opportunite-reporting-rule"
+import { envoyerEcheancesMatin } from "@/lib/cron/echeances-matin"
 import type { ReportingScheduleConfig } from "@/lib/cron/reporting-processor"
-
-// ============================================================
-// SCHÉMA ZOD
-// ============================================================
-
-const ReportingScheduleConfigSchema = z
-  .object({
-    type: z.enum(["DAILY", "WEEKLY", "MONTHLY", "MANUAL"]),
-    hour: z.number().int().min(0).max(23),
-    days: z.array(z.number().int().min(1).max(31)).optional(),
-  })
-  .nullable()
-
-const OpportuniteReportingRuleSchema = z.object({
-  name:            z.string().min(2).max(100),
-  description:     z.string().optional(),
-  recipientEmails: z.array(z.string().email()).min(1, "Sélectionnez au moins un destinataire"),
-  scheduleConfig:  ReportingScheduleConfigSchema.optional().default(null),
-  isActive:        z.boolean().default(true),
-})
 
 // ============================================================
 // READ
@@ -198,6 +180,22 @@ export async function sendOpportuniteReportingRuleNow(
     )
     if (recipients.length === 0) {
       return { success: false, error: "Aucun destinataire valide configuré" }
+    }
+
+    if (rule.reportType === "ECHEANCES_MATIN") {
+      const resultat = await envoyerEcheancesMatin(recipients, new Date())
+      await logAction({
+        userId: session.user.id,
+        userEmail: session.user.email ?? undefined,
+        action: AUDIT_ACTION.CREATE,
+        entityType: AUDIT_ENTITY.ALERT_RULE,
+        entityId: id,
+        metadata: { type: "echeances-matin-manual-send", envoyes: resultat.envoyes, echecs: resultat.echecs.length },
+      })
+      if (resultat.echecs.length > 0) {
+        return { success: false, error: `${resultat.echecs.length} envoi(s) en échec sur ${resultat.envoyes + resultat.echecs.length}` }
+      }
+      return { success: true, data: { sent: resultat.envoyes } }
     }
 
     const opportunites = await prisma.opportunite.findMany({

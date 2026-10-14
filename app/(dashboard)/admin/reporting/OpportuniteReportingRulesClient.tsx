@@ -52,10 +52,13 @@ import { PageHeader } from "@/components/shared/page-header"
 // TYPES
 // ============================================================
 
+type ReportType = "SUIVI" | "ECHEANCES_MATIN"
+
 interface SerializedOpportuniteReportingRule {
   id: string
   name: string
   description: string | null
+  reportType: ReportType
   recipientEmails: string[]
   scheduleConfig: ReportingScheduleConfig | null
   isActive: boolean
@@ -106,6 +109,7 @@ function formatSchedule(config: ReportingScheduleConfig | null): string {
 interface FormState {
   name: string
   description: string
+  reportType: ReportType
   recipientEmails: string[]
   scheduleType: "DAILY" | "WEEKLY" | "MONTHLY" | "MANUAL"
   hour: number
@@ -117,6 +121,7 @@ function emptyForm(): FormState {
   return {
     name: "",
     description: "",
+    reportType: "SUIVI",
     recipientEmails: [],
     scheduleType: "DAILY",
     hour: 8,
@@ -130,6 +135,7 @@ function ruleToForm(rule: SerializedOpportuniteReportingRule): FormState {
   return {
     name: rule.name,
     description: rule.description ?? "",
+    reportType: rule.reportType,
     recipientEmails: rule.recipientEmails,
     scheduleType: config?.type ?? "MANUAL",
     hour: config?.hour ?? 8,
@@ -152,6 +158,7 @@ function formToPayload(form: FormState) {
   return {
     name: form.name,
     description: form.description || undefined,
+    reportType: form.reportType,
     recipientEmails: form.recipientEmails,
     scheduleConfig,
     isActive: form.isActive,
@@ -390,10 +397,22 @@ function OpportuniteReportingRuleDialog({
             />
           </div>
 
+          <div>
+            <Label className="mb-1 block">Type de rapport</Label>
+            <Select value={form.reportType} onValueChange={(v) => patch({ reportType: v as ReportType })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="SUIVI">Suivi complet des opportunités</SelectItem>
+                <SelectItem value="ECHEANCES_MATIN">Échéances du matin (offres à rendre sous 7 jours)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
             <p className="text-xs text-blue-700 font-medium">
-              ℹ️ Ce rapport inclut <strong>toutes les opportunités</strong> sans filtre.
-              Chaque email contiendra le tableau synthétique complet avec décomptes des échéances.
+              {form.reportType === "ECHEANCES_MATIN"
+                ? "ℹ️ Ce rapport liste les offres à rendre (en analyse, GO, dossier en préparation) dont l'échéance est dépassée ou tombe dans les 7 jours. Il est envoyé même s'il n'y a rien à rendre."
+                : "ℹ️ Ce rapport inclut toutes les opportunités sans filtre. Chaque email contiendra le tableau synthétique complet avec décomptes des échéances."}
             </p>
           </div>
 
@@ -403,6 +422,7 @@ function OpportuniteReportingRuleDialog({
               emails={form.recipientEmails}
               onChange={(emails) => patch({ recipientEmails: emails })}
             />
+            <p className="mt-1 text-xs text-muted-foreground">Jusqu'à 20 destinataires ; chacun reçoit son propre message.</p>
           </div>
 
           <div>
@@ -566,7 +586,7 @@ export function OpportuniteReportingRulesClient({
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <Badge variant="secondary">Toutes les opportunités</Badge>
+                    <Badge variant="secondary">{rule.reportType === "ECHEANCES_MATIN" ? "Échéances du matin" : "Suivi complet"}</Badge>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {formatSchedule(rule.scheduleConfig as ReportingScheduleConfig | null)}
