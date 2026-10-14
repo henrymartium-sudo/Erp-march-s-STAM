@@ -76,4 +76,11 @@ test.describe('gabarit du mail échéances', () => {
     expect(text).toContain('DANS LES 7 JOURS')
     expect(text).toContain('REF-a')
   })
+  test('mode compact : une offre détectée à J+2 garde sa mention « À décider » (carte ou ligne)', () => {
+    const six = Array.from({ length: 5 }, (_, i) => offre(`b${i}`, jour(4 + (i % 3), 9 + i)))
+    const { html, text } = mail([...six, offre('d', jour(2, 9), { statut: 'EN_ANALYSE' })])
+    expect(compter(html, 'Ouvrir la fiche')).toBe(0)
+    expect(compter(html, 'À décider')).toBe(1)
+    expect(text).toContain('À DÉCIDER')
+  })
 })

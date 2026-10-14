@@ -73,9 +73,10 @@ function ligne(o: OffreEcheance, bloc: BlocEcheance, now: Date, baseUrl: string,
   const c = BLOCS[bloc]
   const { date, heure } = echeanceLisible(o.dateLimite as Date)
   const fond = i % 2 ? '#F9FAFB' : '#FFFFFF'
+  const gras = alerteGras(o, now)
   return `<tr>
     <td style="padding:9px 10px;background:${fond};border-bottom:1px solid #EEF0F3;font-size:13px;color:#111827;line-height:1.35;">
-      <a href="${baseUrl}/opportunites/${encodeURIComponent(o.id)}" style="color:#111827;text-decoration:none;"><span style="color:#6B7280;font-weight:600;">${echapper(o.reference ?? '—')}</span> &middot; ${echapper(o.objet)}</a>
+      <a href="${baseUrl}/opportunites/${encodeURIComponent(o.id)}" style="color:#111827;text-decoration:none;"><span style="color:#6B7280;font-weight:600;">${echapper(o.reference ?? '—')}</span>${gras ? ' <span style="color:#C2410C;font-weight:700;">&middot; À décider</span>' : ''} &middot; <span style="font-weight:${gras ? 700 : 400};">${echapper(o.objet)}</span></a>
       <div style="font-size:12px;color:#6B7280;margin-top:2px;">${echapper(o.autoriteContractante)} &middot; ${echapper(STATUT_OPPORTUNITE_LABELS[o.statut] ?? o.statut)}</div>
     </td>
     <td class="col" align="right" valign="top" style="padding:9px 10px;background:${fond};border-bottom:1px solid #EEF0F3;font-size:12px;white-space:nowrap;"><span style="color:#374151;">${date}${heure ? ` · ${heure}` : ''}</span><div style="font-weight:700;color:${c.couleur};margin-top:2px;">${delaiTexte(o.dateLimite as Date, now, bloc)}</div></td>
@@ -146,7 +147,7 @@ export function buildEcheancesMatinEmail(
       ? []
       : ['', `${titre} (${offres.length})`, ...offres.map((o) => {
           const { date, heure } = echeanceLisible(o.dateLimite as Date)
-          return `- [${o.reference ?? '—'}] ${o.objet} | ${o.autoriteContractante} | ${date}${heure ? ` ${heure}` : ''} | ${delaiTexte(o.dateLimite as Date, now, bloc)} | ${montantProposeAffiche(o.lots).texte}`
+          return `- [${o.reference ?? '—'}]${alerteGras(o, now) ? ' À DÉCIDER' : ''} ${o.objet} | ${o.autoriteContractante} | ${date}${heure ? ` ${heure}` : ''} | ${delaiTexte(o.dateLimite as Date, now, bloc)} | ${montantProposeAffiche(o.lots).texte}`
         })]
   const text = [
     `ÉCHÉANCES DU MATIN — ${FORMAT_JOUR.format(now)}`,
