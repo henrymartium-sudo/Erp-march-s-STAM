@@ -11,7 +11,7 @@ import { getMarchesForReporting, groupMarchesByStatut } from "./getMarchesForRep
 import { buildReportingEmail } from "@/lib/email/reporting-templates"
 import { buildOpportuniteReportingEmail } from "@/lib/email/opportunite-reporting-templates"
 import { createEmailTransport } from "@/lib/config/email"
-import { envoyerEcheancesMatin } from "@/lib/cron/echeances-matin"
+import { envoyerEcheancesMatinCron } from "@/lib/cron/echeances-matin"
 
 // ============================================================
 // TYPE
@@ -188,7 +188,12 @@ export async function runOpportuniteReportingCron(currentHour: number): Promise<
 
     if (rule.reportType === "ECHEANCES_MATIN") {
       try {
-        const resultat = await envoyerEcheancesMatin(recipients, now)
+        const { ignore, resultat } = await envoyerEcheancesMatinCron(rule.id, recipients, now)
+        if (ignore || !resultat) {
+          console.log(`ℹ️ Échéances "${rule.name}" : déjà envoyé dans les dernières 20 h, ignoré`)
+          skipped++
+          continue
+        }
         if (resultat.echecs.length > 0) {
           console.error(`❌ Échéances "${rule.name}" : ${resultat.echecs.length} envoi(s) en échec`)
           failed++
