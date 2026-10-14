@@ -83,4 +83,11 @@ test.describe('gabarit du mail échéances', () => {
     expect(compter(html, 'À décider')).toBe(1)
     expect(text).toContain('À DÉCIDER')
   })
+
+  test('largeur fluide : aucune table à largeur fixe (les applis mobiles ignorent le @media)', () => {
+    const { html } = mail([offre('a', jour(1, 9))])
+    expect(html).not.toMatch(/width="640"/)
+    expect(html).not.toMatch(/[^-]width:640px/)
+    expect(html).toContain('width:100%;max-width:640px')
+  })
 })
