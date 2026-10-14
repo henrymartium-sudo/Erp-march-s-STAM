@@ -9,6 +9,12 @@ import { fr } from "date-fns/locale"
 import { formatMontant } from "@/lib/utils/format"
 import { calculerAvancementLots, totalMontantPropose } from "@/lib/utils/lots"
 import { STATUT_OPPORTUNITE_LABELS } from "@/lib/validations/opportunite"
+import {
+  classerOpportunites,
+  diffJours,
+  SEUIL_URGENCE_JOURS,
+  type ATraiter,
+} from "./opportunite-reporting-sections"
 
 // ============================================================
 // TYPES
@@ -33,123 +39,164 @@ export interface OpportuniteForReporting {
 // CONSTANTES
 // ============================================================
 
-const EMAIL_WIDTH = 900
 const NAVY = "#1E3A5F"
 const GOLD = "#C49A1A"
+const MAX_WIDTH = 680
+const NOTES_MAX = 160
+
+const COULEURS_STATUT: Record<string, { fort: string; pale: string }> = {
+  GO: { fort: "#15803d", pale: "#dcfce7" },
+  NO_GO: { fort: "#6b7280", pale: "#f3f4f6" },
+  GAGNEE: { fort: "#1d4ed8", pale: "#dbeafe" },
+  PERDUE: { fort: "#b91c1c", pale: "#fee2e2" },
+  EN_ATTENTE_ATTRIBUTION: { fort: "#b45309", pale: "#fef3c7" },
+}
+const NEUTRE = { fort: "#475569", pale: "#f1f5f9" }
+
+const MOTIFS: Record<ATraiter["motif"], string> = {
+  GO_ECHEANCE: "GO — offre à rendre",
+  ATTENTE_ATTRIBUTION: "En attente d'attribution",
+}
 
 // ============================================================
 // HELPERS
 // ============================================================
 
-function diffJours(date: Date, today: Date): number {
-  return Math.ceil((date.getTime() - today.getTime()) / 86400000)
+const couleurStatut = (s: string) => COULEURS_STATUT[s] ?? NEUTRE
+const libelleStatut = (s: string) => STATUT_OPPORTUNITE_LABELS[s] ?? s
+
+function esc(valeur: string): string {
+  return valeur
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
 }
 
 function formatDate(date: Date | null): string {
-  if (!date) return "—"
-  return format(date, "dd/MM/yyyy")
-}
-
-function joursLabel(date: Date | null, today: Date): string {
-  if (!date) return "—"
-  const diff = diffJours(date, today)
-  if (diff < 0) return `⛔ ${Math.abs(diff)}j dépassé`
-  if (diff === 0) return "🔴 Aujourd'hui"
-  if (diff <= 3) return `🔴 ${diff}j`
-  if (diff <= 7) return `🟠 ${diff}j`
-  return `🟢 ${diff}j`
-}
-
-function joursColor(date: Date | null, today: Date): string {
-  if (!date) return "#9ca3af"
-  const diff = diffJours(date, today)
-  if (diff < 0) return "#7f1d1d"
-  if (diff <= 3) return "#dc2626"
-  if (diff <= 7) return "#ea580c"
-  return "#16a34a"
+  return date ? format(date, "dd/MM/yyyy") : "—"
 }
 
 function montantStr(val: unknown): string {
   if (val === null || val === undefined) return "—"
   const n = Number(val)
-  if (isNaN(n)) return "—"
-  return formatMontant(n)
+  return isNaN(n) ? "—" : formatMontant(n)
 }
 
-function td(content: string, opts: {
-  width?: number
-  bold?: boolean
-  color?: string
-  align?: "left" | "center" | "right"
-  bg?: string
-  borderLeft?: string
-  nowrap?: boolean
-}): string {
-  const styles = [
-    opts.width ? `width:${opts.width}px;max-width:${opts.width}px` : "",
-    "padding:7px 8px",
-    "font-size:11px",
-    "border-bottom:1px solid #f0f0f0",
-    `background:${opts.bg ?? "#ffffff"}`,
-    `color:${opts.color ?? "#374151"}`,
-    `text-align:${opts.align ?? "left"}`,
-    opts.bold ? "font-weight:600" : "",
-    opts.borderLeft ? `border-left:4px solid ${opts.borderLeft}` : "",
-    opts.nowrap ? "white-space:nowrap" : "white-space:normal;word-break:break-word",
-  ].filter(Boolean).join(";")
-  return `<td style="${styles}">${content}</td>`
+function decompte(date: Date, today: Date): { texte: string; couleur: string } {
+  const diff = diffJours(date, today)
+  if (diff < 0) return { texte: `dépassée de ${Math.abs(diff)} j`, couleur: "#6b7280" }
+  if (diff === 0) return { texte: "aujourd'hui", couleur: "#dc2626" }
+  if (diff <= 3) return { texte: `J-${diff}`, couleur: "#dc2626" }
+  if (diff <= SEUIL_URGENCE_JOURS) return { texte: `J-${diff}`, couleur: "#ea580c" }
+  return { texte: `J-${diff}`, couleur: "#16a34a" }
 }
 
-function th(label: string, width: number, align: "left" | "center" | "right" = "left"): string {
-  return `<th style="width:${width}px;max-width:${width}px;padding:8px;text-align:${align};color:#ffffff;font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;">${label}</th>`
+function datePlusDecompte(date: Date | null, today: Date): string | null {
+  if (!date) return null
+  const d = decompte(date, today)
+  return `${formatDate(date)} <span style="font-weight:400;font-size:11px;color:${d.couleur};">(${d.texte})</span>`
+}
+
+function pastille(statut: string): string {
+  const c = couleurStatut(statut)
+  return `<span style="display:inline-block;padding:2px 9px;border-radius:10px;background:${c.pale};color:${c.fort};font-size:11px;font-weight:700;">${esc(libelleStatut(statut))}</span>`
+}
+
+function tronquerNotes(notes: string): string {
+  const brut = notes.trim()
+  if (brut.length <= NOTES_MAX) return esc(brut)
+  return `${esc(brut.slice(0, NOTES_MAX))}… <span style="color:${NAVY};text-decoration:underline;">détail dans le fichier Excel joint</span>`
+}
+
+function cellule(libelle: string, valeurHtml: string): string {
+  return `<td valign="top" style="padding:6px 8px 6px 0;width:33%;"><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em;">${libelle}</div><div style="font-size:13px;font-weight:600;color:#111827;">${valeurHtml}</div></td>`
+}
+
+function barreDossier(pct: number): string {
+  return `<table cellpadding="0" cellspacing="0" width="100%" style="margin-top:6px;"><tr><td style="font-size:11px;color:#6b7280;padding-bottom:3px;">Dossier ${pct} %</td></tr><tr><td style="background:#e5e7eb;border-radius:3px;height:5px;line-height:5px;font-size:0;"><div style="width:${pct}%;background:${NAVY};height:5px;border-radius:3px;">&nbsp;</div></td></tr></table>`
 }
 
 // ============================================================
-// LIGNE OPPORTUNITÉ
+// BLOCS
 // ============================================================
 
-function buildRow(opp: OpportuniteForReporting, today: Date, rowIndex: number): string {
-  const rowBg = rowIndex % 2 === 0 ? "#ffffff" : "#f9fafb"
-  const statut = opp.statut
-  const isTerminal = statut === "NO_GO" || statut === "PERDUE"
-  const borderLeft = isTerminal ? "#d1d5db" : NAVY
-
+function carte(opp: OpportuniteForReporting, today: Date): string {
+  const c = couleurStatut(opp.statut)
+  const propose = totalMontantPropose(opp.lots)
   const { progressionMoyenne } = calculerAvancementLots(opp.lots)
-  const dossierStr = progressionMoyenne !== null
-    ? `✅ ${progressionMoyenne}%`
-    : "—"
 
-  const notesStr = opp.notes ?? "—"
+  const champs: [string, string | null][] = [
+    ["Estimé", montantStr(opp.montantEstime) !== "—" ? esc(montantStr(opp.montantEstime)) : null],
+    ["Proposé", montantStr(propose) !== "—" ? esc(montantStr(propose)) : null],
+    ["Date limite", datePlusDecompte(opp.dateLimite, today)],
+    [
+      "Validité",
+      opp.periodeValiditeFin
+        ? `${opp.periodeValiditeDebut ? formatDate(opp.periodeValiditeDebut) + " → " : ""}${datePlusDecompte(opp.periodeValiditeFin, today)}`
+        : null,
+    ],
+    ["Attribution prévue", datePlusDecompte(opp.echeanceAttributionProv, today)],
+  ]
+  const presents = champs.filter((x): x is [string, string] => x[1] !== null)
+  let lignes = ""
+  for (let i = 0; i < presents.length; i += 3) {
+    lignes += `<tr>${presents.slice(i, i + 3).map(([l, v]) => cellule(l, v)).join("")}</tr>`
+  }
+  const grille = lignes
+    ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;">${lignes}</table>`
+    : ""
+  const notes = opp.notes?.trim()
+    ? `<div style="margin-top:8px;padding:8px 10px;background:#f9fafb;border-radius:4px;font-size:12px;color:#4b5563;">${tronquerNotes(opp.notes)}</div>`
+    : ""
 
-  // Décomptes
-  const dateLimiteLabel    = joursLabel(opp.dateLimite, today)
-  const dateLimiteColor    = joursColor(opp.dateLimite, today)
-  const validiteFinLabel   = joursLabel(opp.periodeValiditeFin, today)
-  const validiteFinColor   = joursColor(opp.periodeValiditeFin, today)
-  const echeanceLabel      = joursLabel(opp.echeanceAttributionProv, today)
-  const echeanceColor      = joursColor(opp.echeanceAttributionProv, today)
+  return `<tr><td style="padding:0 20px 12px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-left:4px solid ${c.fort};border-radius:6px;"><tr><td style="padding:12px 14px;">
+<div style="font-size:11px;color:#6b7280;">${esc(opp.reference ?? "Sans référence")}</div>
+<div style="font-size:14px;font-weight:700;margin:2px 0;color:#111827;">${esc(opp.objet)}</div>
+<div style="font-size:12px;color:#4b5563;margin-bottom:6px;">${esc(opp.autoriteContractante)}</div>
+${pastille(opp.statut)}${grille}${progressionMoyenne !== null ? barreDossier(progressionMoyenne) : ""}${notes}
+</td></tr></table></td></tr>`
+}
 
-  return `<tr>
-    ${td(opp.reference ?? "—",     { width: 80,  bold: true, color: "#111827", bg: rowBg, borderLeft })}
-    ${td(opp.objet,                 { width: 160, bg: rowBg })}
-    ${td(opp.autoriteContractante,  { width: 120, bg: rowBg })}
-    ${td(STATUT_OPPORTUNITE_LABELS[statut] ?? statut, { width: 100, bg: rowBg, nowrap: true })}
-    ${td(montantStr(opp.montantEstime),  { width: 90, align: "right", bg: rowBg, nowrap: true })}
-    ${td(montantStr(totalMontantPropose(opp.lots)), { width: 90, align: "right", bg: rowBg, nowrap: true })}
-    ${td(formatDate(opp.dateLimite),    { width: 72, align: "center", bg: rowBg, nowrap: true })}
-    ${td(dateLimiteLabel,               { width: 72, align: "center", bg: rowBg, bold: true, color: dateLimiteColor, nowrap: true })}
-    ${td(
-      opp.periodeValiditeDebut
-        ? `${formatDate(opp.periodeValiditeDebut)} → ${formatDate(opp.periodeValiditeFin)}`
-        : "—",
-      { width: 110, align: "center", bg: rowBg, nowrap: true }
-    )}
-    ${td(opp.periodeValiditeFin ? validiteFinLabel : "—", { width: 62, align: "center", bg: rowBg, bold: true, color: validiteFinColor, nowrap: true })}
-    ${td(formatDate(opp.echeanceAttributionProv), { width: 72, align: "center", bg: rowBg, nowrap: true })}
-    ${td(opp.echeanceAttributionProv ? echeanceLabel : "—", { width: 62, align: "center", bg: rowBg, bold: true, color: echeanceColor, nowrap: true })}
-    ${td(dossierStr,  { width: 55, align: "center", bg: rowBg, nowrap: true })}
-    ${td(notesStr,    { width: 100, bg: rowBg })}
-  </tr>`
+function ligneTerminee(opp: OpportuniteForReporting, premiere: boolean): string {
+  const propose = montantStr(totalMontantPropose(opp.lots))
+  const montant = propose !== "—" ? propose : montantStr(opp.montantEstime)
+  const details = [
+    opp.autoriteContractante,
+    libelleStatut(opp.statut),
+    montant !== "—" ? montant : null,
+    opp.dateLimite ? `limite ${formatDate(opp.dateLimite)}` : null,
+  ]
+    .filter(Boolean)
+    .map((d) => esc(String(d)))
+    .join(" · ")
+  const ref = opp.reference ? `${esc(opp.reference)} · ` : ""
+  return `<tr><td style="padding:8px 12px;font-size:12px;${premiere ? "" : "border-top:1px solid #f1f5f9;"}"><b>${ref}</b>${esc(opp.objet)}<br><span style="color:#6b7280;">${details}</span></td></tr>`
+}
+
+function titreSection(titre: string, couleur: string, n: number): string {
+  return `<tr><td style="padding:16px 20px 8px;"><span style="font-size:13px;font-weight:700;letter-spacing:.04em;color:${couleur};">${titre}</span> <span style="font-size:12px;color:#9ca3af;">· ${n}</span></td></tr>`
+}
+
+function blocATraiter(items: ATraiter[], today: Date): string {
+  if (items.length === 0) return ""
+  const cartes = items
+    .map(({ opp, motif }) => {
+      const pourGo = motif === "GO_ECHEANCE"
+      const date = pourGo ? opp.dateLimite : opp.periodeValiditeFin
+      const bord = pourGo ? "#b45309" : "#6b7280"
+      const fond = pourGo ? "#fffbeb" : "#f9fafb"
+      let suite = ""
+      if (date) {
+        const d = decompte(date, today)
+        suite = pourGo
+          ? ` — ${formatDate(date)} (${d.texte})`
+          : ` — validité jusqu'au ${formatDate(date)} (${d.texte})`
+      }
+      return `<table width="100%" cellpadding="0" cellspacing="0" style="background:${fond};border:1px solid #e5e7eb;border-left:4px solid ${bord};border-radius:6px;margin-bottom:8px;"><tr><td style="padding:10px 14px;font-size:13px;"><b>${esc(MOTIFS[motif] + suite)}</b><br><span style="color:#4b5563;">${esc(opp.reference ?? "Sans référence")} · ${esc(opp.objet)} · ${esc(opp.autoriteContractante)}</span></td></tr></table>`
+    })
+    .join("")
+  return `<tr><td style="padding:16px 20px 0;"><div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#b45309;margin-bottom:8px;">À TRAITER</div>${cartes}</td></tr>`
 }
 
 // ============================================================
@@ -163,40 +210,23 @@ export function buildOpportuniteReportingEmail(
 ): { subject: string; html: string; text: string } {
   const dateLabel = format(now, "EEEE d MMMM yyyy", { locale: fr })
   const subject = `📋 Suivi Opportunités — ${ruleName} — ${format(now, "dd/MM/yyyy")}`
+  const { aTraiter, actives, terminees, compteurs } = classerOpportunites(opportunites, now)
+  const total = opportunites.length
 
-  const headers = `
-    ${th("Réf.", 80)}
-    ${th("Objet", 160)}
-    ${th("Autorité contr.", 120)}
-    ${th("Statut", 100)}
-    ${th("Mnt. estimé", 90, "right")}
-    ${th("Mnt. proposé", 90, "right")}
-    ${th("Date limite", 72, "center")}
-    ${th("J. rest.", 72, "center")}
-    ${th("Période validité", 110, "center")}
-    ${th("J. val.", 62, "center")}
-    ${th("Échéance attr.", 72, "center")}
-    ${th("J. attr.", 62, "center")}
-    ${th("Dossier", 55, "center")}
-    ${th("Notes", 100)}
-  `
-
-  const rows = opportunites
-    .map((opp, i) => buildRow(opp, now, i))
+  const compteursHtml = compteurs
+    .map(({ statut, count }) => {
+      const c = couleurStatut(statut)
+      return `<div style="display:inline-block;min-width:84px;margin:3px;background:#ffffff;border:1px solid #e5e7eb;border-top:3px solid ${c.fort};border-radius:6px;padding:8px 6px;text-align:center;"><div style="font-size:20px;font-weight:700;color:${c.fort};">${count}</div><div style="font-size:10px;color:#6b7280;">${esc(libelleStatut(statut))}</div></div>`
+    })
     .join("")
 
-  // Résumé par statut
-  const statsCounts: Record<string, number> = {}
-  for (const opp of opportunites) {
-    statsCounts[opp.statut] = (statsCounts[opp.statut] ?? 0) + 1
-  }
-  const statsHtml = Object.entries(statsCounts)
-    .map(([statut, count]) =>
-      `<span style="display:inline-block;margin:2px 4px;padding:3px 8px;background:#f3f4f6;border-radius:4px;font-size:11px;color:#374151;">
-        <strong>${STATUT_OPPORTUNITE_LABELS[statut] ?? statut}</strong> · ${count}
-      </span>`
-    )
-    .join("")
+  const sectionActives = actives.length
+    ? titreSection("EN COURS", NAVY, actives.length) + actives.map((o) => carte(o, now)).join("")
+    : ""
+  const sectionTerminees = terminees.length
+    ? titreSection("TERMINÉES", "#6b7280", terminees.length) +
+      `<tr><td style="padding:0 20px 14px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:6px;">${terminees.map((o, i) => ligneTerminee(o, i === 0)).join("")}</table></td></tr>`
+    : ""
 
   const html = `
 <!DOCTYPE html>
@@ -204,69 +234,25 @@ export function buildOpportuniteReportingEmail(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${subject}</title>
+  <title>${esc(subject)}</title>
 </head>
-<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:#f3f4f6;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:20px 0;">
-    <tr>
-      <td align="center">
-        <table width="${EMAIL_WIDTH}" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);overflow:hidden;">
-
-          <!-- Header -->
-          <tr>
-            <td style="background:${NAVY};padding:28px 40px;text-align:center;">
-              <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:700;">
-                📋 Suivi Opportunités — ${ruleName}
-              </h1>
-              <p style="margin:8px 0 0 0;color:${GOLD};font-size:13px;font-weight:500;">
-                ${dateLabel}
-              </p>
-            </td>
-          </tr>
-
-          <!-- Résumé statuts -->
-          <tr>
-            <td style="padding:16px 28px;background:#f9fafb;border-bottom:1px solid #e5e7eb;">
-              <p style="margin:0 0 8px 0;font-size:12px;font-weight:600;color:#374151;">
-                📊 ${opportunites.length} opportunité${opportunites.length > 1 ? "s" : ""} au total
-              </p>
-              <div>${statsHtml}</div>
-            </td>
-          </tr>
-
-          <!-- Tableau -->
-          <tr>
-            <td style="padding:24px 16px;overflow-x:auto;">
-              <table cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #e5e7eb;table-layout:fixed;width:100%;min-width:${EMAIL_WIDTH - 32}px;">
-                <thead>
-                  <tr style="background:${NAVY};">${headers}</tr>
-                </thead>
-                <tbody>${rows}</tbody>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Légende décomptes -->
-          <tr>
-            <td style="padding:0 28px 16px 28px;">
-              <p style="margin:0;font-size:10px;color:#9ca3af;">
-                Décomptes jours : 🟢 &gt;7j · 🟠 ≤7j · 🔴 ≤3j · ⛔ dépassé — Dossier : ✅ progression%
-              </p>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="background:#f9fafb;padding:18px 28px;text-align:center;border-top:1px solid #e5e7eb;">
-              <p style="margin:0;color:#6b7280;font-size:12px;">
-                Cet email est généré automatiquement par ERP Marchés STAM
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:#eef0f3;color:#1f2937;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#eef0f3;">
+    <tr><td align="center" style="padding:16px 8px;">
+      <table cellpadding="0" cellspacing="0" style="width:100%;max-width:${MAX_WIDTH}px;background:#ffffff;border-radius:8px;overflow:hidden;">
+        <tr><td style="background:${NAVY};padding:22px 24px;">
+          <div style="color:#ffffff;font-size:19px;font-weight:700;">Suivi des opportunités</div>
+          <div style="color:${GOLD};font-size:13px;margin-top:4px;">${esc(ruleName)} · ${esc(dateLabel)} · ${total} opportunité${total > 1 ? "s" : ""}</div>
+        </td></tr>
+        <tr><td style="padding:12px 17px;background:#f9fafb;border-bottom:1px solid #e5e7eb;text-align:center;">${compteursHtml}</td></tr>
+        ${blocATraiter(aTraiter, now)}
+        ${sectionActives}
+        ${sectionTerminees}
+        <tr><td style="background:#f9fafb;padding:16px 24px;text-align:center;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;">
+          Détail complet de chaque opportunité dans le fichier Excel joint · Cet email est généré automatiquement par ERP Marchés STAM
+        </td></tr>
+      </table>
+    </td></tr>
   </table>
 </body>
 </html>`.trim()
@@ -274,15 +260,15 @@ export function buildOpportuniteReportingEmail(
   // Version texte brut
   const textLines = [
     `SUIVI OPPORTUNITÉS — ${ruleName.toUpperCase()}`,
-    `${format(now, "dd/MM/yyyy")}`,
-    `Total : ${opportunites.length} opportunité(s)`,
+    format(now, "dd/MM/yyyy"),
+    `Total : ${total} opportunité(s)`,
     "",
   ]
-  for (const opp of opportunites) {
+  for (const opp of [...actives, ...terminees]) {
     textLines.push(
-      `- [${opp.reference ?? "—"}] ${opp.objet} | ${STATUT_OPPORTUNITE_LABELS[opp.statut] ?? opp.statut} | ` +
-      `Estimé: ${montantStr(opp.montantEstime)} | Proposé: ${montantStr(totalMontantPropose(opp.lots))} | ` +
-      `Date limite: ${formatDate(opp.dateLimite)}`
+      `- [${opp.reference ?? "—"}] ${opp.objet} | ${libelleStatut(opp.statut)} | ` +
+        `Estimé: ${montantStr(opp.montantEstime)} | Proposé: ${montantStr(totalMontantPropose(opp.lots))} | ` +
+        `Date limite: ${formatDate(opp.dateLimite)}`
     )
   }
 
