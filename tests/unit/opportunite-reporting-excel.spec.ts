@@ -15,7 +15,8 @@ function opp(over: Partial<OpportuniteForReporting>): OpportuniteForReporting {
 
 async function lire(opps: OpportuniteForReporting[]) {
   const wb = new ExcelJS.Workbook()
-  await wb.xlsx.load(await buildOpportuniteReportingExcel(opps, now))
+  const classeur = await buildOpportuniteReportingExcel(opps, now)
+  await wb.xlsx.load(classeur as unknown as ExcelJS.Buffer)
   return wb.getWorksheet('Opportunités')!
 }
 

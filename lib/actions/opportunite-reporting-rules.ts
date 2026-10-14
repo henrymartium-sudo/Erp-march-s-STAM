@@ -13,7 +13,7 @@ import { logAction } from "@/lib/audit/logAction"
 import { AUDIT_ACTION, AUDIT_ENTITY } from "@/lib/audit/constants"
 import type { ActionResult } from "@/types"
 import { z } from "zod"
-import { buildOpportuniteReportingEmail } from "@/lib/email/opportunite-reporting-templates"
+import { construireSuiviOpportunites } from "@/lib/email/opportunite-reporting-suivi"
 import { createEmailTransport } from "@/lib/config/email"
 import { OpportuniteReportingRuleSchema } from "@/lib/validations/opportunite-reporting-rule"
 import { envoyerEcheancesMatin } from "@/lib/cron/echeances-matin"
@@ -210,7 +210,7 @@ export async function sendOpportuniteReportingRuleNow(
     }
 
     const now = new Date()
-    const { subject, html, text } = buildOpportuniteReportingEmail(rule.name, opportunites, now)
+    const { subject, html, text, attachments } = await construireSuiviOpportunites(rule.name, opportunites, now)
 
     const transporter = createEmailTransport()
     await transporter.sendMail({
@@ -219,6 +219,7 @@ export async function sendOpportuniteReportingRuleNow(
       subject,
       html,
       text,
+      attachments,
     })
 
     await logAction({
