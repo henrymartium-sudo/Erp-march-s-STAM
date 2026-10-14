@@ -30,6 +30,7 @@ import { CalendarIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
+import { appliquerHeureLimite, conserverHeureLimite, heureLimiteDe } from '@/lib/utils/heure-limite'
 import { toast } from '@/lib/utils/toast'
 import {
   formOpportuniteSchema,
@@ -256,12 +257,25 @@ export function OpportuniteForm({ opportunite }: OpportuniteFormProps) {
                     <Calendar
                       mode="single"
                       selected={field.value || undefined}
-                      onSelect={field.onChange}
+                      onSelect={(date) => field.onChange(date ? conserverHeureLimite(date, field.value) : date)}
                       locale={fr}
                       initialFocus
                     />
                   </PopoverContent>
                 </Popover>
+                <div className="flex items-center gap-2 pt-1">
+                  <FormLabel htmlFor="heureLimite" className="text-sm font-normal text-muted-foreground">
+                    Heure limite (optionnelle)
+                  </FormLabel>
+                  <Input
+                    id="heureLimite"
+                    type="time"
+                    className="w-28"
+                    disabled={!field.value}
+                    value={heureLimiteDe(field.value) ?? ''}
+                    onChange={(e) => field.value && field.onChange(appliquerHeureLimite(field.value, e.target.value))}
+                  />
+                </div>
                 <FormMessage />
               </FormItem>
             )}
