@@ -582,10 +582,10 @@ export function ReportingRulesClient({
             <thead className="bg-muted/50">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Nom</th>
-                <th className="px-4 py-3 text-left font-medium">Statuts</th>
-                <th className="px-4 py-3 text-left font-medium">Planification</th>
-                <th className="px-4 py-3 text-left font-medium">Destinataires</th>
-                <th className="px-4 py-3 text-left font-medium">Statut</th>
+                <th className="hidden md:table-cell px-4 py-3 text-left font-medium">Statuts</th>
+                <th className="hidden md:table-cell px-4 py-3 text-left font-medium">Planification</th>
+                <th className="hidden md:table-cell px-4 py-3 text-left font-medium">Destinataires</th>
+                <th className="hidden md:table-cell px-4 py-3 text-left font-medium">Statut</th>
                 <th className="px-4 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
@@ -597,23 +597,32 @@ export function ReportingRulesClient({
                     {rule.description && (
                       <p className="text-xs text-muted-foreground">{rule.description}</p>
                     )}
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground md:hidden">
+                      <Badge variant="secondary">{rule.statutGroups.length} statut{rule.statutGroups.length > 1 ? "s" : ""}</Badge>
+                      <Badge variant={rule.isActive ? "success" : "muted"}>
+                        {rule.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                      <span>
+                        {formatSchedule(rule.scheduleConfig as ReportingScheduleConfig | null)} · {rule.recipientEmails.length} email{rule.recipientEmails.length > 1 ? "s" : ""}
+                      </span>
+                    </div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="hidden md:table-cell px-4 py-3">
                     <Badge variant="secondary">{rule.statutGroups.length} statut{rule.statutGroups.length > 1 ? "s" : ""}</Badge>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">
+                  <td className="hidden md:table-cell px-4 py-3 text-muted-foreground">
                     {formatSchedule(rule.scheduleConfig as ReportingScheduleConfig | null)}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">
+                  <td className="hidden md:table-cell px-4 py-3 text-muted-foreground">
                     {rule.recipientEmails.length} email{rule.recipientEmails.length > 1 ? "s" : ""}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="hidden md:table-cell px-4 py-3">
                     <Badge variant={rule.isActive ? "success" : "muted"}>
                       {rule.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex justify-end gap-1">
+                    <div className="flex flex-wrap justify-end gap-1">
                       <Button
                         size="sm"
                         variant="outline"
