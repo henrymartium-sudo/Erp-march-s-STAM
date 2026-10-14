@@ -48,13 +48,14 @@ export const STATUTS_AVANT_SOUMISSION: StatutOpportunite[] = [
 // FILTRES
 // ============================================================================
 
-export type OpportuniteEcheance = 'a-venir' | '7-jours' | 'depassee'
+export type OpportuniteEcheance = 'a-venir' | '7-jours' | 'depassee' | 'a-rendre'
 export type OpportuniteTri = 'echeance' | 'recent' | 'montant'
 
 export const ECHEANCE_LABELS: Record<OpportuniteEcheance, string> = {
   'a-venir': 'À venir',
   '7-jours': 'Dans les 7 jours',
   depassee: 'Dépassée',
+  'a-rendre': 'À rendre (7 jours)',
 }
 
 export const TRI_LABELS: Record<OpportuniteTri, string> = {
@@ -127,6 +128,10 @@ export function buildOpportuniteWhere(
   } else if (filters.echeance === '7-jours') {
     const dans7Jours = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
     and.push({ dateLimite: { gte: now, lte: dans7Jours } })
+  } else if (filters.echeance === 'a-rendre') {
+    const dans7Jours = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+    and.push({ statut: { in: STATUTS_AVANT_SOUMISSION } })
+    and.push({ dateLimite: { lte: dans7Jours } })
   }
 
   return and.length > 0 ? { AND: and } : {}
