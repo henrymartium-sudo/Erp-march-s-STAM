@@ -127,7 +127,7 @@ export function buildEcheancesMatinEmail(
 <body style="margin:0;padding:0;background:#F3F4F6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${echapper(subject)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F3F4F6;padding:16px 0;"><tr><td align="center">
-<table role="presentation" class="wrap" width="640" cellpadding="0" cellspacing="0" style="width:640px;max-width:100%;background:#FFFFFF;">
+<table role="presentation" class="wrap" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:640px;background:#FFFFFF;">
   <tr><td class="pad" style="background:${NAVY};padding:24px 24px 20px 24px;">
     <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:${GOLD};font-weight:700;">ERP Marchés STAM</div>
     <div style="font-size:22px;font-weight:700;color:#FFFFFF;margin-top:6px;">Échéances du matin</div>
