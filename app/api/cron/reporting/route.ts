@@ -2,8 +2,8 @@
  * app/api/cron/reporting/route.ts
  *
  * Endpoint cron horaire pour le module de reporting email.
- * Déclenché automatiquement par Vercel toutes les heures.
- * Sécurisé par x-vercel-cron ou CRON_SECRET.
+ * Déclenché toutes les heures par un appelant qui envoie `Authorization: Bearer <CRON_SECRET>`.
+ * Seul ce Bearer autorise l'accès : un en-tête `x-vercel-cron` n'est pas un secret.
  */
 
 import { timingSafeEqual } from "crypto"
@@ -17,7 +17,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Configuration manquante" }, { status: 500 })
     }
 
-    const isVercelCron = request.headers.get("x-vercel-cron") === "1"
     const authHeader = request.headers.get("authorization") ?? ""
     const expectedAuth = `Bearer ${process.env.CRON_SECRET}`
 
@@ -26,7 +25,7 @@ export async function GET(request: NextRequest) {
       authorized = timingSafeEqual(Buffer.from(authHeader), Buffer.from(expectedAuth))
     } catch { authorized = false }
 
-    if (!authorized && !isVercelCron) {
+    if (!authorized) {
       console.warn("⚠️ Tentative d'accès non autorisée au cron reporting")
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }

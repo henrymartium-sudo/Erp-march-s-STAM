@@ -35,8 +35,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Vérification header Vercel Cron (présent automatiquement sur Vercel)
-    const isVercelCron = request.headers.get("x-vercel-cron") === "1";
     const authHeader = request.headers.get("authorization") ?? "";
     const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
 
@@ -52,7 +50,7 @@ export async function GET(request: NextRequest) {
       authorized = false;
     }
 
-    if (!authorized && !isVercelCron) {
+    if (!authorized) {
       console.warn("⚠️  Tentative d'accès non autorisée au cron job");
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
