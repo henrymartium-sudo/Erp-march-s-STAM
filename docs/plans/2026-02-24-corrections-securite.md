@@ -513,7 +513,7 @@ if (!authorized && !isVercelCron) {
 }
 ```
 
-**Note importante :** La logique `!authorized && !isVercelCron` accepte les requêtes Vercel Cron légitimes (qui envoient `x-vercel-cron: 1`) ET les requêtes avec le bon Bearer token (pour les tests manuels). En production Vercel, les deux headers sont présents.
+**Note importante (CORRIGÉE le 2026-10-14) :** la logique `!authorized && !isVercelCron` décrite ci-dessus était une faille : l'en-tête `x-vercel-cron: 1` est un en-tête HTTP ordinaire, que n'importe quel client peut envoyer, et la documentation Vercel ne garantit pas qu'il soit retiré ou protégé quand il vient de l'extérieur. Une requête GET portant seulement cet en-tête déclenchait l'envoi de vrais e-mails sans connaître `CRON_SECRET`. Les routes `app/api/cron/daily-alerts` et `app/api/cron/reporting` n'acceptent désormais que `Authorization: Bearer <CRON_SECRET>` (comparaison `timingSafeEqual` conservée) ; `x-vercel-cron` n'est plus lu. Un appelant légitime doit envoyer ce Bearer (Vercel l'ajoute de lui-même aux crons natifs quand `CRON_SECRET` est défini sur le projet). Tests : `tests/unit/cron-auth.spec.ts`.
 
 **Step 3 : Vérifier le build TypeScript**
 
@@ -642,5 +642,5 @@ Expected: 21/21 PASS.
 | `app/api/exports-pdf/documents/route.ts` | C3+C4 | +guard auth HTTP + masquage error |
 | `lib/actions/auth/change-password.ts` | E3 | `auth()` → `requireAuth()` |
 | `lib/actions/documents.ts` | E1 | +validation extension dans `getUploadUrl` |
-| `app/api/cron/daily-alerts/route.ts` | E2 | `timingSafeEqual` + `x-vercel-cron` |
+| `app/api/cron/daily-alerts/route.ts` | E2 | `timingSafeEqual` (le contrôle `x-vercel-cron` a été retiré le 2026-10-14) |
 | `lib/actions/exports.ts` | E4 | +`EXPORT_MAX_ROWS = 1000` sur tous les findMany |
