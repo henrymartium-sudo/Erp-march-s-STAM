@@ -16,6 +16,7 @@ import { getOpportunite } from '@/lib/actions/opportunites'
 import { getCautionsByOpportunite } from '@/lib/actions/cautions'
 import { cautionsOpportuniteVisibles } from '@/lib/utils/cautions-opportunite'
 import { calculerTotauxLots, vehiculesModifiables } from '@/lib/utils/lots'
+import { heureLimiteDe } from '@/lib/utils/heure-limite'
 import { requireAuth, canWrite } from '@/lib/utils/permissions'
 import {
   STATUT_OPPORTUNITE_LABELS,
@@ -138,7 +139,10 @@ export default async function OpportuniteDetailPage({ params }: PageProps) {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Date limite de dépôt</span>
-                      <span className="text-sm">{formatDate(opp.dateLimite)}</span>
+                      <span className="text-sm">
+                        {formatDate(opp.dateLimite)}
+                        {heureLimiteDe(opp.dateLimite) && ` à ${heureLimiteDe(opp.dateLimite)}`}
+                      </span>
                     </div>
                     {/* MOD-6 — période de validité offre */}
                     {(opp as unknown as { periodeValiditeDebut?: Date | null }).periodeValiditeDebut && (
