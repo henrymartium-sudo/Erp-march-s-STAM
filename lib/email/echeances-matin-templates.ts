@@ -7,7 +7,7 @@
 import { calculerAvancementLots } from '@/lib/utils/lots'
 import { STATUT_OPPORTUNITE_LABELS } from '@/lib/validations/opportunite'
 import {
-  alerteGras, echeanceEffective, type BlocEcheance, type GroupesEcheances, type OffreEcheance,
+  alerteGras, type BlocEcheance, type GroupesEcheances, type OffreEcheance,
 } from '@/lib/echeances/classement'
 import { delaiTexte, echeanceLisible, montantProposeAffiche, objetMail } from '@/lib/echeances/affichage'
 
