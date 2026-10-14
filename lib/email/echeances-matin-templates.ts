@@ -122,7 +122,7 @@ export function buildEcheancesMatinEmail(
 
   const html = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${echapper(subject)}</title>
-<style>@media only screen and (max-width:480px){.wrap{width:100% !important}.col{display:block !important;width:100% !important;padding-left:0 !important;padding-right:0 !important}.pad{padding-left:16px !important;padding-right:16px !important}}</style></head>
+<style>@media only screen and (max-width:640px){.wrap{width:100% !important}.col{display:block !important;width:100% !important;padding-left:0 !important;padding-right:0 !important}.pad{padding-left:16px !important;padding-right:16px !important}}</style></head>
 <body style="margin:0;padding:0;background:#F3F4F6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${echapper(subject)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F3F4F6;padding:16px 0;"><tr><td align="center">
