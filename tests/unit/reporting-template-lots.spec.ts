@@ -34,10 +34,9 @@ test.describe("gabarit du reporting d'opportunités : montant proposé issu des 
   test('sans lot, le montant proposé affiche « — »', () => {
     const { html, text } = buildOpportuniteReportingEmail('Règle test', [opportunite([])], new Date('2026-01-15T08:00:00Z'))
     expect(text).toContain('Proposé: —')
-    // Le « — » seul ne prouve rien (d'autres cellules du gabarit valent « — ») : on lit les deux
-    // cellules alignées à droite, « Estimé » puis « Proposé », et c'est la seconde qui doit valoir « — »
-    const cellulesADroite = Array.from(html.matchAll(/<td style="[^"]*text-align:right[^"]*">([^<]*)<\/td>/g), (m) => m[1])
-    expect(cellulesADroite).toEqual([formatMontant(5000000), '—'])
+    // Dans la carte, un champ vide disparaît : l'estimé est affiché, aucune étiquette « Proposé »
+    expect(html).toContain(formatMontant(5000000))
+    expect(html).not.toContain('>Proposé<')
   })
 })
 
@@ -50,9 +49,9 @@ test.describe("gabarit du reporting d'opportunités : progression des dossiers i
       { montantPropose: null, dossier: { progression: 25 } },
       { montantPropose: null, dossier: { progression: 0 } },
     ])
-    expect(html).toContain('✅ 13%')
-    expect(html).not.toContain('✅ 25%')
-    expect(html).not.toContain('✅ 0%')
+    expect(html).toContain('Dossier 13 %')
+    expect(html).not.toContain('Dossier 25 %')
+    expect(html).not.toContain('Dossier 0 %')
   })
 
   test('un lot sans dossier compte pour 0 dans la moyenne', () => {
@@ -60,12 +59,12 @@ test.describe("gabarit du reporting d'opportunités : progression des dossiers i
       { montantPropose: null, dossier: { progression: 50 } },
       { montantPropose: null, dossier: null },
     ])
-    expect(html).toContain('✅ 25%')
+    expect(html).toContain('Dossier 25 %')
   })
 
   test("sans dossier sur aucun lot, la progression n'est pas affichée", () => {
-    // La légende de l'e-mail contient « ✅ progression% » : on cherche une valeur chiffrée
-    expect(rapport([{ montantPropose: null, dossier: null }])).not.toMatch(/✅ \d+%/)
-    expect(rapport([])).not.toMatch(/✅ \d+%/)
+    // On cherche une valeur chiffrée
+    expect(rapport([{ montantPropose: null, dossier: null }])).not.toMatch(/Dossier \d+ %/)
+    expect(rapport([])).not.toMatch(/Dossier \d+ %/)
   })
 })

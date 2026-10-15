@@ -9,7 +9,7 @@
 import { prisma } from "@/lib/db/prisma"
 import { getMarchesForReporting, groupMarchesByStatut } from "./getMarchesForReporting"
 import { buildReportingEmail } from "@/lib/email/reporting-templates"
-import { buildOpportuniteReportingEmail } from "@/lib/email/opportunite-reporting-templates"
+import { construireSuiviOpportunites } from "@/lib/email/opportunite-reporting-suivi"
 import { createEmailTransport } from "@/lib/config/email"
 import { envoyerEcheancesMatinCron } from "@/lib/cron/echeances-matin"
 
@@ -221,9 +221,8 @@ export async function runOpportuniteReportingCron(currentHour: number): Promise<
       continue
     }
 
-    const { subject, html, text } = buildOpportuniteReportingEmail(rule.name, opportunites, now)
-
     try {
+      const { subject, html, text, attachments } = await construireSuiviOpportunites(rule.name, opportunites, now)
       const transporter = createEmailTransport()
       await transporter.sendMail({
         from: process.env.SMTP_FROM ?? "noreply@erp-marches.local",
@@ -231,6 +230,7 @@ export async function runOpportuniteReportingCron(currentHour: number): Promise<
         subject,
         html,
         text,
+        attachments,
       })
       console.log(
         `✅ Suivi Opp. "${rule.name}" envoyé à ${recipients.length} destinataire(s) — ${opportunites.length} opportunités`
