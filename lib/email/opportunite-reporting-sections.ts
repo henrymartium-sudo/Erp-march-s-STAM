@@ -3,10 +3,13 @@
  * bloc « À traiter », actives, terminées et compteurs par statut.
  */
 
+import { ecartJours } from "@/lib/echeances/classement"
 import type { OpportuniteForReporting } from "./opportunite-reporting-templates"
 
 export const SEUIL_URGENCE_JOURS = 7
 export const STATUTS_TERMINES: readonly string[] = ["NO_GO", "PERDUE"]
+/** Offre encore à rendre : mêmes statuts GO et dossier en préparation (cycle GO → dossier en préparation → offre soumise). */
+const STATUTS_OFFRE_A_RENDRE: readonly string[] = ["GO", "DOSSIER_EN_PREPARATION"]
 
 const ORDRE_COMPTEURS = ["GO", "NO_GO", "GAGNEE", "PERDUE", "EN_ATTENTE_ATTRIBUTION"]
 
@@ -24,8 +27,9 @@ export interface SectionsSuivi {
   compteurs: { statut: string; count: number }[]
 }
 
+/** Jours calendaires (UTC) jusqu'à la date : l'heure limite de dépôt ne décale pas le décompte (même règle que le mail des échéances). */
 export function diffJours(date: Date, today: Date): number {
-  return Math.ceil((date.getTime() - today.getTime()) / 86400000)
+  return ecartJours(date, today)
 }
 
 function compareDates(a: Date | null, b: Date | null, sens: 1 | -1): number {
@@ -45,7 +49,7 @@ export function classerOpportunites(opps: OpportuniteForReporting[], now: Date):
 
   const aTraiter: ATraiter[] = []
   for (const opp of actives) {
-    if (opp.statut === "GO" && opp.dateLimite && diffJours(opp.dateLimite, now) <= SEUIL_URGENCE_JOURS) {
+    if (STATUTS_OFFRE_A_RENDRE.includes(opp.statut) && opp.dateLimite && diffJours(opp.dateLimite, now) <= SEUIL_URGENCE_JOURS) {
       aTraiter.push({ opp, motif: "GO_ECHEANCE" })
     } else if (opp.statut === "EN_ATTENTE_ATTRIBUTION") {
       aTraiter.push({ opp, motif: "ATTENTE_ATTRIBUTION" })

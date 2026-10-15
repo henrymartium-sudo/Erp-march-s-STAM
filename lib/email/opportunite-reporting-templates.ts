@@ -54,7 +54,7 @@ const COULEURS_STATUT: Record<string, { fort: string; pale: string }> = {
 const NEUTRE = { fort: "#475569", pale: "#f1f5f9" }
 
 const MOTIFS: Record<ATraiter["motif"], string> = {
-  GO_ECHEANCE: "GO — offre à rendre",
+  GO_ECHEANCE: "Offre à rendre",
   ATTENTE_ATTRIBUTION: "En attente d'attribution",
 }
 

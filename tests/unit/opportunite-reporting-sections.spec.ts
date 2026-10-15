@@ -13,6 +13,17 @@ function opp(id: string, statut: string, dateLimite: string | null): Opportunite
 }
 
 test.describe('classement des opportunités du mail de suivi', () => {
+  test('une date limite à 10 h dans 7 jours est à traiter (jours calendaires, pas durée arrondie)', () => {
+    const matin = new Date('2026-10-14T09:00:00Z')
+    const r = classerOpportunites([opp('go-10h', 'GO', '2026-10-21T10:00:00Z')], matin)
+    expect(r.aTraiter.map((x) => x.opp.id)).toEqual(['go-10h'])
+  })
+
+  test('un dossier en préparation à échéance proche est à traiter comme un GO', () => {
+    const r = classerOpportunites([opp('prepa', 'DOSSIER_EN_PREPARATION', '2026-10-16T00:00:00Z'), opp('prepa-loin', 'DOSSIER_EN_PREPARATION', '2026-11-30T00:00:00Z')], now)
+    expect(r.aTraiter.map((x) => [x.opp.id, x.motif])).toEqual([['prepa', 'GO_ECHEANCE']])
+  })
+
   test('sépare actives et terminées (No Go, Perdue)', () => {
     const r = classerOpportunites([opp('a', 'GO', null), opp('b', 'NO_GO', null), opp('c', 'PERDUE', null), opp('d', 'GAGNEE', null)], now)
     expect(r.actives.map((o) => o.id)).toEqual(['a', 'd'])

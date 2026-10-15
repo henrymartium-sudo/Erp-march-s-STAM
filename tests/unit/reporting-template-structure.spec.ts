@@ -76,6 +76,17 @@ test.describe('gabarit « Suivi Opportunités » : structure', () => {
     expect(html.replace(/<title>[^]*?<\/title>/, '')).not.toMatch(/[\u{1F300}-\u{1FAFF}✅⛔]/u)
   })
 
+  test("échéance le jour même à 10 h, vue à 9 h : « aujourd'hui », pas J-1", () => {
+    const { html } = buildOpportuniteReportingEmail('Règle', [opp({ statut: 'GO', dateLimite: new Date('2026-10-14T10:00:00Z') })], new Date('2026-10-14T09:00:00Z'))
+    expect(html).toContain("aujourd'hui")
+    expect(html).not.toContain('J-1')
+  })
+
+  test("échéance hier à 15 h, vue à 9 h : dépassée de 1 j, pas « aujourd'hui »", () => {
+    const { html } = buildOpportuniteReportingEmail('Règle', [opp({ statut: 'GO', dateLimite: new Date('2026-10-13T15:00:00Z') })], new Date('2026-10-14T09:00:00Z'))
+    expect(html).toContain('dépassée de 1 j')
+  })
+
   test('version texte : une ligne par opportunité avec référence, statut et date limite', () => {
     const { text } = rapport([opp({ reference: 'REF-9', statut: 'GO', dateLimite: new Date('2026-10-21T00:00:00Z') })])
     expect(text).toContain('REF-9')
