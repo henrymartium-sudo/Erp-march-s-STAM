@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,8 +30,15 @@ export function DocumentFilters() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
   const debouncedSearch = useDebounce(searchQuery, 300)
 
-  // Synchronisation URL avec recherche debouncée
+  // Synchronisation URL avec recherche debouncée : replace (pas d'entrée d'historique par frappe),
+  // et seulement quand la valeur debouncée change et diffère de l'URL (rien au montage, rien au Retour)
+  const derniereRecherche = useRef(debouncedSearch)
   useEffect(() => {
+    if (derniereRecherche.current === debouncedSearch) return
+    derniereRecherche.current = debouncedSearch
+
+    if (debouncedSearch === (searchParams.get('search') || '')) return
+
     const params = new URLSearchParams(searchParams.toString())
 
     if (debouncedSearch) {
@@ -42,7 +49,7 @@ export function DocumentFilters() {
       params.delete('search')
     }
 
-    router.push(`/documents?${params.toString()}`)
+    router.replace(`/documents?${params.toString()}`)
   }, [debouncedSearch, router, searchParams])
 
   const handleTypeChange = (value: string) => {
