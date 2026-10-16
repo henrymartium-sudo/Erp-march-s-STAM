@@ -33,8 +33,7 @@ type ViewMode = 'list' | 'grid'
 /**
  * Contenu client de la page documents (filtres, table/grille, dialogs)
  */
-export function DocumentsContent({ documents: initialDocuments, canWrite = false }: DocumentsContentProps) {
-  const [documents, setDocuments] = useState<Document[]>(initialDocuments)
+export function DocumentsContent({ documents, canWrite = false }: DocumentsContentProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('list')
 
   // Preview state
@@ -75,8 +74,8 @@ export function DocumentsContent({ documents: initialDocuments, canWrite = false
     try {
       const result = await deleteDocument(deleteDocumentId)
       if (result.success) {
+        // La liste vient du serveur : deleteDocument revalide /documents, la ligne disparaît au rafraîchissement
         toast.success('Document supprimé avec succès')
-        setDocuments(documents.filter((d) => d.id !== deleteDocumentId))
         setDeleteDocumentId(null)
       } else {
         toast.error(result.error)
