@@ -43,12 +43,15 @@ test.describe('affichage du mail échéances', () => {
 
   test('objet du mail : résume la situation, y compris vide', () => {
     const o = (id: string): OffreEcheance => ({ id, reference: null, objet: '', autoriteContractante: '', statut: 'GO', dateLimite: null, lots: [] })
-    const g = (r: number, or: number, b: number): GroupesEcheances => ({
+    const g = (r: number, or: number, b: number, gr = 0): GroupesEcheances => ({
       rouge: Array.from({ length: r }, (_, i) => o(`r${i}`)),
       orange: Array.from({ length: or }, (_, i) => o(`o${i}`)),
       bleu: Array.from({ length: b }, (_, i) => o(`b${i}`)),
+      gris: Array.from({ length: gr }, (_, i) => o(`g${i}`)),
     })
     expect(objetMail(g(0, 0, 0))).toBe('Aucune offre à rendre dans les 7 jours')
+    expect(objetMail(g(0, 0, 0, 4))).toBe('Aucune offre à rendre dans les 7 jours (4 à suivre plus tard)')
+    expect(objetMail(g(0, 1, 0, 4))).toBe('1 offre à rendre : 1 aujourd\'hui ou demain')
     expect(objetMail(g(1, 2, 3))).toBe('6 offres à rendre : 1 à régulariser, 2 aujourd\'hui ou demain, 3 dans la semaine')
     expect(objetMail(g(0, 1, 0))).toBe('1 offre à rendre : 1 aujourd\'hui ou demain')
   })

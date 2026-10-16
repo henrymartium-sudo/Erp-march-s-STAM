@@ -92,8 +92,10 @@ function decompte(date: Date, today: Date): { texte: string; couleur: string } {
   return { texte: `J-${diff}`, couleur: "#16a34a" }
 }
 
-function datePlusDecompte(date: Date | null, today: Date): string | null {
+/** `masquerPasse` : une date déjà passée s'affiche sans « dépassée de N j » (affaire gagnée : ce n'est pas une alerte). */
+function datePlusDecompte(date: Date | null, today: Date, masquerPasse = false): string | null {
   if (!date) return null
+  if (masquerPasse && diffJours(date, today) < 0) return formatDate(date)
   const d = decompte(date, today)
   return `${formatDate(date)} <span style="font-weight:400;font-size:11px;color:${d.couleur};">(${d.texte})</span>`
 }
@@ -125,18 +127,19 @@ function carte(opp: OpportuniteForReporting, today: Date): string {
   const c = couleurStatut(opp.statut)
   const propose = totalMontantPropose(opp.lots)
   const { progressionMoyenne } = calculerAvancementLots(opp.lots)
+  const gagnee = opp.statut === "GAGNEE"
 
   const champs: [string, string | null][] = [
     ["Estimé", montantStr(opp.montantEstime) !== "—" ? esc(montantStr(opp.montantEstime)) : null],
     ["Proposé", montantStr(propose) !== "—" ? esc(montantStr(propose)) : null],
-    ["Date limite", datePlusDecompte(opp.dateLimite, today)],
+    ["Date limite", datePlusDecompte(opp.dateLimite, today, gagnee)],
     [
       "Validité",
       opp.periodeValiditeFin
-        ? `${opp.periodeValiditeDebut ? formatDate(opp.periodeValiditeDebut) + " → " : ""}${datePlusDecompte(opp.periodeValiditeFin, today)}`
+        ? `${opp.periodeValiditeDebut ? formatDate(opp.periodeValiditeDebut) + " → " : ""}${datePlusDecompte(opp.periodeValiditeFin, today, gagnee)}`
         : null,
     ],
-    ["Attribution prévue", datePlusDecompte(opp.echeanceAttributionProv, today)],
+    ["Attribution prévue", datePlusDecompte(opp.echeanceAttributionProv, today, gagnee)],
   ]
   const presents = champs.filter((x): x is [string, string] => x[1] !== null)
   let lignes = ""
@@ -160,7 +163,8 @@ ${pastille(opp.statut)}${grille}${progressionMoyenne !== null ? barreDossier(pro
 
 function ligneTerminee(opp: OpportuniteForReporting, premiere: boolean): string {
   const propose = montantStr(totalMontantPropose(opp.lots))
-  const montant = propose !== "—" ? propose : montantStr(opp.montantEstime)
+  const estime = montantStr(opp.montantEstime)
+  const montant = propose !== "—" ? `proposé ${propose}` : estime !== "—" ? `estimé ${estime}` : "—"
   const details = [
     opp.autoriteContractante,
     libelleStatut(opp.statut),

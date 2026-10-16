@@ -14,7 +14,7 @@ export const STATUTS_A_RENDRE: StatutOpportunite[] = STATUTS_AVANT_SOUMISSION
 
 const STATUTS_DETECTEE: StatutOpportunite[] = ['IDENTIFIEE', 'EN_ANALYSE']
 
-export type BlocEcheance = 'rouge' | 'orange' | 'bleu'
+export type BlocEcheance = 'rouge' | 'orange' | 'bleu' | 'gris'
 
 export interface OffreEcheance {
   id: string
@@ -30,6 +30,8 @@ export interface GroupesEcheances {
   rouge: OffreEcheance[]
   orange: OffreEcheance[]
   bleu: OffreEcheance[]
+  /** Échéance au-delà de J+7 : l'offre est suivie dès son entrée en analyse. */
+  gris: OffreEcheance[]
 }
 
 /** dateLimite avec son heure ; minuit exact (UTC) = heure non renseignée = 23 h 59 le même jour. */
@@ -52,7 +54,7 @@ export function classerOffre(
   const ecart = ecartJours(offre.dateLimite, now)
   if (ecart <= 1) return 'orange'
   if (ecart <= 7) return 'bleu'
-  return null
+  return 'gris'
 }
 
 /** Offre « détectée » dont l'échéance tombe d'aujourd'hui à J+2 ; jamais dans le bloc rouge. */
@@ -68,7 +70,7 @@ export function alerteGras(
 
 /** Répartit les offres dans leur bloc, triées de l'échéance effective la plus proche à la plus lointaine. */
 export function grouperEcheances(offres: OffreEcheance[], now: Date): GroupesEcheances {
-  const groupes: GroupesEcheances = { rouge: [], orange: [], bleu: [] }
+  const groupes: GroupesEcheances = { rouge: [], orange: [], bleu: [], gris: [] }
   for (const offre of offres) {
     const bloc = classerOffre(offre, now)
     if (bloc) groupes[bloc].push(offre)
@@ -78,5 +80,6 @@ export function grouperEcheances(offres: OffreEcheance[], now: Date): GroupesEch
   groupes.rouge.sort(parEcheance)
   groupes.orange.sort(parEcheance)
   groupes.bleu.sort(parEcheance)
+  groupes.gris.sort(parEcheance)
   return groupes
 }
