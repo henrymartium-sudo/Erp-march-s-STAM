@@ -87,6 +87,22 @@ test.describe('gabarit « Suivi Opportunités » : structure', () => {
     expect(html).toContain('dépassée de 1 j')
   })
 
+  test('affaire gagnée : dates passées sans « dépassée de N j » ; une GO dépassée garde l\'alerte', () => {
+    const passee = new Date('2026-04-29T00:00:00Z')
+    const gagnee = rapport([opp({ statut: 'GAGNEE', dateLimite: passee, periodeValiditeFin: passee, echeanceAttributionProv: passee })]).html
+    expect(gagnee).toContain('29/04/2026')
+    expect(gagnee).not.toContain('dépassée de')
+    expect(rapport([opp({ statut: 'GO', dateLimite: passee })]).html).toContain('dépassée de')
+  })
+
+  test('ligne terminée : le montant dit s\'il est proposé ou estimé', () => {
+    const proposé = rapport([opp({ statut: 'PERDUE', lots: [{ montantPropose: 58_400_000, dossier: null }], montantEstime: 60_000_000 })]).html
+    expect(proposé).toContain('proposé 58')
+    const estimé = rapport([opp({ statut: 'NO_GO', montantEstime: 60_000_000 })]).html
+    expect(estimé).toContain('estimé 60')
+    expect(rapport([opp({ statut: 'NO_GO' })]).html).not.toMatch(/proposé|estimé/)
+  })
+
   test('version texte : une ligne par opportunité avec référence, statut et date limite', () => {
     const { text } = rapport([opp({ reference: 'REF-9', statut: 'GO', dateLimite: new Date('2026-10-21T00:00:00Z') })])
     expect(text).toContain('REF-9')

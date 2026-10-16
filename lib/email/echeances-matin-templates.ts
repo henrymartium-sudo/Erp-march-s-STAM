@@ -1,6 +1,6 @@
 // lib/email/echeances-matin-templates.ts
 /**
- * Mail « échéances du matin » : offres à rendre dans les 7 jours.
+ * Mail « échéances du matin » : offres à rendre, les 7 prochains jours en évidence, les plus lointaines en liste.
  * HTML en tableaux avec styles en ligne (compatibilité des clients de messagerie).
  */
 
@@ -21,6 +21,7 @@ const BLOCS: Record<BlocEcheance, { titre: string; sous: string; couleur: string
   rouge: { titre: 'À régulariser', sous: 'Échéance déjà passée', couleur: '#B91C1C', fond: '#FEF2F2' },
   orange: { titre: 'Aujourd’hui et demain', sous: 'À finaliser en priorité', couleur: '#C2410C', fond: '#FFF7ED' },
   bleu: { titre: 'Dans les 7 jours', sous: 'À planifier', couleur: '#1D4ED8', fond: '#EFF6FF' },
+  gris: { titre: 'Plus tard', sous: 'Échéance au-delà de 7 jours : à anticiper', couleur: '#4B5563', fond: '#F3F4F6' },
 }
 
 const echapper = (s: string) =>
@@ -88,12 +89,12 @@ function section(bloc: BlocEcheance, offres: OffreEcheance[], now: Date, baseUrl
   const c = BLOCS[bloc]
   const visibles = offres.slice(0, Math.max(0, limite))
   const caches = offres.length - visibles.length
-  const compact = bloc === 'bleu' && offres.length > SEUIL_COMPACT
+  const compact = bloc === 'gris' || (bloc === 'bleu' && offres.length > SEUIL_COMPACT)
   const corps = compact
     ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border:1px solid #E5E7EB;border-left:5px solid ${c.couleur};">${visibles.map((o, i) => ligne(o, bloc, now, baseUrl, i)).join('')}</table>`
     : visibles.map((o) => carte(o, bloc, now, baseUrl)).join('')
   const reste = caches > 0
-    ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top:12px;"><tr><td align="center" style="padding:12px;background:${c.fond};"><a href="${baseUrl}/opportunites?echeance=a-rendre" style="display:inline-block;padding:9px 18px;background:${NAVY};color:#FFFFFF;font-size:13px;font-weight:600;text-decoration:none;">Voir les ${caches} autre${caches > 1 ? 's' : ''} dans l’ERP &rarr;</a></td></tr></table>`
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top:12px;"><tr><td align="center" style="padding:12px;background:${c.fond};"><a href="${baseUrl}/opportunites?echeance=${bloc === 'gris' ? 'a-venir' : 'a-rendre'}" style="display:inline-block;padding:9px 18px;background:${NAVY};color:#FFFFFF;font-size:13px;font-weight:600;text-decoration:none;">Voir les ${caches} autre${caches > 1 ? 's' : ''} dans l’ERP &rarr;</a></td></tr></table>`
     : ''
   return `
 <tr><td style="padding:22px 24px 6px 24px;">
@@ -104,7 +105,7 @@ function section(bloc: BlocEcheance, offres: OffreEcheance[], now: Date, baseUrl
 }
 
 function compteur(n: number, titre: string, couleur: string): string {
-  return `<td align="center" width="33%" style="padding:12px 4px;"><div style="font-size:26px;font-weight:700;color:${n ? couleur : '#9CA3AF'};line-height:1;">${n}</div><div style="font-size:11px;color:#4B5563;margin-top:4px;">${titre}</div></td>`
+  return `<td align="center" width="25%" style="padding:12px 4px;"><div style="font-size:26px;font-weight:700;color:${n ? couleur : '#9CA3AF'};line-height:1;">${n}</div><div style="font-size:11px;color:#4B5563;margin-top:4px;">${titre}</div></td>`
 }
 
 export function buildEcheancesMatinEmail(
@@ -115,11 +116,13 @@ export function buildEcheancesMatinEmail(
   const subject = objetMail(g)
   const total = g.rouge.length + g.orange.length + g.bleu.length
   const limiteBleu = SEUIL_TOTAL - g.rouge.length - g.orange.length
-  const corps = total
+  const limiteGris = Math.max(0, limiteBleu - g.bleu.length)
+  const urgentes = total
     ? section('rouge', g.rouge, now, baseUrl, g.rouge.length) +
       section('orange', g.orange, now, baseUrl, g.orange.length) +
       section('bleu', g.bleu, now, baseUrl, limiteBleu)
     : `<tr><td style="padding:34px 24px;text-align:center;"><div style="font-size:17px;font-weight:700;color:#111827;">Rien à rendre dans les 7 prochains jours</div><div style="font-size:13px;color:#6B7280;margin-top:6px;">Ce mail confirme que le suivi fonctionne : l’absence de mail, elle, serait un signal à vérifier.</div></td></tr>`
+  const corps = urgentes + section('gris', g.gris, now, baseUrl, limiteGris)
 
   const html = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${echapper(subject)}</title>
@@ -134,11 +137,11 @@ export function buildEcheancesMatinEmail(
     <div style="font-size:13px;color:#D1D5DB;margin-top:4px;">${FORMAT_JOUR.format(now)}</div>
   </td></tr>
   <tr><td style="background:#F9FAFB;border-bottom:1px solid #E5E7EB;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-    ${compteur(g.rouge.length, 'À régulariser', BLOCS.rouge.couleur)}${compteur(g.orange.length, 'Aujourd’hui / demain', BLOCS.orange.couleur)}${compteur(g.bleu.length, 'Sous 7 jours', BLOCS.bleu.couleur)}
+    ${compteur(g.rouge.length, 'À régulariser', BLOCS.rouge.couleur)}${compteur(g.orange.length, 'Aujourd’hui / demain', BLOCS.orange.couleur)}${compteur(g.bleu.length, 'Sous 7 jours', BLOCS.bleu.couleur)}${compteur(g.gris.length, 'Plus tard', BLOCS.gris.couleur)}
   </tr></table></td></tr>
   ${corps}
   <tr><td style="padding:18px 24px 22px 24px;border-top:1px solid #E5E7EB;background:#F9FAFB;font-size:12px;color:#6B7280;line-height:1.5;">
-    Sont listées les offres au statut En analyse, GO ou Dossier en préparation, dont l’échéance est dépassée ou tombe dans les 7 jours. Sans heure renseignée, l’échéance est à 23 h 59.<br>Généré automatiquement par ERP Marchés STAM.
+    Sont listées les offres au statut En analyse, GO ou Dossier en préparation, dont l’échéance est renseignée : les échéances dépassées ou dans les 7 jours en évidence, les autres sous « Plus tard ». Sans heure renseignée, l’échéance est à 23 h 59.<br>Généré automatiquement par ERP Marchés STAM.
   </td></tr>
 </table></td></tr></table></body></html>`
 
@@ -155,6 +158,7 @@ export function buildEcheancesMatinEmail(
     ...texteBloc('rouge', 'À RÉGULARISER', g.rouge),
     ...texteBloc('orange', 'AUJOURD’HUI ET DEMAIN', g.orange),
     ...texteBloc('bleu', 'DANS LES 7 JOURS', g.bleu),
+    ...texteBloc('gris', 'PLUS TARD', g.gris),
     ...(total === 0 ? ['', 'Aucune offre à rendre dans les 7 prochains jours.'] : []),
   ].join('\n')
 

@@ -52,7 +52,11 @@ export function echeanceLisible(dateLimite: Date): { date: string; heure: string
 
 export function objetMail(g: GroupesEcheances): string {
   const total = g.rouge.length + g.orange.length + g.bleu.length
-  if (total === 0) return 'Aucune offre à rendre dans les 7 jours'
+  if (total === 0) {
+    return g.gris.length
+      ? `Aucune offre à rendre dans les 7 jours (${g.gris.length} à suivre plus tard)`
+      : 'Aucune offre à rendre dans les 7 jours'
+  }
   const parties: string[] = []
   if (g.rouge.length) parties.push(`${g.rouge.length} à régulariser`)
   if (g.orange.length) parties.push(`${g.orange.length} aujourd'hui ou demain`)

@@ -39,7 +39,8 @@ test.describe('classement des échéances', () => {
     expect(classerOffre(offre('GO', jour(1, 9)), NOW)).toBe('orange')
     expect(classerOffre(offre('GO', jour(2, 9)), NOW)).toBe('bleu')
     expect(classerOffre(offre('GO', jour(7, 9)), NOW)).toBe('bleu')
-    expect(classerOffre(offre('GO', jour(8, 9)), NOW)).toBeNull()
+    expect(classerOffre(offre('GO', jour(8, 9)), NOW)).toBe('gris')
+    expect(classerOffre(offre('EN_ANALYSE', jour(60, 9)), NOW)).toBe('gris')
   })
 
   test('échéance passée : toujours « À régulariser », même très ancienne', () => {
@@ -73,12 +74,14 @@ test.describe('classement des échéances', () => {
     const offres = [
       offre('GO', jour(5, 9), 'c'), offre('GO', jour(-2, 9), 'a'), offre('GO', jour(1), 'b'),
       offre('GO', jour(0, 12), 'd'), offre('PERDUE', jour(1), 'x'), offre('GO', null, 'y'), offre('GO', jour(3, 9), 'e'),
+      offre('EN_ANALYSE', jour(40, 9), 'g2'), offre('IDENTIFIEE', jour(12, 9), 'g1'),
     ]
     const g = grouperEcheances(offres, NOW)
     expect(g.rouge.map((o) => o.id)).toEqual(['a'])
     expect(g.orange.map((o) => o.id)).toEqual(['d', 'b'])
     expect(g.bleu.map((o) => o.id)).toEqual(['e', 'c'])
-    const tous = [...g.rouge, ...g.orange, ...g.bleu].map((o) => o.id)
+    expect(g.gris.map((o) => o.id)).toEqual(['g1', 'g2'])
+    const tous = [...g.rouge, ...g.orange, ...g.bleu, ...g.gris].map((o) => o.id)
     expect(new Set(tous).size).toBe(tous.length)
   })
 })
