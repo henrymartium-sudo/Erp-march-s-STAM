@@ -18,6 +18,7 @@ import type { Document, TypeDocument, Prisma } from '@prisma/client'
 import { z } from 'zod'
 import type { PaginatedResponse } from '@/types/pagination'
 import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
+import { construireOrderBy, lireTri, trierParLibelleType } from '@/lib/utils/documents-tri'
 
 // Extensions autorisées pour l'upload de documents
 const ALLOWED_EXTENSIONS = [
@@ -454,6 +455,8 @@ export async function getAllDocuments(
       dateFin,
       page,
       limit,
+      tri,
+      sens,
     } = validatedFilters
 
     // Calcul skip/take pour Prisma
@@ -484,24 +487,47 @@ export async function getAllDocuments(
       if (dateFin) where.createdAt.lte = dateFin
     }
 
-    // Exécution des requêtes en parallèle
-    const [documents, total] = await Promise.all([
-      prisma.document.findMany({
+    const include = {
+      user: {
+        select: { id: true, name: true, role: true },
+      },
+      marche: {
+        select: { id: true, numero: true, objet: true },
+      },
+    } satisfies Prisma.DocumentInclude
+
+    // Tri global validé (liste fermée) ; défaut : date décroissante
+    const ordre = lireTri(tri, sens)
+
+    let documents
+    let total: number
+
+    if (ordre.tri === 'type') {
+      // Le type se trie sur son libellé affiché : tri en mémoire sur des lignes minimales,
+      // puis lecture complète de la seule page demandée
+      const lignes = await prisma.document.findMany({
         where,
-        include: {
-          user: {
-            select: { id: true, name: true, role: true },
-          },
-          marche: {
-            select: { id: true, numero: true, objet: true },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take,
-      }),
-      prisma.document.count({ where }),
-    ])
+        select: { id: true, type: true, createdAt: true },
+      })
+      total = lignes.length
+      const idsPage = trierParLibelleType(lignes, ordre.sens)
+        .slice(skip, skip + take)
+        .map((l) => l.id)
+      const lus = await prisma.document.findMany({ where: { id: { in: idsPage } }, include })
+      const parId = new Map(lus.map((d) => [d.id, d]))
+      documents = idsPage.flatMap((id) => parId.get(id) ?? [])
+    } else {
+      ;[documents, total] = await Promise.all([
+        prisma.document.findMany({
+          where,
+          include,
+          orderBy: construireOrderBy(ordre.tri, ordre.sens),
+          skip,
+          take,
+        }),
+        prisma.document.count({ where }),
+      ])
+    }
 
     // Calcul métadonnées pagination
     const pagination = calculatePagination(total, page, limit)

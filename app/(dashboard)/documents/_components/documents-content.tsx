@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   DocumentTable,
   DocumentFilters,
@@ -22,19 +23,58 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Loader2, LayoutGrid, LayoutList } from 'lucide-react'
+import type { ColonneTri, SensTri } from '@/lib/utils/documents-tri'
 
 interface DocumentsContentProps {
   documents: Document[]
   canWrite?: boolean
+  tri: ColonneTri
+  sens: SensTri
 }
 
 type ViewMode = 'list' | 'grid'
 
+const CLE_VUE = 'documents-mode-de-vue'
+
 /**
  * Contenu client de la page documents (filtres, table/grille, dialogs)
  */
-export function DocumentsContent({ documents, canWrite = false }: DocumentsContentProps) {
+export function DocumentsContent({ documents, canWrite = false, tri, sens }: DocumentsContentProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [viewMode, setViewMode] = useState<ViewMode>('list')
+
+  // Mode de vue mémorisé par navigateur (lecture après le premier rendu pour éviter un écart d'hydratation)
+  useEffect(() => {
+    try {
+      const memorise = localStorage.getItem(CLE_VUE)
+      if (memorise === 'grid' || memorise === 'list') setViewMode(memorise)
+    } catch {
+      // stockage indisponible (navigation privée) : on reste sur la vue liste
+    }
+  }, [])
+
+  const changerVue = (mode: ViewMode) => {
+    setViewMode(mode)
+    try {
+      localStorage.setItem(CLE_VUE, mode)
+    } catch {
+      // sans stockage, le choix vaut pour la visite en cours
+    }
+  }
+
+  // Tri global : l'URL porte la colonne et le sens, le serveur renvoie la liste triée
+  const handleTriChange = (colonne: ColonneTri) => {
+    const params = new URLSearchParams(searchParams.toString())
+    const memeColonne = colonne === tri
+    const nouveauSens: SensTri = memeColonne
+      ? sens === 'asc' ? 'desc' : 'asc'
+      : colonne === 'createdAt' ? 'desc' : 'asc'
+    params.set('tri', colonne)
+    params.set('sens', nouveauSens)
+    params.delete('page')
+    router.push(`/documents?${params.toString()}`)
+  }
 
   // Preview state
   const [previewDocument, setPreviewDocument] = useState<Document | null>(null)
@@ -103,9 +143,10 @@ export function DocumentsContent({ documents, canWrite = false }: DocumentsConte
         {/* Toggle grille / liste */}
         <div className="flex items-center rounded-lg border border-gray-200 bg-white p-1 gap-0.5 shadow-sm flex-shrink-0 self-end">
           <button
-            onClick={() => setViewMode('list')}
+            onClick={() => changerVue('list')}
             aria-label="Vue liste"
-            className={`flex min-h-9 items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150 ${
+            aria-pressed={viewMode === 'list'}
+            className={`flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150 ${
               viewMode === 'list'
                 ? 'bg-primary text-white shadow-sm'
                 : 'text-muted-foreground hover:text-foreground hover:bg-gray-100'
@@ -115,9 +156,10 @@ export function DocumentsContent({ documents, canWrite = false }: DocumentsConte
             <span className="hidden sm:inline">Liste</span>
           </button>
           <button
-            onClick={() => setViewMode('grid')}
+            onClick={() => changerVue('grid')}
             aria-label="Vue grille"
-            className={`flex min-h-9 items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150 ${
+            aria-pressed={viewMode === 'grid'}
+            className={`flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150 ${
               viewMode === 'grid'
                 ? 'bg-primary text-white shadow-sm'
                 : 'text-muted-foreground hover:text-foreground hover:bg-gray-100'
@@ -156,6 +198,9 @@ export function DocumentsContent({ documents, canWrite = false }: DocumentsConte
           onDownload={handleDownload}
           onDelete={canWrite ? (doc) => setDeleteDocumentId(doc.id) : undefined}
           onViewVersions={handleViewVersions}
+          tri={tri}
+          sens={sens}
+          onTriChange={handleTriChange}
         />
       )}
 

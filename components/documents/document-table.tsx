@@ -4,6 +4,7 @@ import { useState } from 'react'
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -23,11 +24,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Download, Eye, MoreVertical, Trash2, History, ArrowUpDown } from 'lucide-react'
+import { Download, Eye, MoreVertical, Trash2, History, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
-
-type SortField = 'nom' | 'type' | 'taille' | 'createdAt'
-type SortDirection = 'asc' | 'desc'
+import type { ColonneTri, SensTri } from '@/lib/utils/documents-tri'
 
 interface DocumentTableProps {
   documents: Document[]
@@ -37,6 +36,10 @@ interface DocumentTableProps {
   onViewVersions?: (document: Document) => void
   selectable?: boolean
   onSelectionChange?: (selected: string[]) => void
+  /** Tri global en cours (porté par l'URL) et demande de changement de tri */
+  tri: ColonneTri
+  sens: SensTri
+  onTriChange: (colonne: ColonneTri) => void
 }
 
 interface ActionsMenuProps {
@@ -89,6 +92,36 @@ function ActionsMenu({ document, onPreview, onDownload, onDelete, onViewVersions
   )
 }
 
+interface EnteteTriProps {
+  colonne: ColonneTri
+  libelle: string
+  tri: ColonneTri
+  sens: SensTri
+  onTriChange: (colonne: ColonneTri) => void
+  className?: string
+}
+
+/** En-tête de colonne triable : le sens courant est annoncé (aria-sort) et montré (flèche) */
+function EnteteTri({ colonne, libelle, tri, sens, onTriChange, className }: EnteteTriProps) {
+  const actif = tri === colonne
+  const Fleche = !actif ? ArrowUpDown : sens === 'asc' ? ArrowUp : ArrowDown
+  return (
+    <TableHead
+      className={className}
+      aria-sort={actif ? (sens === 'asc' ? 'ascending' : 'descending') : undefined}
+    >
+      <Button
+        variant="ghost"
+        onClick={() => onTriChange(colonne)}
+        className="hover:bg-transparent p-0 h-auto font-semibold"
+      >
+        {libelle}
+        <Fleche className="ml-2 h-4 w-4" aria-hidden="true" />
+      </Button>
+    </TableHead>
+  )
+}
+
 /**
  * Table d'affichage des documents avec tri et sélection
  */
@@ -100,40 +133,14 @@ export function DocumentTable({
   onViewVersions,
   selectable = false,
   onSelectionChange,
+  tri,
+  sens,
+  onTriChange,
 }: DocumentTableProps) {
-  const [sortField, setSortField] = useState<SortField>('createdAt')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
-  // Tri des documents
-  const sortedDocuments = [...documents].sort((a, b) => {
-    let comparison = 0
-
-    switch (sortField) {
-      case 'createdAt':
-        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        break
-      case 'taille':
-        comparison = a.taille - b.taille
-        break
-      case 'nom':
-      case 'type':
-        comparison = a[sortField].toLowerCase().localeCompare(b[sortField].toLowerCase())
-        break
-    }
-
-    return sortDirection === 'asc' ? comparison : -comparison
-  })
-
-  // Gérer le tri
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortField(field)
-      setSortDirection('asc')
-    }
-  }
+  // Le tri est fait par le serveur (global, toutes pages) : l'ordre reçu est l'ordre affiché
+  const sortedDocuments = documents
 
   // Sélection
   const handleSelectAll = (checked: boolean) => {
@@ -203,8 +210,14 @@ export function DocumentTable({
         ))}
       </ul>
 
-    <div className="hidden md:block border rounded-lg">
+    <div
+      role="region"
+      aria-label="Liste des documents"
+      tabIndex={0}
+      className="hidden md:block border rounded-lg overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+    >
       <Table>
+        <TableCaption className="sr-only">Liste des documents</TableCaption>
         <TableHeader>
           <TableRow>
             {selectable && (
@@ -218,46 +231,10 @@ export function DocumentTable({
               </TableHead>
             )}
             <TableHead className="w-12"></TableHead>
-            <TableHead>
-              <Button
-                variant="ghost"
-                onClick={() => handleSort('nom')}
-                className="hover:bg-transparent p-0 h-auto font-semibold"
-              >
-                Nom
-                <ArrowUpDown className="ml-2 h-4 w-4" />
-              </Button>
-            </TableHead>
-            <TableHead className="hidden lg:table-cell">
-              <Button
-                variant="ghost"
-                onClick={() => handleSort('type')}
-                className="hover:bg-transparent p-0 h-auto font-semibold"
-              >
-                Type
-                <ArrowUpDown className="ml-2 h-4 w-4" />
-              </Button>
-            </TableHead>
-            <TableHead className="hidden lg:table-cell">
-              <Button
-                variant="ghost"
-                onClick={() => handleSort('taille')}
-                className="hover:bg-transparent p-0 h-auto font-semibold"
-              >
-                Taille
-                <ArrowUpDown className="ml-2 h-4 w-4" />
-              </Button>
-            </TableHead>
-            <TableHead className="hidden lg:table-cell">
-              <Button
-                variant="ghost"
-                onClick={() => handleSort('createdAt')}
-                className="hover:bg-transparent p-0 h-auto font-semibold"
-              >
-                Date
-                <ArrowUpDown className="ml-2 h-4 w-4" />
-              </Button>
-            </TableHead>
+            <EnteteTri colonne="nom" libelle="Nom" tri={tri} sens={sens} onTriChange={onTriChange} />
+            <EnteteTri colonne="type" libelle="Type" tri={tri} sens={sens} onTriChange={onTriChange} className="hidden lg:table-cell" />
+            <EnteteTri colonne="taille" libelle="Taille" tri={tri} sens={sens} onTriChange={onTriChange} className="hidden lg:table-cell" />
+            <EnteteTri colonne="createdAt" libelle="Date" tri={tri} sens={sens} onTriChange={onTriChange} className="hidden lg:table-cell" />
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
