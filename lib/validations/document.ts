@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { TypeDocument, PhaseMarche } from '@prisma/client'
+import { COLONNES_TRI } from '@/lib/utils/documents-tri'
 
 /**
  * CONSTANTES DE VALIDATION
@@ -188,6 +189,9 @@ export const documentFiltersSchema = z.object({
   dateFin: z.date().optional(),
   page: z.number().int().positive().optional(),
   limit: z.number().int().positive().max(100).optional(),
+  // Tri : liste fermée (documents-tri.ts), jamais un nom de champ libre
+  tri: z.enum(COLONNES_TRI).optional(),
+  sens: z.enum(['asc', 'desc']).optional(),
 })
 
 /**

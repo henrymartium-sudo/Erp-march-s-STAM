@@ -101,6 +101,7 @@ export function DocumentFilters() {
           <Input
             type="text"
             placeholder="Rechercher un document..."
+            aria-label="Rechercher un document"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 pr-9"
@@ -110,6 +111,7 @@ export function DocumentFilters() {
               variant="ghost"
               size="sm"
               onClick={() => setSearchQuery('')}
+              aria-label="Effacer la recherche"
               className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
             >
               <X className="h-3.5 w-3.5" />
@@ -120,7 +122,7 @@ export function DocumentFilters() {
         {/* Dropdowns compacts */}
         <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-shrink-0">
           <Select value={typeActuel} onValueChange={handleTypeChange}>
-            <SelectTrigger className="w-full sm:w-44 h-10">
+            <SelectTrigger className="w-full sm:w-44 h-10" aria-label="Filtrer par type">
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
@@ -132,7 +134,7 @@ export function DocumentFilters() {
           </Select>
 
           <Select value={phaseActuel} onValueChange={handlePhaseChange}>
-            <SelectTrigger className="w-full sm:w-44 h-10">
+            <SelectTrigger className="w-full sm:w-44 h-10" aria-label="Filtrer par phase">
               <SelectValue placeholder="Phase" />
             </SelectTrigger>
             <SelectContent>

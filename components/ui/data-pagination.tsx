@@ -74,8 +74,14 @@ export function DataPagination({ pagination }: DataPaginationProps) {
             />
           </PaginationItem>
 
+          <PaginationItem className="sm:hidden">
+            <span className="px-2 text-sm text-muted-foreground">
+              Page {currentPage} sur {totalPages}
+            </span>
+          </PaginationItem>
+
           {pageNumbers.map((page, index) => (
-            <PaginationItem key={index}>
+            <PaginationItem key={index} className="hidden sm:block">
               {page === 'ellipsis' ? (
                 <PaginationEllipsis />
               ) : (
