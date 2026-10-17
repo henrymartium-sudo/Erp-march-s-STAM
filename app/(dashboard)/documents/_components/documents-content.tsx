@@ -95,17 +95,17 @@ export function DocumentsContent({ documents, canWrite = false }: DocumentsConte
   return (
     <>
       {/* Filtres + toggle vue */}
-      <div className="flex items-end gap-3">
-        <div className="flex-1">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+        <div className="min-w-0 flex-1">
           <DocumentFilters />
         </div>
 
         {/* Toggle grille / liste */}
-        <div className="flex items-center rounded-lg border border-gray-200 bg-white p-1 gap-0.5 shadow-sm flex-shrink-0">
+        <div className="flex items-center rounded-lg border border-gray-200 bg-white p-1 gap-0.5 shadow-sm flex-shrink-0 self-end">
           <button
             onClick={() => setViewMode('list')}
             aria-label="Vue liste"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150 ${
+            className={`flex min-h-9 items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150 ${
               viewMode === 'list'
                 ? 'bg-primary text-white shadow-sm'
                 : 'text-muted-foreground hover:text-foreground hover:bg-gray-100'
@@ -117,7 +117,7 @@ export function DocumentsContent({ documents, canWrite = false }: DocumentsConte
           <button
             onClick={() => setViewMode('grid')}
             aria-label="Vue grille"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150 ${
+            className={`flex min-h-9 items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150 ${
               viewMode === 'grid'
                 ? 'bg-primary text-white shadow-sm'
                 : 'text-muted-foreground hover:text-foreground hover:bg-gray-100'

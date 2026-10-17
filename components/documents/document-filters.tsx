@@ -93,7 +93,7 @@ export function DocumentFilters() {
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-card">
       {/* Barre principale : recherche + dropdowns + reset */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-3">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2 p-3">
 
         {/* Recherche — flex-1 */}
         <div className="relative flex-1 min-w-0">
@@ -118,9 +118,9 @@ export function DocumentFilters() {
         </div>
 
         {/* Dropdowns compacts */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-shrink-0">
           <Select value={typeActuel} onValueChange={handleTypeChange}>
-            <SelectTrigger className="w-44 h-10">
+            <SelectTrigger className="w-full sm:w-44 h-10">
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
@@ -132,7 +132,7 @@ export function DocumentFilters() {
           </Select>
 
           <Select value={phaseActuel} onValueChange={handlePhaseChange}>
-            <SelectTrigger className="w-44 h-10">
+            <SelectTrigger className="w-full sm:w-44 h-10">
               <SelectValue placeholder="Phase" />
             </SelectTrigger>
             <SelectContent>
@@ -149,7 +149,7 @@ export function DocumentFilters() {
               variant="ghost"
               size="sm"
               onClick={handleReset}
-              className="text-muted-foreground hover:text-foreground flex-shrink-0"
+              className="col-span-2 text-muted-foreground hover:text-foreground flex-shrink-0"
             >
               <X className="h-4 w-4 mr-1.5" />
               Effacer
