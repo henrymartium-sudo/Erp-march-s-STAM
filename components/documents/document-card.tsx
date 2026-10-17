@@ -3,7 +3,7 @@
 import { DocumentIcon } from './document-icon'
 import { DocumentBadge } from './document-badge'
 import { formatTaille } from '@/lib/utils/document'
-import { Download, Eye, Trash2, MoreVertical, History } from 'lucide-react'
+import { Download, Eye, Loader2, Trash2, MoreVertical, History } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { Document } from '@prisma/client'
@@ -21,6 +21,7 @@ interface DocumentCardProps {
   document: Document
   onPreview?: (document: Document) => void
   onDownload?: (document: Document) => void
+  telechargementId?: string | null
   onDelete?: (document: Document) => void
   onViewVersions?: (document: Document) => void
   compact?: boolean
@@ -53,12 +54,14 @@ export function DocumentCard({
   document,
   onPreview,
   onDownload,
+  telechargementId,
   onDelete,
   onViewVersions,
   compact = false,
 }: DocumentCardProps) {
   const createdDate = format(new Date(document.createdAt), 'dd MMM yyyy', { locale: fr })
   const hasVersions = document.version > 1
+  const enCours = telechargementId === document.id
   const topBar = TYPE_TOP_BAR[document.type]
   const iconColor = TYPE_ICON_COLOR[document.type]
 
@@ -89,9 +92,9 @@ export function DocumentCard({
               </DropdownMenuItem>
             )}
             {onDownload && (
-              <DropdownMenuItem onClick={() => onDownload(document)}>
-                <Download className="mr-2 h-4 w-4" />
-                Télécharger
+              <DropdownMenuItem disabled={enCours} onClick={() => onDownload(document)}>
+                {enCours ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                {enCours ? 'Téléchargement…' : 'Télécharger'}
               </DropdownMenuItem>
             )}
             {hasVersions && onViewVersions && (
@@ -230,10 +233,11 @@ export function DocumentCard({
           {onDownload && (
             <button
               onClick={() => onDownload(document)}
-              className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground py-1.5 px-3 rounded-lg hover:bg-gray-100 transition-colors duration-150"
+              disabled={enCours}
+              className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground py-1.5 px-3 rounded-lg hover:bg-gray-100 transition-colors duration-150 disabled:opacity-60 disabled:pointer-events-none"
             >
-              <Download className="h-3.5 w-3.5" />
-              Télécharger
+              {enCours ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+              {enCours ? 'Téléchargement…' : 'Télécharger'}
             </button>
           )}
         </div>

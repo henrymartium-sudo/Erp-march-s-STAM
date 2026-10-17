@@ -8,6 +8,7 @@ import {
   DocumentPreview,
   DocumentVersionHistory,
   DocumentCard,
+  DocumentsEtatVide,
 } from '@/components/documents'
 import { deleteDocument, getSignedUrlForDocument } from '@/lib/actions/documents'
 import type { Document } from '@prisma/client'
@@ -24,6 +25,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Loader2, LayoutGrid, LayoutList } from 'lucide-react'
 import type { ColonneTri, SensTri } from '@/lib/utils/documents-tri'
+import { aDesFiltresActifs } from '@/lib/utils/documents-filtres'
+import { ouvrirTelechargement } from '@/lib/utils/documents-telechargement'
 
 interface DocumentsContentProps {
   documents: Document[]
@@ -93,17 +96,38 @@ export function DocumentsContent({ documents, canWrite = false, tri, sens }: Doc
     setIsPreviewOpen(true)
   }
 
+  // Téléchargement : un seul à la fois, état de chargement visible, retour honnête
+  const [telechargementId, setTelechargementId] = useState<string | null>(null)
+
   const handleDownload = async (document: Document) => {
+    if (telechargementId) return
+    setTelechargementId(document.id)
     try {
       const result = await getSignedUrlForDocument(document.id)
-      if (result.success) {
-        window.open(result.data, '_blank')
+      if (!result.success) {
+        toast.error(result.error)
+        return
+      }
+      const url = result.data
+      // Pas de 'noopener' dans les features : window.open renverrait toujours null, la détection du blocage serait faussée
+      const ouvrir = (cible: string) => {
+        const fenetre = window.open(cible, '_blank')
+        if (fenetre) fenetre.opener = null
+        return fenetre
+      }
+      if (ouvrirTelechargement(url, ouvrir) === 'ouvert') {
         toast.success('Téléchargement lancé')
       } else {
-        toast.error(result.error)
+        // Fenêtre bloquée (appel après un await) : le clic sur l'action est un geste direct, il ne sera pas bloqué
+        toast.warning("Votre navigateur a bloqué l'ouverture du fichier.", {
+          duration: 15000,
+          action: { label: 'Ouvrir le fichier', onClick: () => ouvrir(url) },
+        })
       }
     } catch {
       toast.error('Erreur lors du téléchargement')
+    } finally {
+      setTelechargementId(null)
     }
   }
 
@@ -172,30 +196,31 @@ export function DocumentsContent({ documents, canWrite = false, tri, sens }: Doc
       </div>
 
       {/* Contenu : grille ou liste */}
-      {viewMode === 'grid' ? (
-        documents.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <p>Aucun document trouvé</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {documents.length === 0 ? (
+        <DocumentsEtatVide
+          filtresActifs={aDesFiltresActifs(new URLSearchParams(searchParams.toString()))}
+          canWrite={canWrite}
+        />
+      ) : viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {documents.map((doc) => (
               <DocumentCard
                 key={doc.id}
                 document={doc}
                 onPreview={handlePreview}
                 onDownload={handleDownload}
+                telechargementId={telechargementId}
                 onDelete={canWrite ? (d) => setDeleteDocumentId(d.id) : undefined}
                 onViewVersions={handleViewVersions}
               />
             ))}
-          </div>
-        )
+        </div>
       ) : (
         <DocumentTable
           documents={documents}
           onPreview={handlePreview}
           onDownload={handleDownload}
+          telechargementId={telechargementId}
           onDelete={canWrite ? (doc) => setDeleteDocumentId(doc.id) : undefined}
           onViewVersions={handleViewVersions}
           tri={tri}
@@ -210,6 +235,7 @@ export function DocumentsContent({ documents, canWrite = false, tri, sens }: Doc
         open={isPreviewOpen}
         onOpenChange={setIsPreviewOpen}
         onDownload={handleDownload}
+        telechargementId={telechargementId}
       />
 
       {/* Dialog des versions */}

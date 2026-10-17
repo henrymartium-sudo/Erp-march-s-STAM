@@ -1,10 +1,10 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { PageHeader } from '@/components/shared/page-header'
 import { RetryButton } from '@/components/shared/retry-button'
 import { DataPagination } from '@/components/ui/data-pagination'
-import { Plus } from 'lucide-react'
+import { AlertCircle, Plus } from 'lucide-react'
 import { requireAuth, canWrite, canExport } from '@/lib/utils/permissions'
 import { getAllDocuments } from '@/lib/actions/documents'
 import { shouldShowPagination } from '@/lib/utils/pagination'
@@ -57,18 +57,26 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
   // Gérer les erreurs
   if (!result.success) {
     return (
-      <div className="container mx-auto py-8">
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle className="text-destructive">Erreur</CardTitle>
-            <CardDescription>
-              Impossible de charger les documents : {result.error}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <RetryButton />
-          </CardContent>
-        </Card>
+      <div className="space-y-6">
+        <PageHeader
+          title="Documents & Médias"
+          description="Gérez tous vos documents liés aux marchés publics"
+        />
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Chargement impossible</AlertTitle>
+          <AlertDescription>
+            <p>{result.error}</p>
+            <p className="mt-1">
+              Réessayez dans un instant. Si le problème persiste, contactez un administrateur ou{' '}
+              <Link href="/" className="underline underline-offset-2">
+                revenez au tableau de bord
+              </Link>
+              .
+            </p>
+          </AlertDescription>
+        </Alert>
+        <RetryButton />
       </div>
     )
   }
