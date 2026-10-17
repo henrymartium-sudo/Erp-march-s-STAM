@@ -65,11 +65,11 @@ test.describe('Documents — liste fiable', () => {
   test('une recherche filtre les lignes puis le changement de page change les lignes (B1)', async ({ page }) => {
     await page.goto(`/documents?search=${encodeURIComponent(PREFIXE)}`)
     await expect(lignes(page)).toHaveCount(10)
-    await expect(page.getByText(`${PREFIXE} Pièce 01`)).toBeVisible()
+    await expect(page.locator('tbody').getByText(`${PREFIXE} Pièce 01`)).toBeVisible()
 
     await page.goto(`/documents?search=${encodeURIComponent(PREFIXE)}&page=2`)
     await expect(lignes(page)).toHaveCount(2)
-    await expect(page.getByText(`${PREFIXE} Pièce 01`)).toHaveCount(0)
+    await expect(page.locator('tbody').getByText(`${PREFIXE} Pièce 01`)).toHaveCount(0)
 
     // Navigation côté client (pas de rechargement) : le lien « Suivant » / « 1 » de la pagination
     await page.goto(`/documents?search=${encodeURIComponent(PREFIXE)}`)

@@ -39,6 +39,56 @@ interface DocumentTableProps {
   onSelectionChange?: (selected: string[]) => void
 }
 
+interface ActionsMenuProps {
+  document: Document
+  onPreview?: (document: Document) => void
+  onDownload?: (document: Document) => void
+  onDelete?: (document: Document) => void
+  onViewVersions?: (document: Document) => void
+}
+
+/** Menu d'actions d'un document — cible tactile de 44 px (table et cartes) */
+function ActionsMenu({ document, onPreview, onDownload, onDelete, onViewVersions }: ActionsMenuProps) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-11 w-11" aria-label={`Actions pour ${document.nom}`}>
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {onPreview && (
+          <DropdownMenuItem onClick={() => onPreview(document)}>
+            <Eye className="mr-2 h-4 w-4" />
+            Prévisualiser
+          </DropdownMenuItem>
+        )}
+        {onDownload && (
+          <DropdownMenuItem onClick={() => onDownload(document)}>
+            <Download className="mr-2 h-4 w-4" />
+            Télécharger
+          </DropdownMenuItem>
+        )}
+        {document.version > 1 && onViewVersions && (
+          <DropdownMenuItem onClick={() => onViewVersions(document)}>
+            <History className="mr-2 h-4 w-4" />
+            Versions ({document.version})
+          </DropdownMenuItem>
+        )}
+        {onDelete && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => onDelete(document)} className="text-destructive">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Supprimer
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 /**
  * Table d'affichage des documents avec tri et sélection
  */
@@ -108,6 +158,8 @@ export function DocumentTable({
     onSelectionChange?.(Array.from(newSelection))
   }
 
+  const actionsProps = { onPreview, onDownload, onDelete, onViewVersions }
+
   const allSelected = documents.length > 0 && selectedIds.size === documents.length
   const someSelected = selectedIds.size > 0 && selectedIds.size < documents.length
 
@@ -120,7 +172,38 @@ export function DocumentTable({
   }
 
   return (
-    <div className="border rounded-lg">
+    <>
+      {/* Sous 768 px : une carte par document (pas de tableau) */}
+      <ul className="space-y-3 md:hidden">
+        {sortedDocuments.map((document) => (
+          <li
+            key={document.id}
+            data-testid="document-ligne"
+            className="flex items-start gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-card"
+          >
+            <DocumentIcon type={document.type} />
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <p className="font-medium break-words">{document.nom}</p>
+              {document.description && (
+                <p className="text-sm text-muted-foreground line-clamp-2">{document.description}</p>
+              )}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <DocumentBadge type={document.type} />
+                {document.phase && <DocumentBadge phase={document.phase} />}
+                {document.version > 1 && (
+                  <span className="text-xs text-muted-foreground">v{document.version}</span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {formatTaille(document.taille)} · {format(new Date(document.createdAt), 'dd MMM yyyy', { locale: fr })}
+              </p>
+            </div>
+            <ActionsMenu document={document} {...actionsProps} />
+          </li>
+        ))}
+      </ul>
+
+    <div className="hidden md:block border rounded-lg">
       <Table>
         <TableHeader>
           <TableRow>
@@ -145,7 +228,7 @@ export function DocumentTable({
                 <ArrowUpDown className="ml-2 h-4 w-4" />
               </Button>
             </TableHead>
-            <TableHead>
+            <TableHead className="hidden lg:table-cell">
               <Button
                 variant="ghost"
                 onClick={() => handleSort('type')}
@@ -155,7 +238,7 @@ export function DocumentTable({
                 <ArrowUpDown className="ml-2 h-4 w-4" />
               </Button>
             </TableHead>
-            <TableHead>
+            <TableHead className="hidden lg:table-cell">
               <Button
                 variant="ghost"
                 onClick={() => handleSort('taille')}
@@ -165,7 +248,7 @@ export function DocumentTable({
                 <ArrowUpDown className="ml-2 h-4 w-4" />
               </Button>
             </TableHead>
-            <TableHead>
+            <TableHead className="hidden lg:table-cell">
               <Button
                 variant="ghost"
                 onClick={() => handleSort('createdAt')}
@@ -180,7 +263,7 @@ export function DocumentTable({
         </TableHeader>
         <TableBody>
           {sortedDocuments.map((document) => (
-            <TableRow key={document.id}>
+            <TableRow key={document.id} data-testid="document-ligne">
               {selectable && (
                 <TableCell>
                   <Checkbox
@@ -203,9 +286,18 @@ export function DocumentTable({
                       {document.description}
                     </p>
                   )}
+                  {/* Sous lg, Type / Taille / Date sont repliés sous le nom */}
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground lg:hidden">
+                    <DocumentBadge type={document.type} />
+                    {document.phase && <DocumentBadge phase={document.phase} />}
+                    {document.version > 1 && <span>v{document.version}</span>}
+                    <span>
+                      {formatTaille(document.taille)} · {format(new Date(document.createdAt), 'dd MMM yyyy', { locale: fr })}
+                    </span>
+                  </div>
                 </div>
               </TableCell>
-              <TableCell>
+              <TableCell className="hidden lg:table-cell">
                 <div className="flex flex-wrap gap-2">
                   <DocumentBadge type={document.type} />
                   {document.phase && <DocumentBadge phase={document.phase} />}
@@ -214,56 +306,18 @@ export function DocumentTable({
                   )}
                 </div>
               </TableCell>
-              <TableCell>{formatTaille(document.taille)}</TableCell>
-              <TableCell>
+              <TableCell className="hidden lg:table-cell">{formatTaille(document.taille)}</TableCell>
+              <TableCell className="hidden lg:table-cell">
                 {format(new Date(document.createdAt), 'dd MMM yyyy', { locale: fr })}
               </TableCell>
               <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreVertical className="h-4 w-4" />
-                      <span className="sr-only">Actions</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {onPreview && (
-                      <DropdownMenuItem onClick={() => onPreview(document)}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        Prévisualiser
-                      </DropdownMenuItem>
-                    )}
-                    {onDownload && (
-                      <DropdownMenuItem onClick={() => onDownload(document)}>
-                        <Download className="mr-2 h-4 w-4" />
-                        Télécharger
-                      </DropdownMenuItem>
-                    )}
-                    {document.version > 1 && onViewVersions && (
-                      <DropdownMenuItem onClick={() => onViewVersions(document)}>
-                        <History className="mr-2 h-4 w-4" />
-                        Versions ({document.version})
-                      </DropdownMenuItem>
-                    )}
-                    {onDelete && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => onDelete(document)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Supprimer
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <ActionsMenu document={document} {...actionsProps} />
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
     </div>
+    </>
   )
 }
