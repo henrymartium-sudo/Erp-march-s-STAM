@@ -24,7 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Download, Eye, MoreVertical, Trash2, History, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { Download, Eye, Loader2, MoreVertical, Trash2, History, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { ColonneTri, SensTri } from '@/lib/utils/documents-tri'
 
@@ -32,6 +32,7 @@ interface DocumentTableProps {
   documents: Document[]
   onPreview?: (document: Document) => void
   onDownload?: (document: Document) => void
+  telechargementId?: string | null
   onDelete?: (document: Document) => void
   onViewVersions?: (document: Document) => void
   selectable?: boolean
@@ -46,12 +47,14 @@ interface ActionsMenuProps {
   document: Document
   onPreview?: (document: Document) => void
   onDownload?: (document: Document) => void
+  telechargementId?: string | null
   onDelete?: (document: Document) => void
   onViewVersions?: (document: Document) => void
 }
 
 /** Menu d'actions d'un document — cible tactile de 44 px (table et cartes) */
-function ActionsMenu({ document, onPreview, onDownload, onDelete, onViewVersions }: ActionsMenuProps) {
+function ActionsMenu({ document, onPreview, onDownload, telechargementId, onDelete, onViewVersions }: ActionsMenuProps) {
+  const enCours = telechargementId === document.id
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -67,9 +70,9 @@ function ActionsMenu({ document, onPreview, onDownload, onDelete, onViewVersions
           </DropdownMenuItem>
         )}
         {onDownload && (
-          <DropdownMenuItem onClick={() => onDownload(document)}>
-            <Download className="mr-2 h-4 w-4" />
-            Télécharger
+          <DropdownMenuItem disabled={enCours} onClick={() => onDownload(document)}>
+            {enCours ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+            {enCours ? 'Téléchargement…' : 'Télécharger'}
           </DropdownMenuItem>
         )}
         {document.version > 1 && onViewVersions && (
@@ -129,6 +132,7 @@ export function DocumentTable({
   documents,
   onPreview,
   onDownload,
+  telechargementId,
   onDelete,
   onViewVersions,
   selectable = false,
@@ -165,18 +169,10 @@ export function DocumentTable({
     onSelectionChange?.(Array.from(newSelection))
   }
 
-  const actionsProps = { onPreview, onDownload, onDelete, onViewVersions }
+  const actionsProps = { onPreview, onDownload, telechargementId, onDelete, onViewVersions }
 
   const allSelected = documents.length > 0 && selectedIds.size === documents.length
   const someSelected = selectedIds.size > 0 && selectedIds.size < documents.length
-
-  if (documents.length === 0) {
-    return (
-      <div className="text-center py-12 text-muted-foreground">
-        <p>Aucun document trouvé</p>
-      </div>
-    )
-  }
 
   return (
     <>

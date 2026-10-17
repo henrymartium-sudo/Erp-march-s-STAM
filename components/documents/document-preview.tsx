@@ -18,6 +18,7 @@ interface DocumentPreviewProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onDownload?: (document: Document) => void
+  telechargementId?: string | null
 }
 
 /**
@@ -28,7 +29,9 @@ export function DocumentPreview({
   open,
   onOpenChange,
   onDownload,
+  telechargementId,
 }: DocumentPreviewProps) {
+  const enCours = !!document && telechargementId === document.id
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -182,9 +185,9 @@ export function DocumentPreview({
                   Téléchargez le fichier pour l'ouvrir avec l'application appropriée.
                 </p>
                 {onDownload && (
-                  <Button onClick={() => onDownload(document)}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Télécharger
+                  <Button onClick={() => onDownload(document)} disabled={enCours}>
+                    {enCours ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                    {enCours ? 'Téléchargement…' : 'Télécharger'}
                   </Button>
                 )}
               </div>
@@ -195,9 +198,9 @@ export function DocumentPreview({
         {/* Actions */}
         {onDownload && canPreview && (
           <div className="pt-4 border-t">
-            <Button onClick={() => onDownload(document)} className="w-full">
-              <Download className="mr-2 h-4 w-4" />
-              Télécharger le document
+            <Button onClick={() => onDownload(document)} disabled={enCours} className="w-full">
+              {enCours ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              {enCours ? 'Téléchargement…' : 'Télécharger le document'}
             </Button>
           </div>
         )}
