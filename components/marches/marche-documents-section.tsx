@@ -8,9 +8,10 @@ import {
   DocumentPreview,
   DocumentVersionHistory,
   DocumentUpload,
+  SuppressionDefinitiveDialog,
 } from '@/components/documents'
 import { Plus, FileText, Loader2 } from 'lucide-react'
-import { getDocumentsByMarche, deleteDocument, getSignedUrlForDocument } from '@/lib/actions/documents'
+import { getDocumentsByMarche, getSignedUrlForDocument } from '@/lib/actions/documents'
 import type { Document } from '@prisma/client'
 import { toast } from '@/lib/utils/toast'
 import {
@@ -20,16 +21,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 
 interface MarcheDocumentsSectionProps {
   marcheId: string
@@ -53,7 +44,6 @@ export function MarcheDocumentsSection({ marcheId }: MarcheDocumentsSectionProps
 
   // Delete state
   const [deleteDocumentId, setDeleteDocumentId] = useState<string | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
 
   // Charger les documents
   const loadDocuments = async () => {
@@ -94,27 +84,6 @@ export function MarcheDocumentsSection({ marcheId }: MarcheDocumentsSectionProps
       }
     } catch {
       toast.error('Erreur lors du téléchargement')
-    }
-  }
-
-  // Gérer la suppression
-  const handleDeleteConfirm = async () => {
-    if (!deleteDocumentId) return
-
-    setIsDeleting(true)
-    try {
-      const result = await deleteDocument(deleteDocumentId)
-      if (result.success) {
-        toast.success('Document supprimé avec succès')
-        setDocuments(documents.filter((d) => d.id !== deleteDocumentId))
-        setDeleteDocumentId(null)
-      } else {
-        toast.error(result.error || 'Erreur lors de la suppression')
-      }
-    } catch (error) {
-      toast.error('Erreur lors de la suppression')
-    } finally {
-      setIsDeleting(false)
     }
   }
 
@@ -215,38 +184,12 @@ export function MarcheDocumentsSection({ marcheId }: MarcheDocumentsSectionProps
         onDownload={handleDownload}
       />
 
-      {/* Dialog de confirmation de suppression */}
-      <AlertDialog
-        open={!!deleteDocumentId}
-        onOpenChange={(open) => !open && setDeleteDocumentId(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-            <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer ce document ? Cette action peut être
-              annulée (soft delete).
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Suppression...
-                </>
-              ) : (
-                'Supprimer'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Suppression définitive (fichier effacé du stockage) */}
+      <SuppressionDefinitiveDialog
+        documentId={deleteDocumentId}
+        onClose={() => setDeleteDocumentId(null)}
+        onSupprime={(id) => setDocuments((docs) => docs.filter((d) => d.id !== id))}
+      />
     </>
   )
 }

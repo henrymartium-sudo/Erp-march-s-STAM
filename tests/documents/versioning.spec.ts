@@ -284,7 +284,8 @@ test.describe('Documents - Versioning', () => {
     // (Test déjà couvert dans "devrait pouvoir créer une nouvelle version")
   });
 
-  test('devrait conserver l\'historique complet même après suppression soft delete', async ({ page }) => {
+  // OBSOLÈTE ET DANGEREUX : supprime le premier document de la liste, et la suppression est désormais définitive.
+  test.skip('devrait conserver l\'historique complet même après suppression soft delete', async ({ page }) => {
     await page.goto('/documents');
     await wait(1000);
 
