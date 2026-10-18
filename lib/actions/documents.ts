@@ -18,6 +18,7 @@ import type { Document, TypeDocument, Prisma } from '@prisma/client'
 import { z } from 'zod'
 import type { PaginatedResponse } from '@/types/pagination'
 import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
+import { supprimerDefinitivement, collecterPortee } from '@/lib/utils/documents-suppression'
 import { construireOrderBy, lireTri, trierParLibelleType } from '@/lib/utils/documents-tri'
 
 // Extensions autorisées pour l'upload de documents
@@ -26,6 +27,14 @@ const ALLOWED_EXTENSIONS = [
   'jpg', 'jpeg', 'png', 'gif', 'webp',
   'txt', 'csv', 'zip',
 ] as const;
+
+const SELECT_LIGNE = {
+  id: true,
+  storagePath: true,
+  documentParentId: true,
+  deleted: true,
+  marcheId: true,
+} as const
 
 /**
  * TYPE DE RÉSULTAT
@@ -654,50 +663,101 @@ export async function updateDocument(
 }
 
 /**
- * SUPPRIMER UN DOCUMENT (soft delete)
- * Ne supprime PAS le fichier de Storage, seulement marque comme deleted
+ * SUPPRIMER UN DOCUMENT DÉFINITIVEMENT
+ * Efface le fichier (et ceux de ses versions) du stockage Supabase, PUIS marque les
+ * lignes supprimées (soft delete conservé en base). Irréversible : aucune sauvegarde du
+ * stockage. Les chemins sont relus en base, jamais fournis par le client.
  */
-export async function deleteDocument(id: string): Promise<ActionResult> {
+export async function deleteDocument(
+  id: string
+): Promise<ActionResult<{ nbDocuments: number }>> {
   try {
     const session = await requireDelete()
+    const supabase = createClient()
 
-    const document = await prisma.document.findUnique({
-      where: { id },
-    })
-
-    if (!document) {
-      return { success: false, error: 'Document introuvable' }
-    }
-
-    // Soft delete
-    await prisma.document.update({
-      where: { id },
-      data: {
-        deleted: true,
-        deletedAt: new Date(),
+    const resultat = await supprimerDefinitivement(
+      {
+        trouver: (docId) => prisma.document.findUnique({ where: { id: docId }, select: SELECT_LIGNE }),
+        enfantsVivants: (parents) =>
+          prisma.document.findMany({
+            where: { documentParentId: { in: parents }, deleted: false },
+            select: SELECT_LIGNE,
+          }),
+        cheminsUtilisesAilleurs: async (chemins, ids) =>
+          (
+            await prisma.document.findMany({
+              where: { storagePath: { in: chemins }, deleted: false, id: { notIn: ids } },
+              select: { storagePath: true },
+            })
+          ).map((l) => l.storagePath),
+        effacerFichiers: async (chemins) => {
+          const { error } = await supabase.storage.from('marches-documents').remove(chemins)
+          if (error) console.error('[deleteDocument Storage Error]', error.message)
+          return { error: error ? error.message : null }
+        },
+        marquerSupprimes: async (ids) => {
+          await prisma.document.updateMany({
+            where: { id: { in: ids } },
+            data: { deleted: true, deletedAt: new Date() },
+          })
+        },
+        tracer: (info) =>
+          logAction({
+            userId: session.user.id,
+            userEmail: session.user.email,
+            action: AUDIT_ACTION.DELETE,
+            entityType: AUDIT_ENTITY.DOCUMENT,
+            entityId: info.racineId,
+            metadata: { definitive: true, complet: info.complet, documentIds: info.ids },
+          }),
       },
-    })
+      id
+    )
+
+    if (!resultat.success) return resultat
 
     revalidatePath('/documents')
-    if (document.marcheId) {
-      revalidatePath(`/marches/${document.marcheId}`)
-    }
+    revalidatePath(`/documents/${id}`)
+    resultat.data.marcheIds.forEach((m) => revalidatePath(`/marches/${m}`))
 
-    await logAction({
-      userId:     session.user.id,
-      userEmail:  session.user.email,
-      action:     AUDIT_ACTION.DELETE,
-      entityType: AUDIT_ENTITY.DOCUMENT,
-      entityId:   id,
-    })
-
-    return { success: true, data: undefined }
+    return { success: true, data: { nbDocuments: resultat.data.nbDocuments } }
   } catch (error) {
     console.error('[deleteDocument Error]', error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Erreur serveur',
-    }
+    return { success: false, error: 'Erreur serveur : rien n’a été supprimé. Réessayez.' }
+  }
+}
+
+/**
+ * Nombre de versions supprimées avec un document (pour la confirmation).
+ */
+export async function getSuppressionInfo(
+  id: string
+): Promise<ActionResult<{ nbVersions: number }>> {
+  try {
+    await requireDelete()
+    const parsed = z.string().min(1).max(64).safeParse(id)
+    if (!parsed.success) return { success: false, error: 'Identifiant de document invalide' }
+
+    const racine = await prisma.document.findUnique({
+      where: { id: parsed.data },
+      select: SELECT_LIGNE,
+    })
+    if (!racine || racine.deleted) return { success: false, error: 'Document introuvable' }
+
+    const portee = await collecterPortee(
+      {
+        enfantsVivants: (parents) =>
+          prisma.document.findMany({
+            where: { documentParentId: { in: parents }, deleted: false },
+            select: SELECT_LIGNE,
+          }),
+      },
+      racine
+    )
+    return { success: true, data: { nbVersions: portee.length - 1 } }
+  } catch (error) {
+    console.error('[getSuppressionInfo Error]', error)
+    return { success: false, error: 'Erreur serveur' }
   }
 }
 
@@ -814,6 +874,7 @@ export async function getDocumentVersions(
     // Récupérer toutes les versions (parent + enfants)
     const versions = await prisma.document.findMany({
       where: {
+        deleted: false, // Un fichier effacé définitivement ne doit plus figurer à l'historique
         OR: [
           { id: parentId }, // Le parent
           { documentParentId: parentId }, // Les versions

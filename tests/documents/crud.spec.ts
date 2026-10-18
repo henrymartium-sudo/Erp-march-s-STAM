@@ -124,7 +124,8 @@ test.describe('Documents - CRUD', () => {
     }
   });
 
-  test('devrait pouvoir supprimer un document (soft delete)', async ({ page }) => {
+  // OBSOLÈTE : la suppression est désormais définitive (fichier effacé du stockage) ; voir suppression.spec.ts.
+  test.skip('devrait pouvoir supprimer un document (soft delete)', async ({ page }) => {
     // D'abord, créer un document à supprimer
     await page.goto('/documents/upload');
 

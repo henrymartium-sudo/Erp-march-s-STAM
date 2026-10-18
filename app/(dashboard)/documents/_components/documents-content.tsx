@@ -9,21 +9,12 @@ import {
   DocumentVersionHistory,
   DocumentCard,
   DocumentsEtatVide,
+  SuppressionDefinitiveDialog,
 } from '@/components/documents'
-import { deleteDocument, getSignedUrlForDocument } from '@/lib/actions/documents'
+import { getSignedUrlForDocument } from '@/lib/actions/documents'
 import type { Document } from '@prisma/client'
 import { toast } from '@/lib/utils/toast'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Loader2, LayoutGrid, LayoutList } from 'lucide-react'
+import { LayoutGrid, LayoutList } from 'lucide-react'
 import type { ColonneTri, SensTri } from '@/lib/utils/documents-tri'
 import { aDesFiltresActifs } from '@/lib/utils/documents-filtres'
 import { ouvrirTelechargement } from '@/lib/utils/documents-telechargement'
@@ -89,7 +80,6 @@ export function DocumentsContent({ documents, canWrite = false, tri, sens }: Doc
 
   // Delete state
   const [deleteDocumentId, setDeleteDocumentId] = useState<string | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
 
   const handlePreview = (document: Document) => {
     setPreviewDocument(document)
@@ -128,26 +118,6 @@ export function DocumentsContent({ documents, canWrite = false, tri, sens }: Doc
       toast.error('Erreur lors du téléchargement')
     } finally {
       setTelechargementId(null)
-    }
-  }
-
-  const handleDeleteConfirm = async () => {
-    if (!deleteDocumentId) return
-
-    setIsDeleting(true)
-    try {
-      const result = await deleteDocument(deleteDocumentId)
-      if (result.success) {
-        // La liste vient du serveur : deleteDocument revalide /documents, la ligne disparaît au rafraîchissement
-        toast.success('Document supprimé avec succès')
-        setDeleteDocumentId(null)
-      } else {
-        toast.error(result.error)
-      }
-    } catch {
-      toast.error('Erreur lors de la suppression')
-    } finally {
-      setIsDeleting(false)
     }
   }
 
@@ -247,38 +217,12 @@ export function DocumentsContent({ documents, canWrite = false, tri, sens }: Doc
         onDownload={handleDownload}
       />
 
-      {/* Dialog de confirmation de suppression */}
-      <AlertDialog
-        open={!!deleteDocumentId}
-        onOpenChange={(open) => !open && setDeleteDocumentId(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-            <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer ce document ? Cette action peut être
-              annulée (soft delete).
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Suppression...
-                </>
-              ) : (
-                'Supprimer'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Suppression définitive (fichier effacé du stockage) */}
+      <SuppressionDefinitiveDialog
+        documentId={deleteDocumentId}
+        onClose={() => setDeleteDocumentId(null)}
+        onSupprime={() => router.refresh()}
+      />
     </>
   )
 }

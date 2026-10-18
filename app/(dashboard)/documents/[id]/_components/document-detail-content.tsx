@@ -10,25 +10,15 @@ import {
   DocumentBadge,
   DocumentPreview,
   DocumentVersionHistory,
+  SuppressionDefinitiveDialog,
 } from '@/components/documents'
 import { formatTaille } from '@/lib/utils/document'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { Document } from '@prisma/client'
 import { Download, Eye, Trash2, History, Calendar, FileText, Tag } from 'lucide-react'
-import { deleteDocument, getSignedUrlForDocument } from '@/lib/actions/documents'
+import { getSignedUrlForDocument } from '@/lib/actions/documents'
 import { toast } from '@/lib/utils/toast'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
 import Link from 'next/link'
 
 interface DocumentDetailContentProps {
@@ -40,7 +30,7 @@ interface DocumentDetailContentProps {
  */
 export function DocumentDetailContent({ document }: DocumentDetailContentProps) {
   const router = useRouter()
-  const [isDeleting, setIsDeleting] = useState(false)
+  const [suppressionOuverte, setSuppressionOuverte] = useState(false)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isVersionsOpen, setIsVersionsOpen] = useState(false)
 
@@ -56,24 +46,6 @@ export function DocumentDetailContent({ document }: DocumentDetailContentProps) 
       }
     } catch {
       toast.error('Erreur lors du téléchargement')
-    }
-  }
-
-  // Supprimer
-  const handleDelete = async () => {
-    setIsDeleting(true)
-    try {
-      const result = await deleteDocument(document.id)
-      if (result.success) {
-        toast.success('Document supprimé avec succès')
-        router.push('/documents')
-      } else {
-        toast.error(result.error)
-      }
-    } catch {
-      toast.error('Erreur lors de la suppression')
-    } finally {
-      setIsDeleting(false)
     }
   }
 
@@ -131,33 +103,19 @@ export function DocumentDetailContent({ document }: DocumentDetailContentProps) 
                     Versions ({document.version})
                   </Button>
                 )}
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" className="gap-2">
-                      <Trash2 className="h-4 w-4" />
-                      Supprimer
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Êtes-vous sûr de vouloir supprimer ce document ? Cette action peut
-                        être annulée (soft delete).
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDelete}
-                        disabled={isDeleting}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        {isDeleting ? 'Suppression...' : 'Supprimer'}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <Button
+                  variant="destructive"
+                  className="gap-2"
+                  onClick={() => setSuppressionOuverte(true)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Supprimer définitivement
+                </Button>
+                <SuppressionDefinitiveDialog
+                  documentId={suppressionOuverte ? document.id : null}
+                  onClose={() => setSuppressionOuverte(false)}
+                  onSupprime={() => router.push('/documents')}
+                />
               </div>
 
               {/* Tags */}
