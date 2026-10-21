@@ -12,7 +12,9 @@ import {
   DocumentVersionHistory,
   SuppressionDefinitiveDialog,
 } from '@/components/documents'
+import { DocumentNouvelleVersion } from '@/components/documents/document-nouvelle-version'
 import { formatTaille } from '@/lib/utils/document'
+import { doitAfficherVersions } from '@/lib/utils/documents-versions'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { Document } from '@prisma/client'
@@ -23,12 +25,20 @@ import Link from 'next/link'
 
 interface DocumentDetailContentProps {
   document: Document
+  /** Nombre de versions de la chaîne, parent compris */
+  nbVersions: number
+  /** Le rôle de l'utilisateur permet d'ajouter une version */
+  peutEcrire: boolean
 }
 
 /**
  * Contenu client de la page de détail
  */
-export function DocumentDetailContent({ document }: DocumentDetailContentProps) {
+export function DocumentDetailContent({
+  document,
+  nbVersions,
+  peutEcrire,
+}: DocumentDetailContentProps) {
   const router = useRouter()
   const [suppressionOuverte, setSuppressionOuverte] = useState(false)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
@@ -93,16 +103,17 @@ export function DocumentDetailContent({ document }: DocumentDetailContentProps) 
                   <Download className="h-4 w-4" />
                   Télécharger
                 </Button>
-                {document.version > 1 && (
+                {doitAfficherVersions(nbVersions) && (
                   <Button
                     onClick={() => setIsVersionsOpen(true)}
                     variant="outline"
                     className="gap-2"
                   >
                     <History className="h-4 w-4" />
-                    Versions ({document.version})
+                    Versions ({nbVersions})
                   </Button>
                 )}
+                {peutEcrire && <DocumentNouvelleVersion document={document} />}
                 <Button
                   variant="destructive"
                   className="gap-2"

@@ -2,12 +2,15 @@
 
 import { prisma } from '@/lib/db/prisma'
 import { createClient } from '@/lib/supabase/server'
-import { requireAuth, requireMarcheWrite, requireDelete } from '@/lib/utils/permissions'
+import { requireAuth, requireMarcheWrite, requireDelete, getMarcheStatutRestriction } from '@/lib/utils/permissions'
 import {
   createDocumentSchema,
   updateDocumentSchema,
   validateFile,
   documentFiltersSchema,
+  MAX_FILE_SIZE,
+  ALLOWED_MIME_TYPES,
+  ALLOWED_FILE_EXTENSIONS,
   type DocumentFilters,
 } from '@/lib/validations/document'
 import { generateStoragePath, generateVersionedFileName } from '@/lib/utils/document'
@@ -20,6 +23,8 @@ import type { PaginatedResponse } from '@/types/pagination'
 import { calculatePagination, getPrismaSkipTake } from '@/lib/utils/pagination'
 import { supprimerDefinitivement, collecterPortee } from '@/lib/utils/documents-suppression'
 import { construireOrderBy, lireTri, trierParLibelleType } from '@/lib/utils/documents-tri'
+import { racineDeChaine, prochainNumeroVersion, cheminStockageValide } from '@/lib/utils/documents-versions'
+import { construireWhereDocuments } from '@/lib/utils/documents-recherche'
 
 // Extensions autorisées pour l'upload de documents
 const ALLOWED_EXTENSIONS = [
@@ -390,6 +395,181 @@ export async function uploadDocumentVersion(
 }
 
 /**
+ * SAVE DOCUMENT VERSION METADATA
+ * Enregistre une nouvelle version après envoi direct client → Supabase Storage.
+ * Le chemin de stockage vient du client : il n'est jamais supprimé sans avoir été
+ * validé (dossier attendu pour ce type et ce marché) et sans qu'aucune autre ligne
+ * ne l'utilise.
+ */
+export async function saveDocumentVersionMetadata(params: {
+  parentId: string
+  storagePath: string
+  nomOriginal: string
+  taille: number
+  mimeType: string
+}): Promise<ActionResult<Document>> {
+  try {
+    const session = await requireMarcheWrite()
+
+    // 1. Valider les entrées (sans toucher au stockage)
+    if (!Number.isInteger(params.taille) || params.taille <= 0 || params.taille > MAX_FILE_SIZE) {
+      return { success: false, error: 'Taille de fichier invalide' }
+    }
+    if (!(ALLOWED_MIME_TYPES as readonly string[]).includes(params.mimeType)) {
+      return { success: false, error: `Type de fichier non autorisé : ${params.mimeType}` }
+    }
+    const point = params.nomOriginal.lastIndexOf('.')
+    const extension = point >= 0 ? params.nomOriginal.slice(point + 1).toLowerCase() : ''
+    if (!(ALLOWED_FILE_EXTENSIONS as readonly string[]).includes(extension)) {
+      return { success: false, error: `Extension de fichier non autorisée : .${extension}` }
+    }
+
+    // 2. Lire le parent et la racine de la chaîne
+    const parent = await prisma.document.findUnique({ where: { id: params.parentId } })
+    if (!parent) {
+      return { success: false, error: 'Document introuvable' }
+    }
+    const racine = parent.documentParentId
+      ? await prisma.document.findUnique({ where: { id: racineDeChaine(parent) } })
+      : parent
+
+    // 3. Le chemin doit être celui attendu AVANT tout nettoyage du stockage
+    if (!cheminStockageValide(params.storagePath, parent.type, parent.marcheId)) {
+      return { success: false, error: 'Chemin de stockage invalide' }
+    }
+
+    // Chemin déjà associé à une autre ligne : refus, sans toucher au fichier (il n'est pas à nous)
+    const dejaUtilise = await prisma.document.findFirst({
+      where: { storagePath: params.storagePath },
+      select: { id: true },
+    })
+    if (dejaUtilise) {
+      return { success: false, error: 'Ce fichier est déjà associé à un document' }
+    }
+
+    // L'objet doit exister dans le stockage (rien à effacer sinon)
+    const { error: objetAbsent } = await createClient()
+      .storage.from('marches-documents')
+      .createSignedUrl(params.storagePath, 60)
+    if (objetAbsent) {
+      return { success: false, error: 'Fichier introuvable dans le stockage' }
+    }
+
+    // Supprime le fichier envoyé, sauf si une autre ligne l'utilise
+    const nettoyerFichier = async () => {
+      try {
+        const autre = await prisma.document.findFirst({
+          where: { storagePath: params.storagePath },
+          select: { id: true },
+        })
+        if (!autre) {
+          await createClient().storage.from('marches-documents').remove([params.storagePath])
+        }
+      } catch (cleanupError) {
+        console.error('[saveDocumentVersionMetadata Cleanup Error]', cleanupError)
+      }
+    }
+
+    // 4. Parent ou racine supprimé : on n'ajoute pas de version
+    if (parent.deleted || !racine || racine.deleted) {
+      await nettoyerFichier()
+      return { success: false, error: 'Document introuvable' }
+    }
+
+    // 5-6. Numérotation et création dans une transaction verrouillée sur la racine
+    // (deux envois simultanés ne peuvent plus obtenir le même numéro)
+    class ChaineSupprimee extends Error {}
+    let newDocument
+    try {
+      newDocument = await prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM documents WHERE id = ${racine.id} FOR UPDATE`
+
+        // Relire racine et parent sous verrou : ils ont pu être supprimés entre-temps
+        const racineVerrouillee = await tx.document.findUnique({
+          where: { id: racine.id },
+          select: { deleted: true },
+        })
+        const parentVerrouille = await tx.document.findUnique({
+          where: { id: parent.id },
+          select: { deleted: true },
+        })
+        if (!racineVerrouillee || racineVerrouillee.deleted || !parentVerrouille || parentVerrouille.deleted) {
+          throw new ChaineSupprimee()
+        }
+
+        // Numéro : toutes les lignes de la chaîne comptent, supprimées comprises
+        const lignes = await tx.document.findMany({
+          where: { OR: [{ id: racine.id }, { documentParentId: racine.id }] },
+          select: { version: true },
+        })
+        const newVersion = prochainNumeroVersion(lignes.map((l) => l.version))
+
+        return tx.document.create({
+          data: {
+            nom: parent.nom,
+            nomOriginal: params.nomOriginal,
+            type: parent.type,
+            phase: parent.phase,
+            taille: params.taille,
+            mimeType: params.mimeType,
+            storagePath: params.storagePath,
+            description: parent.description,
+            dateValidite: parent.dateValidite,
+            tags: parent.tags,
+            version: newVersion,
+            documentParentId: racine.id,
+            userId: session.user.id,
+            marcheId: parent.marcheId,
+          },
+          include: {
+            user: { select: { id: true, name: true, role: true } },
+            marche: { select: { id: true, numero: true, objet: true } },
+          },
+        })
+      })
+    } catch (dbError) {
+      if (dbError instanceof ChaineSupprimee) {
+        await nettoyerFichier()
+        return { success: false, error: 'Document introuvable' }
+      }
+      console.error('[saveDocumentVersionMetadata Database Error]', dbError)
+      await nettoyerFichier()
+      return { success: false, error: 'Erreur lors de la sauvegarde en base de données' }
+    }
+
+    await logAction({
+      userId:     session.user.id,
+      userEmail:  session.user.email,
+      action:     AUDIT_ACTION.CREATE,
+      entityType: AUDIT_ENTITY.DOCUMENT,
+      entityId:   newDocument.id,
+      metadata:   {
+        nom: newDocument.nom,
+        version: newDocument.version,
+        parentId: racine.id,
+        remplace: parent.id,
+        taille: newDocument.taille,
+      },
+    })
+
+    revalidatePath('/documents')
+    revalidatePath(`/documents/${params.parentId}`)
+    revalidatePath(`/documents/${newDocument.id}`)
+    if (parent.marcheId) {
+      revalidatePath(`/marches/${parent.marcheId}`)
+    }
+
+    return { success: true, data: newDocument }
+  } catch (error) {
+    console.error('[saveDocumentVersionMetadata Error]', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erreur serveur',
+    }
+  }
+}
+
+/**
  * RÉCUPÉRER UN DOCUMENT PAR ID
  */
 export async function getDocumentById(
@@ -411,6 +591,7 @@ export async function getDocumentById(
           select: { id: true, nom: true, version: true },
         },
         versions: {
+          where: { deleted: false },
           select: {
             id: true,
             nom: true,
@@ -472,29 +653,7 @@ export async function getAllDocuments(
     const { skip, take } = getPrismaSkipTake({ page, limit })
 
     // Construction du WHERE dynamique
-    const where: Prisma.DocumentWhereInput = {
-      deleted: false, // Exclure les documents supprimés
-    }
-
-    if (type) where.type = type
-    if (phase) where.phase = phase
-    if (marcheId) where.marcheId = marcheId
-
-    // Recherche texte (nom, description, nom original)
-    if (search) {
-      where.OR = [
-        { nom: { contains: search, mode: 'insensitive' } },
-        { nomOriginal: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ]
-    }
-
-    // Filtrage par période
-    if (dateDebut || dateFin) {
-      where.createdAt = {}
-      if (dateDebut) where.createdAt.gte = dateDebut
-      if (dateFin) where.createdAt.lte = dateFin
-    }
+    const where = construireWhereDocuments({ type, phase, marcheId, search, dateDebut, dateFin })
 
     const include = {
       user: {
@@ -566,6 +725,31 @@ export async function getAllDocumentsArray(
 ): Promise<Document[]> {
   const result = await getAllDocuments(filters ? { ...filters, limit: 10000 } : { limit: 10000 })
   return result.success ? result.data.data : []
+}
+
+/**
+ * LISTE DES MARCHÉS POUR LE FILTRE DE LA PAGE DOCUMENTS
+ */
+export async function getMarchesPourFiltreDocuments(): Promise<
+  ActionResult<{ id: string; numero: string; objet: string }[]>
+> {
+  try {
+    const session = await requireAuth()
+
+    const marches = await prisma.marche.findMany({
+      where: { statut: getMarcheStatutRestriction(session.user.role) },
+      select: { id: true, numero: true, objet: true },
+      orderBy: { numero: 'asc' },
+    })
+
+    return { success: true, data: marches }
+  } catch (error) {
+    console.error('[getMarchesPourFiltreDocuments Error]', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erreur serveur',
+    }
+  }
 }
 
 /**

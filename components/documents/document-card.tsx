@@ -3,7 +3,10 @@
 import { DocumentIcon } from './document-icon'
 import { DocumentBadge } from './document-badge'
 import { formatTaille } from '@/lib/utils/document'
-import { Download, Eye, Loader2, Trash2, MoreVertical, History } from 'lucide-react'
+import type { DocumentAvecMarche } from '@/lib/utils/document'
+import Link from 'next/link'
+import { Download, Eye, FileText, Link2, Loader2, Trash2, MoreVertical, History } from 'lucide-react'
+import { copierLienDocument } from '@/lib/utils/documents-lien'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { Document } from '@prisma/client'
@@ -18,7 +21,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 interface DocumentCardProps {
-  document: Document
+  /** Le marché est optionnel : d'autres vues (fiche marché) passent un Document nu */
+  document: Document & Partial<Pick<DocumentAvecMarche, 'marche'>>
   onPreview?: (document: Document) => void
   onDownload?: (document: Document) => void
   telechargementId?: string | null
@@ -135,7 +139,9 @@ export function DocumentCard({
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm leading-snug truncate text-foreground">
-            {document.nom}
+            <Link href={`/documents/${document.id}`} className="hover:underline">
+              {document.nom}
+            </Link>
           </p>
           <p className="text-xs text-muted-foreground truncate mt-0.5">
             {document.nomOriginal}
@@ -152,36 +158,44 @@ export function DocumentCard({
           </div>
         </div>
         {/* Dropdown secondaire (supprimer / versions) */}
-        {(onDelete || (hasVersions && onViewVersions)) && (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              aria-label={`Actions pour ${document.nom}`}
-              className="flex h-11 w-11 -mt-2 -mr-2 items-center justify-center rounded-lg hover:bg-gray-100 flex-shrink-0"
-            >
-              <MoreVertical className="h-4 w-4 text-muted-foreground" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {hasVersions && onViewVersions && (
-                <DropdownMenuItem onClick={() => onViewVersions(document)}>
-                  <History className="mr-2 h-4 w-4" />
-                  Versions ({document.version})
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            aria-label={`Actions pour ${document.nom}`}
+            className="flex h-11 w-11 -mt-2 -mr-2 items-center justify-center rounded-lg hover:bg-gray-100 flex-shrink-0"
+          >
+            <MoreVertical className="h-4 w-4 text-muted-foreground" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild>
+              <Link href={`/documents/${document.id}`}>
+                <FileText className="mr-2 h-4 w-4" />
+                Voir le détail
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => copierLienDocument(document.id)}>
+              <Link2 className="mr-2 h-4 w-4" />
+              Copier le lien
+            </DropdownMenuItem>
+            {hasVersions && onViewVersions && (
+              <DropdownMenuItem onClick={() => onViewVersions(document)}>
+                <History className="mr-2 h-4 w-4" />
+                Versions ({document.version})
+              </DropdownMenuItem>
+            )}
+            {onDelete && (
+              <>
+                {hasVersions && onViewVersions && <DropdownMenuSeparator />}
+                <DropdownMenuItem
+                  onClick={() => onDelete(document)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Supprimer
                 </DropdownMenuItem>
-              )}
-              {onDelete && (
-                <>
-                  {hasVersions && onViewVersions && <DropdownMenuSeparator />}
-                  <DropdownMenuItem
-                    onClick={() => onDelete(document)}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Supprimer
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Corps : description + métadonnées + tags */}
@@ -205,6 +219,15 @@ export function DocumentCard({
             </>
           )}
         </div>
+
+        {document.marche && (
+          <p className="text-xs text-muted-foreground">
+            Marché :{' '}
+            <Link href={`/marches/${document.marche.id}`} title={document.marche.objet} className="text-stam-accent hover:underline">
+              {document.marche.numero}
+            </Link>
+          </p>
+        )}
 
         {document.tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
