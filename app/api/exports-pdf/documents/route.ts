@@ -18,16 +18,21 @@ export async function GET(request: NextRequest) {
 
     const filters = {
       type: searchParams.get('type') || undefined,
+      phase: searchParams.get('phase') || undefined,
       dateDebut: searchParams.get('dateDebut') || undefined,
       dateFin: searchParams.get('dateFin') || undefined,
       search: searchParams.get('search') || undefined,
+      marcheId: searchParams.get('marcheId') || undefined,
       orientation,
     }
 
     const result = await exportDocumentsPDF(filters)
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 })
+      return NextResponse.json(
+        { error: result.error },
+        { status: result.error === 'Filtres invalides' ? 400 : 500 }
+      )
     }
 
     const disposition = isPreview
@@ -39,6 +44,9 @@ export async function GET(request: NextRequest) {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': disposition,
+        'X-Export-Total': String(result.data.total),
+        'X-Export-Exportees': String(result.data.exportees),
+        ...(result.data.total > result.data.exportees ? { 'X-Export-Tronque': 'true' } : {}),
       },
     })
   } catch (error: any) {

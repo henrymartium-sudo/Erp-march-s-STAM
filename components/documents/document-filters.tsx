@@ -13,18 +13,26 @@ import {
 } from '@/components/ui/select'
 import { TypeDocument, PhaseMarche } from '@prisma/client'
 import { TYPE_DOCUMENT_LABELS, PHASE_MARCHE_LABELS } from '@/lib/utils/document'
+import { appliquerFiltreMarche, libelleMarche } from '@/lib/utils/documents-filtres'
 import { Search, X } from 'lucide-react'
 import { useDebounce } from '@/hooks/use-debounce'
+
+interface DocumentFiltersProps {
+  /** Marchés proposés dans le sélecteur « Filtrer par marché » */
+  marches: { id: string; numero: string; objet: string }[]
+}
 
 /**
  * Composant de filtrage des documents
  */
-export function DocumentFilters() {
+export function DocumentFilters({ marches }: DocumentFiltersProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
   const typeActuel = searchParams.get('type') || 'all'
   const phaseActuel = searchParams.get('phase') || 'all'
+  const marcheActuel = searchParams.get('marcheId') || 'all'
+  const marcheSelectionne = marches.find((m) => m.id === marcheActuel)
 
   // État de recherche
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
@@ -82,13 +90,17 @@ export function DocumentFilters() {
     router.push(`/documents?${params.toString()}`)
   }
 
+  const handleMarcheChange = (value: string) => {
+    router.push(`/documents?${appliquerFiltreMarche(new URLSearchParams(searchParams.toString()), value).toString()}`)
+  }
+
   const handleReset = () => {
     setSearchQuery('')
     router.push('/documents')
   }
 
   const hasActiveFilters =
-    typeActuel !== 'all' || phaseActuel !== 'all' || searchQuery
+    typeActuel !== 'all' || phaseActuel !== 'all' || marcheActuel !== 'all' || searchQuery
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-card">
@@ -145,6 +157,18 @@ export function DocumentFilters() {
             </SelectContent>
           </Select>
 
+          <Select value={marcheSelectionne?.id ?? 'all'} onValueChange={handleMarcheChange}>
+            <SelectTrigger className="col-span-2 w-full sm:col-span-1 sm:w-56 h-10" aria-label="Filtrer par marché">
+              <SelectValue placeholder="Marché" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les marchés</SelectItem>
+              {marches.map((marche) => (
+                <SelectItem key={marche.id} value={marche.id}>{libelleMarche(marche)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           {hasActiveFilters && (
             <Button
               type="button"
@@ -172,6 +196,11 @@ export function DocumentFilters() {
           {phaseActuel !== 'all' && (
             <span className="inline-flex items-center gap-1 text-xs bg-primary/8 text-primary rounded-full px-2 py-0.5">
               {PHASE_MARCHE_LABELS[phaseActuel as PhaseMarche]}
+            </span>
+          )}
+          {marcheSelectionne && (
+            <span className="inline-flex items-center gap-1 text-xs bg-primary/8 text-primary rounded-full px-2 py-0.5">
+              {libelleMarche(marcheSelectionne)}
             </span>
           )}
           {searchQuery && (

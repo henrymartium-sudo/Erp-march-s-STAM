@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
-import { requireAuth } from '@/lib/utils/permissions'
-import { getDocumentById } from '@/lib/actions/documents'
+import { requireAuth, canWrite } from '@/lib/utils/permissions'
+import { getDocumentById, getDocumentVersions } from '@/lib/actions/documents'
 import { BreadcrumbNav } from '@/components/shared/breadcrumb-nav'
 import { PageHeader } from '@/components/shared/page-header'
 import { DocumentDetailContent } from './_components/document-detail-content'
@@ -14,7 +14,8 @@ export default async function DocumentDetailPage({
   params: Promise<{ id: string }>
 }) {
   // Vérifier l'authentification
-  await requireAuth()
+  const session = await requireAuth()
+  const role = (session.user as { role?: string } | undefined)?.role
 
   // Await params (Next.js 15 requirement)
   const { id } = await params
@@ -27,6 +28,10 @@ export default async function DocumentDetailPage({
   }
 
   const document = result.data
+
+  // Historique de la chaîne (parent compris), depuis n'importe quelle version
+  const versions = await getDocumentVersions(id)
+  const nbVersions = versions.success ? versions.data.length : 1
 
   return (
     <div className="space-y-5 max-w-5xl">
@@ -43,7 +48,11 @@ export default async function DocumentDetailPage({
       />
 
       {/* Contenu avec actions */}
-      <DocumentDetailContent document={document} />
+      <DocumentDetailContent
+        document={document}
+        nbVersions={nbVersions}
+        peutEcrire={canWrite(role)}
+      />
     </div>
   )
 }

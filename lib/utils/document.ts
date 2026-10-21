@@ -1,4 +1,5 @@
 import { TypeDocument, PhaseMarche } from '@prisma/client'
+import type { Document } from '@prisma/client'
 import {
   FileText,
   Image,
@@ -10,6 +11,13 @@ import {
   File,
   type LucideIcon,
 } from 'lucide-react'
+
+/**
+ * Document de la liste, avec le marché auquel il est rattaché (null si aucun)
+ */
+export type DocumentAvecMarche = Document & {
+  marche: { id: string; numero: string; objet: string } | null
+}
 
 /**
  * FORMATAGE

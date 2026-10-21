@@ -21,6 +21,20 @@ import {
 import { formatDateCourt } from '@/lib/utils/format'
 import { buildOpportuniteOrderBy, buildOpportuniteWhere, parseOpportuniteFilters } from '@/lib/utils/opportunite-filters'
 import { calculerAvancementLots, deriverEtatDossier, totalMontantPropose } from '@/lib/utils/lots'
+import { documentFiltersSchema } from '@/lib/validations/document'
+import {
+  construireWhereDocuments,
+  noteTroncature,
+  tailleEnKo,
+  valeurOuND,
+} from '@/lib/utils/documents-recherche'
+import {
+  JOURS_ALERTE_VALIDITE,
+  LIBELLE_NON_RENSEIGNE,
+  bornesEcheance,
+  statutValidite,
+  trierRecapitulatif,
+} from '@/lib/utils/documents-echeances'
 
 // Limite maximale de lignes par export (protection mémoire)
 const EXPORT_MAX_ROWS = 1000;
@@ -38,6 +52,7 @@ interface ExportFilters {
   dateDebut?: string
   dateFin?: string
   search?: string
+  marcheId?: string
   orientation?: 'portrait' | 'landscape' // pour les exports PDF
 }
 
@@ -396,31 +411,39 @@ export async function exportVehicules(
 // EXPORT DOCUMENTS
 // ============================================================================
 
+/**
+ * Valide les filtres d'entrée avec le schéma de la liste et construit le même
+ * `where` qu'elle. Renvoie null si les filtres sont invalides.
+ */
+function lireWhereDocuments(filters?: ExportFilters) {
+  const lireDate = (valeur?: string) => (valeur ? new Date(valeur) : undefined)
+  const analyse = documentFiltersSchema
+    .partial()
+    .safeParse({
+      type: filters?.type || undefined,
+      phase: filters?.phase || undefined,
+      marcheId: filters?.marcheId || undefined,
+      search: filters?.search || undefined,
+      dateDebut: lireDate(filters?.dateDebut),
+      dateFin: lireDate(filters?.dateFin),
+    })
+  if (!analyse.success) return null
+  const { type, phase, marcheId, search, dateDebut, dateFin } = analyse.data
+  return construireWhereDocuments({ type, phase, marcheId, search, dateDebut, dateFin })
+}
+
 export async function exportDocuments(
   filters?: ExportFilters
-): Promise<ActionResult<{ buffer: Buffer; filename: string }>> {
+): Promise<ActionResult<{ buffer: Buffer; filename: string; total: number; exportees: number }>> {
   try {
     // Vérification permissions (EXPLOITATION minimum)
     const session = await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION'])
 
-    // Construction du filtre Prisma
-    const where: any = {
-      deleted: false, // Exclure documents supprimés
-    }
+    // Mêmes filtres que la liste des documents
+    const where = lireWhereDocuments(filters)
+    if (!where) return { success: false, error: 'Filtres invalides' }
 
-    if (filters?.type) {
-      where.type = filters.type
-    }
-
-    if (filters?.dateDebut || filters?.dateFin) {
-      where.createdAt = {}
-      if (filters.dateDebut) {
-        where.createdAt.gte = new Date(filters.dateDebut)
-      }
-      if (filters.dateFin) {
-        where.createdAt.lte = new Date(filters.dateFin)
-      }
-    }
+    const total = await prisma.document.count({ where })
 
     // Récupération des documents
     const documents = await prisma.document.findMany({
@@ -432,59 +455,296 @@ export async function exportDocuments(
         user: { select: { name: true } },
       },
     })
+    const exportees = documents.length
+    const note = noteTroncature(total, exportees)
 
-    // Configuration des colonnes
-    const columns: ExcelColumn[] = [
-      { header: 'Nom', key: 'nom', width: 30 },
-      { header: 'Nom Original', key: 'nomOriginal', width: 25 },
-      { header: 'Type', key: 'type', width: 20 },
-      { header: 'Phase Marché', key: 'phase', width: 15 },
-      { header: 'Taille', key: 'taille', width: 12 },
-      { header: 'Date Création', key: 'createdAt', width: 15 },
-      { header: 'Date Validité', key: 'dateValidite', width: 15 },
-      { header: 'Description', key: 'description', width: 40 },
-      { header: 'Tags', key: 'tags', width: 25 },
-      { header: 'N° Marché', key: 'marcheNumero', width: 20 },
-      { header: 'Objet Marché', key: 'marcheObjet', width: 40 },
-      { header: 'Gestionnaire', key: 'userName', width: 20 },
+    const today = new Date()
+    const { debutJour, limiteBientot } = bornesEcheance(today)
+
+    // Récapitulatif : agrégats en base sur TOUS les documents filtrés
+    const [parType, parPhase, parMarche, nbExpires, nbBientot] = await Promise.all([
+      prisma.document.groupBy({ by: ['type'], where, _count: { _all: true } }),
+      prisma.document.groupBy({ by: ['phase'], where, _count: { _all: true } }),
+      prisma.document.groupBy({ by: ['marcheId'], where, _count: { _all: true } }),
+      prisma.document.count({ where: { AND: [where, { dateValidite: { lt: debutJour } }] } }),
+      prisma.document.count({
+        where: { AND: [where, { dateValidite: { gte: debutJour, lte: limiteBientot } }] },
+      }),
+    ])
+    const idsMarches = parMarche.flatMap((g) => (g.marcheId ? [g.marcheId] : []))
+    const marchesRecap = idsMarches.length
+      ? await prisma.marche.findMany({
+          where: { id: { in: idsMarches } },
+          select: { id: true, numero: true, objet: true },
+        })
+      : []
+    const marcheParId = new Map(marchesRecap.map((m) => [m.id, m]))
+    const tronquer = (s: string) => (s.length > 60 ? `${s.slice(0, 60)}…` : s)
+
+    // ------------------------------------------------------------------
+    // Classeur (mêmes règles de mise en forme que les Opportunités)
+    // ------------------------------------------------------------------
+    const NAVY = 'FF1E3A5F'
+    const FOND_EXPIRE = 'FFFEE2E2'
+    const FOND_BIENTOT = 'FFFEF3C7'
+
+    const workbook = new ExcelJS.Workbook()
+    workbook.creator = 'ERP Marchés STAM'
+    workbook.created = today
+
+    const ws = workbook.addWorksheet('Documents', {
+      properties: { defaultRowHeight: 18 },
+    })
+
+    const COLS = [
+      { header: 'Nom',            key: 'nom',          width: 32 },
+      { header: 'Nom original',   key: 'nomOriginal',  width: 28 },
+      { header: 'Type',           key: 'type',         width: 22 },
+      { header: 'Phase',          key: 'phase',        width: 18 },
+      { header: 'Taille (Ko)',    key: 'tailleKo',     width: 14 },
+      { header: 'Date création',  key: 'createdAt',    width: 16 },
+      { header: 'Date validité',  key: 'dateValidite', width: 16 },
+      { header: 'Description',    key: 'description',  width: 40 },
+      { header: 'Tags',           key: 'tags',         width: 25 },
+      { header: 'N° Marché',      key: 'marcheNumero', width: 20 },
+      { header: 'Objet marché',   key: 'marcheObjet',  width: 40 },
+      { header: 'Gestionnaire',   key: 'userName',     width: 22 },
     ]
+    const derniere = ws.getColumn(COLS.length).letter
 
-    // Formatage des données
-    const data = documents.map((document) => {
-      // Conversion taille en format lisible (KB ou MB)
-      const tailleMo = document.taille / (1024 * 1024)
-      const tailleKo = document.taille / 1024
-      const tailleFormatee =
-        tailleMo >= 1
-          ? `${tailleMo.toFixed(2)} MB`
-          : `${tailleKo.toFixed(2)} KB`
+    // Titre
+    ws.mergeCells(`A1:${derniere}1`)
+    const titleCell = ws.getCell('A1')
+    titleCell.value = 'Export des Documents'
+    titleCell.style = {
+      font: { bold: true, size: 14, color: { argb: NAVY } },
+      alignment: { vertical: 'middle', horizontal: 'center' },
+    }
+    ws.getRow(1).height = 30
 
-      return {
-        nom: document.nom,
-        nomOriginal: document.nomOriginal,
-        type: formatTypeForExcel(document.type),
-        phase: document.phase ? formatTypeForExcel(document.phase) : '',
-        taille: tailleFormatee,
-        createdAt: document.createdAt,
-        dateValidite: document.dateValidite || '',
-        description: document.description || '',
-        tags: document.tags.join(', '),
-        marcheNumero: document.marche?.numero || '',
-        marcheObjet: document.marche?.objet || '',
-        userName: document.user.name,
+    // Horodatage
+    ws.mergeCells(`A2:${derniere}2`)
+    const tsCell = ws.getCell('A2')
+    tsCell.value = `Généré le ${format(today, 'dd/MM/yyyy')} à ${format(today, 'HH:mm')}`
+    tsCell.style = {
+      font: { size: 9, italic: true, color: { argb: 'FF6B7280' } },
+      alignment: { vertical: 'middle', horizontal: 'center' },
+    }
+
+    // Note de troncature (ligne 3)
+    if (note) {
+      ws.mergeCells(`A3:${derniere}3`)
+      const noteCell = ws.getCell('A3')
+      noteCell.value = note
+      noteCell.style = {
+        font: { size: 10, italic: true, color: { argb: 'FFB45309' } },
+        alignment: { vertical: 'middle', horizontal: 'left', wrapText: true },
       }
+      ws.getRow(3).height = 20
+    }
+
+    // En-têtes (ligne 4)
+    const hRow = ws.getRow(4)
+    hRow.height = 25
+    COLS.forEach((col, i) => {
+      const cell = hRow.getCell(i + 1)
+      cell.value = col.header
+      cell.style = {
+        font: { bold: true, size: 10, color: { argb: 'FFFFFFFF' } },
+        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: NAVY } },
+        alignment: { vertical: 'middle', horizontal: 'center', wrapText: true },
+        border: {
+          bottom: { style: 'medium', color: { argb: 'FF000000' } },
+          right:  { style: 'thin',   color: { argb: 'FFE5E7EB' } },
+        },
+      }
+      ws.getColumn(i + 1).width = col.width
+    })
+    ws.autoFilter = { from: { row: 4, column: 1 }, to: { row: 4, column: COLS.length } }
+
+    const bordure = {
+      bottom: { style: 'thin' as const, color: { argb: 'FFE5E7EB' } },
+      right:  { style: 'thin' as const, color: { argb: 'FFE5E7EB' } },
+    }
+
+    if (documents.length === 0) {
+      // Fichier valide, sans ligne de données
+      ws.mergeCells(`A5:${derniere}5`)
+      const vide = ws.getCell('A5')
+      vide.value = 'Aucune donnée'
+      vide.style = {
+        font: { size: 10, italic: true, color: { argb: 'FF6B7280' } },
+        alignment: { vertical: 'middle', horizontal: 'center' },
+      }
+    }
+
+    documents.forEach((document, idx) => {
+      const row = ws.getRow(5 + idx)
+      row.height = 18
+
+      const values: (string | number | Date)[] = [
+        valeurOuND(document.nom),
+        valeurOuND(document.nomOriginal),
+        valeurOuND(formatTypeForExcel(document.type)),
+        valeurOuND(document.phase ? formatTypeForExcel(document.phase) : ''),
+        tailleEnKo(document.taille),
+        document.createdAt,
+        document.dateValidite ?? 'n.d.',
+        valeurOuND(document.description),
+        valeurOuND(document.tags.join(', ')),
+        valeurOuND(document.marche?.numero),
+        valeurOuND(document.marche?.objet),
+        valeurOuND(document.user.name),
+      ]
+
+      values.forEach((val, i) => {
+        const cell = row.getCell(i + 1)
+        cell.value = val
+        const key = COLS[i]?.key
+        const estDate = val instanceof Date
+        const estTaille = key === 'tailleKo'
+        cell.style = {
+          font: { size: 10 },
+          alignment: {
+            vertical: 'middle',
+            horizontal: estDate || val === 'n.d.' ? 'center' : estTaille ? 'right' : 'left',
+            wrapText: key === 'description' || key === 'marcheObjet',
+          },
+          border: bordure,
+          ...(estDate ? { numFmt: 'dd/mm/yyyy' } : {}),
+          ...(estTaille ? { numFmt: '#,##0.0' } : {}),
+        }
+        if (key === 'dateValidite') {
+          const statut = statutValidite(document.dateValidite, today)
+          if (statut === 'expire' || statut === 'bientot') {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: statut === 'expire' ? FOND_EXPIRE : FOND_BIENTOT },
+            }
+          }
+        }
+      })
     })
 
-    // Génération du fichier Excel
-    const buffer = await createExcelFile({
-      filename: `documents_${new Date().toISOString().split('T')[0]}.xlsx`,
-      sheetName: 'Documents',
-      title: 'Export des Documents',
-      columns,
-      data,
-      includeTimestamp: true,
-    })
+    // ------------------------------------------------------------------
+    // Feuille 2 — Récapitulatif (sur tous les documents filtrés)
+    // ------------------------------------------------------------------
+    const ws2 = workbook.addWorksheet('Récapitulatif')
+    ws2.getColumn(1).width = 60
+    ws2.getColumn(2).width = 14
 
+    ws2.mergeCells('A1:B1')
+    const t2 = ws2.getCell('A1')
+    t2.value =
+      `Récapitulatif des ${total} documents correspondant aux filtres` +
+      (total > exportees ? ` (l'export détaillé est limité à ${exportees} lignes)` : '')
+    t2.style = {
+      font: { bold: true, size: 14, color: { argb: NAVY } },
+      alignment: { vertical: 'middle', horizontal: 'center', wrapText: true },
+    }
+    ws2.getRow(1).height = 40
+
+    ws2.mergeCells('A2:B2')
+    const ts2 = ws2.getCell('A2')
+    ts2.value = `Généré le ${format(today, 'dd/MM/yyyy')} à ${format(today, 'HH:mm')}`
+    ts2.style = {
+      font: { size: 9, italic: true, color: { argb: 'FF6B7280' } },
+      alignment: { vertical: 'middle', horizontal: 'center' },
+    }
+
+    let r2 = 4
+    if (total === 0) {
+      ws2.mergeCells(`A${r2}:B${r2}`)
+      const vide2 = ws2.getCell(`A${r2}`)
+      vide2.value = 'Aucune donnée'
+      vide2.style = {
+        font: { size: 10, italic: true, color: { argb: 'FF6B7280' } },
+        alignment: { vertical: 'middle', horizontal: 'center' },
+      }
+    } else {
+      const bloc = (
+        titre: string,
+        lignes: { libelle: string; nombre: number; fond?: string }[]
+      ) => {
+        const h = ws2.getRow(r2)
+        h.height = 22
+        ;[titre, 'Nombre'].forEach((texte, i) => {
+          const cell = h.getCell(i + 1)
+          cell.value = texte
+          cell.style = {
+            font: { bold: true, size: 10, color: { argb: 'FFFFFFFF' } },
+            fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: NAVY } },
+            alignment: { vertical: 'middle', horizontal: 'center' },
+            border: { bottom: { style: 'medium', color: { argb: 'FF000000' } } },
+          }
+        })
+        r2++
+        for (const ligne of lignes) {
+          const row = ws2.getRow(r2)
+          const c1 = row.getCell(1)
+          c1.value = ligne.libelle
+          c1.style = {
+            font: { size: 10 },
+            alignment: { vertical: 'middle', horizontal: 'left' },
+            border: bordure,
+            ...(ligne.fond
+              ? { fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: ligne.fond } } }
+              : {}),
+          }
+          const c2 = row.getCell(2)
+          c2.value = ligne.nombre
+          c2.style = {
+            font: { size: 10 },
+            alignment: { vertical: 'middle', horizontal: 'right' },
+            border: bordure,
+          }
+          r2++
+        }
+        r2++ // ligne vide entre les blocs
+      }
+
+      bloc(
+        'Par type',
+        trierRecapitulatif(
+          parType.map((g) => ({
+            libelle: formatTypeForExcel(g.type) || LIBELLE_NON_RENSEIGNE,
+            nombre: g._count._all,
+          }))
+        )
+      )
+      bloc(
+        'Par phase',
+        trierRecapitulatif(
+          parPhase.map((g) => ({
+            libelle: g.phase ? formatTypeForExcel(g.phase) : LIBELLE_NON_RENSEIGNE,
+            nombre: g._count._all,
+          }))
+        )
+      )
+      bloc(
+        'Par marché',
+        trierRecapitulatif(
+          parMarche.map((g) => {
+            const m = g.marcheId ? marcheParId.get(g.marcheId) : undefined
+            return {
+              libelle: m ? `${m.numero} — ${tronquer(m.objet ?? '')}` : LIBELLE_NON_RENSEIGNE,
+              nombre: g._count._all,
+            }
+          })
+        )
+      )
+      bloc('Échéances de validité', [
+        { libelle: 'Expirés', nombre: nbExpires, fond: FOND_EXPIRE },
+        {
+          libelle: `Sous ${JOURS_ALERTE_VALIDITE} jours`,
+          nombre: nbBientot,
+          fond: FOND_BIENTOT,
+        },
+      ])
+    }
+
+    const buffer = Buffer.from(await workbook.xlsx.writeBuffer())
     const filename = `documents_${new Date().toISOString().split('T')[0]}.xlsx`
 
     await logAction({
@@ -492,12 +752,12 @@ export async function exportDocuments(
       userEmail:  session.user.email,
       action:     AUDIT_ACTION.EXPORT,
       entityType: AUDIT_ENTITY.EXPORT,
-      metadata:   { format: 'EXCEL', module: 'DOCUMENT', filters },
+      metadata:   { format: 'EXCEL', module: 'DOCUMENT', filters, total, exportees, recapitulatif: true },
     })
 
     return {
       success: true,
-      data: { buffer, filename },
+      data: { buffer, filename, total, exportees },
     }
   } catch (error: any) {
     console.error('[EXPORT_DOCUMENTS]', error)
@@ -795,29 +1055,16 @@ export async function exportCautionsPDF(
 
 export async function exportDocumentsPDF(
   filters?: ExportFilters
-): Promise<ActionResult<{ buffer: Buffer; filename: string }>> {
+): Promise<ActionResult<{ buffer: Buffer; filename: string; total: number; exportees: number }>> {
   try {
     // Vérification permissions (EXPLOITATION minimum)
     const session = await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION'])
 
-    // Construction du filtre Prisma
-    const where: any = {
-      deleted: false,
-    }
+    // Mêmes filtres que la liste des documents
+    const where = lireWhereDocuments(filters)
+    if (!where) return { success: false, error: 'Filtres invalides' }
 
-    if (filters?.type) {
-      where.type = filters.type
-    }
-
-    if (filters?.dateDebut || filters?.dateFin) {
-      where.createdAt = {}
-      if (filters.dateDebut) {
-        where.createdAt.gte = new Date(filters.dateDebut)
-      }
-      if (filters.dateFin) {
-        where.createdAt.lte = new Date(filters.dateFin)
-      }
-    }
+    const total = await prisma.document.count({ where })
 
     // Récupération des documents
     const documents = await prisma.document.findMany({
@@ -829,6 +1076,8 @@ export async function exportDocumentsPDF(
         user: { select: { name: true } },
       },
     })
+    const exportees = documents.length
+    const note = noteTroncature(total, exportees)
 
     // Configuration des colonnes PDF
     const columns: PDFColumn[] = [
@@ -884,7 +1133,7 @@ export async function exportDocumentsPDF(
     // Génération du PDF
     const buffer = await createPDFDocument({
       title: 'Export des Documents',
-      subtitle: `${documents.length} document${documents.length > 1 ? 's' : ''}`,
+      subtitle: `${documents.length} document${documents.length > 1 ? 's' : ''}${note ? ` — ${note}` : ''}`,
       columns,
       data,
       summary,
@@ -898,12 +1147,12 @@ export async function exportDocumentsPDF(
       userEmail:  session.user.email,
       action:     AUDIT_ACTION.EXPORT,
       entityType: AUDIT_ENTITY.EXPORT,
-      metadata:   { format: 'PDF', module: 'DOCUMENT', filters },
+      metadata:   { format: 'PDF', module: 'DOCUMENT', filters, total, exportees },
     })
 
     return {
       success: true,
-      data: { buffer, filename },
+      data: { buffer, filename, total, exportees },
     }
   } catch (error: any) {
     console.error('[EXPORT_DOCUMENTS_PDF]', error)

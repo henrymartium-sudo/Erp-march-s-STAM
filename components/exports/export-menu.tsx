@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
+import { noteTroncature } from '@/lib/utils/documents-recherche'
 import { PDFExportModal } from './PDFExportModal'
 
 // ============================================================================
@@ -153,6 +154,14 @@ export function ExportMenu({
       toast.success('Export Excel réussi', {
         description: `Le fichier ${filename} a été téléchargé`,
       })
+      // Export plafonné (en-tête présent seulement pour les documents)
+      if (response.headers.get('X-Export-Tronque') === 'true') {
+        const note = noteTroncature(
+          Number(response.headers.get('X-Export-Total')),
+          Number(response.headers.get('X-Export-Exportees'))
+        )
+        if (note) toast.warning(note)
+      }
     } catch (error: any) {
       console.error('[EXPORT_MENU_EXCEL]', error)
       toast.error("Erreur lors de l'export", {

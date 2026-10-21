@@ -10,10 +10,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { DocumentIcon } from './document-icon'
 import { DocumentBadge } from './document-badge'
 import { formatTaille } from '@/lib/utils/document'
+import type { DocumentAvecMarche } from '@/lib/utils/document'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { Document } from '@prisma/client'
@@ -24,12 +26,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Download, Eye, Loader2, MoreVertical, Trash2, History, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { Download, Eye, FileText, Link2, Loader2, MoreVertical, Trash2, History, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { ColonneTri, SensTri } from '@/lib/utils/documents-tri'
+import { copierLienDocument } from '@/lib/utils/documents-lien'
 
 interface DocumentTableProps {
-  documents: Document[]
+  documents: DocumentAvecMarche[]
   onPreview?: (document: Document) => void
   onDownload?: (document: Document) => void
   telechargementId?: string | null
@@ -63,6 +66,16 @@ function ActionsMenu({ document, onPreview, onDownload, telechargementId, onDele
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        <DropdownMenuItem asChild>
+          <Link href={`/documents/${document.id}`}>
+            <FileText className="mr-2 h-4 w-4" />
+            Voir le détail
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => copierLienDocument(document.id)}>
+          <Link2 className="mr-2 h-4 w-4" />
+          Copier le lien
+        </DropdownMenuItem>
         {onPreview && (
           <DropdownMenuItem onClick={() => onPreview(document)}>
             <Eye className="mr-2 h-4 w-4" />
@@ -186,7 +199,11 @@ export function DocumentTable({
           >
             <DocumentIcon type={document.type} />
             <div className="min-w-0 flex-1 space-y-1.5">
-              <p className="font-medium break-words">{document.nom}</p>
+              <p className="font-medium break-words">
+                <Link href={`/documents/${document.id}`} className="hover:underline">
+                  {document.nom}
+                </Link>
+              </p>
               {document.description && (
                 <p className="text-sm text-muted-foreground line-clamp-2">{document.description}</p>
               )}
@@ -197,6 +214,14 @@ export function DocumentTable({
                   <span className="text-xs text-muted-foreground">v{document.version}</span>
                 )}
               </div>
+              {document.marche && (
+                <p className="text-xs text-muted-foreground">
+                  Marché :{' '}
+                  <Link href={`/marches/${document.marche.id}`} title={document.marche.objet} className="text-stam-accent hover:underline">
+                    {document.marche.numero}
+                  </Link>
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">
                 {formatTaille(document.taille)} · {format(new Date(document.createdAt), 'dd MMM yyyy', { locale: fr })}
               </p>
@@ -231,6 +256,7 @@ export function DocumentTable({
             <EnteteTri colonne="type" libelle="Type" tri={tri} sens={sens} onTriChange={onTriChange} className="hidden lg:table-cell" />
             <EnteteTri colonne="taille" libelle="Taille" tri={tri} sens={sens} onTriChange={onTriChange} className="hidden lg:table-cell" />
             <EnteteTri colonne="createdAt" libelle="Date" tri={tri} sens={sens} onTriChange={onTriChange} className="hidden lg:table-cell" />
+            <TableHead className="hidden lg:table-cell">Marché</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -253,7 +279,11 @@ export function DocumentTable({
               </TableCell>
               <TableCell>
                 <div className="max-w-md">
-                  <p className="font-medium truncate">{document.nom}</p>
+                  <p className="font-medium truncate">
+                    <Link href={`/documents/${document.id}`} className="hover:underline">
+                      {document.nom}
+                    </Link>
+                  </p>
                   {document.description && (
                     <p className="text-sm text-muted-foreground truncate">
                       {document.description}
@@ -267,6 +297,11 @@ export function DocumentTable({
                     <span>
                       {formatTaille(document.taille)} · {format(new Date(document.createdAt), 'dd MMM yyyy', { locale: fr })}
                     </span>
+                    {document.marche && (
+                      <Link href={`/marches/${document.marche.id}`} title={document.marche.objet} className="text-stam-accent hover:underline">
+                        Marché {document.marche.numero}
+                      </Link>
+                    )}
                   </div>
                 </div>
               </TableCell>
@@ -282,6 +317,15 @@ export function DocumentTable({
               <TableCell className="hidden lg:table-cell">{formatTaille(document.taille)}</TableCell>
               <TableCell className="hidden lg:table-cell">
                 {format(new Date(document.createdAt), 'dd MMM yyyy', { locale: fr })}
+              </TableCell>
+              <TableCell className="hidden lg:table-cell">
+                {document.marche ? (
+                  <Link href={`/marches/${document.marche.id}`} title={document.marche.objet} className="text-stam-accent hover:underline">
+                    {document.marche.numero}
+                  </Link>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
               </TableCell>
               <TableCell className="text-right">
                 <ActionsMenu document={document} {...actionsProps} />

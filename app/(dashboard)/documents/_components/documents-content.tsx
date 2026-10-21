@@ -18,9 +18,11 @@ import { LayoutGrid, LayoutList } from 'lucide-react'
 import type { ColonneTri, SensTri } from '@/lib/utils/documents-tri'
 import { aDesFiltresActifs } from '@/lib/utils/documents-filtres'
 import { ouvrirTelechargement } from '@/lib/utils/documents-telechargement'
+import type { DocumentAvecMarche } from '@/lib/utils/document'
 
 interface DocumentsContentProps {
-  documents: Document[]
+  documents: DocumentAvecMarche[]
+  marches: { id: string; numero: string; objet: string }[]
   canWrite?: boolean
   tri: ColonneTri
   sens: SensTri
@@ -33,7 +35,7 @@ const CLE_VUE = 'documents-mode-de-vue'
 /**
  * Contenu client de la page documents (filtres, table/grille, dialogs)
  */
-export function DocumentsContent({ documents, canWrite = false, tri, sens }: DocumentsContentProps) {
+export function DocumentsContent({ documents, marches, canWrite = false, tri, sens }: DocumentsContentProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [viewMode, setViewMode] = useState<ViewMode>('list')
@@ -131,7 +133,7 @@ export function DocumentsContent({ documents, canWrite = false, tri, sens }: Doc
       {/* Filtres + toggle vue */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
         <div className="min-w-0 flex-1">
-          <DocumentFilters />
+          <DocumentFilters marches={marches} />
         </div>
 
         {/* Toggle grille / liste */}

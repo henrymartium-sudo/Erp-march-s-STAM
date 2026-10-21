@@ -6,9 +6,10 @@ import { RetryButton } from '@/components/shared/retry-button'
 import { DataPagination } from '@/components/ui/data-pagination'
 import { AlertCircle, Plus } from 'lucide-react'
 import { requireAuth, canWrite, canExport } from '@/lib/utils/permissions'
-import { getAllDocuments } from '@/lib/actions/documents'
+import { getAllDocuments, getMarchesPourFiltreDocuments } from '@/lib/actions/documents'
 import { shouldShowPagination } from '@/lib/utils/pagination'
 import { lireTri } from '@/lib/utils/documents-tri'
+import type { DocumentAvecMarche } from '@/lib/utils/document'
 import { DocumentsContent } from './_components/documents-content'
 import { ExportMenu } from '@/components/exports'
 import type { TypeDocument, PhaseMarche } from '@prisma/client'
@@ -43,16 +44,20 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
   // Tri : valeurs de l'URL validées contre une liste fermée (repli sur le défaut)
   const { tri, sens } = lireTri(params.tri, params.sens)
 
-  // Récupérer les documents avec filtres et pagination
-  const result = await getAllDocuments({
-    type: params.type as TypeDocument | undefined,
-    phase: params.phase as PhaseMarche | undefined,
-    marcheId: params.marcheId,
-    search: params.search,
-    page: currentPage,
-    tri,
-    sens,
-  })
+  // Récupérer les documents avec filtres et pagination, et la liste des marchés du filtre
+  const [result, marchesResult] = await Promise.all([
+    getAllDocuments({
+      type: params.type as TypeDocument | undefined,
+      phase: params.phase as PhaseMarche | undefined,
+      marcheId: params.marcheId,
+      search: params.search,
+      page: currentPage,
+      tri,
+      sens,
+    }),
+    getMarchesPourFiltreDocuments(),
+  ])
+  const marches = marchesResult.success ? marchesResult.data : []
 
   // Gérer les erreurs
   if (!result.success) {
@@ -81,7 +86,10 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
     )
   }
 
-  const { data: documents, pagination } = result.data
+  // getAllDocuments inclut toujours le marché (select id/numero/objet) ; son type déclaré
+  // (PaginatedResponse<Document>) ne le reflète pas encore
+  const documents = result.data.data as DocumentAvecMarche[]
+  const { pagination } = result.data
 
   return (
     <div className="space-y-6">
@@ -99,6 +107,7 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
                   type: params.type,
                   phase: params.phase,
                   search: params.search,
+                  marcheId: params.marcheId,
                 }}
               />
             )}
@@ -115,7 +124,7 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
       />
 
       {/* Contenu */}
-      <DocumentsContent documents={documents} canWrite={userCanWrite} tri={tri} sens={sens} />
+      <DocumentsContent documents={documents} marches={marches} canWrite={userCanWrite} tri={tri} sens={sens} />
 
       {/* Pagination */}
       {shouldShowPagination(pagination.totalItems) && (
