@@ -300,6 +300,8 @@ test.describe.serial('Véhicules proposés par lot', () => {
       // Création du marché depuis les lots (même geste qu'au test 4b de lots-dossiers.spec.ts)
       await allerA(page, `/opportunites/${oppId}`)
       await cliquerApresHydratation(page.getByRole('button', { name: 'Créer le marché' }))
+      // Le dialogue ouvre avec tous les lots libres cochés : le valider tel quel crée un marché pour le lot gagné
+      await page.getByRole('dialog').getByRole('button', { name: 'Créer le marché' }).click()
       await expect
         .poll(async () => (await requeteLocale<{ marcheId: string | null }>('select "marcheId" from opportunites where id = $1', [oppId]))[0]?.marcheId ?? null, { timeout: 60000 })
         .not.toBeNull()

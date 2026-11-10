@@ -201,6 +201,60 @@ async function lirePourcentageDossierListe(page: Page, objet: string): Promise<n
   return Number(pourcentage)
 }
 
+// ─── Aides « un marché par groupe de lots » ───────────────────────────────────
+
+interface LotSemence {
+  numero: number
+  intitule: string
+  montant: number
+  resultat: 'GAGNE' | 'PERDU'
+}
+
+/**
+ * Arrange une opportunité « Gagnée » avec ses lots directement en base : le parcours complet des statuts est déjà
+ * couvert par les tests 1 à 6, ici seul le regroupement des lots en marchés est exercé.
+ */
+async function semerOpportuniteGagnee(objet: string, lots: LotSemence[]): Promise<string> {
+  const admin = await requeteLocale<{ id: string }>('select id from users where email = $1', [TEST_USERS.admin.email])
+  const userId = admin[0]?.id
+  if (!userId) throw new Error('Compte administrateur de test introuvable en base.')
+  const opp = await requeteLocale<{ id: string }>(
+    `insert into opportunites (id, objet, "autoriteContractante", statut, "userId", "updatedAt")
+     values (gen_random_uuid()::text, $1, $2, 'GAGNEE', $3, now()) returning id`,
+    [objet, AC, userId],
+  )
+  const oppId = opp[0]?.id
+  if (!oppId) throw new Error(`Opportunité non créée : ${objet}`)
+  for (const lot of lots) {
+    await requeteLocale(
+      `insert into lots (id, "opportuniteId", numero, intitule, "montantPropose", resultat, "updatedAt")
+       values (gen_random_uuid()::text, $1, $2, $3, $4, $5::"ResultatLot", now())`,
+      [oppId, lot.numero, lot.intitule, lot.montant, lot.resultat],
+    )
+  }
+  return oppId
+}
+
+async function ouvrirDialogueCreationMarche(page: Page, oppId: string, lotsOfferts: number) {
+  await allerA(page, `/opportunites/${oppId}`)
+  await cliquerApresHydratation(page.getByRole('button', { name: 'Créer le marché' }))
+  const dialogue = page.getByRole('dialog')
+  await expect(dialogue.getByRole('heading', { name: 'Créer le marché' })).toBeVisible()
+  await expect(dialogue.getByRole('checkbox')).toHaveCount(lotsOfferts)
+  return dialogue
+}
+
+/** Ouvre le dialogue, décoche les lots indiqués, valide et renvoie l'identifiant du marché créé (fiche ouverte). */
+async function creerMarcheDepuisDialogue(page: Page, oppId: string, lotsOfferts: number, aDecocher: number[] = []) {
+  const dialogue = await ouvrirDialogueCreationMarche(page, oppId, lotsOfferts)
+  for (const numero of aDecocher) {
+    await dialogue.getByRole('checkbox', { name: new RegExp(`^Lot ${numero}\\b`) }).click()
+  }
+  await dialogue.getByRole('button', { name: 'Créer le marché' }).click()
+  await page.waitForURL(/\/marches\/[^/?#]+$/, { timeout: 60000 })
+  return page.url().split('/').pop() as string
+}
+
 // ─── Scénarios ────────────────────────────────────────────────────────────────
 
 test.describe.serial('Lots et dossiers — cycle opportunité → résultat', () => {
@@ -354,19 +408,17 @@ test.describe.serial('Lots et dossiers — cycle opportunité → résultat', ()
       expect(oppAId).toBeTruthy()
       await allerA(page, `/opportunites/${oppAId}`)
       await cliquerApresHydratation(page.getByRole('button', { name: 'Créer le marché' }))
+      // Le dialogue ouvre avec tous les lots libres cochés : le valider tel quel crée un marché pour le lot gagné
+      await page.getByRole('dialog').getByRole('button', { name: 'Créer le marché' }).click()
       await expect
         .poll(async () => (await requeteLocale<{ marcheId: string | null }>('select "marcheId" from opportunites where id = $1', [oppAId]))[0]?.marcheId ?? null, { timeout: 60000 })
         .not.toBeNull()
 
-      // Le lot 1 est « Gagné » : le repasser en « Perdu » laisserait un marché actif sur une opportunité perdue
+      // Le lot 1 est « Gagné » et couvert par le marché : son résultat est figé, le bouton de saisie disparaît.
+      // Le lot 2 (« Perdu »), lui, n'est couvert par aucun marché : il reste modifiable.
       await allerA(page, `/opportunites/${oppAId}?onglet=lots`)
-      await cliquerApresHydratation(page.getByRole('button', { name: 'Saisir le résultat du lot 1' }))
-      const dialogue = page.getByRole('dialog')
-      await dialogue.getByRole('combobox').click()
-      await page.getByRole('option', { name: 'Perdu', exact: true }).click()
-      await dialogue.getByLabel('Motif de la perte *').fill('Essai après création du marché')
-      await dialogue.getByRole('button', { name: 'Enregistrer' }).click()
-      await expect(page.getByText('Un marché est déjà créé pour cette opportunité').first()).toBeVisible({ timeout: 60000 })
+      await expect(page.getByRole('button', { name: 'Saisir le résultat du lot 2' })).toBeVisible({ timeout: 30000 })
+      await expect(page.getByRole('button', { name: 'Saisir le résultat du lot 1' })).toHaveCount(0)
 
       // Rien n'a bougé en base
       const lot = await requeteLocale<{ resultat: string }>('select resultat from lots where "opportuniteId" = $1 and numero = 1', [oppAId])
@@ -423,6 +475,165 @@ test.describe.serial('Lots et dossiers — cycle opportunité → résultat', ()
       // Liste des dossiers → liste des opportunités
       await page.goto('/dossiers-offre', { timeout: 150000 })
       await expect(page).toHaveURL(/\/opportunites$/, { timeout: 15000 })
+    })
+  })
+
+  // ─── 7 à 12 : un marché par groupe de lots ──────────────────────────────────
+
+  let oppGroupeId = ''
+
+  test('[E2E-LOTS] 7 — Trois lots dont deux gagnés : un marché par lot, puis plus de bouton « Créer le marché »', async ({ browser }) => {
+    test.setTimeout(180000)
+    await avecPage(browser, async (page) => {
+      const objet = '[E2E-LOTS] Trois lots'
+      const oppId = await semerOpportuniteGagnee(objet, [
+        { numero: 1, intitule: 'Lot un', montant: 1000000, resultat: 'GAGNE' },
+        { numero: 2, intitule: 'Lot deux', montant: 2000000, resultat: 'GAGNE' },
+        { numero: 3, intitule: 'Lot trois', montant: 500000, resultat: 'PERDU' },
+      ])
+
+      // Seuls les lots gagnés sont proposés ; on garde le lot 1 seul pour un premier marché
+      await creerMarcheDepuisDialogue(page, oppId, 2, [2])
+      let marches = await requeteLocale<{ objet: string; montant: string }>('select objet, montant from marches where "opportuniteId" = $1', [oppId])
+      expect(marches).toHaveLength(1)
+      expect(marches[0]?.objet).toBe(`${objet} — Lot 1`)
+      expect(Number(marches[0]?.montant)).toBe(1000000)
+
+      // Le lot 2 est resté libre : le bouton réapparaît et ne propose plus que lui
+      await creerMarcheDepuisDialogue(page, oppId, 1)
+      marches = await requeteLocale('select objet, montant from marches where "opportuniteId" = $1 order by "createdAt"', [oppId])
+      expect(marches).toHaveLength(2)
+      expect(marches[1]?.objet).toBe(`${objet} — Lot 2`)
+      const lotsLibres = await requeteLocale<{ n: number }>('select count(*)::int as n from lots where "opportuniteId" = $1 and resultat = \'GAGNE\' and "marcheId" is null', [oppId])
+      expect(lotsLibres[0]?.n).toBe(0)
+
+      // Plus aucun lot gagné libre : le bouton a disparu (le lot perdu ne compte pas)
+      await allerA(page, `/opportunites/${oppId}`)
+      await expect(page.getByRole('heading', { name: objet })).toBeVisible({ timeout: 30000 })
+      await expect(page.getByRole('button', { name: 'Créer le marché' })).toHaveCount(0)
+    })
+  })
+
+  test('[E2E-LOTS] 8 — Deux lots gagnés cochés ensemble : un seul marché, montant = somme', async ({ browser }) => {
+    test.setTimeout(180000)
+    await avecPage(browser, async (page) => {
+      const objet = '[E2E-LOTS] Groupe de lots'
+      oppGroupeId = await semerOpportuniteGagnee(objet, [
+        { numero: 1, intitule: 'Lot un', montant: 1000000, resultat: 'GAGNE' },
+        { numero: 2, intitule: 'Lot deux', montant: 2000000, resultat: 'GAGNE' },
+      ])
+
+      const dialogue = await ouvrirDialogueCreationMarche(page, oppGroupeId, 2)
+      // Tout est coché à l'ouverture et le total affiché est la somme des lots
+      await expect(dialogue.getByText(/3\s*000\s*000/).first()).toBeVisible()
+      await dialogue.getByRole('button', { name: 'Créer le marché' }).click()
+      await page.waitForURL(/\/marches\/[^/?#]+$/, { timeout: 60000 })
+
+      const marches = await requeteLocale<{ id: string; objet: string; montant: string }>('select id, objet, montant from marches where "opportuniteId" = $1', [oppGroupeId])
+      expect(marches).toHaveLength(1)
+      expect(marches[0]?.objet).toBe(`${objet} — Lots 1, 2`)
+      expect(Number(marches[0]?.montant)).toBe(3000000)
+      const lots = await requeteLocale<{ marcheId: string | null }>('select "marcheId" from lots where "opportuniteId" = $1', [oppGroupeId])
+      expect(lots.every((l) => l.marcheId === marches[0]?.id)).toBe(true)
+
+      // La fiche du marché liste les deux lots couverts
+      await expect(page.getByText('Lots couverts (2)')).toBeVisible({ timeout: 30000 })
+    })
+  })
+
+  test('[E2E-LOTS] 9 — « Retirer ce lot du marché » : montant recalculé, lot libre, nouveau marché possible', async ({ browser }) => {
+    test.setTimeout(180000)
+    await avecPage(browser, async (page) => {
+      expect(oppGroupeId).toBeTruthy()
+      const avant = await requeteLocale<{ id: string }>('select id from marches where "opportuniteId" = $1', [oppGroupeId])
+      const marcheId = avant[0]?.id
+      expect(marcheId, 'marché du groupe introuvable').toBeTruthy()
+
+      await allerA(page, `/marches/${marcheId}`)
+      await expect(page.getByText('Lots couverts (2)')).toBeVisible({ timeout: 30000 })
+      const ligneLot2 = page.locator('li').filter({ hasText: 'Lot 2' }).filter({ has: page.getByRole('button', { name: 'Retirer ce lot du marché' }) })
+      await cliquerApresHydratation(ligneLot2.getByRole('button', { name: 'Retirer ce lot du marché' }))
+
+      const dialogue = page.getByRole('dialog')
+      await expect(dialogue.getByRole('heading', { name: 'Retirer le lot 2 du marché' })).toBeVisible()
+      // Montant proposé = somme des lots restants (lot 1 seul)
+      await expect(dialogue.getByLabel('Montant du marché après retrait')).toHaveValue('1000000', { timeout: 30000 })
+      await validerEtAttendreToast(page, dialogue.getByRole('button', { name: 'Retirer le lot' }), 'Lot retiré du marché')
+
+      const marche = await requeteLocale<{ objet: string; montant: string }>('select objet, montant from marches where id = $1', [marcheId])
+      expect(Number(marche[0]?.montant)).toBe(1000000)
+      expect(marche[0]?.objet).toBe('[E2E-LOTS] Groupe de lots — Lot 1')
+      const lot2 = await requeteLocale<{ marcheId: string | null }>('select "marcheId" from lots where "opportuniteId" = $1 and numero = 2', [oppGroupeId])
+      expect(lot2[0]?.marcheId).toBeNull()
+
+      // Le lot 2 libre peut partir dans un nouveau marché
+      await creerMarcheDepuisDialogue(page, oppGroupeId, 1)
+      const marches = await requeteLocale('select id from marches where "opportuniteId" = $1', [oppGroupeId])
+      expect(marches).toHaveLength(2)
+    })
+  })
+
+  test('[E2E-LOTS] 10 — Suppression d\'un marché : ses lots redeviennent libres même si le lien principal est vide', async ({ browser }) => {
+    test.setTimeout(180000)
+    await avecPage(browser, async (page) => {
+      expect(oppGroupeId).toBeTruthy()
+      // Deux marchés (lot 1 et lot 2) : tous les lots sont couverts, plus de bouton
+      await allerA(page, `/opportunites/${oppGroupeId}`)
+      await expect(page.getByRole('heading', { name: '[E2E-LOTS] Groupe de lots' })).toBeVisible({ timeout: 30000 })
+      await expect(page.getByRole('button', { name: 'Créer le marché' })).toHaveCount(0)
+
+      // Suppression du premier marché en base (celui que pointe le lien principal de l'opportunité) :
+      // la clé étrangère remet le lien principal à vide et libère le lot 1, alors que l'autre marché existe encore
+      const lien = await requeteLocale<{ marcheId: string | null }>('select "marcheId" from opportunites where id = $1', [oppGroupeId])
+      expect(lien[0]?.marcheId, 'lien principal attendu avant suppression').toBeTruthy()
+      await requeteLocale('delete from marches where id = $1', [lien[0]?.marcheId])
+      const apres = await requeteLocale<{ marcheId: string | null }>('select "marcheId" from opportunites where id = $1', [oppGroupeId])
+      expect(apres[0]?.marcheId).toBeNull()
+      const restants = await requeteLocale('select id from marches where "opportuniteId" = $1', [oppGroupeId])
+      expect(restants).toHaveLength(1)
+
+      // Le lot 1 est libre : le bouton revient et ne propose que lui
+      await ouvrirDialogueCreationMarche(page, oppGroupeId, 1)
+    })
+  })
+
+  test('[E2E-LOTS] 11 — Double soumission (deux onglets) : un seul marché pour le lot', async ({ browser }) => {
+    test.setTimeout(180000)
+    const oppId = await semerOpportuniteGagnee('[E2E-LOTS] Double soumission', [
+      { numero: 1, intitule: 'Lot unique', montant: 750000, resultat: 'GAGNE' },
+    ])
+    await avecPage(browser, async (pageA) => {
+      await avecPage(browser, async (pageB) => {
+        const dialogueA = await ouvrirDialogueCreationMarche(pageA, oppId, 1)
+        const dialogueB = await ouvrirDialogueCreationMarche(pageB, oppId, 1)
+        // Les deux onglets valident le même lot au même instant
+        await Promise.all([
+          dialogueA.getByRole('button', { name: 'Créer le marché' }).click(),
+          dialogueB.getByRole('button', { name: 'Créer le marché' }).click(),
+        ])
+        await expect
+          .poll(async () => (await requeteLocale('select id from marches where "opportuniteId" = $1', [oppId])).length, { timeout: 60000 })
+          .toBeGreaterThanOrEqual(1)
+        // Laisse à la seconde création le temps d'aboutir si le verrou ne la refusait pas
+        await pageA.waitForTimeout(5000)
+        const marches = await requeteLocale('select id from marches where "opportuniteId" = $1', [oppId])
+        expect(marches).toHaveLength(1)
+      })
+    })
+  })
+
+  test('[E2E-LOTS] 12 — Opportunité à un seul lot : l\'objet du marché est celui de l\'opportunité, sans suffixe', async ({ browser }) => {
+    test.setTimeout(180000)
+    await avecPage(browser, async (page) => {
+      const objet = '[E2E-LOTS] Un seul lot'
+      const oppId = await semerOpportuniteGagnee(objet, [
+        { numero: 1, intitule: 'Lot unique', montant: 400000, resultat: 'GAGNE' },
+      ])
+      await creerMarcheDepuisDialogue(page, oppId, 1)
+      const marches = await requeteLocale<{ objet: string; montant: string }>('select objet, montant from marches where "opportuniteId" = $1', [oppId])
+      expect(marches).toHaveLength(1)
+      expect(marches[0]?.objet).toBe(objet)
+      expect(Number(marches[0]?.montant)).toBe(400000)
     })
   })
 })

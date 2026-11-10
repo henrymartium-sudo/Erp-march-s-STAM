@@ -20,6 +20,8 @@ import {
   calculerProgression,
   calculerTotauxLots,
   prochainNumeroLot,
+  lotEstFige,
+  vehiculesModifiables,
   STATUTS_EDITION_LOTS,
   STATUTS_SAISIE_RESULTAT,
 } from '@/lib/utils/lots'
@@ -39,7 +41,6 @@ interface LotsSectionProps {
   statutOpportunite: StatutOpportunite
   lots: SerializedLot[]
   canWrite: boolean
-  vehiculesModifiables: boolean
 }
 
 function formatMontant(val: number | null): string {
@@ -47,11 +48,13 @@ function formatMontant(val: number | null): string {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(val)
 }
 
-export function LotsSection({ opportuniteId, statutOpportunite, lots, canWrite, vehiculesModifiables }: LotsSectionProps) {
+export function LotsSection({ opportuniteId, statutOpportunite, lots, canWrite }: LotsSectionProps) {
   const peutEditerLots = canWrite && STATUTS_EDITION_LOTS.includes(statutOpportunite)
-  const peutSaisirResultat = canWrite && STATUTS_SAISIE_RESULTAT.includes(statutOpportunite)
-  const peutEditerVehicules = canWrite && vehiculesModifiables
-  const avecActions = peutEditerLots || peutSaisirResultat || peutEditerVehicules
+  // Résultat et véhicules se décident par lot : un lot couvert par un marché est figé.
+  const peutSaisirResultat = (lot: SerializedLot) =>
+    canWrite && STATUTS_SAISIE_RESULTAT.includes(statutOpportunite) && !lotEstFige(lot)
+  const peutEditerVehicules = (lot: SerializedLot) => canWrite && vehiculesModifiables(statutOpportunite, lot)
+  const avecActions = peutEditerLots || lots.some((l) => peutSaisirResultat(l) || peutEditerVehicules(l))
 
   const { nbLots, nbGagnes, totalEstime, totalPropose } = calculerTotauxLots(lots)
   const libelleGagnes = `${nbGagnes} lot${nbGagnes > 1 ? 's' : ''} gagné${nbGagnes > 1 ? 's' : ''} / ${nbLots}`
@@ -98,6 +101,11 @@ export function LotsSection({ opportuniteId, statutOpportunite, lots, canWrite, 
                   <TableRow key={lot.id}>
                     <TableCell className="align-top">
                       <span className="font-medium">Lot {lot.numero}</span>
+                      {lot.marcheId && (
+                        <Link href={`/marches/${lot.marcheId}`} className="ml-2 align-middle">
+                          <Badge variant="info" className="whitespace-nowrap">Marché</Badge>
+                        </Link>
+                      )}
                       <p className="text-sm text-muted-foreground">{lot.intitule}</p>
                       {lot.vehiculesProposes.length > 0 && (
                         <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground" aria-label={`Véhicules proposés du lot ${lot.numero}`}>
@@ -144,7 +152,7 @@ export function LotsSection({ opportuniteId, statutOpportunite, lots, canWrite, 
                     {avecActions && (
                       <TableCell className="align-top">
                         <div className="flex flex-wrap gap-1">
-                          {peutEditerVehicules && (
+                          {peutEditerVehicules(lot) && (
                             <VehiculesProposeDialog lotId={lot.id} numeroLot={lot.numero} vehicules={lot.vehiculesProposes} />
                           )}
                           {peutEditerLots && (
@@ -160,7 +168,7 @@ export function LotsSection({ opportuniteId, statutOpportunite, lots, canWrite, 
                               montantCalcule={lot.vehiculesProposes.length > 0}
                             />
                           )}
-                          {peutSaisirResultat && (
+                          {peutSaisirResultat(lot) && (
                             <LotResultatDialog
                               lotId={lot.id}
                               numeroLot={lot.numero}

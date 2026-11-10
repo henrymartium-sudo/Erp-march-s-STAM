@@ -13,7 +13,14 @@ import {
   preparerMarcheDepuisLots,
   lotsSansMontantPropose,
   messageMontantsLotsManquants,
-  resultatsLotsFiges,
+  lotsRattachables,
+  validerSelectionLots,
+  libelleObjetMarche,
+  lotEstFige,
+  marchePreexistant,
+  calculerRetraitLot,
+  retraitMarcheAutorise,
+  resumerMarchesOpportunite,
   STATUTS_EDITION_LOTS,
   STATUTS_SAISIE_RESULTAT,
   calculerMontantVehicules,
@@ -236,54 +243,169 @@ test.describe('calculerStatsResultatsLots', () => {
   })
 })
 
+const lot = (
+  id: string,
+  numero: number,
+  resultat: ResultatLot,
+  montantPropose: unknown = 1000,
+  marcheId: string | null = null
+) => ({ id, numero, resultat, montantPropose, marcheId })
+
+test.describe('lotsRattachables', () => {
+  test('seuls les lots gagnés et libres', () => {
+    const lots = [lot('a', 1, 'GAGNE'), lot('b', 2, 'PERDU'), lot('c', 3, 'GAGNE', 1, 'm1'), lot('d', 4, 'GAGNE')]
+    expect(lotsRattachables(lots).map((l) => l.id)).toEqual(['a', 'd'])
+  })
+})
+
+test.describe('validerSelectionLots', () => {
+  const lots = [lot('a', 1, 'GAGNE'), lot('b', 2, 'GAGNE'), lot('c', 3, 'PERDU'), lot('d', 4, 'GAGNE', 1, 'm1')]
+  test('sélection vide → refus', () => {
+    expect(validerSelectionLots([], lots)).not.toBeNull()
+  })
+  test('lot perdu → refus', () => {
+    expect(validerSelectionLots(['a', 'c'], lots)).not.toBeNull()
+  })
+  test('lot déjà rattaché à un marché → refus', () => {
+    expect(validerSelectionLots(['a', 'd'], lots)).not.toBeNull()
+  })
+  test('identifiant inconnu (autre opportunité) → refus', () => {
+    expect(validerSelectionLots(['a', 'zzz'], lots)).not.toBeNull()
+  })
+  test('identifiant en double → refus', () => {
+    expect(validerSelectionLots(['a', 'a'], lots)).not.toBeNull()
+  })
+  test('deux lots gagnés libres → null', () => {
+    expect(validerSelectionLots(['a', 'b'], lots)).toBeNull()
+  })
+})
+
+test.describe('libelleObjetMarche', () => {
+  test('un lot sur trois → « Lot 1 » au singulier', () => {
+    expect(libelleObjetMarche('Objet', [1], 3)).toBe('Objet — Lot 1')
+  })
+  test('deux lots → « Lots 1, 3 »', () => {
+    expect(libelleObjetMarche('Objet', [1, 3], 3)).toBe('Objet — Lots 1, 3')
+  })
+  test('opportunité à un seul lot → objet inchangé', () => {
+    expect(libelleObjetMarche('Objet', [1], 1)).toBe('Objet')
+  })
+  test('numéros triés numériquement (2 avant 10)', () => {
+    expect(libelleObjetMarche('Objet', [10, 2], 12)).toBe('Objet — Lots 2, 10')
+  })
+})
+
 test.describe('preparerMarcheDepuisLots', () => {
-  test('2 lots dont un gagné → objet suffixé du numéro du lot gagné, montant du lot gagné', () => {
-    expect(
-      preparerMarcheDepuisLots('Objet', [
-        { numero: 1, resultat: 'GAGNE', montantPropose: '43000000.00' },
-        { numero: 2, resultat: 'PERDU', montantPropose: 28000000 },
-      ])
-    ).toEqual({ objet: 'Objet — Lots 1', montant: 43000000 })
+  test('montant = somme des lots sélectionnés seulement', () => {
+    const lots = [
+      lot('a', 1, 'GAGNE', '43000000.00'),
+      lot('b', 2, 'GAGNE', 5000),
+      lot('c', 3, 'PERDU', 28000000),
+    ]
+    expect(preparerMarcheDepuisLots('Objet', lots, ['a'])).toEqual({ objet: 'Objet — Lot 1', montant: 43000000 })
   })
-  test('plusieurs lots gagnés → numéros triés par ordre croissant, montants additionnés', () => {
-    expect(
-      preparerMarcheDepuisLots('Objet', [
-        { numero: 3, resultat: 'GAGNE', montantPropose: 1000 },
-        { numero: 1, resultat: 'GAGNE', montantPropose: 2000 },
-        { numero: 2, resultat: 'PERDU', montantPropose: 5000 },
-      ])
-    ).toEqual({ objet: 'Objet — Lots 1, 3', montant: 3000 })
+  test('plusieurs lots → numéros triés, montants additionnés', () => {
+    const lots = [lot('a', 3, 'GAGNE', 1000), lot('b', 1, 'GAGNE', 2000), lot('c', 2, 'PERDU', 5000)]
+    expect(preparerMarcheDepuisLots('Objet', lots, ['a', 'b'])).toEqual({ objet: 'Objet — Lots 1, 3', montant: 3000 })
   })
-  test('un seul lot, gagné → objet inchangé', () => {
-    expect(preparerMarcheDepuisLots('Objet', [{ numero: 1, resultat: 'GAGNE', montantPropose: 1000 }])).toEqual({
+  test('opportunité à un seul lot → objet inchangé', () => {
+    expect(preparerMarcheDepuisLots('Objet', [lot('a', 1, 'GAGNE', 1000)], ['a'])).toEqual({
       objet: 'Objet',
       montant: 1000,
     })
   })
-  test('aucun lot gagné → null', () => {
-    expect(
-      preparerMarcheDepuisLots('Objet', [
-        { numero: 1, resultat: 'PERDU', montantPropose: 1000 },
-        { numero: 2, resultat: 'INFRUCTUEUX', montantPropose: 2000 },
-      ])
-    ).toBeNull()
+  test('sélection invalide (vide, perdu, déjà rattaché) → null', () => {
+    const lots = [lot('a', 1, 'PERDU'), lot('b', 2, 'GAGNE', 1000, 'm1'), lot('c', 3, 'GAGNE')]
+    expect(preparerMarcheDepuisLots('Objet', lots, [])).toBeNull()
+    expect(preparerMarcheDepuisLots('Objet', lots, ['a'])).toBeNull()
+    expect(preparerMarcheDepuisLots('Objet', lots, ['b'])).toBeNull()
   })
-  test('lot gagné sans montant → montant 0, objet suffixé', () => {
-    expect(
-      preparerMarcheDepuisLots('Objet', [
-        { numero: 1, resultat: 'GAGNE', montantPropose: null },
-        { numero: 2, resultat: 'PERDU', montantPropose: 1000 },
-      ])
-    ).toEqual({ objet: 'Objet — Lots 1', montant: 0 })
+  test('lot gagné sans montant → montant 0', () => {
+    const lots = [lot('a', 1, 'GAGNE', null), lot('b', 2, 'GAGNE', 1000)]
+    expect(preparerMarcheDepuisLots('Objet', lots, ['a'])).toEqual({ objet: 'Objet — Lot 1', montant: 0 })
   })
-  test('numéros de lots gagnés triés numériquement (2 avant 10)', () => {
+})
+
+test.describe('lotEstFige', () => {
+  test('rattaché à un marché → figé', () => {
+    expect(lotEstFige({ marcheId: 'x' })).toBe(true)
+  })
+  test('libre → modifiable', () => {
+    expect(lotEstFige({ marcheId: null })).toBe(false)
+  })
+})
+
+test.describe('marchePreexistant', () => {
+  const opportunite = new Date('2026-03-10T09:00:00Z')
+  test('marché plus ancien que l\'opportunité (converti) → true', () => {
+    expect(marchePreexistant({ createdAt: opportunite, marche: { createdAt: new Date('2026-02-01T09:00:00Z') } })).toBe(true)
+  })
+  test('marché plus récent (créé depuis les lots) → false', () => {
+    expect(marchePreexistant({ createdAt: opportunite, marche: { createdAt: new Date('2026-03-20T09:00:00Z') } })).toBe(false)
+  })
+  test('aucun marché lié → false', () => {
+    expect(marchePreexistant({ createdAt: opportunite, marche: null })).toBe(false)
+  })
+})
+
+test.describe('calculerRetraitLot', () => {
+  const lotsDuMarche = [lot('a', 1, 'GAGNE', 1000, 'm1'), lot('b', 3, 'GAGNE', 2500, 'm1')]
+  const objetGenere = 'Objet — Lots 1, 3'
+
+  test('objet généré → recalculé, montant du lot restant', () => {
     expect(
-      preparerMarcheDepuisLots('Objet', [
-        { numero: 10, resultat: 'GAGNE', montantPropose: 1000 },
-        { numero: 2, resultat: 'GAGNE', montantPropose: 2000 },
-        { numero: 5, resultat: 'PERDU', montantPropose: 3000 },
-      ])?.objet
-    ).toBe('Objet — Lots 2, 10')
+      calculerRetraitLot({
+        objetOpportunite: 'Objet',
+        nbLotsTotal: 3,
+        marche: { objet: objetGenere, montant: 3500 },
+        lotsDuMarche,
+        lotRetireId: 'b',
+      })
+    ).toEqual({ montant: 1000, objet: 'Objet — Lot 1', objetConserve: false })
+  })
+  test('objet modifié à la main → conservé', () => {
+    expect(
+      calculerRetraitLot({
+        objetOpportunite: 'Objet',
+        nbLotsTotal: 3,
+        marche: { objet: 'Objet saisi à la main', montant: 3500 },
+        lotsDuMarche,
+        lotRetireId: 'b',
+      })
+    ).toEqual({ montant: 1000, objet: 'Objet saisi à la main', objetConserve: true })
+  })
+  test('marché à un seul lot → refus', () => {
+    const resultat = calculerRetraitLot({
+      objetOpportunite: 'Objet',
+      nbLotsTotal: 3,
+      marche: { objet: 'Objet — Lot 1', montant: 1000 },
+      lotsDuMarche: [lot('a', 1, 'GAGNE', 1000, 'm1')],
+      lotRetireId: 'a',
+    })
+    expect(resultat).toHaveProperty('refus')
+  })
+  test('lot absent du marché → refus', () => {
+    const resultat = calculerRetraitLot({
+      objetOpportunite: 'Objet',
+      nbLotsTotal: 3,
+      marche: { objet: objetGenere, montant: 3500 },
+      lotsDuMarche,
+      lotRetireId: 'zzz',
+    })
+    expect(resultat).toHaveProperty('refus')
+  })
+})
+
+test.describe('retraitMarcheAutorise', () => {
+  test('statuts d\'avant l\'ordre de service, sans facture → autorisé', () => {
+    expect(retraitMarcheAutorise({ statut: 'ATTRIBUE_DEFINITIVEMENT', nbFactures: 0 })).toBeNull()
+    expect(retraitMarcheAutorise({ statut: 'EN_ATTENTE_LIVRAISON_OS', nbFactures: 0 })).toBeNull()
+  })
+  test('avec une facture → refus', () => {
+    expect(retraitMarcheAutorise({ statut: 'ATTRIBUE_DEFINITIVEMENT', nbFactures: 1 })).not.toBeNull()
+  })
+  test('statut avancé → refus', () => {
+    expect(retraitMarcheAutorise({ statut: 'EN_EXECUTION', nbFactures: 0 })).not.toBeNull()
   })
 })
 
@@ -327,16 +449,6 @@ test.describe('messageMontantsLotsManquants', () => {
   })
 })
 
-test("resultatsLotsFiges : seul un marché créé après l'opportunité (depuis les lots) fige les résultats", () => {
-  const opportunite = new Date('2026-03-10T09:00:00Z')
-  // Pas de marché lié : rien n'est figé
-  expect(resultatsLotsFiges({ createdAt: opportunite, marche: null })).toBe(false)
-  // Marché converti en opportunité : il existait avant elle, quel que soit son statut actuel → résultats saisissables
-  expect(resultatsLotsFiges({ createdAt: opportunite, marche: { createdAt: new Date('2026-02-01T09:00:00Z') } })).toBe(false)
-  // Marché créé depuis les lots : postérieur à l'opportunité → résultats figés
-  expect(resultatsLotsFiges({ createdAt: opportunite, marche: { createdAt: new Date('2026-03-20T09:00:00Z') } })).toBe(true)
-})
-
 test.describe('calculerMontantVehicules', () => {
   test('aucun véhicule → null', () => {
     expect(calculerMontantVehicules([])).toBeNull()
@@ -356,27 +468,50 @@ test.describe('calculerMontantVehicules', () => {
 })
 
 test.describe('vehiculesModifiables', () => {
-  const avant = new Date('2026-01-01')
-  const apres = new Date('2026-02-01')
-  const base = { createdAt: avant, marche: null }
+  const libre = { marcheId: null }
 
   test('éditable de « Dossier en préparation » à « Gagnée »', () => {
     for (const statut of ['DOSSIER_EN_PREPARATION', 'OFFRE_SOUMISE', 'SOUMISE', 'EN_ATTENTE_ATTRIBUTION', 'ATTRIBUE_PROVISOIREMENT', 'GAGNEE'] as const) {
-      expect(vehiculesModifiables({ ...base, statut }), statut).toBe(true)
+      expect(vehiculesModifiables(statut, libre), statut).toBe(true)
     }
   })
   test('non éditable avant la préparation, perdue, no-go', () => {
     for (const statut of ['IDENTIFIEE', 'EN_ANALYSE', 'GO', 'NO_GO', 'PERDUE'] as const) {
-      expect(vehiculesModifiables({ ...base, statut }), statut).toBe(false)
+      expect(vehiculesModifiables(statut, libre), statut).toBe(false)
     }
   })
-  test('figé quand le marché a été créé depuis les lots', () => {
-    expect(vehiculesModifiables({ statut: 'GAGNEE', createdAt: avant, marche: { createdAt: apres } })).toBe(false)
-  })
-  test('marché antérieur à l\'opportunité (converti) : ne fige pas', () => {
-    expect(vehiculesModifiables({ statut: 'GAGNEE', createdAt: apres, marche: { createdAt: avant } })).toBe(true)
+  test('figé quand le lot est rattaché à un marché', () => {
+    expect(vehiculesModifiables('GAGNEE', { marcheId: 'm1' })).toBe(false)
   })
   test('STATUTS_EDITION_VEHICULES contient 6 statuts', () => {
     expect(STATUTS_EDITION_VEHICULES).toHaveLength(6)
+  })
+})
+
+test.describe('resumerMarchesOpportunite', () => {
+  const m1 = { id: 'm1', numero: 'M-001', montant: 1000 }
+  const m2 = { id: 'm2', numero: 'M-002', montant: 2500 }
+
+  test('aucun marché : null', () => {
+    expect(resumerMarchesOpportunite({ marche: null, marches: [] })).toBeNull()
+  })
+  test('un seul marché créé : numéro et montant de ce marché', () => {
+    expect(resumerMarchesOpportunite({ marche: m1, marches: [m1] })).toEqual({ numeros: 'M-001', montant: 1000 })
+  })
+  test('deux marchés : numéros joints par « , » et montants additionnés', () => {
+    expect(resumerMarchesOpportunite({ marche: m1, marches: [m1, m2] })).toEqual({ numeros: 'M-001, M-002', montant: 3500 })
+  })
+  test('marché préexistant sans marché créé : lu via marche', () => {
+    expect(resumerMarchesOpportunite({ marche: m1, marches: [] })).toEqual({ numeros: 'M-001', montant: 1000 })
+  })
+  test('le marché de marcheId n\'est jamais compté deux fois', () => {
+    expect(resumerMarchesOpportunite({ marche: m2, marches: [m1, m2] })).toEqual({ numeros: 'M-001, M-002', montant: 3500 })
+  })
+  test('marche absent de marches : ajouté en dernier', () => {
+    expect(resumerMarchesOpportunite({ marche: m2, marches: [m1] })).toEqual({ numeros: 'M-001, M-002', montant: 3500 })
+  })
+  test('montant absent compté pour zéro', () => {
+    expect(resumerMarchesOpportunite({ marche: null, marches: [{ id: 'm3', numero: 'M-003', montant: null }] }))
+      .toEqual({ numeros: 'M-003', montant: 0 })
   })
 })

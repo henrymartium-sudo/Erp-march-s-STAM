@@ -7,7 +7,7 @@ import type { Periode, PerformanceStats, FinancialStats, CapitalisationStats, SA
 import { STATUT_LABELS, TYPE_MARCHE_LABELS } from '@/lib/constants/marche'
 import { STATUT_OPPORTUNITE_LABELS } from '@/lib/validations/opportunite'
 import { StatutMarche, StatutFacture, StatutOpportunite } from '@prisma/client'
-import { totalMontantPropose } from '@/lib/utils/lots'
+import { resumerMarchesOpportunite, totalMontantPropose } from '@/lib/utils/lots'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
@@ -462,10 +462,11 @@ export async function getOpportunitesStats(periode: Periode): Promise<Opportunit
   // 5. Pipeline → Marchés : opportunités converties en marché sur la période
   // RÈGLE MÉTIER : une opportunité gagnée génère un marché lié — ne pas comptabiliser les deux.
   const pipelineMarchesRaw = await prisma.opportunite.findMany({
-    where: { ...where, marcheId: { not: null } },
+    where: { ...where, OR: [{ marcheId: { not: null } }, { marches: { some: {} } }] },
     select: {
       objet: true,
-      marche: { select: { numero: true, montant: true } },
+      marche: { select: { id: true, numero: true, montant: true } },
+      marches: { select: { id: true, numero: true, montant: true }, orderBy: { createdAt: 'asc' } },
     },
     orderBy: { createdAt: 'asc' },
   })
@@ -546,13 +547,10 @@ export async function getOpportunitesStats(periode: Periode): Promise<Opportunit
       gagnees: gagneesByACMap.get(ac.autoriteContractante) ?? 0,
       montantEstime: Number(ac._sum.montantEstime ?? 0),
     })),
-    pipelineMarches: pipelineMarchesRaw
-      .filter((o) => o.marche)
-      .map((o) => ({
-        objet: o.objet,
-        marcheNumero: o.marche!.numero,
-        marcheMontant: Number(o.marche!.montant ?? 0),
-      })),
+    pipelineMarches: pipelineMarchesRaw.flatMap((o) => {
+      const resume = resumerMarchesOpportunite(o)
+      return resume ? [{ objet: o.objet, marcheNumero: resume.numeros, marcheMontant: resume.montant }] : []
+    }),
     evolutionMensuelle,
     delaiMoyenIdentificationSoumissionJours,
     delaiMoyenSoumissionAttributionJours,

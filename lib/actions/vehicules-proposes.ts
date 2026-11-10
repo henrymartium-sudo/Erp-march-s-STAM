@@ -37,16 +37,13 @@ export async function setVehiculesProposes(data: unknown): Promise<ActionResult<
 
       // Verrou de la ligne opportunité : sérialise avec les autres écritures sur ses lots (comme setResultatLot).
       await tx.$queryRaw`SELECT id FROM opportunites WHERE id = ${lot.opportuniteId} FOR UPDATE`
-      const opportunite = await tx.opportunite.findUnique({
-        where: { id: lot.opportuniteId },
-        select: { statut: true, createdAt: true, marche: { select: { createdAt: true } } },
-      })
+      const opportunite = await tx.opportunite.findUnique({ where: { id: lot.opportuniteId }, select: { statut: true } })
       if (!opportunite) throw new Error('LOT_INTROUVABLE')
-      if (!vehiculesModifiables(opportunite)) throw new Error('NON_MODIFIABLE')
 
-      // Lu après le verrou : l'ancien montant tracé à l'audit est celui qui est réellement remplacé.
-      const lotCourant = await tx.lot.findUnique({ where: { id: lotId }, select: { montantPropose: true } })
+      // Lu après le verrou : le rattachement à un marché et l'ancien montant tracé à l'audit sont ceux d'après le verrou.
+      const lotCourant = await tx.lot.findUnique({ where: { id: lotId }, select: { montantPropose: true, marcheId: true } })
       if (!lotCourant) throw new Error('LOT_INTROUVABLE')
+      if (!vehiculesModifiables(opportunite.statut, lotCourant)) throw new Error('NON_MODIFIABLE')
       const ancien = versNombre(lotCourant.montantPropose)
       const montantCalcule = calculerMontantVehicules(vehicules)
       await tx.vehiculePropose.deleteMany({ where: { lotId } })
@@ -75,7 +72,7 @@ export async function setVehiculesProposes(data: unknown): Promise<ActionResult<
     const msg = (error as Error).message
     if (msg === 'LOT_INTROUVABLE') return { success: false, error: 'Lot introuvable.' }
     if (msg === 'NON_MODIFIABLE') {
-      return { success: false, error: "Les véhicules proposés ne sont plus modifiables : l'opportunité n'est pas en préparation ou au-delà, est clôturée, ou son marché est déjà créé." }
+      return { success: false, error: "Les véhicules proposés ne sont plus modifiables : l'opportunité n'est pas en préparation ou au-delà, est clôturée, ou ce lot est couvert par un marché." }
     }
     console.error('setVehiculesProposes error:', error)
     return { success: false, error: 'Erreur lors de l’enregistrement des véhicules proposés.' }

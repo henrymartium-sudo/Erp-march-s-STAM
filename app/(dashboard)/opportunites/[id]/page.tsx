@@ -15,7 +15,7 @@ import { CautionsSection } from '@/components/opportunites/cautions-section'
 import { getOpportunite } from '@/lib/actions/opportunites'
 import { getCautionsByOpportunite } from '@/lib/actions/cautions'
 import { cautionsOpportuniteVisibles } from '@/lib/utils/cautions-opportunite'
-import { calculerTotauxLots, vehiculesModifiables } from '@/lib/utils/lots'
+import { calculerTotauxLots, lotsRattachables, marchePreexistant } from '@/lib/utils/lots'
 import { heureLimiteDe } from '@/lib/utils/heure-limite'
 import { requireAuth, canWrite } from '@/lib/utils/permissions'
 import {
@@ -60,6 +60,25 @@ export default async function OpportuniteDetailPage({ params }: PageProps) {
   const cautionsResult = afficherCautions ? await getCautionsByOpportunite(id) : null
   const cautions = cautionsResult?.success ? cautionsResult.data : []
 
+  // Lots proposés à la création d'un marché : aucun si le marché préexistait à l'opportunité (création refusée).
+  const lotsLibres = marchePreexistant(opp)
+    ? []
+    : lotsRattachables(opp.lots).map((l) => ({
+        id: l.id,
+        numero: l.numero,
+        intitule: l.intitule,
+        montantPropose: l.montantPropose,
+      }))
+
+  // Marchés liés : ceux créés depuis les lots, plus un éventuel marché préexistant (lien direct) absent de cette liste.
+  const marchesLies = [...opp.marches, ...(opp.marche && !opp.marches.some((m) => m.id === opp.marche?.id) ? [opp.marche] : [])].map(
+    (m) => ({
+      id: m.id,
+      numero: m.numero,
+      lots: opp.lots.filter((l) => l.marcheId === m.id).map((l) => l.numero),
+    })
+  )
+
   return (
     <div className="space-y-6">
       <BreadcrumbNav
@@ -74,7 +93,7 @@ export default async function OpportuniteDetailPage({ params }: PageProps) {
         description={opp.autoriteContractante}
         action={
           userCanWrite && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button asChild variant="outline">
                 <Link href={`/opportunites/${id}/edit`}>
                   <Pencil className="h-4 w-4 mr-2" />
@@ -87,7 +106,7 @@ export default async function OpportuniteDetailPage({ params }: PageProps) {
                 opportuniteId={opp.id}
                 currentStatut={opp.statut}
                 nbLots={opp.lots.length}
-                hasMarcheLinked={!!opp.marche}
+                lotsLibres={lotsLibres}
                 canWrite={userCanWrite}
               />
               <OpportuniteDeleteButton id={opp.id} objet={opp.objet} />
@@ -164,15 +183,23 @@ export default async function OpportuniteDetailPage({ params }: PageProps) {
                         <span className="text-sm">{formatDate((opp as unknown as { echeanceAttributionProv: Date }).echeanceAttributionProv)}</span>
                       </div>
                     )}
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Marché lié</span>
-                      <span className="text-sm">
-                        {opp.marche ? (
-                          <Link href={`/marches/${opp.marche.id}`} className="text-primary hover:underline">
-                            {opp.marche.numero}
-                          </Link>
-                        ) : '—'}
-                      </span>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-sm text-muted-foreground shrink-0">Marchés liés</span>
+                      <ul className="text-sm text-right space-y-1 min-w-0">
+                        {marchesLies.length === 0 && <li>—</li>}
+                        {marchesLies.map((m) => (
+                          <li key={m.id} className="break-words">
+                            <Link href={`/marches/${m.id}`} className="text-primary hover:underline">
+                              {m.numero}
+                            </Link>
+                            {m.lots.length > 0 && (
+                              <span className="text-muted-foreground">
+                                {' '}({m.lots.length > 1 ? 'lots' : 'lot'} {m.lots.join(', ')})
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   </CardContent>
                 </Card>
@@ -225,7 +252,6 @@ export default async function OpportuniteDetailPage({ params }: PageProps) {
               statutOpportunite={opp.statut}
               lots={opp.lots}
               canWrite={userCanWrite}
-              vehiculesModifiables={vehiculesModifiables(opp)}
             />
           }
           pieces={

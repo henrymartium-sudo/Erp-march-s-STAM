@@ -1,4 +1,4 @@
-import type { ResultatLot, StatutOpportunite, StatutPiece } from '@prisma/client'
+import type { ResultatLot, StatutMarche, StatutOpportunite, StatutPiece } from '@prisma/client'
 
 export type EtatDossier = 'EN_PREPARATION' | 'SOUMIS' | 'CLOS' | 'AUCUN'
 
@@ -13,13 +13,17 @@ export const STATUTS_SAISIE_RESULTAT: StatutOpportunite[] = [
   'PERDUE',
 ]
 
+/** Un lot rattaché à un marché est figé : son résultat, ses véhicules et son montant ne se modifient plus. */
+export function lotEstFige(lot: { marcheId: string | null }): boolean {
+  return lot.marcheId !== null
+}
+
 /**
- * Les résultats des lots ne se modifient plus quand le marché lié a été créé depuis les lots : il est alors postérieur
- * à l'opportunité et reprend ses lots gagnés. Un marché converti en opportunité existait avant elle (lié dès la
- * création, quel que soit son statut actuel) : il ne fige rien.
+ * Marché converti en opportunité : il existait avant elle (lié dès la création, quel que soit son statut actuel).
+ * La création de marché depuis les lots reste refusée pour lui et ses lots ne sont pas figés.
  */
-export function resultatsLotsFiges(opportunite: { createdAt: Date; marche: { createdAt: Date } | null }): boolean {
-  return opportunite.marche !== null && opportunite.marche.createdAt > opportunite.createdAt
+export function marchePreexistant(opportunite: { createdAt: Date; marche: { createdAt: Date } | null }): boolean {
+  return opportunite.marche !== null && opportunite.marche.createdAt <= opportunite.createdAt
 }
 
 /** Statuts de l'opportunité dans lesquels les véhicules proposés d'un lot se saisissent (design §5). */
@@ -32,13 +36,9 @@ export const STATUTS_EDITION_VEHICULES: StatutOpportunite[] = [
   'GAGNEE',
 ]
 
-/** Les véhicules se modifient de la préparation à l'attribution, jusqu'à la création du marché depuis les lots. */
-export function vehiculesModifiables(opportunite: {
-  statut: StatutOpportunite
-  createdAt: Date
-  marche: { createdAt: Date } | null
-}): boolean {
-  return STATUTS_EDITION_VEHICULES.includes(opportunite.statut) && !resultatsLotsFiges(opportunite)
+/** Les véhicules d'un lot se modifient de la préparation à l'attribution, tant que le lot n'est pas rattaché à un marché. */
+export function vehiculesModifiables(statut: StatutOpportunite, lot: { marcheId: string | null }): boolean {
+  return STATUTS_EDITION_VEHICULES.includes(statut) && !lotEstFige(lot)
 }
 
 /** Total d'une ligne en centimes entiers, pour éviter la dérive des flottants. */
@@ -145,6 +145,25 @@ export function totalMontantPropose(lots: { montantPropose: unknown }[]): number
   return montants.reduce((somme, l) => somme + Number(l.montantPropose), 0)
 }
 
+type MarcheLu = { id: string; numero: string; montant: unknown }
+
+/**
+ * Tous les marchés d'une opportunité : ceux créés depuis elle (`marches`) et le marché désigné par
+ * `Opportunite.marcheId` (`marche`, seul présent pour un marché préexistant), sans doublon.
+ * Renvoie les numéros joints par « , » et la somme des montants ; null si aucun marché.
+ */
+export function resumerMarchesOpportunite(opp: {
+  marche: MarcheLu | null
+  marches: MarcheLu[]
+}): { numeros: string; montant: number } | null {
+  const tous = [...opp.marches, ...(opp.marche && !opp.marches.some((m) => m.id === opp.marche?.id) ? [opp.marche] : [])]
+  if (tous.length === 0) return null
+  return {
+    numeros: tous.map((m) => m.numero).join(', '),
+    montant: tous.reduce((somme, m) => somme + Number(m.montant ?? 0), 0),
+  }
+}
+
 /** Numéros (croissants) des lots dont le montant proposé n'est pas renseigné. */
 export function lotsSansMontantPropose(lots: { numero: number; montantPropose: unknown }[]): number[] {
   return lots
@@ -163,18 +182,82 @@ export interface MarcheDepuisLots {
   montant: number
 }
 
-/** Objet et montant du marché unique regroupant les lots gagnés ; null s'il n'y a aucun lot gagné. */
-export function preparerMarcheDepuisLots(
-  objet: string,
-  lots: { numero: number; resultat: ResultatLot; montantPropose: unknown }[]
-): MarcheDepuisLots | null {
-  const gagnes = lots.filter((l) => l.resultat === 'GAGNE')
-  if (gagnes.length === 0) return null
-  const numeros = gagnes.map((l) => l.numero).sort((a, b) => a - b)
+export type LotMarche = {
+  id: string
+  numero: number
+  resultat: ResultatLot
+  montantPropose: unknown
+  marcheId: string | null
+}
+
+/** Lots qu'un nouveau marché peut reprendre : gagnés et pas encore rattachés à un marché. */
+export function lotsRattachables<T extends LotMarche>(lots: T[]): T[] {
+  return lots.filter((l) => l.resultat === 'GAGNE' && l.marcheId === null)
+}
+
+/** Message de refus d'une sélection de lots pour un nouveau marché, ou null si elle est valide. */
+export function validerSelectionLots(lotIds: string[], lots: LotMarche[]): string | null {
+  if (lotIds.length === 0) return 'Sélectionnez au moins un lot gagné.'
+  if (new Set(lotIds).size !== lotIds.length) return 'Un lot est sélectionné plusieurs fois.'
+  const rattachables = new Set(lotsRattachables(lots).map((l) => l.id))
+  const connus = new Set(lots.map((l) => l.id))
+  if (lotIds.some((id) => !connus.has(id))) return "Un lot sélectionné n'appartient pas à cette opportunité."
+  if (lotIds.some((id) => !rattachables.has(id))) return 'Seuls les lots gagnés et pas encore rattachés à un marché peuvent être sélectionnés.'
+  return null
+}
+
+/** Objet d'un marché : celui de l'opportunité, suffixé des numéros de lots quand elle en compte plusieurs. */
+export function libelleObjetMarche(objetOpportunite: string, numeros: number[], nbLotsTotal: number): string {
+  if (nbLotsTotal <= 1) return objetOpportunite
+  const tries = [...numeros].sort((a, b) => a - b)
+  return `${objetOpportunite} — ${tries.length > 1 ? 'Lots' : 'Lot'} ${tries.join(', ')}`
+}
+
+/** Objet et montant du marché regroupant les lots sélectionnés ; null si la sélection est invalide. */
+export function preparerMarcheDepuisLots(objet: string, lots: LotMarche[], lotIds: string[]): MarcheDepuisLots | null {
+  if (validerSelectionLots(lotIds, lots) !== null) return null
+  const choisis = lots.filter((l) => lotIds.includes(l.id))
   return {
-    objet: lots.length > 1 ? `${objet} — Lots ${numeros.join(', ')}` : objet,
-    montant: totalMontantPropose(gagnes) ?? 0,
+    objet: libelleObjetMarche(objet, choisis.map((l) => l.numero), lots.length),
+    montant: totalMontantPropose(choisis) ?? 0,
   }
+}
+
+/**
+ * Retrait d'un lot d'un marché : montant recalculé sur les lots restants. L'objet n'est recalculé que s'il est
+ * encore celui qu'on aurait généré ; un objet modifié à la main est conservé. Le numéro du marché n'est jamais touché.
+ */
+export function calculerRetraitLot(p: {
+  objetOpportunite: string
+  nbLotsTotal: number
+  marche: { objet: string; montant: number }
+  lotsDuMarche: LotMarche[]
+  lotRetireId: string
+}): { refus: string } | { montant: number; objet: string; objetConserve: boolean } {
+  if (!p.lotsDuMarche.some((l) => l.id === p.lotRetireId)) return { refus: "Ce lot n'appartient pas à ce marché." }
+  const restants = p.lotsDuMarche.filter((l) => l.id !== p.lotRetireId)
+  if (restants.length === 0) {
+    return { refus: 'Impossible de retirer le dernier lot : supprimez le marché à la place.' }
+  }
+  const objetGenere = libelleObjetMarche(p.objetOpportunite, p.lotsDuMarche.map((l) => l.numero), p.nbLotsTotal)
+  const objetConserve = p.marche.objet !== objetGenere
+  return {
+    montant: totalMontantPropose(restants) ?? 0,
+    objet: objetConserve ? p.marche.objet : libelleObjetMarche(p.objetOpportunite, restants.map((l) => l.numero), p.nbLotsTotal),
+    objetConserve,
+  }
+}
+
+/** Statuts de marché dans lesquels un lot peut encore en être retiré (design D7). */
+const STATUTS_RETRAIT_LOT: StatutMarche[] = ['ATTRIBUE_DEFINITIVEMENT', 'EN_ATTENTE_LIVRAISON_OS']
+
+/** Message de refus du retrait d'un lot (facture ou statut avancé), ou null s'il est autorisé. */
+export function retraitMarcheAutorise(marche: { statut: StatutMarche; nbFactures: number }): string | null {
+  if (marche.nbFactures > 0) return 'Ce marché a des factures : le retrait d’un lot est refusé.'
+  if (!STATUTS_RETRAIT_LOT.includes(marche.statut)) {
+    return "Le marché a dépassé l'attente d'ordre de service : le retrait d'un lot est refusé."
+  }
+  return null
 }
 
 export interface StatsLots {
