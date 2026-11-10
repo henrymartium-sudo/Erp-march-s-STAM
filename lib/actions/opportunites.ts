@@ -1,6 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 import { createOpportuniteSchema, updateOpportuniteSchema } from '@/lib/validations/opportunite'
 import { requireAuth, canWrite } from '@/lib/utils/permissions'
@@ -15,7 +17,8 @@ import {
   type OpportunitePhase,
 } from '@/lib/utils/opportunite-filters'
 import { serializeLot, type SerializedLot } from '@/lib/utils/serialize'
-import { preparerMarcheDepuisLots } from '@/lib/utils/lots'
+import { marchePreexistant, preparerMarcheDepuisLots, validerSelectionLots } from '@/lib/utils/lots'
+import { PREFIXE_NUMERO_PROVISOIRE, prochainNumeroProvisoire } from '@/lib/utils/marche-numero'
 import type { ActionResult } from '@/types'
 import type { PaginatedResponse } from '@/types/pagination'
 import type { Opportunite, Marche, Lot, PieceOffre, StatutOpportunite, StatutMarche } from '@prisma/client'
@@ -30,6 +33,8 @@ export type OpportuniteWithMarche = Opportunite & {
 
 export type OpportuniteDetail = Omit<OpportuniteWithMarche, 'marche'> & {
   marche: Pick<Marche, 'id' | 'numero' | 'objet' | 'createdAt'> | null
+  /** Marchés créés depuis cette opportunité (un par groupe de lots), du plus ancien au plus récent. */
+  marches: Pick<Marche, 'id' | 'numero' | 'objet'>[]
   lots: SerializedLot[]
   piecesCommunes: PieceOffre[]
 }
@@ -127,6 +132,10 @@ export async function getOpportunite(
       include: {
         marche: {
           select: { id: true, numero: true, objet: true, createdAt: true },
+        },
+        marches: {
+          select: { id: true, numero: true, objet: true },
+          orderBy: { createdAt: 'asc' },
         },
         lots: {
           orderBy: { numero: 'asc' },
@@ -310,8 +319,17 @@ export async function deleteOpportunite(
 // CRÉER UN MARCHÉ DEPUIS UNE OPPORTUNITÉ GAGNÉE
 // ============================================================================
 
+const createMarcheSchema = z.object({
+  opportuniteId: z.string().min(1),
+  lotIds: z.array(z.string().min(1)).min(1, 'Sélectionnez au moins un lot gagné.'),
+})
+
+/** Une création concurrente peut prendre le même numéro provisoire : on relit et on retente (1 essai + 3 reprises). */
+const MAX_ESSAIS_NUMERO_MARCHE = 4
+
 export async function createMarcheFromOpportunite(
-  opportuniteId: string
+  opportuniteId: string,
+  lotIds: string[]
 ): Promise<ActionResult<{ marcheId: string }>> {
   try {
     const session = await requireAuth()
@@ -324,87 +342,92 @@ export async function createMarcheFromOpportunite(
     if (!userId) return { success: false, error: 'Utilisateur introuvable' }
     const userEmail = (session.user as { email?: string } | undefined)?.email
 
-    // 1. Vérifier que l'opportunité est bien GAGNEE
-    const opportunite = await prisma.opportunite.findUnique({
-      where: { id: opportuniteId },
-      select: {
-        id: true,
-        statut: true,
-        objet: true,
-        autoriteContractante: true,
-        reference: true,
-        marcheId: true,
-        lots: { select: { numero: true, resultat: true, montantPropose: true }, orderBy: { numero: 'asc' } },
-      },
-    })
-
-    if (!opportunite) {
-      return { success: false, error: 'Opportunité introuvable.' }
+    const parsed = createMarcheSchema.safeParse({ opportuniteId, lotIds })
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues[0]?.message ?? 'Sélection de lots invalide.' }
     }
 
-    if (opportunite.marcheId) {
-      return { success: false, error: 'Un marché est déjà lié à cette opportunité.' }
-    }
+    const annee = new Date().getFullYear()
+    let resultat: { marche: Marche } | { erreur: string } | undefined
 
-    if (opportunite.statut !== 'GAGNEE') {
-      return {
-        success: false,
-        error: 'Seule une opportunité en statut GAGNÉE peut générer un marché.',
+    for (let essai = 1; resultat === undefined; essai++) {
+      try {
+        resultat = await prisma.$transaction(async (tx) => {
+          // Verrou de l'opportunité puis relecture : deux créations sur le même lot (double clic, deux onglets) se
+          // succèdent, la seconde voit le lot déjà rattaché et est refusée. Les montants sont ceux relus sous verrou.
+          await tx.$queryRaw`SELECT id FROM opportunites WHERE id = ${opportuniteId} FOR UPDATE`
+          const courante = await tx.opportunite.findUnique({
+            where: { id: opportuniteId },
+            select: {
+              statut: true,
+              objet: true,
+              autoriteContractante: true,
+              createdAt: true,
+              marcheId: true,
+              marche: { select: { createdAt: true } },
+              lots: {
+                select: { id: true, numero: true, resultat: true, montantPropose: true, marcheId: true },
+                orderBy: { numero: 'asc' },
+              },
+            },
+          })
+          if (!courante) return { erreur: 'Opportunité introuvable.' }
+          if (courante.statut !== 'GAGNEE') {
+            return { erreur: 'Seule une opportunité en statut GAGNÉE peut générer un marché.' }
+          }
+          if (marchePreexistant(courante)) {
+            return { erreur: "Cette opportunité provient d'un marché existant : la création depuis les lots est refusée." }
+          }
+          const refus = validerSelectionLots(parsed.data.lotIds, courante.lots)
+          if (refus) return { erreur: refus }
+          const depuisLots = preparerMarcheDepuisLots(courante.objet, courante.lots, parsed.data.lotIds)
+          if (!depuisLots) return { erreur: 'Sélection de lots invalide.' }
+
+          const existants = await tx.marche.findMany({
+            where: { numero: { startsWith: `${PREFIXE_NUMERO_PROVISOIRE}${annee}-` } },
+            select: { numero: true },
+          })
+          const numero = prochainNumeroProvisoire(annee, existants.map((m) => m.numero))
+
+          const newMarche = await tx.marche.create({
+            data: {
+              numero,
+              objet:                   depuisLots.objet,
+              type:                    'FOURNITURES',
+              montant:                 depuisLots.montant,
+              dateNotification:        new Date(),
+              delaiExecution:          0,
+              statut:                  'ATTRIBUE_DEFINITIVEMENT' as StatutMarche,
+              autoriteContractanteNom: courante.autoriteContractante,
+              userId,
+              opportuniteId,
+            },
+          })
+
+          // Rattacher les lots choisis (garde-fou : un lot pris entre-temps fait échouer la création)
+          const rattaches = await tx.lot.updateMany({
+            where: { id: { in: parsed.data.lotIds }, opportuniteId, marcheId: null, resultat: 'GAGNE' },
+            data: { marcheId: newMarche.id },
+          })
+          if (rattaches.count !== parsed.data.lotIds.length) {
+            throw new Error('Rattachement des lots incomplet')
+          }
+
+          // Premier marché de l'opportunité seulement : le lien « Marché principal » reste celui de la première création
+          await tx.opportunite.updateMany({
+            where: { id: opportuniteId, marcheId: null },
+            data: { marcheId: newMarche.id },
+          })
+
+          return { marche: newMarche }
+        }, { maxWait: 10000, timeout: 20000 })
+      } catch (error) {
+        const collisionNumero =
+          error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002' && essai < MAX_ESSAIS_NUMERO_MARCHE
+        if (!collisionNumero) throw error
       }
     }
-
-    const depuisLots = preparerMarcheDepuisLots(opportunite.objet, opportunite.lots)
-    if (!depuisLots) {
-      return { success: false, error: "Aucun lot gagné : le marché ne peut pas être créé." }
-    }
-
-    // 2. Générer un numéro de marché temporaire unique
-    const count = await prisma.marche.count()
-    const numeroTemp = `MARCHE-${new Date().getFullYear()}-${String(count + 1).padStart(3, '0')}`
-
-    // 3. Créer le marché en transaction
-    const resultat = await prisma.$transaction(async (tx) => {
-      // Verrou de l'opportunité puis relecture : une saisie de véhicules validée entre la lecture initiale et ici change
-      // le montant des lots ; le marché reprend les montants relus sous verrou, jamais ceux lus avant la transaction.
-      await tx.$queryRaw`SELECT id FROM opportunites WHERE id = ${opportuniteId} FOR UPDATE`
-      const courante = await tx.opportunite.findUnique({
-        where: { id: opportuniteId },
-        select: {
-          statut: true,
-          marcheId: true,
-          lots: { select: { numero: true, resultat: true, montantPropose: true }, orderBy: { numero: 'asc' } },
-        },
-      })
-      if (!courante || courante.marcheId || courante.statut !== 'GAGNEE') {
-        return { erreur: "Un marché est déjà lié à cette opportunité, ou elle n'est plus en statut GAGNÉE." }
-      }
-      const depuisLotsVerrouille = preparerMarcheDepuisLots(opportunite.objet, courante.lots)
-      if (!depuisLotsVerrouille) return { erreur: 'Aucun lot gagné : le marché ne peut pas être créé.' }
-
-      const newMarche = await tx.marche.create({
-        data: {
-          numero:                  numeroTemp,
-          objet:                   depuisLotsVerrouille.objet,
-          type:                    'FOURNITURES',
-          montant:                 depuisLotsVerrouille.montant,
-          dateNotification:        new Date(),
-          delaiExecution:          0,
-          statut:                  'ATTRIBUE_DEFINITIVEMENT' as StatutMarche,
-          autoriteContractanteNom: opportunite.autoriteContractante,
-          userId,
-          opportuniteId,
-        },
-      })
-
-      // Lier l'opportunité au marché (sens inverse)
-      await tx.opportunite.update({
-        where: { id: opportuniteId },
-        data: { marcheId: newMarche.id },
-      })
-
-      return { marche: newMarche }
-    }, { maxWait: 10000, timeout: 20000 })
-    if (!resultat.marche) return { success: false, error: resultat.erreur ?? 'Erreur lors de la création du marché.' }
+    if (!('marche' in resultat)) return { success: false, error: resultat.erreur }
     const marche = resultat.marche
 
     await logAction({
@@ -417,6 +440,7 @@ export async function createMarcheFromOpportunite(
         source: 'opportunite',
         opportuniteId,
         objet: marche.objet,
+        lotIds: parsed.data.lotIds,
       },
     })
 

@@ -136,6 +136,16 @@ export function serializeMarche(marche: any): SerializedMarche {
     vehicules: marche.marcheVehicules
       ? marche.marcheVehicules.map((mv: any) => mv.vehicule).filter(Boolean)
       : undefined,
+    // Lots couverts (Decimal -> number) et nombre de factures
+    lots: marche.lots
+      ? marche.lots.map((l: any) => ({
+          id: l.id,
+          numero: l.numero,
+          intitule: l.intitule,
+          montantPropose: l.montantPropose != null ? Number(l.montantPropose) : null,
+        }))
+      : undefined,
+    nbFactures: marche._count?.factures,
   }
 }
 

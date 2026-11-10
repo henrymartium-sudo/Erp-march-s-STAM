@@ -72,6 +72,11 @@ Architecture **Next.js 15 full-stack** moderne :
 - Vérifier que l'interface est **fonctionnelle**
 - Vérifier que l'interface **répond au besoin développé**
 
+### Tests E2E sur la base de test locale
+
+- Passer par le skill utilisateur `base-test` (« lance les tests E2E », « démarre la base de test ») : il charge `.env.test` en entier et teste sur un build de production.
+- Ne jamais lancer `npm run dev`, `prisma` ou `playwright test` pour ces tests sans `.env.test` chargé : `.env` et `.env.local` visent la production.
+
 ### Critères de validation
 
 - Fonctionnalité sur desktop (1920x1080)
@@ -152,6 +157,14 @@ Les 5 contrôles du skill global `disciplines-actives` (`~/.claude/skills/discip
   4. **Déploiement production** (`vercel --prod`) — techniquement rollback-able, mais ce que les utilisateurs ont vu ou saisi entre-temps ne l'est pas.
 
 - **Lecture fraîche** : état réel de la base (pas le schéma supposé), branche et working tree courants, dernier déploiement Vercel, `git ls-files` avant toute affirmation sur ce qui est versionné.
+
+## Clôture automatique
+
+Plan concerné : `docs/plans/2026-11-10-un-marche-par-groupe-de-lots-plan.md` (activée par accord d'Abel, 2026-11-10).
+
+- À la reprise d'un handoff portant `Suite automatique` et à chaque fin de tâche : lire en entier `~/.claude/skills/disciplined-execution/references/auto-closure.md`.
+- Trois arrêts seulement (dernière ligne `ARRÊT : <raison>`) : vérification ratée ou budget de diagnostic épuisé ; geste distant ; fin de ticket.
+- Jamais de push ni de geste distant par la chaîne (le garde de production n'est pas actif hors orchestration : cette consigne seule protège).
 
 ---
 

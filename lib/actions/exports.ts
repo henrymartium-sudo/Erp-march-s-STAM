@@ -20,7 +20,7 @@ import {
 } from '@/lib/utils/pdf'
 import { formatDateCourt } from '@/lib/utils/format'
 import { buildOpportuniteOrderBy, buildOpportuniteWhere, parseOpportuniteFilters } from '@/lib/utils/opportunite-filters'
-import { calculerAvancementLots, deriverEtatDossier, totalMontantPropose } from '@/lib/utils/lots'
+import { calculerAvancementLots, deriverEtatDossier, resumerMarchesOpportunite, totalMontantPropose } from '@/lib/utils/lots'
 import { documentFiltersSchema } from '@/lib/validations/document'
 import {
   construireWhereDocuments,
@@ -1611,7 +1611,8 @@ export async function exportOpportunitesPDF(
       take: EXPORT_MAX_ROWS,
       orderBy: buildOpportuniteOrderBy(oppFilters.tri, oppFilters.echeance),
       include: {
-        marche: { select: { numero: true } },
+        marche: { select: { id: true, numero: true, montant: true } },
+        marches: { select: { id: true, numero: true, montant: true }, orderBy: { createdAt: 'asc' } },
       },
     })
 
@@ -1630,7 +1631,7 @@ export async function exportOpportunitesPDF(
       statut:               STATUT_OPP_LABELS[o.statut] ?? o.statut,
       montantEstime:        o.montantEstime,
       dateLimite:           o.dateLimite,
-      marcheNumero:         o.marche?.numero || '—',
+      marcheNumero:         resumerMarchesOpportunite(o)?.numeros || '—',
     }))
 
     const totalEstime = opportunites.reduce(

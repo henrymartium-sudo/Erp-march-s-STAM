@@ -5,7 +5,7 @@ import type { StatutOpportunite } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 import { requireAuth, canWrite } from '@/lib/utils/permissions'
 import { lotSchema, resultatLotSchema } from '@/lib/validations/lot'
-import { agregerStatutOpportunite, resultatsLotsFiges, STATUTS_EDITION_LOTS, STATUTS_SAISIE_RESULTAT } from '@/lib/utils/lots'
+import { agregerStatutOpportunite, lotEstFige, STATUTS_EDITION_LOTS, STATUTS_SAISIE_RESULTAT } from '@/lib/utils/lots'
 import { logAction } from '@/lib/audit/logAction'
 import { AUDIT_ACTION, AUDIT_ENTITY } from '@/lib/audit/constants'
 import type { ActionResult } from '@/types'
@@ -102,16 +102,19 @@ export async function setResultatLot(
     const { lotId, resultat, motifPerte, concurrentGagnant, montantOffreConcurrent } = parsed.data
 
     const res = await prisma.$transaction(async (tx) => {
-      const lot = await tx.lot.findUnique({ where: { id: lotId }, select: { opportuniteId: true } })
-      if (!lot) throw new Error('LOT_INTROUVABLE')
+      const lotLu = await tx.lot.findUnique({ where: { id: lotId }, select: { opportuniteId: true } })
+      if (!lotLu) throw new Error('LOT_INTROUVABLE')
 
       // Verrouille la ligne opportunité avant lecture/agrégation pour sérialiser les
       // setResultatLot concurrents sur des lots de la même opportunité (pas de lost update).
-      await tx.$queryRaw`SELECT id FROM opportunites WHERE id = ${lot.opportuniteId} FOR UPDATE`
-      const opportunite = await tx.opportunite.findUnique({ where: { id: lot.opportuniteId }, select: { statut: true, createdAt: true, marche: { select: { createdAt: true } } } })
+      await tx.$queryRaw`SELECT id FROM opportunites WHERE id = ${lotLu.opportuniteId} FOR UPDATE`
+      const opportunite = await tx.opportunite.findUnique({ where: { id: lotLu.opportuniteId }, select: { statut: true } })
       if (!opportunite) throw new Error('LOT_INTROUVABLE')
       if (!STATUTS_SAISIE_RESULTAT.includes(opportunite.statut)) throw new Error('STATUT_INVALIDE')
-      if (resultatsLotsFiges(opportunite)) throw new Error('MARCHE_LIE')
+      // Lu après le verrou : un marché créé entre-temps (createMarcheFromOpportunite verrouille aussi l'opportunité) est vu.
+      const lot = await tx.lot.findUnique({ where: { id: lotId }, select: { opportuniteId: true, marcheId: true } })
+      if (!lot) throw new Error('LOT_INTROUVABLE')
+      if (lotEstFige(lot)) throw new Error('MARCHE_LIE')
 
       const perdu = resultat === 'PERDU'
       await tx.lot.update({
@@ -148,7 +151,7 @@ export async function setResultatLot(
     const msg = (error as Error).message
     if (msg === 'LOT_INTROUVABLE') return { success: false, error: 'Lot introuvable.' }
     if (msg === 'STATUT_INVALIDE') return { success: false, error: "Le résultat se saisit après le dépôt, en attente d'attribution." }
-    if (msg === 'MARCHE_LIE') return { success: false, error: 'Un marché est déjà créé pour cette opportunité : les résultats des lots ne sont plus modifiables.' }
+    if (msg === 'MARCHE_LIE') return { success: false, error: "Ce lot est couvert par un marché : son résultat n'est plus modifiable." }
     console.error('setResultatLot error:', error)
     return { success: false, error: 'Erreur lors de la saisie du résultat.' }
   }

@@ -356,6 +356,11 @@ export async function getMarcheById(id: string): Promise<Marche | null> {
         opportunite: {
           select: { id: true, reference: true, objet: true },
         },
+        lots: {
+          select: { id: true, numero: true, intitule: true, montantPropose: true },
+          orderBy: { numero: 'asc' },
+        },
+        _count: { select: { factures: true } },
       },
     })
 

@@ -96,6 +96,14 @@ export interface SerializedMarche {
     reference: string | null
     objet: string
   } | null
+  // Lots couverts par ce marché (un marché peut grouper plusieurs lots d'une opportunité)
+  lots?: Array<{
+    id: string
+    numero: number
+    intitule: string
+    montantPropose: number | null
+  }>
+  nbFactures?: number
 }
 
 // ============================================================================

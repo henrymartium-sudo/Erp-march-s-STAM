@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { StatutBadge } from './statut-badge'
 import { StatutChangerButton } from './statut-changer-button'
 import { DeleteMarcheDialog } from './delete-marche-dialog'
+import { MarcheLotsSection } from './marche-lots-section'
 import { MarcheDocumentsSection } from './marche-documents-section'
 import { MarcheCautionsSection } from './marche-cautions-section'
 import { MarcheHistoriqueStatuts } from './marche-historique-statuts'
@@ -66,7 +67,7 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
             {TYPE_LABELS[marche.type]}
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex flex-wrap items-center gap-2">
           <StatutBadge statut={currentStatut} size="lg" />
           {STATUTS_PRE_ATTRIBUTION.includes(currentStatut) && (
             <Badge variant="muted" className="text-xs">
@@ -531,6 +532,9 @@ export function MarcheDetail({ marche, canWrite = true }: MarcheDetailProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* Section Lots couverts (absente pour un marché sans lot rattaché) */}
+      <MarcheLotsSection lots={marche.lots ?? []} canWrite={canWrite} />
 
       {/* Section Documents */}
       <MarcheDocumentsSection marcheId={marche.id} />

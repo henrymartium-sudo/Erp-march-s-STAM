@@ -3,17 +3,15 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { StatutOpportunite } from '@prisma/client'
-import { Button } from '@/components/ui/button'
-import { Plus, Loader2 } from 'lucide-react'
 import { StatutChangerOpportuniteButton } from './statut-changer-button'
-import { createMarcheFromOpportunite } from '@/lib/actions/opportunites'
-import { toast } from '@/lib/utils/toast'
+import { CreerMarcheDialog, type LotLibre } from './creer-marche-dialog'
 
 interface OpportuniteDetailActionsProps {
   opportuniteId: string
   currentStatut: StatutOpportunite
   nbLots: number
-  hasMarcheLinked: boolean
+  /** Lots gagnés pas encore rattachés à un marché (vide si aucun marché n'est créable). */
+  lotsLibres: LotLibre[]
   canWrite: boolean
 }
 
@@ -21,45 +19,28 @@ export function OpportuniteDetailActions({
   opportuniteId,
   currentStatut,
   nbLots,
-  hasMarcheLinked,
+  lotsLibres,
   canWrite,
 }: OpportuniteDetailActionsProps) {
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
   const [statut, setStatut] = useState<StatutOpportunite>(currentStatut)
-
-  async function handleCreateMarche() {
-    setLoading(true)
-    const result = await createMarcheFromOpportunite(opportuniteId)
-    setLoading(false)
-
-    if (result.success) {
-      toast.success('Marché créé avec succès')
-      router.push(`/marches/${result.data.marcheId}`)
-    } else {
-      toast.error(result.error ?? 'Erreur lors de la création du marché')
-    }
-  }
 
   if (!canWrite) return null
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <StatutChangerOpportuniteButton
         opportuniteId={opportuniteId}
         currentStatut={statut}
         nbLots={nbLots}
         onStatutChanged={setStatut}
       />
-      {statut === 'GAGNEE' && !hasMarcheLinked && (
-        <Button onClick={handleCreateMarche} disabled={loading} size="sm">
-          {loading ? (
-            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-          ) : (
-            <Plus className="h-4 w-4 mr-1.5" />
-          )}
-          Créer le marché
-        </Button>
+      {statut === 'GAGNEE' && lotsLibres.length > 0 && (
+        <CreerMarcheDialog
+          opportuniteId={opportuniteId}
+          lotsLibres={lotsLibres}
+          onCreated={(marcheId) => router.push(`/marches/${marcheId}`)}
+        />
       )}
     </div>
   )

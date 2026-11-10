@@ -132,6 +132,7 @@ model Marche {
   factures            Facture[]
   opportunites        Opportunite[]      @relation("OpportuniteMarche")
   dossiers            DossierOffre[]
+  lots                Lot[]
 
   // Lien bidirectionnel vers l'opportunité d'origine (post-attribution)
   opportuniteId       String?
@@ -684,6 +685,8 @@ model Lot {
   id                     String        @id @default(cuid())
   opportuniteId          String
   opportunite            Opportunite   @relation(fields: [opportuniteId], references: [id], onDelete: Cascade)
+  marcheId               String?
+  marche                 Marche?       @relation(fields: [marcheId], references: [id], onDelete: SetNull)
   numero                 Int
   intitule               String
   montantEstime          Decimal?      @db.Decimal(15, 2)
@@ -699,6 +702,7 @@ model Lot {
 
   @@unique([opportuniteId, numero])
   @@index([opportuniteId])
+  @@index([marcheId])
   @@map("lots")
 }
 
