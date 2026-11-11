@@ -5,6 +5,9 @@ import { PageHeader } from '@/components/shared/page-header'
 import { RetryButton } from '@/components/shared/retry-button'
 import { VehiculeList } from '@/components/vehicules/vehicule-list'
 import { VehiculeFilters } from '@/components/vehicules/vehicule-filters'
+import { VehiculesOnglets } from '@/components/vehicules/vehicules-onglets'
+import { SavVueGlobale } from '@/components/vehicules/sav-vue-globale'
+import { lireOngletVehicules } from '@/lib/vehicules/onglets'
 import { ExportMenu } from '@/components/exports'
 import { DataPagination } from '@/components/ui/data-pagination'
 import { getVehicules } from '@/lib/actions/vehicules'
@@ -23,6 +26,7 @@ interface VehiculesPageProps {
     statut?: string
     marque?: string
     page?: string
+    onglet?: string | string[]
   }>
 }
 
@@ -35,6 +39,20 @@ export default async function VehiculesPage({ searchParams }: VehiculesPageProps
 
   // Await searchParams (Next.js 15)
   const params = await searchParams
+
+  // Onglet SAV : le serveur ne charge que les données de l'onglet affiché
+  if (lireOngletVehicules(params.onglet) === 'sav') {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Véhicules"
+          description="Suivi des interventions sur l'ensemble du parc"
+        />
+        <VehiculesOnglets onglet="sav" />
+        <SavVueGlobale />
+      </div>
+    )
+  }
 
   // Parse page number
   const currentPage = Number(params.page) || 1
@@ -50,7 +68,8 @@ export default async function VehiculesPage({ searchParams }: VehiculesPageProps
   // Gérer les erreurs
   if (!result.success) {
     return (
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto py-8 space-y-6">
+        <VehiculesOnglets onglet="parc" />
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle className="text-destructive">Erreur</CardTitle>
@@ -100,6 +119,8 @@ export default async function VehiculesPage({ searchParams }: VehiculesPageProps
           </>
         }
       />
+
+      <VehiculesOnglets onglet="parc" />
 
       {/* Filtres */}
       <VehiculeFilters
