@@ -1,9 +1,8 @@
 'use server'
 
 import { prisma } from '@/lib/db/prisma'
-import { requireAuth, requireRole } from '@/lib/utils/permissions'
-import { LIMITE_DETAIL, filtreMarchesPeriode, filtreOpportunitesPeriode } from '@/lib/analytics/filtres'
-import type { Periode } from '@/lib/analytics/types'
+import { requireAuth } from '@/lib/utils/permissions'
+import { LIMITE_DETAIL } from '@/lib/analytics/filtres'
 import { STATUT_LABELS } from '@/lib/constants/marche'
 import { TYPE_CAUTION_LABELS, STATUT_CAUTION_LABELS } from '@/lib/constants/caution'
 import { STATUT_VEHICULE_LABELS } from '@/lib/constants/vehicule'
@@ -21,21 +20,12 @@ export interface DrillDownItem {
   href?: string
 }
 
-// Avec une période (onglet Analyses), le détail reprend le filtre des compteurs et suit leur
-// contrôle de rôle ; sans période (Dashboard), il liste tout, comme avant.
-async function autoriser(periode?: Periode) {
-  if (periode) await requireRole(['ADMIN', 'AVANCE'])
-  else await requireAuth()
-}
-
 // ── Marchés ───────────────────────────────────────────────────────────────────
 
-export async function getMarchesByStatut(statut: string, periode?: Periode): Promise<DrillDownItem[]> {
-  await autoriser(periode)
+export async function getMarchesByStatut(statut: string): Promise<DrillDownItem[]> {
+  await requireAuth()
   const marches = await prisma.marche.findMany({
-    where: periode
-      ? { AND: [filtreMarchesPeriode(periode), { statut: statut as any }] }
-      : { statut: statut as any },
+    where: { statut: statut as any },
     orderBy: { createdAt: 'desc' },
     take: LIMITE_DETAIL,
     select: { id: true, numero: true, objet: true, montant: true, statut: true },
@@ -113,12 +103,10 @@ export async function getVehiculesByStatut(statut: string): Promise<DrillDownIte
 
 // ── Opportunités ──────────────────────────────────────────────────────────────
 
-export async function getOpportunitesByStatut(statut: string, periode?: Periode): Promise<DrillDownItem[]> {
-  await autoriser(periode)
+export async function getOpportunitesByStatut(statut: string): Promise<DrillDownItem[]> {
+  await requireAuth()
   const opps = await prisma.opportunite.findMany({
-    where: periode
-      ? { AND: [filtreOpportunitesPeriode(periode), { statut: statut as any }] }
-      : { statut: statut as any },
+    where: { statut: statut as any },
     orderBy: { createdAt: 'desc' },
     take: LIMITE_DETAIL,
     select: {
@@ -140,12 +128,10 @@ export async function getOpportunitesByStatut(statut: string, periode?: Periode)
   }))
 }
 
-export async function getOpportunitesByAC(ac: string, periode?: Periode): Promise<DrillDownItem[]> {
-  await autoriser(periode)
+export async function getOpportunitesByAC(ac: string): Promise<DrillDownItem[]> {
+  await requireAuth()
   const opps = await prisma.opportunite.findMany({
-    where: periode
-      ? { AND: [filtreOpportunitesPeriode(periode), { autoriteContractante: ac }] }
-      : { autoriteContractante: ac },
+    where: { autoriteContractante: ac },
     orderBy: { createdAt: 'desc' },
     take: LIMITE_DETAIL,
     select: {

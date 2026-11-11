@@ -4,14 +4,14 @@
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/lib/utils/toast'
-import type { PerformanceStats, Periode } from '@/lib/analytics/types'
+import type { PerformanceStats } from '@/lib/analytics/types'
 import { DrillDownSheet } from '@/components/shared/DrillDownSheet'
 import { ListeAnalyse } from '@/components/analytique/ListeAnalyse'
 import { getMarchesByStatut, type DrillDownItem } from '@/lib/actions/drill-down'
 
-interface Props { data: PerformanceStats; periode: Periode }
+interface Props { data: PerformanceStats }
 
-export function PerformanceSection({ data, periode }: Props) {
+export function PerformanceSection({ data }: Props) {
   const [drillDown, setDrillDown] = useState<{
     title: string; items: DrillDownItem[]; isLoading: boolean
   } | null>(null)
@@ -19,7 +19,7 @@ export function PerformanceSection({ data, periode }: Props) {
   async function ouvrirStatut(statut: string, label: string) {
     setDrillDown({ title: `Marchés — ${label}`, items: [], isLoading: true })
     try {
-      setDrillDown({ title: `Marchés — ${label}`, items: await getMarchesByStatut(statut, periode), isLoading: false })
+      setDrillDown({ title: `Marchés — ${label}`, items: await getMarchesByStatut(statut), isLoading: false })
     } catch {
       setDrillDown(null)
       toast.error('Impossible de charger le détail. Réessayez.')
@@ -31,7 +31,7 @@ export function PerformanceSection({ data, periode }: Props) {
       <Card>
         <CardHeader><CardTitle>Performance Marchés</CardTitle></CardHeader>
         <CardContent>
-          <p className="text-muted-foreground text-sm">Aucun marché sur cette période.</p>
+          <p className="text-muted-foreground text-sm">Aucun marché.</p>
         </CardContent>
       </Card>
     )
@@ -43,6 +43,7 @@ export function PerformanceSection({ data, periode }: Props) {
 
       <ListeAnalyse
         titre="Marchés par statut"
+        sousTitre="Situation actuelle, toutes dates"
         lignes={data.parStatut.map((s) => ({
           cle: s.statut,
           libelle: s.label,

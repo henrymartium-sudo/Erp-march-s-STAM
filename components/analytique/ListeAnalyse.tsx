@@ -13,11 +13,12 @@ export interface LigneAnalyse {
 
 const LIGNE = 'flex min-h-11 w-full items-center justify-between gap-3 rounded-md px-2 text-left text-sm'
 
-export function ListeAnalyse({ titre, lignes }: { titre: string; lignes: LigneAnalyse[] }) {
+export function ListeAnalyse({ titre, sousTitre, lignes }: { titre: string; sousTitre?: string; lignes: LigneAnalyse[] }) {
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-sm">{titre}</CardTitle>
+        {sousTitre && <p className="text-xs text-muted-foreground">{sousTitre}</p>}
       </CardHeader>
       <CardContent>
         <ul aria-label={titre} className="divide-y">
