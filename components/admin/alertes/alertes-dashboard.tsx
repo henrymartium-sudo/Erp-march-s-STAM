@@ -185,7 +185,7 @@ export function AlertesDashboard({
         {/* Destinataires */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
+            <CardTitle className="flex flex-wrap items-center justify-between gap-2">
               <span className="flex items-center gap-2">
                 <Mail className="h-5 w-5" />
                 Destinataires
@@ -193,7 +193,7 @@ export function AlertesDashboard({
                   {selectedDestinataires.length} / {destinataires.length}
                 </Badge>
               </span>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
