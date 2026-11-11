@@ -16,7 +16,6 @@ import {
   X,
   ChevronRight,
   UserCircle,
-  Wrench,
   Users,
   ClipboardList,
   BarChart2,
@@ -55,7 +54,6 @@ const navItems = [
   { href: '/marches',               label: 'Marchés',      icon: FileText },
   { href: '/cautions',              label: 'Cautions',     icon: Shield },
   { href: '/vehicules',             label: 'Véhicules',    icon: Car },
-  { href: '/vehicules/sav',         label: 'SAV',          icon: Wrench },
   { href: '/factures',              label: 'Facturation',  icon: Receipt },
   { href: '/opportunites',          label: 'Opportunités',    icon: Target },
   { href: '/documents',             label: 'Documents',        icon: FolderOpen },
@@ -71,7 +69,6 @@ const pageTitles: Record<string, string> = {
   '/marches':            'Marchés publics',
   '/cautions':           'Cautions & Garanties',
   '/vehicules':          'Véhicules',
-  '/vehicules/sav':      'SAV — Vue globale',
   '/factures':           'Facturation',
   '/opportunites':       'Opportunités',
   '/documents':          'Documents',
@@ -90,7 +87,7 @@ function matchesRoute(pathname: string, route: string): boolean {
 
 function getPageTitle(pathname: string): string {
   if (pathname === '/') return 'Tableau de bord'
-  // Le préfixe le plus long gagne : /vehicules/sav ne doit pas être capté par /vehicules.
+  // Le préfixe le plus long gagne : une route imbriquée ne doit pas être captée par son parent.
   let best: string | null = null
   for (const path of Object.keys(pageTitles)) {
     if (path === '/') continue
@@ -120,8 +117,7 @@ function SidebarContent({ userName, userRole, onClose, forceExpanded = false }: 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/'
     if (!matchesRoute(pathname, href)) return false
-    // Un item plus spécifique qui matche aussi l'emporte : sur /vehicules/sav,
-    // seul « SAV » doit ressortir actif, pas « Véhicules ».
+    // Un item plus spécifique qui matche aussi l'emporte : un seul item ressort actif.
     return !navItems.some(
       (other) =>
         other.href.length > href.length && matchesRoute(pathname, other.href)

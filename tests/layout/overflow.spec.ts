@@ -12,7 +12,7 @@ import { login, TEST_USERS } from '../helpers/auth'
  * sur /marches, /opportunites, /vehicules à 768, 1024 et 1280px.
  */
 
-const PAGES = ['/marches', '/opportunites', '/vehicules']
+const PAGES = ['/marches', '/opportunites', '/vehicules', '/vehicules?onglet=sav']
 const WIDTHS = [768, 1024, 1280]
 
 test.describe('Layout — aucun débordement horizontal', () => {

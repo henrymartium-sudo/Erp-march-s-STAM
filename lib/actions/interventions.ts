@@ -74,7 +74,6 @@ export async function createIntervention(data: unknown): Promise<ActionResult<In
 
     revalidatePath('/vehicules')
     revalidatePath(`/vehicules/${validated.vehiculeId}`)
-    revalidatePath('/vehicules/sav')
 
     // Publier l'événement SAV_TICKET_CREATED (fire-and-forget, ne bloque pas)
     await publishEvent(ALERT_EVENT_TYPES.SAV_TICKET_CREATED, 'sav', intervention.id, {
@@ -177,7 +176,7 @@ export async function updateInterventionStatut(data: unknown): Promise<ActionRes
     }
 
     revalidatePath(`/vehicules/${current.vehiculeId}`)
-    revalidatePath('/vehicules/sav')
+    revalidatePath('/vehicules')
 
     // Audit log
     await logAction({
@@ -219,7 +218,7 @@ export async function updateCommentaireContractuel(data: unknown): Promise<Actio
       data: { commentaireContractuel: validated.commentaireContractuel },
     })
 
-    revalidatePath('/vehicules/sav')
+    revalidatePath('/vehicules')
 
     return { success: true, data: intervention }
   } catch (error) {
@@ -246,7 +245,7 @@ export async function deleteIntervention(id: string): Promise<ActionResult> {
     await prisma.intervention.delete({ where: { id } })
 
     revalidatePath(`/vehicules/${intervention.vehiculeId}`)
-    revalidatePath('/vehicules/sav')
+    revalidatePath('/vehicules')
 
     return { success: true, data: undefined }
   } catch (error) {
