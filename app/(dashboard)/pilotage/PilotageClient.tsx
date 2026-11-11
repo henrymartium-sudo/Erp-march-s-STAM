@@ -1,20 +1,16 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { format } from 'date-fns'
-import { fr } from 'date-fns/locale'
 import Link from 'next/link'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
-import { PeriodSelector } from '@/components/analytique/PeriodSelector'
-import { AnalytiquesTab } from '@/components/analytique/AnalytiquesTab'
 import { IndicateurCard } from '@/components/pilotage/IndicateurCard'
 import { QualiteDonnees } from '@/components/pilotage/QualiteDonnees'
 import { LigneIssue } from '@/components/pilotage/LigneIssue'
 import { getPilotageData, type PilotageData } from '@/lib/actions/pilotage'
 import { SEUIL_CONVERSION, MIN_CAS_ECART, JOURS_MARCHE_RECENT, type IssueHistorique } from '@/lib/pilotage/calculs'
 import { formatMontant } from '@/lib/utils/format'
-import { usePeriodeUrl } from '@/hooks/use-periode-url'
+import type { Periode } from '@/lib/analytics/types'
 
 const pct = (v: number | null) => (v === null ? '—' : `${v} %`)
 
@@ -26,8 +22,7 @@ const LIBELLE_ISSUE_HISTORIQUE: Record<IssueHistorique, string> = {
 }
 const ORDRE_ISSUES: IssueHistorique[] = ['GAGNE', 'PERDU_APRES_ATTRIBUTION', 'SANS_SUITE', 'A_QUALIFIER']
 
-export function PilotageClient() {
-  const { periode, setPeriode, parametres } = usePeriodeUrl()
+export function PilotageClient({ periode }: { periode: Periode }) {
   const [data, setData] = useState<PilotageData | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const [retry, setRetry] = useState(0)
@@ -54,17 +49,6 @@ export function PilotageClient() {
 
   return (
     <div className="space-y-6">
-      <PeriodSelector value={periode} onChange={setPeriode} disabled={enCours} />
-      <p className="text-sm text-muted-foreground">
-        Tous les chiffres de la page portent sur la période du{' '}
-        {format(periode.dateDebut, 'dd/MM/yyyy', { locale: fr })} au {format(periode.dateFin, 'dd/MM/yyyy', { locale: fr })}.
-      </p>
-      <Link
-        href={`/veille?${parametres}`}
-        className="inline-flex min-h-11 items-center text-sm font-medium underline-offset-4 hover:underline focus-visible:underline"
-      >
-        Voir la veille concurrentielle
-      </Link>
       {erreur && (
         <div className="flex flex-wrap items-center gap-3">
           <p role="alert" className="text-sm text-destructive">{erreur}</p>
@@ -193,10 +177,6 @@ export function PilotageClient() {
           />
         </>
       ) : null}
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Analyses détaillées</h2>
-        <AnalytiquesTab periode={periode} />
-      </section>
     </div>
   )
 }

@@ -147,21 +147,21 @@ test("changer de période garde l'onglet", () => {
 - Consomme : `lireOnglet`, `avecOnglet`, `urlVeilleVersPilotage` (tâche 2), `usePeriodeUrl`.
 - Produit : `export function PilotageOnglets()` (client) ; `PilotageClient({ periode }: { periode: Periode })` ; `VeilleClient({ periode }: { periode: Periode })` ; `AnalytiquesTab({ periode })` (inchangé).
 
-- [ ] **Étape 1 : écrire les E2E qui échouent**
+- [x] **Étape 1 : écrire les E2E qui échouent**
   - `veille.spec.ts`, test 4 remplacé par « l'ancienne adresse redirige vers l'onglet Veille » : `goto('/veille?debut=2026-01-01&fin=2026-06-30')` → `toHaveURL(/\/pilotage\?onglet=veille&debut=2026-01-01&fin=2026-06-30/)`, `getByRole('tab', { name: 'Veille' })` a `aria-selected="true"`, texte « période du 01/01/2026 au 30/06/2026 » visible.
   - Nouveau test, « période et onglet se gardent l'un l'autre » : sur l'onglet Veille, clic sur « 30 jours » → l'URL contient encore `onglet=veille` ; clic sur l'onglet « Analyses » → l'URL garde les `debut` et `fin` de « 30 jours » ; rechargement → Analyses toujours sélectionné.
   - Nouveau test, « ancien lien sans dates ou invalide » : `goto('/veille?debut=xx')` → onglet Veille sélectionné, phrase de période affichée (période par défaut).
   - Test 1 complété : EXPLOITATION sur `/veille` → `toHaveURL('/')` ; le menu d'un AVANCE n'a plus de lien « Veille » (`getByRole('link', { name: 'Veille', exact: true })` a 0 occurrence), mais garde « Pilotage ».
   - Les autres tests de `veille.spec.ts` gardent `goto('/veille')`, ce qui couvre aussi la redirection.
   - `pilotage.spec.ts`, « un seul sélecteur de période » : vérifier `getByText('Période :')` à 1 sur chacun des trois onglets.
-- [ ] **Étape 2 :** E2E `tests/v1/pilotage.spec.ts tests/v1/veille.spec.ts` par `base-test` → les nouveaux tests ÉCHOUENT.
-- [ ] **Étape 3 : `PilotageOnglets`** : `usePeriodeUrl()`, puis `PeriodSelector` et la phrase « Tous les chiffres de la page portent sur la période du … au … » (sortis de `PilotageClient`, une seule fois pour la page) ; `Tabs` contrôlé par `value={lireOnglet(searchParams.get('onglet'))}`, `onValueChange` → `router.replace(` `` `/pilotage?${avecOnglet(searchParams.toString(), v)}` ``, `{ scroll: false })` ; trois `TabsTrigger` en `min-h-11` dans un `TabsList` qui passe à la ligne (`h-auto flex-wrap justify-start`, comme dans `VeilleClient`) ; chaque `TabsContent` reçoit `periode`.
-- [ ] **Étape 4 :** `PilotageClient` et `VeilleClient` prennent `periode` en prop et perdent le sélecteur, la phrase de période et les liens croisés (« Voir la veille concurrentielle », « Retour au pilotage ») ; `PilotageClient` perd la section « Analyses détaillées ». Leurs chargements, erreurs et états vides restent tels quels.
-- [ ] **Étape 5 :** `pilotage/page.tsx` rend `<PilotageOnglets />` dans le `Suspense` ; sous-titre : « Indicateurs de décision, veille concurrentielle et analyses, sur une même période. »
-- [ ] **Étape 6 :** `veille/page.tsx` devient une redirection, sur le modèle de `dossiers-offre/page.tsx` : `searchParams: Promise<{ debut?: string | string[]; fin?: string | string[] }>`, `await requireAuth()`, `permanentRedirect(urlVeilleVersPilotage(debut, fin))`. Le contrôle des rôles reste celui de `/pilotage`.
-- [ ] **Étape 7 :** `dashboard-shell.tsx` : retirer l'entrée `/veille` du menu et de `pageTitles`, et l'import `Eye` s'il devient orphelin.
-- [ ] **Étape 8 :** relancer l'E2E de l'étape 2 → SUCCÈS ; `npm run typecheck`, `npm run lint` → OK.
-- [ ] **Étape 9 :** `git commit -m "feat(pilotage): Indicateurs, Veille et Analyses en onglets, /veille redirige"`
+- [x] **Étape 2 :** E2E `tests/v1/pilotage.spec.ts tests/v1/veille.spec.ts` par `base-test` → les nouveaux tests ÉCHOUENT.
+- [x] **Étape 3 : `PilotageOnglets`** : `usePeriodeUrl()`, puis `PeriodSelector` et la phrase « Tous les chiffres de la page portent sur la période du … au … » (sortis de `PilotageClient`, une seule fois pour la page) ; `Tabs` contrôlé par `value={lireOnglet(searchParams.get('onglet'))}`, `onValueChange` → `router.replace(` `` `/pilotage?${avecOnglet(searchParams.toString(), v)}` ``, `{ scroll: false })` ; trois `TabsTrigger` en `min-h-11` dans un `TabsList` qui passe à la ligne (`h-auto flex-wrap justify-start`, comme dans `VeilleClient`) ; chaque `TabsContent` reçoit `periode`.
+- [x] **Étape 4 :** `PilotageClient` et `VeilleClient` prennent `periode` en prop et perdent le sélecteur, la phrase de période et les liens croisés (« Voir la veille concurrentielle », « Retour au pilotage ») ; `PilotageClient` perd la section « Analyses détaillées ». Leurs chargements, erreurs et états vides restent tels quels.
+- [x] **Étape 5 :** `pilotage/page.tsx` rend `<PilotageOnglets />` dans le `Suspense` ; sous-titre : « Indicateurs de décision, veille concurrentielle et analyses, sur une même période. »
+- [x] **Étape 6 :** `veille/page.tsx` devient une redirection, sur le modèle de `dossiers-offre/page.tsx` : `searchParams: Promise<{ debut?: string | string[]; fin?: string | string[] }>`, `await requireAuth()`, `permanentRedirect(urlVeilleVersPilotage(debut, fin))`. Le contrôle des rôles reste celui de `/pilotage`.
+- [x] **Étape 7 :** `dashboard-shell.tsx` : retirer l'entrée `/veille` du menu et de `pageTitles`, et l'import `Eye` s'il devient orphelin.
+- [x] **Étape 8 :** relancer l'E2E de l'étape 2 → SUCCÈS ; `npm run typecheck`, `npm run lint` → OK.
+- [x] **Étape 9 :** `git commit -m "feat(pilotage): Indicateurs, Veille et Analyses en onglets, /veille redirige"`
 
 ### Tâche 4 : dédoublonnage des Analyses (selon le verdict de la tâche 1)
 
@@ -191,5 +191,6 @@ Suivre le cadrage § 5 bis, dans cet ordre : `simplify` ; agent `ui-ux-reviewer`
 - **2026-11-11, tâche 1** : branche `feat/simplification-modules` créée depuis `origin/main` et non depuis le `main` local, car celui-ci porte un commit (`8db51aa`) dont le contenu est déjà sur `origin/main`. Le commit `c896e63`, resté seulement sur `feat/marche-par-lots`, a été repris (`63225b0`, choix A d'Abel), sinon il ne partait jamais en production. Le suivi de `origin/main` a été retiré de la branche : un simple `git push` serait parti sur `main`, donc en production.
 - **2026-11-11, tâche 1** : inventaire des graphiques de Pilotage validé en entier par Abel. A3 (« Top concurrents » lu sur les fiches marché) est retiré, et non déplacé : ces données relèvent du chantier D6. Exports PDF et Excel inchangés dans cette livraison (dette X1).
 - **2026-11-11** : la section « Clôture automatique » du `CLAUDE.md` pointe vers ce plan (accord d'Abel).
+- **2026-11-11, tâche 3** (E2E 19/19 verts par `base-test`, build 367 s) : le passage « rouge » des E2E par `base-test` n'a pas été fait, car un build de 6 min pour constater l'absence d'onglets n'apporte rien ; les tests ont été écrits avant le code, puis lancés une seule fois après. Le sélecteur de période, désormais commun aux trois onglets, n'est plus désactivé pendant le chargement d'un onglet (`enCours` reste local à chaque onglet).
 
 Source : /disciplines-actives senior.

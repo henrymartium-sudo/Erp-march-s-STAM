@@ -1,27 +1,13 @@
-// app/(dashboard)/veille/page.tsx
+import { permanentRedirect } from 'next/navigation'
+import { requireAuth } from '@/lib/utils/permissions'
+import { urlVeilleVersPilotage } from '@/lib/pilotage/onglets'
 
-import { Suspense } from 'react'
-import { redirect } from 'next/navigation'
-import { requireRole } from '@/lib/utils/permissions'
-import { VeilleClient } from './VeilleClient'
-
-export const dynamic = 'force-dynamic'
-
-export default async function VeillePage() {
-  const session = await requireRole(['ADMIN', 'AVANCE']).catch(() => null)
-  if (!session) redirect('/')
-
-  return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold text-stam-primary">Veille concurrentielle</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Qui nous bat, de combien on perd, pourquoi on perd.
-        </p>
-      </div>
-      <Suspense fallback={null}>
-        <VeilleClient />
-      </Suspense>
-    </div>
-  )
+export default async function VeillePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ debut?: string | string[]; fin?: string | string[] }>
+}) {
+  await requireAuth()
+  const { debut, fin } = await searchParams
+  permanentRedirect(urlVeilleVersPilotage(debut, fin))
 }

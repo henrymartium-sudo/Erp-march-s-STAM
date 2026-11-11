@@ -2,23 +2,19 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
-import { format } from 'date-fns'
-import { fr } from 'date-fns/locale'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { PeriodSelector } from '@/components/analytique/PeriodSelector'
 import { ClassementAngle } from '@/components/veille/ClassementAngle'
 import { LignePerte } from '@/components/veille/LignePerte'
 import { NonDocumentees } from '@/components/veille/NonDocumentees'
 import { DoublonsPossibles } from '@/components/veille/DoublonsPossibles'
-import { usePeriodeUrl } from '@/hooks/use-periode-url'
+import type { Periode } from '@/lib/analytics/types'
 import { getVeilleData, type VeilleData } from '@/lib/actions/veille'
 import { MIN_CAS_ECART } from '@/lib/pilotage/calculs'
 import { formaterEcart } from '@/lib/veille/affichage'
 
-export function VeilleClient() {
-  const { periode, setPeriode, parametres } = usePeriodeUrl()
+export function VeilleClient({ periode }: { periode: Periode }) {
   const [data, setData] = useState<VeilleData | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const [retry, setRetry] = useState(0)
@@ -44,18 +40,6 @@ export function VeilleClient() {
 
   return (
     <div className="space-y-6">
-      <PeriodSelector value={periode} onChange={setPeriode} disabled={enCours} />
-      <p className="text-sm text-muted-foreground">
-        Toutes les données de la page portent sur la période du {format(periode.dateDebut, 'dd/MM/yyyy', { locale: fr })} au{' '}
-        {format(periode.dateFin, 'dd/MM/yyyy', { locale: fr })}.
-      </p>
-      <Link
-        href={`/pilotage?${parametres}`}
-        className="inline-flex min-h-11 items-center text-sm font-medium underline-offset-4 hover:underline focus-visible:underline"
-      >
-        Retour au pilotage
-      </Link>
-
       {messageErreur && (
         <div className="flex flex-wrap items-center gap-3">
           <p role="alert" className="text-sm text-destructive">{messageErreur}</p>

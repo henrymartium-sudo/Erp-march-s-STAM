@@ -21,7 +21,6 @@ import {
   ClipboardList,
   BarChart2,
   Gauge,
-  Eye,
   Receipt,
   Target,
 } from 'lucide-react'
@@ -64,7 +63,6 @@ const navItems = [
   { href: '/admin/utilisateurs',    label: 'Utilisateurs', icon: Users, roles: ['ADMIN'] },
   { href: '/admin/audit-logs',      label: 'Journal des logs', icon: ClipboardList, roles: ['ADMIN'] },
   { href: '/pilotage',              label: 'Pilotage',         icon: Gauge,         roles: ['ADMIN', 'AVANCE'] },
-  { href: '/veille',                label: 'Veille',           icon: Eye,           roles: ['ADMIN', 'AVANCE'] },
   { href: '/admin/reporting',      label: 'Reporting',        icon: BarChart2,     roles: ['ADMIN'] },
 ]
 
@@ -81,7 +79,6 @@ const pageTitles: Record<string, string> = {
   '/admin/utilisateurs': 'Gestion des utilisateurs',
   '/admin/audit-logs':   'Journal des logs',
   '/pilotage':           'Pilotage',
-  '/veille':             'Veille concurrentielle',
   '/admin/reporting':    'Reporting Email',
   '/profil':             'Mon profil',
 }

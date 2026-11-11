@@ -26,13 +26,17 @@ test.describe('Pilotage', () => {
     await expect(card.getByText('%')).toHaveCount(0)
   })
 
-  test('un seul sélecteur de période pilote toute la page', async ({ page }) => {
+  test('un seul sélecteur de période pilote toute la page, sur les trois onglets', async ({ page }) => {
     await login(page, TEST_USERS.avance)
     await page.goto('/pilotage')
     await expect(page.getByText('Conversion attribué → facturé')).toBeVisible()
-    await expect(page.getByText('Période :')).toHaveCount(1)
-    await expect(page.getByRole('button', { name: '30 jours', exact: true })).toHaveCount(1)
-    await expect(page.getByText(/Tous les chiffres de la page portent sur la période du \d{2}\/\d{2}\/\d{4} au \d{2}\/\d{2}\/\d{4}/)).toBeVisible()
+    for (const [onglet, libelle] of [['indicateurs', 'Indicateurs'], ['veille', 'Veille'], ['analyses', 'Analyses']]) {
+      await page.goto(`/pilotage?onglet=${onglet}`)
+      await expect(page.getByRole('tab', { name: libelle })).toHaveAttribute('aria-selected', 'true')
+      await expect(page.getByText('Période :')).toHaveCount(1)
+      await expect(page.getByRole('button', { name: '30 jours', exact: true })).toHaveCount(1)
+      await expect(page.getByText(/Tous les chiffres de la page portent sur la période du \d{2}\/\d{2}\/\d{4} au \d{2}\/\d{2}\/\d{4}/)).toBeVisible()
+    }
   })
 
   test('chaque indicateur ouvre son détail au clavier', async ({ page }) => {
