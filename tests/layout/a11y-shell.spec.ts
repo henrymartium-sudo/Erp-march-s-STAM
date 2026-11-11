@@ -7,10 +7,12 @@ import { login, TEST_USERS } from '../helpers/auth'
  * Couvre :
  *  - F02 + son jumeau (`components/layout/dashboard-shell.tsx`) : `getPageTitle`
  *    et `isActive` itéraient les routes dans l'ordre de déclaration avec un
- *    `startsWith` simple. Sur /vehicules/sav, `/vehicules` matchait en premier :
- *    la topbar affichait « Véhicules » au lieu de « SAV — Vue globale », et les
- *    deux items de nav « Véhicules » et « SAV » ressortaient actifs.
- *    Correctif : le préfixe le plus long l'emporte.
+ *    `startsWith` simple (sur l'ancienne sous-route /vehicules/sav, `/vehicules`
+ *    matchait en premier : mauvais titre, deux items de nav actifs).
+ *    Correctif : le préfixe le plus long l'emporte. Depuis la livraison 2 de la
+ *    simplification, le SAV est l'onglet `/vehicules?onglet=sav` : il n'y a plus
+ *    de sous-route SAV, et ces tests restent des garde-fous du shell (titre
+ *    « Véhicules », un seul <h1>, un seul item de nav actif : /vehicules).
  *  - #008 : la topbar rendait un second `<h1>` (text-lg), placé avant celui de
  *    la page (text-2xl) dans le DOM — structure de titres cassée pour les
  *    lecteurs d'écran. Correctif : titre topbar en `<p data-testid=topbar-title>`.
@@ -21,8 +23,8 @@ import { login, TEST_USERS } from '../helpers/auth'
  * du timeout ; la suite n'en fait donc qu'un seul et enchaîne les navigations.
  */
 
-const SAV_PATH = '/vehicules/sav'
-const SAV_TITLE = 'SAV — Vue globale'
+const SAV_PATH = '/vehicules?onglet=sav'
+const SAV_TITLE = 'Véhicules'
 
 /** Classe posée sur l'item de nav actif (cf. app/globals.css §SIDEBAR). */
 const ACTIVE_NAV_ITEM = 'nav[aria-label="Navigation principale"] a.sidebar-active-border'
@@ -79,7 +81,7 @@ test.describe('Shell — titres et item de nav actif sur les sous-routes', () =>
       activeItems,
       '« Véhicules » et « SAV » ne doivent pas être actifs simultanément'
     ).toHaveCount(1)
-    await expect(activeItems.first()).toHaveAttribute('href', SAV_PATH)
+    await expect(activeItems.first()).toHaveAttribute('href', '/vehicules')
   })
 
   test('le parent /vehicules reste titré et actif sur sa propre route', async () => {
