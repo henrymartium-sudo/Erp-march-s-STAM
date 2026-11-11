@@ -28,7 +28,7 @@ export function AlertesOnglets({ onglet, role }: { onglet: OngletAlertes; role: 
               href={urlOngletAlertes(valeur)}
               aria-current={actif ? 'page' : undefined}
               className={cn(
-                'inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-sm px-4 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                'inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 sm:px-4 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                 actif && 'bg-background text-foreground shadow-sm'
               )}
             >
