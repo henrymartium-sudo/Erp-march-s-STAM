@@ -10,6 +10,7 @@ import { getAlertRules } from "@/lib/actions/alert-rules";
 import { getNotificationHistory } from "@/lib/actions/alert-history";
 import { getReportingRules } from "@/lib/actions/reporting-rules";
 import { getOpportuniteReportingRules } from "@/lib/actions/opportunite-reporting-rules";
+import type { ReportingScheduleConfig } from "@/lib/cron/reporting-processor";
 import { lireOngletAlertes, ongletAutorise } from "@/lib/alertes/onglets";
 import { AlertesOnglets } from "@/components/admin/alertes/alertes-onglets";
 import { AlertesDashboard } from "@/components/admin/alertes/alertes-dashboard";
@@ -125,6 +126,17 @@ async function OngletRegles() {
   );
 }
 
+function serialiserRegle<
+  T extends { scheduleConfig: unknown; createdAt: Date; updatedAt: Date },
+>(r: T) {
+  return {
+    ...r,
+    scheduleConfig: r.scheduleConfig as ReportingScheduleConfig | null,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+  };
+}
+
 async function OngletRapports() {
   const [rules, opportuniteRules] = await Promise.all([
     getReportingRules(),
@@ -137,19 +149,8 @@ async function OngletRapports() {
     );
   }
 
-  const serializedRules = rules.map((r) => ({
-    ...r,
-    scheduleConfig: r.scheduleConfig as any,
-    createdAt: r.createdAt.toISOString(),
-    updatedAt: r.updatedAt.toISOString(),
-  }));
-
-  const serializedOpportuniteRules = opportuniteRules.map((r) => ({
-    ...r,
-    scheduleConfig: r.scheduleConfig as any,
-    createdAt: r.createdAt.toISOString(),
-    updatedAt: r.updatedAt.toISOString(),
-  }));
+  const serializedRules = rules.map(serialiserRegle);
+  const serializedOpportuniteRules = opportuniteRules.map(serialiserRegle);
 
   return (
     <Tabs defaultValue="reporting">
