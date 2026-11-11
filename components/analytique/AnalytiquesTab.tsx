@@ -15,8 +15,10 @@ import { getAnalyticsAffichees } from '@/lib/actions/analytics'
 import { exportAnalytiquesPDF, exportAnalytiquesExcel } from '@/lib/actions/analytics-exports'
 import type { Periode } from '@/lib/analytics/types'
 
+type AnalytiquesAffichees = Awaited<ReturnType<typeof getAnalyticsAffichees>>
+
 export function AnalytiquesTab({ periode }: { periode: Periode }) {
-  const [data, setData] = useState<Awaited<ReturnType<typeof getAnalyticsAffichees>> | null>(null)
+  const [data, setData] = useState<AnalytiquesAffichees | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isPending, startTransition] = useTransition()
 
