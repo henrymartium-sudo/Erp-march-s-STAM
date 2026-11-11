@@ -88,6 +88,21 @@ test.describe('Véhicules — onglet SAV (ADMIN)', () => {
   })
 })
 
+test.describe('Véhicules — onglet SAV sans session valide', () => {
+  // Le middleware ne vérifie que la présence du cookie : la page doit refuser elle-même,
+  // sans lire ni rendre de donnée (le layout rend en parallèle de la page).
+  test('un cookie de session invalide ne laisse fuiter aucun indicateur SAV', async ({ request }) => {
+    const reponse = await request.get('/vehicules?onglet=sav', {
+      headers: { Cookie: 'authjs.session-token=bidon' },
+      maxRedirects: 0,
+    })
+
+    expect(reponse.status()).toBeGreaterThanOrEqual(300)
+    expect(reponse.status()).toBeLessThan(400)
+    expect(await reponse.text()).not.toContain('Total interventions')
+  })
+})
+
 test.describe('Véhicules — onglet SAV (VISITEUR)', () => {
   let page: Page
 

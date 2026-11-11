@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageHeader } from '@/components/shared/page-header'
@@ -42,6 +43,9 @@ export default async function VehiculesPage({ searchParams }: VehiculesPageProps
 
   // Onglet SAV : le serveur ne charge que les données de l'onglet affiché
   if (lireOngletVehicules(params.onglet) === 'sav') {
+    // Comme l'ancienne page SAV : sans session valide, aucune donnée n'est lue ni rendue
+    // (les indicateurs n'ont pas de garde propre, et le layout rend en parallèle de la page).
+    if (!session) redirect('/login')
     return (
       <div className="space-y-6">
         <PageHeader
