@@ -1,4 +1,4 @@
-// Période partagée entre /pilotage et /veille, lue et écrite dans l'adresse (?debut=AAAA-MM-JJ&fin=AAAA-MM-JJ).
+// Période de /pilotage (tous onglets), lue et écrite dans l'adresse (?debut=AAAA-MM-JJ&fin=AAAA-MM-JJ).
 
 import { startOfDay, endOfDay, subYears, format, parse, isValid } from 'date-fns'
 import type { Periode } from '@/lib/analytics/types'
@@ -28,8 +28,4 @@ export function avecPeriode(recherche: string, periode: Periode): string {
   params.set('debut', format(periode.dateDebut, 'yyyy-MM-dd'))
   params.set('fin', format(periode.dateFin, 'yyyy-MM-dd'))
   return params.toString()
-}
-
-export function parametresPeriode(periode: Periode): string {
-  return `debut=${format(periode.dateDebut, 'yyyy-MM-dd')}&fin=${format(periode.dateFin, 'yyyy-MM-dd')}`
 }

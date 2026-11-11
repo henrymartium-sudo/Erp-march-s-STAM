@@ -11,18 +11,18 @@ import { PerformanceSection } from '@/components/analytique/PerformanceSection'
 import { SAVSection } from '@/components/analytique/SAVSection'
 import { OpportunitesSection } from '@/components/analytique/OpportunitesSection'
 
-import { getAllAnalyticsData } from '@/lib/actions/analytics'
+import { getAnalyticsAffichees } from '@/lib/actions/analytics'
 import { exportAnalytiquesPDF, exportAnalytiquesExcel } from '@/lib/actions/analytics-exports'
-import type { AllAnalyticsData, Periode } from '@/lib/analytics/types'
+import type { Periode } from '@/lib/analytics/types'
 
 export function AnalytiquesTab({ periode }: { periode: Periode }) {
-  const [data, setData] = useState<AllAnalyticsData | null>(null)
+  const [data, setData] = useState<Awaited<ReturnType<typeof getAnalyticsAffichees>> | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
     setIsLoading(true)
-    getAllAnalyticsData(periode)
+    getAnalyticsAffichees(periode)
       .then((result) => {
         setData(result)
         setIsLoading(false)

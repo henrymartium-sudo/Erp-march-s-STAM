@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { format } from 'date-fns'
-import { periodeParDefaut, lirePeriodeUrl, parametresPeriode, avecPeriode } from '../../lib/veille/periode'
+import { periodeParDefaut, lirePeriodeUrl, avecPeriode } from '../../lib/veille/periode'
 
 const MAINTENANT = new Date(2026, 9, 8, 15, 30) // 8 octobre 2026, heure locale
 
@@ -30,8 +30,8 @@ test.describe('période dans l’adresse', () => {
 
   test('écrire puis relire redonne la même période', () => {
     const p = lirePeriodeUrl('2026-02-03', '2026-08-09', MAINTENANT)
-    const parametres = new URLSearchParams(parametresPeriode(p))
-    expect(parametresPeriode(p)).toBe('debut=2026-02-03&fin=2026-08-09')
+    const parametres = new URLSearchParams(avecPeriode('', p))
+    expect(avecPeriode('', p)).toBe('debut=2026-02-03&fin=2026-08-09')
     const relue = lirePeriodeUrl(parametres.get('debut'), parametres.get('fin'), MAINTENANT)
     expect(relue.dateDebut.getTime()).toBe(p.dateDebut.getTime())
     expect(relue.dateFin.getTime()).toBe(p.dateFin.getTime())

@@ -13,7 +13,6 @@ import type { Periode } from '@/lib/analytics/types'
 interface PeriodSelectorProps {
   value: Periode
   onChange: (periode: Periode) => void
-  disabled?: boolean
 }
 
 const PRESETS = [
@@ -47,7 +46,7 @@ const PRESETS = [
   },
 ] as const
 
-export function PeriodSelector({ value, onChange, disabled }: PeriodSelectorProps) {
+export function PeriodSelector({ value, onChange }: PeriodSelectorProps) {
   const [open, setOpen] = useState(false)
   const [selecting, setSelecting] = useState<'debut' | 'fin'>('debut')
   const [tempDebut, setTempDebut] = useState<Date | undefined>(value.dateDebut)
@@ -71,7 +70,6 @@ export function PeriodSelector({ value, onChange, disabled }: PeriodSelectorProp
           variant={isPresetActive(preset) ? 'default' : 'outline'}
           size="sm"
           className="min-h-11 lg:min-h-9"
-          disabled={disabled}
           onClick={() => onChange(preset.getValue())}
         >
           {preset.label}
@@ -81,7 +79,7 @@ export function PeriodSelector({ value, onChange, disabled }: PeriodSelectorProp
       {/* Personnalisé */}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" className="min-h-11 lg:min-h-9" disabled={disabled}>
+          <Button variant="outline" size="sm" className="min-h-11 lg:min-h-9">
             <CalendarIcon className="mr-2 h-3.5 w-3.5" />
             {format(value.dateDebut, 'dd/MM/yyyy', { locale: fr })}
             {' – '}
