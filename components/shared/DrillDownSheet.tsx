@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import Link from 'next/link'
 import type { DrillDownItem } from '@/lib/actions/drill-down'
+import { LIMITE_DETAIL } from '@/lib/analytics/filtres'
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -47,6 +48,11 @@ export function DrillDownSheet({
             <p className="text-xs text-muted-foreground mb-3">
               {items.length} résultat{items.length > 1 ? 's' : ''}
             </p>
+            {items.length >= LIMITE_DETAIL && (
+              <p className="text-xs text-muted-foreground mb-3">
+                Liste limitée aux {LIMITE_DETAIL} plus récents : il peut y en avoir davantage.
+              </p>
+            )}
             {items.map((item) => (
               <div
                 key={item.id}

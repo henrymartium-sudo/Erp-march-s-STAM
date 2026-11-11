@@ -158,6 +158,63 @@ test.describe('Pilotage', () => {
     }
   })
 
+  test.describe('Analyses : le chiffre annoncé est le nombre de lignes du détail', () => {
+    const PREFIXE = '[E2E-LISTES]'
+    const AC = 'Autorité Listes E2E'
+    const nettoyer = async () => {
+      await requeteLocale(`delete from marches where numero like '${PREFIXE}%'`)
+      await requeteLocale(`delete from opportunites where objet like '${PREFIXE}%'`)
+    }
+
+    test.beforeAll(async () => {
+      await nettoyer()
+      const [admin] = await requeteLocale<{ id: string }>('select id from users where email = $1', [TEST_USERS.admin.email])
+      if (!admin) throw new Error('Utilisateur de test introuvable en base locale.')
+      // Un marché dans la période par défaut (12 mois), un très ancien : seul le premier est compté.
+      for (const [suffixe, jours] of [['récent', 5], ['ancien', 800]] as const) {
+        await requeteLocale(
+          `insert into marches (id, numero, objet, type, montant, "dateNotification", "delaiExecution", statut, "autoriteContractanteNom", "userId", "updatedAt")
+           values ($1, $2, $3, 'FOURNITURES', 1000000, now() - ($4 || ' days')::interval, 30, 'EN_EXECUTION', $5, $6, now())`,
+          [randomUUID(), `${PREFIXE} ${suffixe}`, `${PREFIXE} marché ${suffixe}`, String(jours), AC, admin.id],
+        )
+      }
+      // Quatre opportunités récentes et deux très anciennes, même statut, même autorité (donc dans le Top 10).
+      for (const jours of [1, 2, 3, 4, 800, 801]) {
+        await requeteLocale(
+          `insert into opportunites (id, objet, "autoriteContractante", "dateLimite", statut, "montantPropose", "userId", "createdAt", "updatedAt")
+           values ($1, $2, $3, now() + interval '10 days', 'PERDUE', 100000, $4, now() - ($5 || ' days')::interval, now())`,
+          [randomUUID(), `${PREFIXE} opportunité ${jours}`, AC, admin.id, String(jours)],
+        )
+      }
+    })
+    test.afterAll(nettoyer)
+
+    for (const liste of ['Marchés par statut', 'Opportunités par statut', 'Top 10 Autorités Contractantes']) {
+      test(`chaque ligne de « ${liste} » annonce le nombre de lignes de son détail`, async ({ page }) => {
+        await login(page, TEST_USERS.avance)
+        await page.goto('/pilotage?onglet=analyses')
+        const boutons = page.getByRole('list', { name: liste }).getByRole('button')
+        await expect(boutons.first()).toBeVisible({ timeout: 30000 })
+        const total = await boutons.count()
+        expect(total).toBeGreaterThan(0)
+        for (let i = 0; i < total; i++) {
+          const bouton = boutons.nth(i)
+          const libelle = ((await bouton.textContent()) ?? '').trim()
+          const valeur = (await bouton.locator('span.tabular-nums').textContent()) ?? ''
+          const annonce = Number(valeur.match(/^\s*(\d+)/)?.[1])
+          expect(Number.isNaN(annonce), `chiffre illisible dans « ${libelle} »`).toBe(false)
+          await bouton.click()
+          const dialogue = page.getByRole('dialog')
+          await expect(dialogue.getByText(/\d+ résultats?/)).toBeVisible({ timeout: 30000 })
+          const affiche = Number((await dialogue.getByText(/\d+ résultats?/).textContent())!.match(/(\d+)/)![1])
+          expect(affiche, `« ${libelle} » annonce ${annonce}, le détail en liste ${affiche}`).toBe(annonce)
+          await page.keyboard.press('Escape')
+          await expect(dialogue).toBeHidden()
+        }
+      })
+    }
+  })
+
   for (const [nom, taille] of [['desktop', { width: 1920, height: 1080 }], ['tablette', { width: 768, height: 1024 }], ['mobile', { width: 375, height: 667 }]] as const) {
     test(`aucun débordement horizontal en ${nom}`, async ({ page }) => {
       await page.setViewportSize(taille)

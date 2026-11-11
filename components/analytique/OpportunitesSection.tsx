@@ -4,16 +4,17 @@ import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { toast } from '@/lib/utils/toast'
 import { formatMontantFCFA } from '@/lib/utils/format'
-import type { OpportunitesStats } from '@/lib/analytics/types'
+import type { OpportunitesStats, Periode } from '@/lib/analytics/types'
 import { DrillDownSheet } from '@/components/shared/DrillDownSheet'
 import { ListeAnalyse } from '@/components/analytique/ListeAnalyse'
 import { getOpportunitesByStatut, getOpportunitesByAC, type DrillDownItem } from '@/lib/actions/drill-down'
 
 interface Props {
   data: OpportunitesStats
+  periode: Periode
 }
 
-export function OpportunitesSection({ data }: Props) {
+export function OpportunitesSection({ data, periode }: Props) {
   const [drillDown, setDrillDown] = useState<{
     title: string; items: DrillDownItem[]; isLoading: boolean
   } | null>(null)
@@ -55,7 +56,7 @@ export function OpportunitesSection({ data }: Props) {
               cle: s.statut,
               libelle: s.label,
               valeur: `${s.count} · ${s.montantPropose > 0 ? formatMontantFCFA(s.montantPropose) : '—'}`,
-              onClick: () => ouvrir(`Opportunités — ${s.label}`, () => getOpportunitesByStatut(s.statut)),
+              onClick: () => ouvrir(`Opportunités — ${s.label}`, () => getOpportunitesByStatut(s.statut, periode)),
             }))}
           />
         )}
@@ -67,7 +68,7 @@ export function OpportunitesSection({ data }: Props) {
               cle: ac.nom,
               libelle: ac.nom,
               valeur: `${ac.count} · ${ac.gagnees} gagnée${ac.gagnees > 1 ? 's' : ''}`,
-              onClick: () => ouvrir(`Opportunités — ${ac.nom}`, () => getOpportunitesByAC(ac.nom)),
+              onClick: () => ouvrir(`Opportunités — ${ac.nom}`, () => getOpportunitesByAC(ac.nom, periode)),
             }))}
           />
         )}
