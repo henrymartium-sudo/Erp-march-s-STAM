@@ -99,7 +99,7 @@ Les tâches 2 et 3 n'en dépendent pas et peuvent avancer avant ; **la tâche 4 
   - `export function urlVeilleVersPilotage(debut?: string | string[], fin?: string | string[]): string`
 - Produit, dans `lib/veille/periode.ts` : `export function avecPeriode(recherche: string, periode: Periode): string` (même principe, pose `debut` et `fin`)
 
-- [ ] **Étape 1 : écrire les tests qui échouent**
+- [x] **Étape 1 : écrire les tests qui échouent**
 
 ```ts
 // tests/unit/pilotage-onglets.spec.ts
@@ -129,11 +129,11 @@ test("changer de période garde l'onglet", () => {
 })
 ```
 
-- [ ] **Étape 2 :** `npm run test:unit -- tests/unit/pilotage-onglets.spec.ts tests/unit/veille-periode.spec.ts` → ÉCHEC (fonctions absentes).
-- [ ] **Étape 3 : implémenter** avec `URLSearchParams` (`set` garde la place d'une clé existante ; `toString()`). `urlVeilleVersPilotage` prend la première valeur d'un tableau et omet une valeur absente ; les dates ne sont pas validées ici (`lirePeriodeUrl` s'en charge à l'arrivée).
-- [ ] **Étape 4 :** dans `usePeriodeUrl`, `setPeriode` écrit `` `${pathname}?${avecPeriode(searchParams.toString(), p)}` `` au lieu de `parametresPeriode(p)` seul.
-- [ ] **Étape 5 :** relancer la commande de l'étape 2 → SUCCÈS ; `npm run typecheck` → 0 erreur.
-- [ ] **Étape 6 :** `git commit -m "feat(pilotage): onglet et période gardés dans l'adresse"`
+- [x] **Étape 2 :** `npm run test:unit -- tests/unit/pilotage-onglets.spec.ts tests/unit/veille-periode.spec.ts` → ÉCHEC (fonctions absentes).
+- [x] **Étape 3 : implémenter** avec `URLSearchParams` (`set` garde la place d'une clé existante ; `toString()`). `urlVeilleVersPilotage` prend la première valeur d'un tableau et omet une valeur absente ; les dates ne sont pas validées ici (`lirePeriodeUrl` s'en charge à l'arrivée).
+- [x] **Étape 4 :** dans `usePeriodeUrl`, `setPeriode` écrit `` `${pathname}?${avecPeriode(searchParams.toString(), p)}` `` au lieu de `parametresPeriode(p)` seul.
+- [x] **Étape 5 :** relancer la commande de l'étape 2 → SUCCÈS ; `npm run typecheck` → 0 erreur.
+- [x] **Étape 6 :** `git commit -m "feat(pilotage): onglet et période gardés dans l'adresse"`
 
 ### Tâche 3 : trois onglets sur /pilotage, redirection de /veille, menu
 

@@ -22,6 +22,14 @@ export function lirePeriodeUrl(debut: string | null, fin: string | null, mainten
   return { dateDebut: startOfDay(d), dateFin: endOfDay(f) }
 }
 
+/** Chaîne de recherche (sans `?`) avec `debut` et `fin` posés, les autres paramètres (dont `onglet`) gardés. */
+export function avecPeriode(recherche: string, periode: Periode): string {
+  const params = new URLSearchParams(recherche)
+  params.set('debut', format(periode.dateDebut, 'yyyy-MM-dd'))
+  params.set('fin', format(periode.dateFin, 'yyyy-MM-dd'))
+  return params.toString()
+}
+
 export function parametresPeriode(periode: Periode): string {
   return `debut=${format(periode.dateDebut, 'yyyy-MM-dd')}&fin=${format(periode.dateFin, 'yyyy-MM-dd')}`
 }

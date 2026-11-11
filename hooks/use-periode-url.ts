@@ -3,7 +3,7 @@
 import { useCallback, useMemo } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import type { Periode } from '@/lib/analytics/types'
-import { lirePeriodeUrl, parametresPeriode } from '@/lib/veille/periode'
+import { avecPeriode, lirePeriodeUrl, parametresPeriode } from '@/lib/veille/periode'
 
 /**
  * Période de la page, lue et écrite dans l'adresse (?debut=&fin=). Sans paramètre valide : 12 mois glissants.
@@ -18,8 +18,8 @@ export function usePeriodeUrl(): { periode: Periode; setPeriode: (p: Periode) =>
 
   const periode = useMemo(() => lirePeriodeUrl(debut, fin), [debut, fin])
   const setPeriode = useCallback(
-    (p: Periode) => router.replace(`${pathname}?${parametresPeriode(p)}`, { scroll: false }),
-    [router, pathname],
+    (p: Periode) => router.replace(`${pathname}?${avecPeriode(searchParams.toString(), p)}`, { scroll: false }),
+    [router, pathname, searchParams],
   )
   return { periode, setPeriode, parametres: parametresPeriode(periode) }
 }
