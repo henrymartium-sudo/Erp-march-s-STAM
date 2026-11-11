@@ -63,7 +63,7 @@ export async function createAlertRule(input: unknown): Promise<ActionResult<{ id
         externalEmails: data.externalEmails ?? [],
       },
     })
-    revalidatePath('/admin/alertes/rules')
+    revalidatePath('/admin/alertes')
     await logAction({
       userId:     session.user.id,
       userEmail:  session.user.email,
@@ -91,7 +91,7 @@ export async function updateAlertRule(id: string, input: unknown): Promise<Actio
         externalEmails: data.externalEmails ?? [],
       },
     })
-    revalidatePath('/admin/alertes/rules')
+    revalidatePath('/admin/alertes')
     revalidatePath(`/admin/alertes/rules/${id}/edit`)
     await logAction({
       userId:     session.user.id,
@@ -111,7 +111,7 @@ export async function toggleAlertRule(id: string, isActive: boolean): Promise<Ac
   try {
     await requireRole(['ADMIN'])
     await prisma.alertRule.update({ where: { id }, data: { isActive } })
-    revalidatePath('/admin/alertes/rules')
+    revalidatePath('/admin/alertes')
     return { success: true, data: undefined }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Erreur' }
@@ -122,7 +122,7 @@ export async function deleteAlertRule(id: string): Promise<ActionResult<void>> {
   try {
     const session = await requireRole(['ADMIN'])
     await prisma.alertRule.delete({ where: { id } })
-    revalidatePath('/admin/alertes/rules')
+    revalidatePath('/admin/alertes')
     await logAction({
       userId:     session.user.id,
       userEmail:  session.user.email,
