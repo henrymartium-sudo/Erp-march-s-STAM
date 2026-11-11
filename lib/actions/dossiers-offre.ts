@@ -1,6 +1,5 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db/prisma'
 import {
   createDossierOffreSchema,
@@ -167,7 +166,6 @@ export async function createDossierOffre(
       metadata: { titre: dossier.titre },
     })
 
-    revalidatePath('/dossiers-offre')
     return { success: true, data: dossier }
   } catch (error) {
     console.error('Erreur createDossierOffre:', error)
@@ -213,8 +211,6 @@ export async function updateDossierOffre(
       metadata: { titre: dossier.titre },
     })
 
-    revalidatePath('/dossiers-offre')
-    revalidatePath(`/dossiers-offre/${id}`)
     return { success: true, data: dossier }
   } catch (error) {
     console.error('Erreur updateDossierOffre:', error)
@@ -248,7 +244,6 @@ export async function deleteDossierOffre(
       entityId: id,
     })
 
-    revalidatePath('/dossiers-offre')
     return { success: true, data: undefined }
   } catch (error) {
     console.error('Erreur deleteDossierOffre:', error)
@@ -314,9 +309,6 @@ export async function updatePieceStatut(
       })
     }
 
-    if (piece.dossierId) {
-      revalidatePath(`/dossiers-offre/${piece.dossierId}`)
-    }
     return { success: true, data: undefined }
   } catch (error) {
     console.error('Erreur updatePieceStatut:', error)
