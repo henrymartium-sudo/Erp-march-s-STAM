@@ -8,8 +8,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/lib/utils/toast'
 
 import { PerformanceSection } from '@/components/analytique/PerformanceSection'
-import { FinanciereSection } from '@/components/analytique/FinanciereSection'
-import { CapitalisationSection } from '@/components/analytique/CapitalisationSection'
 import { SAVSection } from '@/components/analytique/SAVSection'
 import { OpportunitesSection } from '@/components/analytique/OpportunitesSection'
 
@@ -121,8 +119,6 @@ export function AnalytiquesTab({ periode }: { periode: Periode }) {
       ) : data ? (
         <div className="space-y-10">
           <PerformanceSection data={data.performance} />
-          <FinanciereSection data={data.financiere} />
-          <CapitalisationSection data={data.capitalisation} />
           <SAVSection data={data.sav} />
           <OpportunitesSection data={data.opportunites} />
         </div>

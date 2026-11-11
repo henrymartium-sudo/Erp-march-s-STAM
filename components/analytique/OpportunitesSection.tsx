@@ -1,47 +1,26 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ChartContainer } from '@/components/ui/chart'
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Cell,
-} from 'recharts'
+import { Card, CardContent } from '@/components/ui/card'
 import { formatMontantFCFA } from '@/lib/utils/format'
 import type { OpportunitesStats } from '@/lib/analytics/types'
 import { DrillDownSheet } from '@/components/shared/DrillDownSheet'
+import { ListeAnalyse } from '@/components/analytique/ListeAnalyse'
 import { getOpportunitesByStatut, getOpportunitesByAC, type DrillDownItem } from '@/lib/actions/drill-down'
 
 interface Props {
   data: OpportunitesStats
 }
 
-const COLORS = ['#1E3A5F', '#C49A1A', '#2563EB', '#10B981', '#EF4444', '#8B5CF6', '#F59E0B', '#EC4899', '#14B8A6']
-
 export function OpportunitesSection({ data }: Props) {
   const [drillDown, setDrillDown] = useState<{
     title: string; items: DrillDownItem[]; isLoading: boolean
   } | null>(null)
 
-  async function handleStatutClick(entry: any) {
-    const statut: string = entry?.activePayload?.[0]?.payload?.statut
-    const label: string = entry?.activePayload?.[0]?.payload?.label ?? ''
-    if (!statut) return
-    setDrillDown({ title: `Opportunités — ${label}`, items: [], isLoading: true })
-    const items = await getOpportunitesByStatut(statut)
-    setDrillDown({ title: `Opportunités — ${label}`, items, isLoading: false })
-  }
-
-  async function handleACClick(entry: any) {
-    const nom: string = entry?.activePayload?.[0]?.payload?.nom
-    if (!nom) return
-    setDrillDown({ title: `Opportunités — ${nom}`, items: [], isLoading: true })
-    const items = await getOpportunitesByAC(nom)
-    setDrillDown({ title: `Opportunités — ${nom}`, items, isLoading: false })
+  async function ouvrir(title: string, charger: () => Promise<DrillDownItem[]>) {
+    setDrillDown({ title, items: [], isLoading: true })
+    const items = await charger()
+    setDrillDown({ title, items, isLoading: false })
   }
 
   if (data.totalOpportunites === 0) {
@@ -59,108 +38,35 @@ export function OpportunitesSection({ data }: Props) {
     )
   }
 
-  const kpis = [
-    { label: 'Total opportunités', value: data.totalOpportunites.toString() },
-    { label: 'En cours', value: data.totalEnCours.toString() },
-    { label: 'Gagnées', value: data.totalGagnees.toString() },
-    { label: 'Offres soumises', value: data.totalOffressoumises.toString() },
-  ]
-
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-[#1E3A5F]">Pipeline Opportunités</h3>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {kpis.map(({ label, value }) => (
-          <Card key={label}>
-            <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground">{label}</p>
-              <p className="text-2xl font-bold text-[#1E3A5F]">{value}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {/* Bar : répartition par statut */}
         {data.parStatut.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Répartition par statut</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer config={{}} className="h-[260px] w-full">
-                <BarChart data={data.parStatut} layout="vertical" onClick={handleStatutClick} style={{ cursor: 'pointer' }}>
-                  <XAxis type="number" allowDecimals={false} />
-                  <YAxis type="category" dataKey="label" width={145} tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(val) => [`${val}`, 'Opportunités']} />
-                  <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                    {data.parStatut.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
+          <ListeAnalyse
+            titre="Opportunités par statut"
+            lignes={data.parStatut.map((s) => ({
+              cle: s.statut,
+              libelle: s.label,
+              valeur: `${s.count} · ${s.montantPropose > 0 ? formatMontantFCFA(s.montantPropose) : '—'}`,
+              onClick: () => ouvrir(`Opportunités — ${s.label}`, () => getOpportunitesByStatut(s.statut)),
+            }))}
+          />
         )}
 
-        {/* Bar : Top 10 Autorités Contractantes */}
         {data.topAC.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Top 10 Autorités Contractantes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer config={{}} className="h-[260px] w-full">
-                <BarChart data={data.topAC} layout="vertical" onClick={handleACClick} style={{ cursor: 'pointer' }}>
-                  <XAxis type="number" allowDecimals={false} />
-                  <YAxis type="category" dataKey="nom" width={140} tick={{ fontSize: 11 }} />
-                  <Tooltip
-                    formatter={(val, name) => [
-                      `${val}`,
-                      name === 'count' ? 'Total' : 'Gagnées',
-                    ]}
-                  />
-                  <Bar dataKey="count" name="count" radius={[0, 4, 4, 0]}>
-                    {data.topAC.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
+          <ListeAnalyse
+            titre="Top 10 Autorités Contractantes"
+            lignes={data.topAC.map((ac) => ({
+              cle: ac.nom,
+              libelle: ac.nom,
+              valeur: `${ac.count} · ${ac.gagnees} gagnée${ac.gagnees > 1 ? 's' : ''}`,
+              onClick: () => ouvrir(`Opportunités — ${ac.nom}`, () => getOpportunitesByAC(ac.nom)),
+            }))}
+          />
         )}
       </div>
-
-      {/* Montants estimés / proposés */}
-      {(data.montantEstimeTotal > 0 || data.montantProposeTotal > 0) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Montants du pipeline</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Montant estimé total</p>
-                <p className="text-lg font-bold text-[#1E3A5F]">
-                  {formatMontantFCFA(data.montantEstimeTotal)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Montant proposé total</p>
-                <p className="text-lg font-bold text-[#C49A1A]">
-                  {data.montantProposeTotal > 0
-                    ? formatMontantFCFA(data.montantProposeTotal)
-                    : '—'}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <DrillDownSheet
         open={!!drillDown}

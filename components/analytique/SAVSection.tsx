@@ -2,18 +2,9 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { ChartContainer } from '@/components/ui/chart'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts'
 import type { SAVStats } from '@/lib/analytics/types'
 import { formatMontantFCFA } from '@/lib/utils/format'
-
-const TYPE_COLORS = ['#1E3A5F', '#C49A1A', '#2563EB', '#10B981', '#EF4444', '#8B5CF6']
-const STATUT_COLORS: Record<string, string> = {
-  RESOLU: '#10B981',
-  EN_COURS: '#2563EB',
-  EN_ATTENTE: '#F59E0B',
-  ANNULE: '#EF4444',
-}
+import { ListeAnalyse } from '@/components/analytique/ListeAnalyse'
 
 interface Props { data: SAVStats }
 
@@ -52,71 +43,16 @@ export function SAVSection({ data }: Props) {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {/* BarChart interventions par type */}
-        {data.parType.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Interventions par type</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer config={{}} className="h-[250px] w-full">
-                <BarChart data={data.parType} layout="vertical">
-                  <XAxis type="number" fontSize={11} allowDecimals={false} />
-                  <YAxis
-                    type="category"
-                    dataKey="label"
-                    width={130}
-                    fontSize={10}
-                    tickFormatter={(v) => v.length > 18 ? v.slice(0, 18) + '…' : v}
-                  />
-                  <Tooltip
-                    formatter={(val: number, name: string, props) => [
-                      name === 'count'
-                        ? `${val} interventions — Coût : ${formatMontantFCFA(props.payload.cout)}`
-                        : val,
-                      '',
-                    ]}
-                  />
-                  <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                    {data.parType.map((_, i) => (
-                      <Cell key={i} fill={TYPE_COLORS[i % TYPE_COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* BarChart délais de résolution — par statut */}
-        {data.parStatut.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Interventions par statut</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer config={{}} className="h-[250px] w-full">
-                <BarChart data={data.parStatut} layout="vertical">
-                  <XAxis type="number" fontSize={11} allowDecimals={false} />
-                  <YAxis
-                    type="category"
-                    dataKey="label"
-                    width={130}
-                    fontSize={10}
-                  />
-                  <Tooltip formatter={(val) => [`${val}`, 'Interventions']} />
-                  <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                    {data.parStatut.map((entry, i) => (
-                      <Cell key={i} fill={STATUT_COLORS[entry.statut] ?? COLORS[i]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      {data.parType.length > 0 && (
+        <ListeAnalyse
+          titre="Interventions par type"
+          lignes={data.parType.map((t) => ({
+            cle: t.type,
+            libelle: t.label,
+            valeur: `${t.count} · ${formatMontantFCFA(t.cout)}`,
+          }))}
+        />
+      )}
 
       {/* Tableau top véhicules défaillants */}
       {data.topVehicules.length > 0 && (
@@ -154,5 +90,3 @@ export function SAVSection({ data }: Props) {
     </div>
   )
 }
-
-const COLORS = ['#1E3A5F', '#C49A1A', '#2563EB', '#10B981', '#EF4444', '#8B5CF6']

@@ -1,14 +1,15 @@
 import { test, expect } from '@playwright/test'
+import { randomUUID } from 'crypto'
 import { login, TEST_USERS } from '../helpers/auth'
+import { requeteLocale } from '../helpers/base-locale'
 
 test.describe('Pilotage', () => {
-  test('AVANCE accède à la page et voit les 3 indicateurs et la qualité des données', async ({ page }) => {
+  test('AVANCE accède à la page et voit les 3 indicateurs (conversion, issue des offres, marchés historiques) et la qualité des données', async ({ page }) => {
     await login(page, TEST_USERS.avance)
     await page.goto('/pilotage')
     await expect(page.getByRole('heading', { name: 'Pilotage' })).toBeVisible()
     await expect(page.getByText('Conversion attribué → facturé')).toBeVisible()
     await expect(page.getByText('Issue des offres', { exact: true })).toBeVisible()
-    await expect(page.getByText('Écart de prix face au gagnant')).toBeVisible()
     await expect(page.getByText('Marchés historiques', { exact: true })).toBeVisible()
     await expect(page.getByText('Qualité des données')).toBeVisible()
     await expect(page.getByText(/Évolution/)).toHaveCount(0)
@@ -46,7 +47,6 @@ test.describe('Pilotage', () => {
     for (const titre of [
       'Conversion attribué → facturé',
       'Issue des offres',
-      'Écart de prix face au gagnant',
       'Marchés historiques',
     ]) {
       const card = page.locator('div.rounded-lg.border.bg-card').filter({
@@ -100,6 +100,62 @@ test.describe('Pilotage', () => {
     await login(page, TEST_USERS.admin)
     await page.goto('/admin/reporting')
     await expect(page.getByRole('tab', { name: 'Analyses' })).toHaveCount(0)
+  })
+
+  test.describe('Analyses : une notion par endroit', () => {
+    const PREFIXE = '[E2E-ANALYSES]'
+    const nettoyer = async () => {
+      await requeteLocale(`delete from marches where numero like '${PREFIXE}%'`)
+      await requeteLocale(`delete from opportunites where objet like '${PREFIXE}%'`)
+    }
+
+    test.beforeAll(async () => {
+      await nettoyer()
+      const [admin] = await requeteLocale<{ id: string }>('select id from users where email = $1', [TEST_USERS.admin.email])
+      if (!admin) throw new Error('Utilisateur de test introuvable en base locale.')
+      await requeteLocale(
+        `insert into marches (id, numero, objet, type, montant, "dateNotification", "delaiExecution", statut, "autoriteContractanteNom", "concurrentGagnant", "userId", "updatedAt")
+         values ($1, $2, $3, 'FOURNITURES', 5000000, now() - interval '5 days', 30, 'EN_EXECUTION', 'Autorité Analyses E2E', 'Concurrent Analyses E2E', $4, now())`,
+        [randomUUID(), `${PREFIXE} M1`, `${PREFIXE} marché`, admin.id],
+      )
+      await requeteLocale(
+        `insert into opportunites (id, objet, "autoriteContractante", "dateLimite", statut, "montantPropose", "userId", "updatedAt")
+         values ($1, $2, 'Autorité Analyses E2E', now() + interval '10 days', 'PERDUE', 700000, $3, now())`,
+        [randomUUID(), `${PREFIXE} opportunité`, admin.id],
+      )
+    })
+    test.afterAll(nettoyer)
+
+    test("les Analyses n'affichent chaque notion qu'une fois", async ({ page }) => {
+      await login(page, TEST_USERS.avance)
+      await page.goto('/pilotage?onglet=analyses')
+      await expect(page.getByRole('list', { name: 'Marchés par statut' })).toBeVisible({ timeout: 30000 })
+      await expect(page.locator('.recharts-pie')).toHaveCount(0)
+      expect(await page.getByText('Top 10 Autorités Contractantes').count()).toBeLessThanOrEqual(1)
+      for (const retire of ['CA contractualisé', 'Montant total', 'Saisonnalité', 'Top concurrents identifiés', 'Factures par statut', 'Interventions par statut', 'Concurrent Analyses E2E']) {
+        await expect(page.getByText(retire)).toHaveCount(0)
+      }
+      await page.goto('/pilotage?onglet=indicateurs')
+      await expect(page.getByText('Conversion attribué → facturé')).toBeVisible()
+      await expect(page.getByText('Écart de prix face au gagnant')).toHaveCount(0)
+    })
+
+    for (const [liste, ligne, titreDetail] of [
+      ['Marchés par statut', 'En exécution', 'Marchés — En exécution'],
+      ['Opportunités par statut', 'Perdue', 'Opportunités — Perdue'],
+    ] as const) {
+      test(`une ligne de « ${liste} » ouvre son détail au clavier`, async ({ page }) => {
+        await login(page, TEST_USERS.avance)
+        await page.goto('/pilotage?onglet=analyses')
+        const bouton = page.getByRole('list', { name: liste }).getByRole('button', { name: new RegExp(ligne) })
+        await expect(bouton).toBeVisible({ timeout: 30000 })
+        await expect(bouton).toHaveCSS('min-height', '44px')
+        await bouton.focus()
+        await page.keyboard.press('Enter')
+        await expect(page.getByRole('dialog').getByText(titreDetail)).toBeVisible()
+        await expect(page.getByRole('dialog').getByText(`${PREFIXE}`).first()).toBeVisible()
+      })
+    }
   })
 
   for (const [nom, taille] of [['desktop', { width: 1920, height: 1080 }], ['tablette', { width: 768, height: 1024 }], ['mobile', { width: 375, height: 667 }]] as const) {

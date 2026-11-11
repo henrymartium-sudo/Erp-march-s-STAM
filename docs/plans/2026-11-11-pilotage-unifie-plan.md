@@ -169,11 +169,11 @@ test("changer de période garde l'onglet", () => {
 
 **Interfaces :** consomme les types existants de `lib/analytics/types.ts`, sans les modifier. Les champs que l'écran n'affiche plus restent calculés côté serveur : les exports les lisent (X1).
 
-- [ ] **Étape 1 : écrire l'E2E qui échoue**, « les Analyses n'affichent chaque notion qu'une fois », sur `/pilotage?onglet=analyses` : `page.locator('.recharts-pie')` à 0 occurrence ; « Top 10 Autorités Contractantes » à 1 occurrence au plus ; aucune occurrence de « CA contractualisé », « Montant total », « Saisonnalité », « Top concurrents identifiés » ; une ligne de la liste des statuts de marché, au clavier (`Enter`), ouvre le panneau de détail. Sur l'onglet Indicateurs, « Écart de prix face au gagnant » est absent si I3 est validé.
-- [ ] **Étape 2 :** E2E `tests/v1/pilotage.spec.ts` par `base-test` → ÉCHEC.
-- [ ] **Étape 3 :** appliquer chaque ligne validée. Une liste = boutons pleine largeur, `min-h-11`, libellé à gauche et chiffres à droite (`tabular-nums`), clic → `DrillDownSheet` existant via `getMarchesByStatut`, `getOpportunitesByStatut` ou `getOpportunitesByAC`. Une section entièrement vidée disparaît, son état vide avec. Retirer les imports et constantes de couleur devenus orphelins.
-- [ ] **Étape 4 :** relancer l'E2E → SUCCÈS ; `npm run typecheck`, `npm run lint`, `npm run test:unit` → OK.
-- [ ] **Étape 5 :** `git commit -m "refactor(pilotage): une notion par endroit dans les Analyses"`
+- [x] **Étape 1 : écrire l'E2E qui échoue**, « les Analyses n'affichent chaque notion qu'une fois », sur `/pilotage?onglet=analyses` : `page.locator('.recharts-pie')` à 0 occurrence ; « Top 10 Autorités Contractantes » à 1 occurrence au plus ; aucune occurrence de « CA contractualisé », « Montant total », « Saisonnalité », « Top concurrents identifiés » ; une ligne de la liste des statuts de marché, au clavier (`Enter`), ouvre le panneau de détail. Sur l'onglet Indicateurs, « Écart de prix face au gagnant » est absent si I3 est validé.
+- [x] **Étape 2 :** E2E `tests/v1/pilotage.spec.ts` par `base-test` → ÉCHEC.
+- [x] **Étape 3 :** appliquer chaque ligne validée. Une liste = boutons pleine largeur, `min-h-11`, libellé à gauche et chiffres à droite (`tabular-nums`), clic → `DrillDownSheet` existant via `getMarchesByStatut`, `getOpportunitesByStatut` ou `getOpportunitesByAC`. Une section entièrement vidée disparaît, son état vide avec. Retirer les imports et constantes de couleur devenus orphelins.
+- [x] **Étape 4 :** relancer l'E2E → SUCCÈS ; `npm run typecheck`, `npm run lint`, `npm run test:unit` → OK.
+- [x] **Étape 5 :** `git commit -m "refactor(pilotage): une notion par endroit dans les Analyses"`
 
 ### Tâche 5 : contrôles avant la PR
 
@@ -192,5 +192,6 @@ Suivre le cadrage § 5 bis, dans cet ordre : `simplify` ; agent `ui-ux-reviewer`
 - **2026-11-11, tâche 1** : inventaire des graphiques de Pilotage validé en entier par Abel. A3 (« Top concurrents » lu sur les fiches marché) est retiré, et non déplacé : ces données relèvent du chantier D6. Exports PDF et Excel inchangés dans cette livraison (dette X1).
 - **2026-11-11** : la section « Clôture automatique » du `CLAUDE.md` pointe vers ce plan (accord d'Abel).
 - **2026-11-11, tâche 3** (E2E 19/19 verts par `base-test`, build 367 s) : le passage « rouge » des E2E par `base-test` n'a pas été fait, car un build de 6 min pour constater l'absence d'onglets n'apporte rien ; les tests ont été écrits avant le code, puis lancés une seule fois après. Le sélecteur de période, désormais commun aux trois onglets, n'est plus désactivé pendant le chargement d'un onglet (`enCours` reste local à chaque onglet).
+- **2026-11-11, tâche 4** (E2E `pilotage` + `veille` + `v2-analytiques` : 29/29 par `base-test` ; 413 tests unitaires, typecheck 0 erreur, lint 0 erreur) : les Analyses appliquent l'inventaire validé. Sections Financière et Capitalisation supprimées en entier ; Performance, SAV et Opportunités réduites à des listes cliquables (composant `ListeAnalyse`, détail par `DrillDownSheet`) ; « Écart de prix face au gagnant » (I3) retiré de Indicateurs, V2 de la Veille le porte. `tests/v1/v2-analytiques.spec.ts` adapté (il cherchait la section « Analyses détaillées », disparue à la tâche 3). Dette notée : `getPilotageData` calcule encore `ecartPrix`, que plus aucun écran n'affiche.
 
 Source : /disciplines-actives senior.
