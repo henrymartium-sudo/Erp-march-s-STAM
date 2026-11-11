@@ -48,7 +48,9 @@ test.describe('Shell — titres et item de nav actif sur les sous-routes', () =>
   })
 
   const goto = async (path: string) => {
-    if (new URL(page.url()).pathname !== path) {
+    // Chemin ET requête : /vehicules?onglet=sav → /vehicules doit bien renaviguer.
+    const actuelle = new URL(page.url())
+    if (actuelle.pathname + actuelle.search !== path) {
       await page.goto(path)
       await page.waitForLoadState('networkidle')
     }
@@ -61,7 +63,7 @@ test.describe('Shell — titres et item de nav actif sur les sous-routes', () =>
     await expect(topbarTitle).toBeVisible()
     await expect(
       topbarTitle,
-      'Le titre de la topbar doit être celui de /vehicules/sav, pas celui de /vehicules'
+      'Le titre de la topbar doit être « Véhicules » sur l’onglet SAV'
     ).toHaveText(SAV_TITLE)
   })
 
@@ -79,7 +81,7 @@ test.describe('Shell — titres et item de nav actif sur les sous-routes', () =>
     const activeItems = page.locator(ACTIVE_NAV_ITEM)
     await expect(
       activeItems,
-      '« Véhicules » et « SAV » ne doivent pas être actifs simultanément'
+      'Sur l’onglet SAV, un seul item de nav (« Véhicules ») doit être actif'
     ).toHaveCount(1)
     await expect(activeItems.first()).toHaveAttribute('href', '/vehicules')
   })

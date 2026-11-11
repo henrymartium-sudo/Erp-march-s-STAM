@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { login, TEST_USERS } from '../helpers/auth'
+import { navigateAndWait } from '../helpers/dashboard'
 
 /**
  * Livraison 2 de la simplification — la vue SAV est l'onglet « SAV » de /vehicules.
@@ -19,11 +20,6 @@ const ONGLETS = 'nav[aria-label="Sections de la page Véhicules"]'
 
 test.describe.configure({ mode: 'serial' })
 
-async function ouvrir(page: Page, chemin: string) {
-  await page.goto(chemin)
-  await page.waitForLoadState('networkidle')
-}
-
 test.describe('Véhicules — onglet SAV (ADMIN)', () => {
   let page: Page
 
@@ -38,7 +34,7 @@ test.describe('Véhicules — onglet SAV (ADMIN)', () => {
   })
 
   test('/vehicules/sav redirige vers l’onglet SAV', async () => {
-    await ouvrir(page, '/vehicules/sav')
+    await navigateAndWait(page, '/vehicules/sav')
 
     await expect(page).toHaveURL(/\/vehicules\?onglet=sav$/)
     await expect(page.locator(ONGLETS).getByRole('link', { name: 'SAV' })).toHaveAttribute('aria-current', 'page')
@@ -49,7 +45,7 @@ test.describe('Véhicules — onglet SAV (ADMIN)', () => {
   })
 
   test('/vehicules affiche le Parc', async () => {
-    await ouvrir(page, '/vehicules')
+    await navigateAndWait(page, '/vehicules')
 
     await expect(page.locator(ONGLETS).getByRole('link', { name: 'Parc' })).toHaveAttribute('aria-current', 'page')
     await expect(page.getByText('Total interventions')).toHaveCount(0)
@@ -57,14 +53,14 @@ test.describe('Véhicules — onglet SAV (ADMIN)', () => {
   })
 
   test('un onglet inconnu affiche le Parc', async () => {
-    await ouvrir(page, '/vehicules?onglet=inconnu')
+    await navigateAndWait(page, '/vehicules?onglet=inconnu')
 
     await expect(page.locator(ONGLETS).getByRole('link', { name: 'Parc' })).toHaveAttribute('aria-current', 'page')
     await expect(page.getByText('Total interventions')).toHaveCount(0)
   })
 
   test('les liens d’onglet ne reprennent pas les filtres du Parc', async () => {
-    await ouvrir(page, '/vehicules?statut=LIVRE&page=2')
+    await navigateAndWait(page, '/vehicules?statut=LIVRE&page=2')
 
     const onglets = page.locator(ONGLETS)
     await expect(onglets.getByRole('link', { name: 'SAV' })).toHaveAttribute('href', '/vehicules?onglet=sav')
@@ -72,14 +68,14 @@ test.describe('Véhicules — onglet SAV (ADMIN)', () => {
   })
 
   test('le menu n’a plus d’entrée SAV', async () => {
-    await ouvrir(page, '/vehicules')
+    await navigateAndWait(page, '/vehicules')
 
     await expect(page.locator(`${NAV} a[href="/vehicules/sav"]`)).toHaveCount(0)
   })
 
   test('l’onglet SAV ne déborde pas à 375 px', async () => {
     await page.setViewportSize({ width: 375, height: 667 })
-    await ouvrir(page, '/vehicules?onglet=sav')
+    await navigateAndWait(page, '/vehicules?onglet=sav')
 
     const { scrollWidth, innerWidth } = await page.evaluate(() => ({
       scrollWidth: document.documentElement.scrollWidth,
@@ -106,7 +102,7 @@ test.describe('Véhicules — onglet SAV (VISITEUR)', () => {
   })
 
   test('voit la vue SAV, sans export ni création de véhicule', async () => {
-    await ouvrir(page, '/vehicules?onglet=sav')
+    await navigateAndWait(page, '/vehicules?onglet=sav')
 
     await expect(page.getByText('Total interventions')).toBeVisible()
     await expect(page.getByRole('link', { name: /nouveau véhicule/i })).toHaveCount(0)

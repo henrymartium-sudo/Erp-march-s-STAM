@@ -87,7 +87,7 @@ function matchesRoute(pathname: string, route: string): boolean {
 
 function getPageTitle(pathname: string): string {
   if (pathname === '/') return 'Tableau de bord'
-  // Le préfixe le plus long gagne : /vehicules/sav ne doit pas être capté par /vehicules.
+  // Le préfixe le plus long gagne : une route imbriquée ne doit pas être captée par son parent.
   let best: string | null = null
   for (const path of Object.keys(pageTitles)) {
     if (path === '/') continue
@@ -117,8 +117,7 @@ function SidebarContent({ userName, userRole, onClose, forceExpanded = false }: 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/'
     if (!matchesRoute(pathname, href)) return false
-    // Un item plus spécifique qui matche aussi l'emporte : sur /vehicules/sav,
-    // seul « SAV » doit ressortir actif, pas « Véhicules ».
+    // Un item plus spécifique qui matche aussi l'emporte : un seul item ressort actif.
     return !navItems.some(
       (other) =>
         other.href.length > href.length && matchesRoute(pathname, other.href)
