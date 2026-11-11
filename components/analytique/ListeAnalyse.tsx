@@ -1,6 +1,7 @@
 // components/analytique/ListeAnalyse.tsx — liste « libellé à gauche, chiffres à droite », clic optionnel
 'use client'
 
+import { ChevronRight } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export interface LigneAnalyse {
@@ -24,7 +25,7 @@ export function ListeAnalyse({ titre, lignes }: { titre: string; lignes: LigneAn
             const contenu = (
               <>
                 <span className="break-words">{libelle}</span>
-                <span className="shrink-0 font-semibold tabular-nums text-[#1E3A5F]">{valeur}</span>
+                <span className="shrink-0 font-semibold tabular-nums text-stam-primary">{valeur}</span>
               </>
             )
             return (
@@ -32,10 +33,12 @@ export function ListeAnalyse({ titre, lignes }: { titre: string; lignes: LigneAn
                 {onClick ? (
                   <button
                     type="button"
+                    aria-haspopup="dialog"
                     onClick={onClick}
                     className={`${LIGNE} hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring`}
                   >
                     {contenu}
+                    <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-muted-foreground" />
                   </button>
                 ) : (
                   <div className={LIGNE}>{contenu}</div>

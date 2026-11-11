@@ -29,7 +29,7 @@ export function SAVSection({ data }: Props) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-[#1E3A5F]">SAV &amp; Interventions</h3>
+      <h3 className="text-lg font-semibold text-stam-primary">SAV &amp; Interventions</h3>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -37,7 +37,7 @@ export function SAVSection({ data }: Props) {
           <Card key={label}>
             <CardContent className="pt-4">
               <p className="text-xs text-muted-foreground">{label}</p>
-              <p className="text-2xl font-bold text-[#1E3A5F]">{value}</p>
+              <p className="text-2xl font-bold text-stam-primary">{value}</p>
             </CardContent>
           </Card>
         ))}
@@ -77,7 +77,7 @@ export function SAVSection({ data }: Props) {
                     <tr key={i} className="border-b last:border-0">
                       <td className="py-1.5 font-mono font-medium">{v.immatriculation}</td>
                       <td className="py-1.5 text-muted-foreground">{v.marque} {v.modele}</td>
-                      <td className="py-1.5 text-right font-semibold text-[#1E3A5F]">{v.count}</td>
+                      <td className="py-1.5 text-right font-semibold text-stam-primary">{v.count}</td>
                       <td className="py-1.5 text-right text-muted-foreground">{formatMontantFCFA(v.cout)}</td>
                     </tr>
                   ))}

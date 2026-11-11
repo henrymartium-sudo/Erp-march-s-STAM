@@ -21,16 +21,22 @@ export function AnalytiquesTab({ periode }: { periode: Periode }) {
   const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
+    let annule = false
     setIsLoading(true)
     getAnalyticsAffichees(periode)
       .then((result) => {
+        if (annule) return
         setData(result)
         setIsLoading(false)
       })
       .catch(() => {
+        if (annule) return
         toast.error('Erreur lors du chargement des données analytiques')
         setIsLoading(false)
       })
+    return () => {
+      annule = true
+    }
   }, [periode])
 
   function handleExportPDF() {

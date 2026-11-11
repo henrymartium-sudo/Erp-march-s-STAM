@@ -23,7 +23,7 @@ export function PilotageOnglets() {
       <PeriodSelector value={periode} onChange={setPeriode} />
       <p className="text-sm text-muted-foreground">
         Tous les chiffres de la page portent sur la période du{' '}
-        {format(periode.dateDebut, 'dd/MM/yyyy', { locale: fr })} au {format(periode.dateFin, 'dd/MM/yyyy', { locale: fr })}.
+        {format(periode.dateDebut, 'dd/MM/yyyy', { locale: fr })} au {format(periode.dateFin, 'dd/MM/yyyy', { locale: fr })}, sauf le bloc « Qualité des données » (toutes périodes).
       </p>
       <Tabs
         value={onglet}

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
+import { toast } from '@/lib/utils/toast'
 import { formatMontantFCFA } from '@/lib/utils/format'
 import type { OpportunitesStats } from '@/lib/analytics/types'
 import { DrillDownSheet } from '@/components/shared/DrillDownSheet'
@@ -19,14 +20,18 @@ export function OpportunitesSection({ data }: Props) {
 
   async function ouvrir(title: string, charger: () => Promise<DrillDownItem[]>) {
     setDrillDown({ title, items: [], isLoading: true })
-    const items = await charger()
-    setDrillDown({ title, items, isLoading: false })
+    try {
+      setDrillDown({ title, items: await charger(), isLoading: false })
+    } catch {
+      setDrillDown(null)
+      toast.error('Impossible de charger le détail. Réessayez.')
+    }
   }
 
   if (data.totalOpportunites === 0) {
     return (
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-[#1E3A5F]">Pipeline Opportunités</h3>
+        <h3 className="text-lg font-semibold text-stam-primary">Pipeline Opportunités</h3>
         <Card>
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground text-center">
@@ -40,7 +45,7 @@ export function OpportunitesSection({ data }: Props) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-[#1E3A5F]">Pipeline Opportunités</h3>
+      <h3 className="text-lg font-semibold text-stam-primary">Pipeline Opportunités</h3>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {data.parStatut.length > 0 && (

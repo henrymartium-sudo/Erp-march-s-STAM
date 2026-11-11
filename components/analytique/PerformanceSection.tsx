@@ -3,6 +3,7 @@
 
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { toast } from '@/lib/utils/toast'
 import type { PerformanceStats } from '@/lib/analytics/types'
 import { DrillDownSheet } from '@/components/shared/DrillDownSheet'
 import { ListeAnalyse } from '@/components/analytique/ListeAnalyse'
@@ -17,8 +18,12 @@ export function PerformanceSection({ data }: Props) {
 
   async function ouvrirStatut(statut: string, label: string) {
     setDrillDown({ title: `Marchés — ${label}`, items: [], isLoading: true })
-    const items = await getMarchesByStatut(statut)
-    setDrillDown({ title: `Marchés — ${label}`, items, isLoading: false })
+    try {
+      setDrillDown({ title: `Marchés — ${label}`, items: await getMarchesByStatut(statut), isLoading: false })
+    } catch {
+      setDrillDown(null)
+      toast.error('Impossible de charger le détail. Réessayez.')
+    }
   }
 
   if (data.totalMarches === 0) {
@@ -34,7 +39,7 @@ export function PerformanceSection({ data }: Props) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-[#1E3A5F]">Performance Marchés</h3>
+      <h3 className="text-lg font-semibold text-stam-primary">Performance Marchés</h3>
 
       <ListeAnalyse
         titre="Marchés par statut"
