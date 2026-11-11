@@ -2,18 +2,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { ChartContainer } from '@/components/ui/chart'
-import {
-  Tooltip,
-  PieChart, Pie, Cell, Legend,
-} from 'recharts'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { toast } from '@/lib/utils/toast'
 import type { PerformanceStats } from '@/lib/analytics/types'
-import { formatMontantFCFA } from '@/lib/utils/format'
 import { DrillDownSheet } from '@/components/shared/DrillDownSheet'
+import { ListeAnalyse } from '@/components/analytique/ListeAnalyse'
 import { getMarchesByStatut, type DrillDownItem } from '@/lib/actions/drill-down'
-
-const COLORS = ['#1E3A5F', '#C49A1A', '#2563EB', '#10B981', '#EF4444', '#8B5CF6', '#F59E0B']
 
 interface Props { data: PerformanceStats }
 
@@ -22,14 +16,16 @@ export function PerformanceSection({ data }: Props) {
     title: string; items: DrillDownItem[]; isLoading: boolean
   } | null>(null)
 
-  async function handlePieClick(entry: any) {
-    const statut: string = entry?.statut
-    const label: string = entry?.label ?? ''
-    if (!statut) return
+  async function ouvrirStatut(statut: string, label: string) {
     setDrillDown({ title: `Marchés — ${label}`, items: [], isLoading: true })
-    const items = await getMarchesByStatut(statut)
-    setDrillDown({ title: `Marchés — ${label}`, items, isLoading: false })
+    try {
+      setDrillDown({ title: `Marchés — ${label}`, items: await getMarchesByStatut(statut), isLoading: false })
+    } catch {
+      setDrillDown(null)
+      toast.error('Impossible de charger le détail. Réessayez.')
+    }
   }
+
   if (data.totalMarches === 0) {
     return (
       <Card>
@@ -43,77 +39,17 @@ export function PerformanceSection({ data }: Props) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-[#1E3A5F]">Performance Marchés</h3>
+      <h3 className="text-lg font-semibold text-stam-primary">Performance Marchés</h3>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { label: 'Total marchés', value: data.totalMarches },
-          { label: 'Marchés gagnés', value: data.marchesGagnes },
-          { label: 'Montant total', value: formatMontantFCFA(data.montantTotal) },
-          { label: 'Délai moyen', value: `${data.delaiMoyenJours}j` },
-        ].map(({ label, value }) => (
-          <Card key={label}>
-            <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground">{label}</p>
-              <p className="text-2xl font-bold text-[#1E3A5F]">{value}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 gap-4">
-        {/* Donut répartition statuts */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Répartition par statut</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={{}} className="h-[250px] w-full">
-              <PieChart>
-                <Pie
-                  data={data.parStatut}
-                  dataKey="count"
-                  nameKey="label"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={2}
-                  cursor="pointer"
-                  onClick={handlePieClick}
-                >
-                  {data.parStatut.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(val) => [`${val}`, 'Marchés']} />
-                <Legend formatter={(val) => val.length > 20 ? val.slice(0, 20) + '…' : val} />
-              </PieChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Top concurrents */}
-      {data.topConcurrents.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Top concurrents identifiés</CardTitle>
-            <CardDescription>Entreprises gagnantes sur les marchés non remportés</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-1">
-              {data.topConcurrents.map((c, i) => (
-                <div key={i} className="flex items-center justify-between text-sm py-1 border-b last:border-0">
-                  <span>{c.nom}</span>
-                  <span className="font-medium text-[#1E3A5F]">{c.count} marché{c.count > 1 ? 's' : ''}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <ListeAnalyse
+        titre="Marchés par statut"
+        lignes={data.parStatut.map((s) => ({
+          cle: s.statut,
+          libelle: s.label,
+          valeur: String(s.count),
+          onClick: () => ouvrirStatut(s.statut, s.label),
+        }))}
+      />
 
       <DrillDownSheet
         open={!!drillDown}

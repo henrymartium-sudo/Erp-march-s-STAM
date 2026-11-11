@@ -124,14 +124,17 @@ export function OpportuniteList({ opportunites, canWrite, hasFilters }: Opportun
                       {opp.reference}
                     </span>
                   )}
-                  {opp.marche && (
-                    <Link
-                      href={`/marches/${opp.marche.id}`}
-                      className="font-mono-marche mt-1 inline-block text-xs text-primary hover:underline"
-                    >
-                      Marché {opp.marche.numero}
-                    </Link>
-                  )}
+                  {[...(opp.marche ? [opp.marche] : []), ...opp.marches]
+                    .filter((m, i, tous) => tous.findIndex((x) => x.id === m.id) === i)
+                    .map((m) => (
+                      <Link
+                        key={m.id}
+                        href={`/marches/${m.id}`}
+                        className="font-mono-marche mr-2 mt-1 inline-block text-xs text-primary hover:underline"
+                      >
+                        Marché {m.numero}
+                      </Link>
+                    ))}
                   {nbLots > 0 && (
                     <p className="mt-1 text-xs tabular-nums text-muted-foreground">
                       {nbLots} lot{nbLots > 1 ? 's' : ''}

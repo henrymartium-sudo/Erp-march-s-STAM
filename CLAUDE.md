@@ -158,9 +158,20 @@ Les 5 contrôles du skill global `disciplines-actives` (`~/.claude/skills/discip
 
 - **Lecture fraîche** : état réel de la base (pas le schéma supposé), branche et working tree courants, dernier déploiement Vercel, `git ls-files` avant toute affirmation sur ce qui est versionné.
 
+## Aperçu
+
+Aperçu en direct (skill `apercu`) : toujours sur la base de test locale, jamais sur la production.
+
+- **Base** : PostgreSQL de test locale `127.0.0.1:5433`, démarrée par le skill `base-test`.
+- **Serveur** : configuration `dev-test` de `.claude/launch.json` (port 3000), qui refuse de démarrer si `.env.test` ne vise pas la base locale.
+- **Compte** : compte administrateur de test défini dans `tests/helpers/auth.ts` (valable sur la base locale seulement).
+- **Données** : lignes préfixées `[E2E…]` semées puis supprimées par le script de préparation (garde `localhost` obligatoire).
+- **Délais** : la première compilation d'une page est lente (plusieurs minutes sur cette machine) ; prévoir des délais de navigation de 180 s et chauffer les pages d'abord.
+- **Arrêt** : fermer la fenêtre, arrêter `next dev` (arbre de processus), supprimer les données semées, arrêter la base de test.
+
 ## Clôture automatique
 
-Plan concerné : `docs/plans/2026-11-10-un-marche-par-groupe-de-lots-plan.md` (activée par accord d'Abel, 2026-11-10).
+Plan concerné : `docs/plans/2026-11-11-pilotage-unifie-plan.md` (activée par accord d'Abel, 2026-11-11).
 
 - À la reprise d'un handoff portant `Suite automatique` et à chaque fin de tâche : lire en entier `~/.claude/skills/disciplined-execution/references/auto-closure.md`.
 - Trois arrêts seulement (dernière ligne `ARRÊT : <raison>`) : vérification ratée ou budget de diagnostic épuisé ; geste distant ; fin de ticket.

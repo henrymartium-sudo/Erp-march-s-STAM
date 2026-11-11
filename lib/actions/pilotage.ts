@@ -6,9 +6,9 @@ import { requireRole } from '@/lib/utils/permissions'
 import { STATUTS_ATTRIBUES, STATUTS_OPPORTUNITE_OFFRE_SOUMISE } from '@/lib/constants/marche'
 import { capturerOperation, type ResultatOperation } from '@/lib/pilotage/capturer-operation'
 import {
-  calculerConversion, calculerIssueOffres, calculerEcartPrix, calculerQualite, calculerMarchesHistoriques, estAttribueUnJour, intituleLot,
+  calculerConversion, calculerIssueOffres, calculerQualite, calculerMarchesHistoriques, estAttribueUnJour, intituleLot,
   type MarchePilotage, type LotPilotage, type StatutFactureLite,
-  type ResultatConversion, type ResultatIssueOffres, type ResultatEcartPrix, type ResultatMarchesHistoriques, type ElementQualite,
+  type ResultatConversion, type ResultatIssueOffres, type ResultatMarchesHistoriques, type ElementQualite,
 } from '@/lib/pilotage/calculs'
 
 export type BlocPilotage<T> =
@@ -18,7 +18,6 @@ export type BlocPilotage<T> =
 export interface PilotageData {
   conversion: BlocPilotage<ResultatConversion>
   offres: BlocPilotage<ResultatIssueOffres>
-  ecartPrix: BlocPilotage<ResultatEcartPrix>
   historiques: BlocPilotage<ResultatMarchesHistoriques>
   qualite: BlocPilotage<ElementQualite[]>
 }
@@ -125,11 +124,6 @@ export async function getPilotageData(input: { dateDebut: string; dateFin: strin
     return calculerIssueOffres(lotsCapture.value, periode)
   })
 
-  const ecartPrixCapture = await capturerOperation(() => {
-    if (lotsCapture.status === 'error') throw lotsCapture.error
-    return calculerEcartPrix(lotsCapture.value, periode)
-  })
-
   const historiquesCapture = await capturerOperation(() => {
     if (marchesCapture.status === 'error') throw marchesCapture.error
     return calculerMarchesHistoriques(marchesCapture.value, periode)
@@ -152,7 +146,6 @@ export async function getPilotageData(input: { dateDebut: string; dateFin: strin
   return {
     conversion: publierBloc('conversion', conversionCapture, 'Indicateur indisponible. Réessayez.'),
     offres: publierBloc('issue des offres', offresCapture, 'Indicateur indisponible. Réessayez.'),
-    ecartPrix: publierBloc('écart de prix', ecartPrixCapture, 'Indicateur indisponible. Réessayez.'),
     historiques: publierBloc('marchés historiques', historiquesCapture, 'Indicateur indisponible. Réessayez.'),
     qualite: publierBloc('qualité des données', qualiteCapture, 'Qualité des données indisponible. Réessayez.'),
   }

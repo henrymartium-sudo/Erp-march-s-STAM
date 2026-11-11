@@ -5,7 +5,7 @@ import type { Cookie, Page } from '@playwright/test'
  * Tests E2E — V2 : Reporting Analytique (section « Analyses détaillées » de /pilotage)
  *
  * T-A : /admin/reporting n'affiche plus l'onglet Analyses (déplacé vers /pilotage)
- * T-B : /pilotage affiche la section « Analyses détaillées »
+ * T-B : /pilotage?onglet=analyses affiche l'onglet Analyses
  * T-C : Le PeriodSelector de la section est visible avec ses 4 presets
  * T-D : Les boutons "PDF" et "Excel" sont présents
  * T-E : Les données se chargent (4 sections KPIs visibles)
@@ -18,11 +18,11 @@ const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || 'Admin123!'
 
 let adminCookies: Cookie[] = []
 
-// /pilotage porte un seul sélecteur de période, placé hors de la section des analyses.
+// /pilotage porte un seul sélecteur de période, placé hors de l'onglet Analyses.
 async function ouvrirAnalyses(page: Page) {
-  await page.goto('/pilotage')
+  await page.goto('/pilotage?onglet=analyses')
   await page.waitForLoadState('networkidle')
-  return page.locator('section', { has: page.getByRole('heading', { name: 'Analyses détaillées' }) })
+  return page.getByRole('tabpanel')
 }
 
 test.describe.serial('V2 — Reporting Analytique', () => {
@@ -58,12 +58,10 @@ test.describe.serial('V2 — Reporting Analytique', () => {
 
   // ── T-B : Section des analyses sur /pilotage ─────────────────────────────────
 
-  test('T-B : /pilotage affiche la section Analyses détaillées', async ({ page }) => {
-    const zone = await ouvrirAnalyses(page)
+  test("T-B : /pilotage?onglet=analyses affiche l'onglet Analyses", async ({ page }) => {
+    await ouvrirAnalyses(page)
 
-    await expect(
-      zone.getByRole('button', { name: /1 an/i }).or(zone.getByText('Analyse Financière')).first()
-    ).toBeVisible({ timeout: 10000 })
+    await expect(page.getByRole('tab', { name: 'Analyses' })).toHaveAttribute('aria-selected', 'true', { timeout: 10000 })
   })
 
   // ── T-C : PeriodSelector avec ses 4 presets ──────────────────────────────────
@@ -89,7 +87,7 @@ test.describe.serial('V2 — Reporting Analytique', () => {
 
   // ── T-E : Les données se chargent (sections KPIs visibles) ───────────────────
 
-  test('T-E : Les 4 sections analytiques se chargent et affichent leurs KPIs', async ({ page }) => {
+  test('T-E : Les sections analytiques se chargent et affichent leurs KPIs', async ({ page }) => {
     await ouvrirAnalyses(page)
 
     // Attendre que le loading disparaisse
@@ -99,7 +97,7 @@ test.describe.serial('V2 — Reporting Analytique', () => {
     )
 
     // Au moins une section doit être visible
-    const sections = ['Performance Marchés', 'Analyse Financière', 'Capitalisation Stratégique', 'SAV']
+    const sections = ['Performance Marchés', 'SAV', 'Pipeline Opportunités']
     let found = 0
     for (const s of sections) {
       const visible = await page.getByText(s, { exact: false }).first().isVisible().catch(() => false)
@@ -122,7 +120,7 @@ test.describe.serial('V2 — Reporting Analytique', () => {
     // Vérifier simplement que la page ne crashe pas et que les sections restent visibles après
     await page.waitForTimeout(4000)
 
-    const sections = ['Performance Marchés', 'Analyse Financière', 'Capitalisation Stratégique', 'SAV', 'Aucun', 'Aucune']
+    const sections = ['Performance Marchés', 'SAV', 'Pipeline Opportunités', 'Aucun', 'Aucune']
     let found = 0
     for (const s of sections) {
       const visible = await page.getByText(s, { exact: false }).first().isVisible().catch(() => false)

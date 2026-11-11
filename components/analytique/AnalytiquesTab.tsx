@@ -8,31 +8,37 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/lib/utils/toast'
 
 import { PerformanceSection } from '@/components/analytique/PerformanceSection'
-import { FinanciereSection } from '@/components/analytique/FinanciereSection'
-import { CapitalisationSection } from '@/components/analytique/CapitalisationSection'
 import { SAVSection } from '@/components/analytique/SAVSection'
 import { OpportunitesSection } from '@/components/analytique/OpportunitesSection'
 
-import { getAllAnalyticsData } from '@/lib/actions/analytics'
+import { getAnalyticsAffichees } from '@/lib/actions/analytics'
 import { exportAnalytiquesPDF, exportAnalytiquesExcel } from '@/lib/actions/analytics-exports'
-import type { AllAnalyticsData, Periode } from '@/lib/analytics/types'
+import type { Periode } from '@/lib/analytics/types'
+
+type AnalytiquesAffichees = Awaited<ReturnType<typeof getAnalyticsAffichees>>
 
 export function AnalytiquesTab({ periode }: { periode: Periode }) {
-  const [data, setData] = useState<AllAnalyticsData | null>(null)
+  const [data, setData] = useState<AnalytiquesAffichees | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
+    let annule = false
     setIsLoading(true)
-    getAllAnalyticsData(periode)
+    getAnalyticsAffichees(periode)
       .then((result) => {
+        if (annule) return
         setData(result)
         setIsLoading(false)
       })
       .catch(() => {
+        if (annule) return
         toast.error('Erreur lors du chargement des données analytiques')
         setIsLoading(false)
       })
+    return () => {
+      annule = true
+    }
   }, [periode])
 
   function handleExportPDF() {
@@ -121,8 +127,6 @@ export function AnalytiquesTab({ periode }: { periode: Periode }) {
       ) : data ? (
         <div className="space-y-10">
           <PerformanceSection data={data.performance} />
-          <FinanciereSection data={data.financiere} />
-          <CapitalisationSection data={data.capitalisation} />
           <SAVSection data={data.sav} />
           <OpportunitesSection data={data.opportunites} />
         </div>

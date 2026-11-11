@@ -7,10 +7,11 @@ import { requeteLocale } from '../helpers/base-locale'
 /**
  * Tests E2E — Veille concurrentielle
  *
- * 1 : accès réservé à ADMIN et AVANCE (menu et adresse directe)
+ * 1 : accès réservé à ADMIN et AVANCE (menu et adresse directe) ; plus de lien « Veille » dans le menu
  * 2 : un concurrent écrit de trois façons forme une seule ligne, avec écart moyen au-delà de 3 lots
  * 3 : les pertes sans concurrent ou sans montant sont listées avec ce qui manque ; les noms proches sont signalés
- * 4 : la période est conservée entre /pilotage et /veille, dans les deux sens
+ * 4 : l'ancienne adresse /veille redirige vers l'onglet Veille de /pilotage, période gardée
+ * 4 bis : période et onglet se gardent l'un l'autre ; 4 ter : ancien lien sans dates ou invalide
  * 5 : période sans perte → message explicite
  * 6 : pas de défilement horizontal à 375, 768 et 1920 px
  * 7 : détail d'une ligne atteignable et repliable au clavier
@@ -78,7 +79,7 @@ async function inserer() {
 async function sansDefilementHorizontal(page: Page, largeur: number) {
   await page.setViewportSize({ width: largeur, height: 900 })
   await page.goto('/veille')
-  await expect(page.getByRole('heading', { name: 'Veille concurrentielle' })).toBeVisible()
+  await expect(page.getByRole('tab', { name: 'Veille' })).toHaveAttribute('aria-selected', 'true')
   await expect(page.getByRole('status', { name: 'Chargement de la veille' })).toHaveCount(0)
   const debordement = await page.evaluate(() => {
     const racine = document.documentElement
@@ -98,19 +99,22 @@ test.describe('Veille concurrentielle', () => {
     expect(reste?.n).toBe(0)
   })
 
-  test('1 — accès réservé à ADMIN et AVANCE', async ({ page, browser }) => {
+  test('1 — accès réservé à ADMIN et AVANCE, plus de lien Veille dans le menu', async ({ page, browser }) => {
     await login(page, TEST_USERS.avance)
-    await expect(page.getByRole('link', { name: 'Veille', exact: true })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Pilotage', exact: true })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Veille', exact: true })).toHaveCount(0)
     await page.goto('/veille')
-    await expect(page.getByRole('heading', { name: 'Veille concurrentielle' })).toBeVisible()
+    await expect(page).toHaveURL(/\/pilotage\?onglet=veille/)
+    await expect(page.getByRole('tab', { name: 'Veille' })).toHaveAttribute('aria-selected', 'true')
 
     for (const utilisateur of [TEST_USERS.exploitation, TEST_USERS.visiteur]) {
       const contexte = await browser.newContext()
       const autre = await contexte.newPage()
       await login(autre, utilisateur)
       await autre.goto('/veille')
-      await expect(autre.getByRole('heading', { name: 'Veille concurrentielle' })).toHaveCount(0)
-      await expect(autre.getByRole('link', { name: 'Veille', exact: true })).toHaveCount(0)
+      await expect(autre).toHaveURL('/')
+      await expect(autre.getByRole('tab', { name: 'Veille' })).toHaveCount(0)
+      await expect(autre.getByText(/lot\(s\) sur \d+ documenté\(s\)/)).toHaveCount(0)
       await contexte.close()
     }
   })
@@ -137,17 +141,41 @@ test.describe('Veille concurrentielle', () => {
     await expect(doublons).toContainText('E2E Auto Pluss')
   })
 
-  test('4 — la période est conservée entre /pilotage et /veille', async ({ page }) => {
+  test("4 — l'ancienne adresse redirige vers l'onglet Veille, période gardée", async ({ page }) => {
     await login(page, TEST_USERS.avance)
     await page.goto('/veille?debut=2026-01-01&fin=2026-06-30')
+    await expect(page).toHaveURL(/\/pilotage\?onglet=veille&debut=2026-01-01&fin=2026-06-30/)
+    await expect(page.getByRole('tab', { name: 'Veille' })).toHaveAttribute('aria-selected', 'true')
     await expect(page.getByText(/période du 01\/01\/2026 au 30\/06\/2026/)).toBeVisible()
-    const retour = page.getByRole('link', { name: 'Retour au pilotage' })
-    await expect(retour).toHaveAttribute('href', '/pilotage?debut=2026-01-01&fin=2026-06-30')
-    await retour.click()
-    await expect(page).toHaveURL(/\/pilotage\?debut=2026-01-01&fin=2026-06-30/)
-    await expect(page.getByText(/période du 01\/01\/2026 au 30\/06\/2026/)).toBeVisible()
-    const aller = page.getByRole('link', { name: 'Voir la veille concurrentielle' })
-    await expect(aller).toHaveAttribute('href', '/veille?debut=2026-01-01&fin=2026-06-30')
+  })
+
+  test('4 bis — période et onglet se gardent l’un l’autre', async ({ page }) => {
+    await login(page, TEST_USERS.avance)
+    await page.goto('/pilotage?onglet=veille')
+    await expect(page.getByRole('tab', { name: 'Veille' })).toHaveAttribute('aria-selected', 'true')
+    await page.getByRole('button', { name: '30 jours', exact: true }).click()
+    await expect(page).toHaveURL(/debut=/)
+    expect(new URL(page.url()).searchParams.get('onglet')).toBe('veille')
+    const { debut, fin } = Object.fromEntries(new URL(page.url()).searchParams)
+
+    await page.getByRole('tab', { name: 'Analyses' }).click()
+    await expect(page.getByRole('tab', { name: 'Analyses' })).toHaveAttribute('aria-selected', 'true')
+    await expect(page).toHaveURL(/onglet=analyses/)
+    const params = new URL(page.url()).searchParams
+    expect(params.get('debut')).toBe(debut)
+    expect(params.get('fin')).toBe(fin)
+
+    await page.reload()
+    await expect(page.getByRole('tab', { name: 'Analyses' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  test('4 ter — un ancien lien sans dates ou avec des dates invalides arrive sur Veille', async ({ page }) => {
+    await login(page, TEST_USERS.avance)
+    for (const adresse of ['/veille', '/veille?debut=xx']) {
+      await page.goto(adresse)
+      await expect(page.getByRole('tab', { name: 'Veille' })).toHaveAttribute('aria-selected', 'true')
+      await expect(page.getByText(/période du \d{2}\/\d{2}\/\d{4} au \d{2}\/\d{2}\/\d{4}/)).toBeVisible()
+    }
   })
 
   test('5 — une période sans perte affiche un message explicite', async ({ page }) => {

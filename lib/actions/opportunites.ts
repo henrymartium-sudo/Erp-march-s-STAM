@@ -42,6 +42,7 @@ export type OpportuniteDetail = Omit<OpportuniteWithMarche, 'marche'> & {
 /** Ligne de la liste : pour chaque lot, seule la progression de son dossier est chargée. */
 export type OpportuniteListItem = OpportuniteWithMarche & {
   lots: { montantPropose: Lot['montantPropose']; dossier: { progression: number } | null }[]
+  marches: Pick<Marche, 'id' | 'numero'>[]
 }
 
 export interface GetOpportunitesOptions extends OpportuniteFilters {
@@ -70,6 +71,10 @@ export async function getOpportunites(
         include: {
           marche: {
             select: { id: true, numero: true, objet: true },
+          },
+          marches: {
+            select: { id: true, numero: true },
+            orderBy: { createdAt: 'asc' },
           },
           lots: {
             select: { montantPropose: true, dossier: { select: { progression: true } } },

@@ -557,6 +557,16 @@ export async function getOpportunitesStats(periode: Periode): Promise<Opportunit
   }
 }
 
+/** Ce que l'onglet Analyses affiche : sans les calculs financiers et de capitalisation, réservés aux exports. */
+export async function getAnalyticsAffichees(periode: Periode) {
+  const [performance, sav, opportunites] = await Promise.all([
+    getPerformanceStats(periode),
+    getSAVStats(periode),
+    getOpportunitesStats(periode),
+  ])
+  return { performance, sav, opportunites }
+}
+
 export async function getAllAnalyticsData(periode: Periode) {
   const [performance, financiere, capitalisation, sav, opportunites] = await Promise.all([
     getPerformanceStats(periode),
