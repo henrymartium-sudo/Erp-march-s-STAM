@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db/prisma'
 import { STATUTS_ATTRIBUES, STATUTS_OPPORTUNITE_OFFRE_SOUMISE } from '@/lib/constants/marche'
 import { requireRole } from '@/lib/utils/permissions'
+import { filtreMarchesPeriode, filtreOpportunitesPeriode } from '@/lib/analytics/filtres'
 import type { Periode, PerformanceStats, FinancialStats, CapitalisationStats, SAVStats, OpportunitesStats } from '@/lib/analytics/types'
 import { STATUT_LABELS, TYPE_MARCHE_LABELS } from '@/lib/constants/marche'
 import { STATUT_OPPORTUNITE_LABELS } from '@/lib/validations/opportunite'
@@ -43,12 +44,7 @@ const STATUTS_OFFRE_SOUMISE_OPP = STATUTS_OPPORTUNITE_OFFRE_SOUMISE
 export async function getPerformanceStats(periode: Periode): Promise<PerformanceStats> {
   await requireRole(['ADMIN', 'AVANCE'])
 
-  const where = {
-    dateNotification: { gte: periode.dateDebut, lte: periode.dateFin },
-    // RÈGLE MÉTIER : exclure les marchés "Opportunité identifiée" — statut pré-commercial
-    // traité dans le module Opportunités, jamais comptabilisé comme marché réel.
-    statut: { not: StatutMarche.OPPORTUNITE_IDENTIFIEE },
-  }
+  const where = filtreMarchesPeriode(periode)
 
   // 1. Répartition par statut
   const parStatutRaw = await prisma.marche.groupBy({
@@ -414,9 +410,7 @@ export async function getSAVStats(periode: Periode): Promise<SAVStats> {
 export async function getOpportunitesStats(periode: Periode): Promise<OpportunitesStats> {
   await requireRole(['ADMIN', 'AVANCE'])
 
-  const where = {
-    createdAt: { gte: periode.dateDebut, lte: periode.dateFin },
-  }
+  const where = filtreOpportunitesPeriode(periode)
 
   // 1. Répartition par statut (avec montants)
   const parStatutRaw = await prisma.opportunite.groupBy({
