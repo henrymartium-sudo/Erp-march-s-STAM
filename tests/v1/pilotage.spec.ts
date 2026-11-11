@@ -11,7 +11,7 @@ test.describe('Pilotage', () => {
     await expect(page.getByText('Conversion attribué → facturé')).toBeVisible()
     await expect(page.getByText('Issue des offres', { exact: true })).toBeVisible()
     await expect(page.getByText('Marchés historiques', { exact: true })).toBeVisible()
-    await expect(page.getByText('Qualité des données')).toBeVisible()
+    await expect(page.getByText('Qualité des données (toutes périodes)')).toBeVisible()
     await expect(page.getByText(/Évolution/)).toHaveCount(0)
     await expect(page.getByText(/mêmes dates/)).toHaveCount(0)
   })
