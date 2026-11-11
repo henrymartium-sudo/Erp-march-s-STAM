@@ -181,3 +181,15 @@ Suivre le cadrage § 5 bis, dans cet ordre : `simplify` ; agent `ui-ux-reviewer`
 
 - [ ] **Étape 1 :** chaque contrôle passé, ses constats corrigés ou notés en dette avec l'accord d'Abel.
 - [ ] **Étape 2 :** ARRÊT, geste distant : feu vert d'Abel pour le push, puis séparément pour la fusion, qui déploie (`production-steps.md`).
+
+---
+
+## Brouillon Journal consolidé
+
+À valider par Abel en fin de livraison ; rien n'est écrit dans le Vault avant son « validé ».
+
+- **2026-11-11, tâche 1** : branche `feat/simplification-modules` créée depuis `origin/main` et non depuis le `main` local, car celui-ci porte un commit (`8db51aa`) dont le contenu est déjà sur `origin/main`. Le commit `c896e63`, resté seulement sur `feat/marche-par-lots`, a été repris (`63225b0`, choix A d'Abel), sinon il ne partait jamais en production. Le suivi de `origin/main` a été retiré de la branche : un simple `git push` serait parti sur `main`, donc en production.
+- **2026-11-11, tâche 1** : inventaire des graphiques de Pilotage validé en entier par Abel. A3 (« Top concurrents » lu sur les fiches marché) est retiré, et non déplacé : ces données relèvent du chantier D6. Exports PDF et Excel inchangés dans cette livraison (dette X1).
+- **2026-11-11** : la section « Clôture automatique » du `CLAUDE.md` pointe vers ce plan (accord d'Abel).
+
+Source : /disciplines-actives senior.
