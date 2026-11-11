@@ -170,7 +170,7 @@ test.describe('Pilotage', () => {
       await nettoyer()
       const [admin] = await requeteLocale<{ id: string }>('select id from users where email = $1', [TEST_USERS.admin.email])
       if (!admin) throw new Error('Utilisateur de test introuvable en base locale.')
-      // Un marché dans la période par défaut (12 mois), un très ancien : seul le premier est compté.
+      // Un marché récent et un très ancien, tous deux en exécution : la situation actuelle compte les deux.
       for (const [suffixe, jours] of [['récent', 5], ['ancien', 800]] as const) {
         await requeteLocale(
           `insert into marches (id, numero, objet, type, montant, "dateNotification", "delaiExecution", statut, "autoriteContractanteNom", "userId", "updatedAt")
@@ -213,6 +213,47 @@ test.describe('Pilotage', () => {
         }
       })
     }
+
+    test('« Marchés par statut » compte et liste un marché ancien encore en exécution', async ({ page }) => {
+      await login(page, TEST_USERS.avance)
+      await page.goto('/pilotage?onglet=analyses')
+      const bouton = page.getByRole('list', { name: 'Marchés par statut' }).getByRole('button', { name: /En exécution/ })
+      await expect(bouton).toBeVisible({ timeout: 30000 })
+      await bouton.click()
+      const dialogue = page.getByRole('dialog')
+      await expect(dialogue.getByText(`${PREFIXE} ancien`)).toBeVisible({ timeout: 30000 })
+      await expect(dialogue.getByText(`${PREFIXE} récent`)).toBeVisible()
+    })
+
+    test('les trois listes et le bandeau disent « situation actuelle »', async ({ page }) => {
+      await login(page, TEST_USERS.avance)
+      await page.goto('/pilotage?onglet=analyses')
+      for (const liste of ['Marchés par statut', 'Opportunités par statut', 'Top 10 Autorités Contractantes']) {
+        const carte = page.locator('div.rounded-lg.border.bg-card').filter({ has: page.getByRole('list', { name: liste }) })
+        await expect(carte.getByText('Situation actuelle, toutes dates')).toBeVisible({ timeout: 30000 })
+      }
+      await expect(page.getByText(/les listes de statuts montrent la situation actuelle, toutes dates/)).toBeVisible()
+      await page.goto('/pilotage?onglet=indicateurs')
+      await expect(page.getByText('Conversion attribué → facturé')).toBeVisible()
+      await expect(page.getByText(/situation actuelle/)).toHaveCount(0)
+    })
+
+    test('« Opportunités par statut » et le Top 10 comptent les opportunités anciennes', async ({ page }) => {
+      await login(page, TEST_USERS.avance)
+      await page.goto('/pilotage?onglet=analyses')
+      const perdue = page.getByRole('list', { name: 'Opportunités par statut' }).getByRole('button', { name: /Perdue/ })
+      await expect(perdue).toBeVisible({ timeout: 30000 })
+      await perdue.click()
+      const dialogue = page.getByRole('dialog')
+      await expect(dialogue.getByText(`${PREFIXE} opportunité 800`)).toBeVisible({ timeout: 30000 })
+      await expect(dialogue.getByText(`${PREFIXE} opportunité 801`)).toBeVisible()
+      await page.keyboard.press('Escape')
+      await expect(dialogue).toBeHidden()
+
+      const ligneAC = page.getByRole('list', { name: 'Top 10 Autorités Contractantes' }).getByRole('button', { name: new RegExp(AC) })
+      await expect(ligneAC).toBeVisible()
+      expect(await ligneAC.locator('span.tabular-nums').textContent()).toMatch(/^\s*6\b/)
+    })
   })
 
   for (const [nom, taille] of [['desktop', { width: 1920, height: 1080 }], ['tablette', { width: 768, height: 1024 }], ['mobile', { width: 375, height: 667 }]] as const) {

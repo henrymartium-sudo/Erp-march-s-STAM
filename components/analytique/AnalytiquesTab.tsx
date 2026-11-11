@@ -126,9 +126,9 @@ export function AnalytiquesTab({ periode }: { periode: Periode }) {
         </div>
       ) : data ? (
         <div className="space-y-10">
-          <PerformanceSection data={data.performance} periode={periode} />
+          <PerformanceSection data={data.performance} />
           <SAVSection data={data.sav} />
-          <OpportunitesSection data={data.opportunites} periode={periode} />
+          <OpportunitesSection data={data.opportunites} />
         </div>
       ) : (
         <p className="text-muted-foreground text-sm">Aucune donnée disponible.</p>

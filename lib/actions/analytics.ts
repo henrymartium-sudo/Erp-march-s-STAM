@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/db/prisma'
 import { STATUTS_ATTRIBUES, STATUTS_OPPORTUNITE_OFFRE_SOUMISE } from '@/lib/constants/marche'
 import { requireRole } from '@/lib/utils/permissions'
-import { filtreMarchesPeriode, filtreOpportunitesPeriode } from '@/lib/analytics/filtres'
+import { PERIODE_ILLIMITEE, filtreMarchesPeriode, filtreOpportunitesPeriode } from '@/lib/analytics/filtres'
 import type { Periode, PerformanceStats, FinancialStats, CapitalisationStats, SAVStats, OpportunitesStats } from '@/lib/analytics/types'
 import { STATUT_LABELS, TYPE_MARCHE_LABELS } from '@/lib/constants/marche'
 import { STATUT_OPPORTUNITE_LABELS } from '@/lib/validations/opportunite'
@@ -551,12 +551,16 @@ export async function getOpportunitesStats(periode: Periode): Promise<Opportunit
   }
 }
 
-/** Ce que l'onglet Analyses affiche : sans les calculs financiers et de capitalisation, réservés aux exports. */
+/**
+ * Ce que l'onglet Analyses affiche : sans les calculs financiers et de capitalisation, réservés aux exports.
+ * Les statuts de marchés et d'opportunités et le Top 10 des autorités montrent la situation actuelle
+ * (toutes dates) : un statut est un état d'aujourd'hui. Seul le SAV suit la période choisie.
+ */
 export async function getAnalyticsAffichees(periode: Periode) {
   const [performance, sav, opportunites] = await Promise.all([
-    getPerformanceStats(periode),
+    getPerformanceStats(PERIODE_ILLIMITEE),
     getSAVStats(periode),
-    getOpportunitesStats(periode),
+    getOpportunitesStats(PERIODE_ILLIMITEE),
   ])
   return { performance, sav, opportunites }
 }
