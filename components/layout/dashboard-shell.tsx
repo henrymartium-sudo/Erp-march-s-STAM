@@ -18,7 +18,6 @@ import {
   UserCircle,
   Users,
   ClipboardList,
-  BarChart2,
   Gauge,
   Receipt,
   Target,
@@ -57,11 +56,10 @@ const navItems = [
   { href: '/factures',              label: 'Facturation',  icon: Receipt },
   { href: '/opportunites',          label: 'Opportunités',    icon: Target },
   { href: '/documents',             label: 'Documents',        icon: FolderOpen },
-  { href: '/admin/alertes',         label: 'Alertes',      icon: Bell },
+  { href: '/admin/alertes',         label: 'Alertes et e-mails', icon: Bell },
   { href: '/admin/utilisateurs',    label: 'Utilisateurs', icon: Users, roles: ['ADMIN'] },
   { href: '/admin/audit-logs',      label: 'Journal des logs', icon: ClipboardList, roles: ['ADMIN'] },
   { href: '/pilotage',              label: 'Pilotage',         icon: Gauge,         roles: ['ADMIN', 'AVANCE'] },
-  { href: '/admin/reporting',      label: 'Reporting',        icon: BarChart2,     roles: ['ADMIN'] },
 ]
 
 const pageTitles: Record<string, string> = {
@@ -72,11 +70,10 @@ const pageTitles: Record<string, string> = {
   '/factures':           'Facturation',
   '/opportunites':       'Opportunités',
   '/documents':          'Documents',
-  '/admin/alertes':      'Alertes & Notifications',
+  '/admin/alertes':      'Alertes et e-mails',
   '/admin/utilisateurs': 'Gestion des utilisateurs',
   '/admin/audit-logs':   'Journal des logs',
   '/pilotage':           'Pilotage',
-  '/admin/reporting':    'Reporting Email',
   '/profil':             'Mon profil',
 }
 
