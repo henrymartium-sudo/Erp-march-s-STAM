@@ -132,6 +132,10 @@ test.describe('T12 — Permissions Véhicules (VISITEUR)', () => {
     await expect(page.getByRole('button', { name: /signaler une intervention/i })).not.toBeVisible();
     await page.close();
   });
+
+  test('T12-H : VISITEUR — pas de bouton Exporter sur /vehicules', async () => {
+    expect(await checkExportMenu(context, '/vehicules')).toBe(false);
+  });
 });
 
 // ─── Helpers T13 ──────────────────────────────────────────────────────────────

@@ -85,10 +85,12 @@ export async function SavVueGlobale() {
               {interventions.map((intervention) => (
                 <div
                   key={intervention.id}
-                  className="flex items-center justify-between gap-4 p-3 rounded-lg border"
+                  className="flex flex-col gap-2 p-3 rounded-lg border sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <StatutInterventionBadge statut={intervention.statut} size="sm" />
+                    <div className="shrink-0">
+                      <StatutInterventionBadge statut={intervention.statut} size="sm" />
+                    </div>
                     <div className="min-w-0">
                       <div className="text-sm font-medium flex items-center gap-2 flex-wrap">
                         {TYPE_INTERVENTION_LABELS[intervention.type]}
@@ -102,13 +104,14 @@ export async function SavVueGlobale() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
+                  <div className="flex items-center justify-between gap-3 sm:flex-shrink-0">
                     <span className="text-xs text-muted-foreground">
                       {formatDateLong(intervention.signaleAt.toISOString())}
                     </span>
+                    {/* p-2 -m-2 : zone tactile agrandie sans bouger la mise en page */}
                     <Link
                       href={`/vehicules/${intervention.vehiculeId}`}
-                      className="text-xs text-stam-accent hover:underline"
+                      className="p-2 -m-2 text-xs text-stam-accent hover:underline"
                     >
                       Voir →
                     </Link>

@@ -36,7 +36,8 @@ export default async function VehiculesPage({ searchParams }: VehiculesPageProps
   const session = await auth()
   const role = (session?.user as { role?: string } | undefined)?.role
   const userCanWrite = canWrite(role)
-  const userCanExportVehicules = canExport(role) || isExploitation(role)
+  // VISITEUR n'exporte pas les véhicules (décision d'Abel du 2026-11-11, remplace 6c173e2 pour ce module).
+  const userCanExportVehicules = (canExport(role) && role !== 'VISITEUR') || isExploitation(role)
 
   // Await searchParams (Next.js 15)
   const params = await searchParams
