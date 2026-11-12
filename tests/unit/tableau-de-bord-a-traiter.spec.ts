@@ -130,7 +130,7 @@ test('factures null : aucune ligne FACTURE_ECHUE', () => {
 test('facture émise le 2026-09-28 : échue le 2026-11-12, horizon semaine', () => {
   const [l] = construireATraiter(sources({ factures: [facture({ dateEmission: new Date('2026-09-28T08:00:00Z') })] }), AUJ).lignes
   expect(l).toMatchObject({ nature: 'FACTURE_ECHUE', horizon: 'semaine', href: '/factures/f1', montant: 1180 })
-  expect(l.echeance.toISOString().slice(0, 10)).toBe('2026-11-12')
+  expect(l?.echeance.toISOString().slice(0, 10)).toBe('2026-11-12')
 })
 
 test('manquants : opportunité GO sans dateLimite, marché EN_ATTENTE_LIVRAISON_OS sans dateLivraisonPrevue', () => {
