@@ -8,7 +8,8 @@ import type { ElementLie } from '@/lib/pilotage/calculs'
 import { PHASE_STATUTS, STATUTS_AVANT_SOUMISSION } from '@/lib/utils/opportunite-filters'
 import { horizonDe, joursDepuis, type Horizon } from './dates'
 
-/** Délai de paiement par défaut, en jours calendaires après le dépôt de la facture (décret 2022-080/PR, art. 145). */
+/** Délai de paiement par défaut, en jours calendaires après le dépôt de la facture (décret 2022-080/PR, art. 145),
+ * appliqué quand la facture n'a pas de date d'échéance saisie (décision d'Abel, 2026-11-12). */
 export const DELAI_PAIEMENT_DEFAUT = 45
 
 export type NatureEcheance =
@@ -26,7 +27,7 @@ export interface LigneATraiter {
 export interface OpportuniteEcheances { id: string; reference: string | null; objet: string; statut: StatutOpportunite; montantEstime: number | null; dateLimite: Date | null; periodeValiditeFin: Date | null; echeanceAttributionProv: Date | null }
 export interface MarcheEcheances { id: string; numero: string; objet: string; statut: StatutMarche; montant: number; dateLivraisonPrevue: Date | null; dateFinPrevue: Date | null; garantiesLiberees: boolean | null }
 export interface CautionEcheances { id: string; reference: string; type: TypeCaution; statut: StatutCaution; montant: number; dateEcheance: Date; opportunite: { id: string; statut: StatutOpportunite } | null; marche: { id: string; numero: string; statut: StatutMarche; garantiesLiberees: boolean | null } | null }
-export interface FactureEcheances { id: string; numero: string; marcheId: string; statut: StatutFacture; montantTTC: number; dateEmission: Date | null; datePaiement: Date | null }
+export interface FactureEcheances { id: string; numero: string; marcheId: string; statut: StatutFacture; montantTTC: number; dateEmission: Date | null; dateEcheance: Date | null; datePaiement: Date | null }
 /** `factures: null` = rôle sans accès aux finances. */
 export interface SourcesATraiter { opportunites: OpportuniteEcheances[]; marches: MarcheEcheances[]; cautions: CautionEcheances[]; factures: FactureEcheances[] | null }
 export interface ResultatATraiter { lignes: LigneATraiter[]; manquants: { opportunitesSansDateDepot: ElementLie[]; marchesSansDateLivraison: ElementLie[] } }
@@ -48,6 +49,12 @@ const MARCHES_TERMINES: StatutMarche[] = ['CLOTURE', 'RESILIE', 'ANNULE', 'INFRU
 const STATUTS_FACTURE_DUE: StatutFacture[] = ['EMISE', 'EN_ATTENTE']
 const ORDRE_HORIZON: Record<Horizon, number> = { retard: 0, semaine: 1, mois: 2 }
 const MS_JOUR = 24 * 60 * 60 * 1000
+
+/** Échéance de paiement : date saisie sur la facture, sinon émission + 45 jours ; null si aucune des deux. */
+export function echeanceFacture(f: Pick<FactureEcheances, 'dateEmission' | 'dateEcheance'>): Date | null {
+  if (f.dateEcheance) return f.dateEcheance
+  return f.dateEmission ? new Date(f.dateEmission.getTime() + DELAI_PAIEMENT_DEFAUT * MS_JOUR) : null
+}
 
 /** Une caution est encore nécessaire tant que l'offre est en cours ou que le marché n'est ni terminé ni libéré de ses garanties. */
 export function cautionEncoreNecessaire(c: CautionEcheances): boolean {
@@ -96,8 +103,8 @@ export function construireATraiter(s: SourcesATraiter, aujourdHui: Date): Result
   }
 
   for (const f of s.factures ?? []) {
-    if (!STATUTS_FACTURE_DUE.includes(f.statut) || !f.dateEmission || f.datePaiement) continue
-    const echeance = new Date(f.dateEmission.getTime() + DELAI_PAIEMENT_DEFAUT * MS_JOUR)
+    if (!STATUTS_FACTURE_DUE.includes(f.statut) || f.datePaiement) continue
+    const echeance = echeanceFacture(f)
     ajouter('FACTURE_ECHUE', f.id, echeance, { domaine: 'exec', reference: f.numero, href: `/factures/${f.id}`, montant: f.montantTTC })
   }
 

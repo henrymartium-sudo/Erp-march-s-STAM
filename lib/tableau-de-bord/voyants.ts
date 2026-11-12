@@ -9,7 +9,7 @@ import {
   type ElementLie, type LotPilotage, type StatutFactureLite,
 } from '@/lib/pilotage/calculs'
 import { STATUTS_AVANT_SOUMISSION } from '@/lib/utils/opportunite-filters'
-import { cautionEncoreNecessaire, DELAI_PAIEMENT_DEFAUT, type CautionEcheances, type FactureEcheances } from './a-traiter'
+import { cautionEncoreNecessaire, DELAI_PAIEMENT_DEFAUT, echeanceFacture, type CautionEcheances, type FactureEcheances } from './a-traiter'
 import { joursDepuis } from './dates'
 
 export type EtatVoyant = 'vert' | 'ambre' | 'rouge' | 'gris'
@@ -21,34 +21,37 @@ export interface DetailEncaissements {
   pourcentageEnRetard: number
   totalNonEncaisse: number
   enRetard: number
-  /** Montants TTC non encaissés par ancienneté depuis l'émission (factures datées seulement). */
-  anciennete: { dansDelai: number; de46a90: number; plusDe90: number }
+  /** Montants TTC non encaissés selon le retard sur l'échéance (factures datées seulement). */
+  anciennete: { dansDelai: number; retard1a45: number; retardPlusDe45: number }
   facturesSansDate: ElementLie[]
 }
 
 const SEUIL_ENCAISSEMENTS_AMBRE = 20
 const SEUIL_ENCAISSEMENTS_ROUGE = 40
-const JOURS_ANCIENNETE_ROUGE = 90
+/** Retard au-delà duquel une seule facture suffit pour le rouge (90 j après émission avec le délai par défaut). */
+const JOURS_RETARD_ROUGE = DELAI_PAIEMENT_DEFAUT
 
 export function voyantEncaissements(factures: FactureEcheances[], aujourdHui: Date): Voyant<DetailEncaissements> {
   const detail: DetailEncaissements = {
     pourcentageEnRetard: 0, totalNonEncaisse: 0, enRetard: 0,
-    anciennete: { dansDelai: 0, de46a90: 0, plusDe90: 0 }, facturesSansDate: [],
+    anciennete: { dansDelai: 0, retard1a45: 0, retardPlusDe45: 0 }, facturesSansDate: [],
   }
+  let uneTresAncienne = false
   for (const f of factures) {
     if ((f.statut !== 'EMISE' && f.statut !== 'EN_ATTENTE') || f.datePaiement) continue
     detail.totalNonEncaisse += f.montantTTC
-    if (!f.dateEmission) { detail.facturesSansDate.push({ libelle: f.numero, href: `/factures/${f.id}` }); continue }
-    const jours = joursDepuis(f.dateEmission, aujourdHui)
-    if (jours <= DELAI_PAIEMENT_DEFAUT) detail.anciennete.dansDelai += f.montantTTC
-    else if (jours <= JOURS_ANCIENNETE_ROUGE) detail.anciennete.de46a90 += f.montantTTC
-    else detail.anciennete.plusDe90 += f.montantTTC
+    const echeance = echeanceFacture(f)
+    if (!echeance) { detail.facturesSansDate.push({ libelle: f.numero, href: `/factures/${f.id}` }); continue }
+    const retard = joursDepuis(echeance, aujourdHui)
+    if (retard <= 0) detail.anciennete.dansDelai += f.montantTTC
+    else if (retard <= JOURS_RETARD_ROUGE) detail.anciennete.retard1a45 += f.montantTTC
+    else { detail.anciennete.retardPlusDe45 += f.montantTTC; uneTresAncienne = true }
   }
-  detail.enRetard = detail.anciennete.de46a90 + detail.anciennete.plusDe90
+  detail.enRetard = detail.anciennete.retard1a45 + detail.anciennete.retardPlusDe45
   detail.pourcentageEnRetard = detail.totalNonEncaisse > 0 ? Math.round((detail.enRetard / detail.totalNonEncaisse) * 100) : 0
 
   const etat: EtatVoyant =
-    detail.pourcentageEnRetard >= SEUIL_ENCAISSEMENTS_ROUGE || detail.anciennete.plusDe90 > 0 ? 'rouge'
+    detail.pourcentageEnRetard >= SEUIL_ENCAISSEMENTS_ROUGE || uneTresAncienne ? 'rouge'
       : detail.pourcentageEnRetard >= SEUIL_ENCAISSEMENTS_AMBRE ? 'ambre'
         : 'vert'
   return { etat, detail }

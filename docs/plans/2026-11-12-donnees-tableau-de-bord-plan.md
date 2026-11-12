@@ -19,6 +19,7 @@
 - **EXPLOITATION** : les lignes et voyants qui portent sur des marchés suivent `getMarcheStatutRestriction(role)` (marchés `EN_EXECUTION` seulement).
 - Dates comparées **au jour calendaire UTC** (Togo = UTC+0). `aujourdHui` est toujours un paramètre des fonctions pures, jamais `new Date()` en dur.
 - Délai de paiement par défaut : **45 jours calendaires** après la date de dépôt de la facture (décret 2022-080/PR, art. 145). La date de dépôt est `Facture.dateEmission` (hypothèse : aucun autre champ n'existe).
+- **Révision du 2026-11-12 (relecture finale, choix d'Abel)** : `Facture.dateEcheance` existe et est saisie dans le formulaire. Une facture est en retard après sa date d'échéance si elle est saisie, sinon après émission + 45 jours. Les tranches du voyant 1 deviennent « dans le délai / en retard de 1 à 45 j / en retard de plus de 45 j » ; le rouge par ancienneté vaut « une facture en retard de plus de 45 j ».
 - Libellés et commentaires en français. Validation Zod côté serveur si l'action reçoit une entrée.
 
 ## Review Focus

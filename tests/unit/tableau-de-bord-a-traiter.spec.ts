@@ -36,7 +36,7 @@ function facture(p: Partial<FactureEcheances>): FactureEcheances {
   return {
     id: p.id ?? 'f1', numero: p.numero ?? 'F-1', marcheId: p.marcheId ?? 'm1', statut: p.statut ?? 'EMISE',
     montantTTC: p.montantTTC ?? 1180, dateEmission: p.dateEmission === undefined ? J(-40) : p.dateEmission,
-    datePaiement: p.datePaiement ?? null,
+    dateEcheance: p.dateEcheance ?? null, datePaiement: p.datePaiement ?? null,
   }
 }
 function sources(p: Partial<SourcesATraiter>): SourcesATraiter {
@@ -145,4 +145,11 @@ test('manquants : opportunité GO sans dateLimite, marché EN_ATTENTE_LIVRAISON_
   }), AUJ)
   expect(r.manquants.opportunitesSansDateDepot.map((e) => e.href)).toEqual(['/opportunites/o1'])
   expect(r.manquants.marchesSansDateLivraison.map((e) => e.href)).toEqual(['/marches/m1'])
+})
+
+test('FACTURE_ECHUE : l’échéance saisie remplace émission + 45 j', () => {
+  const [l] = construireATraiter(sources({ factures: [facture({ dateEmission: J(-60), dateEcheance: J(5) })] }), AUJ).lignes
+  expect(l).toMatchObject({ nature: 'FACTURE_ECHUE', horizon: 'semaine' })
+  expect(l?.echeance.toISOString().slice(0, 10)).toBe('2026-11-17')
+  expect(natures(sources({ factures: [facture({ dateEmission: null, dateEcheance: J(2) })] }))).toEqual(['FACTURE_ECHUE'])
 })

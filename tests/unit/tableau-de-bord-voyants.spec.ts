@@ -16,7 +16,7 @@ function facture(p: Partial<FactureEcheances>): FactureEcheances {
   return {
     id: p.id ?? `f${n}`, numero: p.numero ?? `F-${n}`, marcheId: 'm1', statut: p.statut ?? 'EMISE',
     montantTTC: p.montantTTC ?? 100, dateEmission: p.dateEmission === undefined ? J(-10) : p.dateEmission,
-    datePaiement: p.datePaiement ?? null,
+    dateEcheance: p.dateEcheance ?? null, datePaiement: p.datePaiement ?? null,
   }
 }
 /** Deux factures : `enRetard` à 60 jours, le reste à 10 jours, total 100. */
@@ -43,14 +43,14 @@ test('une facture à 91 j suffit pour le rouge, même à 5 %', () => {
   const v = voyantEncaissements([facture({ montantTTC: 5, dateEmission: J(-91) }), facture({ montantTTC: 95 })], AUJ)
   expect(v.etat).toBe('rouge')
   expect(v.detail.pourcentageEnRetard).toBe(5)
-  expect(v.detail.anciennete).toEqual({ dansDelai: 95, de46a90: 0, plusDe90: 5 })
+  expect(v.detail.anciennete).toEqual({ dansDelai: 95, retard1a45: 0, retardPlusDe45: 5 })
 })
 
 test('facture sans dateEmission : dans le total, dans facturesSansDate, ni en retard ni dans le délai', () => {
   const v = voyantEncaissements([facture({ id: 'fx', numero: 'F-X', montantTTC: 50, dateEmission: null }), facture({ montantTTC: 50 })], AUJ)
   expect(v.detail.totalNonEncaisse).toBe(100)
   expect(v.detail.enRetard).toBe(0)
-  expect(v.detail.anciennete).toEqual({ dansDelai: 50, de46a90: 0, plusDe90: 0 })
+  expect(v.detail.anciennete).toEqual({ dansDelai: 50, retard1a45: 0, retardPlusDe45: 0 })
   expect(v.detail.facturesSansDate).toEqual([{ libelle: 'F-X', href: '/factures/fx' }])
 })
 
@@ -218,4 +218,30 @@ test('aucun lot : gris, sans NaN', () => {
 
 test('lot déposé il y a plus de 24 mois : hors calcul', () => {
   expect(voyantTauxSucces([...lots(5, 0, 30), ...lots(0, 50, 800)], AUJ).detail.taux24Mois).toBe(100)
+})
+
+// ── Échéance saisie sur la facture (décision d'Abel, 2026-11-12) ────────────
+
+test('échéance saisie dans le futur : dans le délai, même émise il y a 60 j', () => {
+  const v = voyantEncaissements([facture({ dateEmission: J(-60), dateEcheance: J(5) })], AUJ)
+  expect(v.detail.enRetard).toBe(0)
+  expect(v.etat).toBe('vert')
+})
+
+test('échéance saisie dépassée de 10 j : en retard de 1 à 45 j', () => {
+  const v = voyantEncaissements([facture({ dateEmission: J(-20), dateEcheance: J(-10) })], AUJ)
+  expect(v.detail.anciennete).toEqual({ dansDelai: 0, retard1a45: 100, retardPlusDe45: 0 })
+  expect(v.etat).toBe('rouge') // 100 % en retard
+})
+
+test('échéance saisie dépassée de 46 j : rouge, même à 5 %', () => {
+  const v = voyantEncaissements([facture({ montantTTC: 5, dateEmission: J(-50), dateEcheance: J(-46) }), facture({ montantTTC: 95 })], AUJ)
+  expect(v.etat).toBe('rouge')
+  expect(v.detail.anciennete.retardPlusDe45).toBe(5)
+})
+
+test('échéance saisie sans date d’émission : datée, pas dans facturesSansDate', () => {
+  const v = voyantEncaissements([facture({ dateEmission: null, dateEcheance: J(-3) })], AUJ)
+  expect(v.detail.facturesSansDate).toEqual([])
+  expect(v.detail.enRetard).toBe(100)
 })

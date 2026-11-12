@@ -137,7 +137,7 @@ export async function getTableauDeBordData(): Promise<TableauDeBordData> {
       ? capturerOperation(async (): Promise<FactureEcheances[]> => {
         const rows = await prisma.facture.findMany({
           where: { statut: { in: ['EMISE', 'EN_ATTENTE'] }, datePaiement: null },
-          select: { id: true, numero: true, marcheId: true, statut: true, montantTTC: true, dateEmission: true, datePaiement: true },
+          select: { id: true, numero: true, marcheId: true, statut: true, montantTTC: true, dateEmission: true, dateEcheance: true, datePaiement: true },
         })
         return rows.map((f) => ({ ...f, montantTTC: Number(f.montantTTC) }))
       })
