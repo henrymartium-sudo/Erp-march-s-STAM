@@ -8,7 +8,7 @@ import { PHASE_STATUTS } from '@/lib/utils/opportunite-filters'
 import { capturerOperation, type ResultatOperation } from '@/lib/pilotage/capturer-operation'
 import { intituleLot, type LotPilotage, type StatutFactureLite } from '@/lib/pilotage/calculs'
 import { JOURS_MOIS } from '@/lib/tableau-de-bord/dates'
-import { droitsTableauDeBord } from '@/lib/tableau-de-bord/droits'
+import { droitsTableauDeBord, masquerMontantsATraiter, masquerMontantsPipeline } from '@/lib/tableau-de-bord/droits'
 import {
   construireATraiter,
   type CautionEcheances, type FactureEcheances, type MarcheEcheances, type OpportuniteEcheances, type ResultatATraiter,
@@ -17,19 +17,23 @@ import {
   voyantCautions, voyantDepots, voyantEncaissements, voyantResteAFacturer, voyantTauxSucces,
   type DetailEncaissements, type DetailResteAFacturer, type MarcheReception, type OpportuniteDepot, type Voyant,
 } from '@/lib/tableau-de-bord/voyants'
-import { calculerPipeline } from '@/lib/tableau-de-bord/pipeline'
+import { calculerPipeline, type ResultatPipeline } from '@/lib/tableau-de-bord/pipeline'
 
 export type BlocTableauDeBord<T> = { status: 'success'; value: T } | { status: 'error'; message: string }
 
 export interface TableauDeBordData {
+  /** Montants à null pour les rôles sans finances. */
   aTraiter: BlocTableauDeBord<ResultatATraiter>
-  pipeline: BlocTableauDeBord<ReturnType<typeof calculerPipeline>>
+  /** null = rôle sans accès à la passation (EXPLOITATION) ; montants à null pour les rôles sans finances. */
+  pipeline: BlocTableauDeBord<ResultatPipeline> | null
   voyants: {
     /** null = rôle sans accès aux finances */
     encaissements: BlocTableauDeBord<Voyant<DetailEncaissements>> | null
     cautions: BlocTableauDeBord<ReturnType<typeof voyantCautions>>
-    tauxSucces: BlocTableauDeBord<ReturnType<typeof voyantTauxSucces>>
-    depots: BlocTableauDeBord<ReturnType<typeof voyantDepots>>
+    /** null = rôle sans accès à la passation */
+    tauxSucces: BlocTableauDeBord<ReturnType<typeof voyantTauxSucces>> | null
+    /** null = rôle sans accès à la passation */
+    depots: BlocTableauDeBord<ReturnType<typeof voyantDepots>> | null
     resteAFacturer: BlocTableauDeBord<Voyant<DetailResteAFacturer>> | null
   }
 }
@@ -62,7 +66,8 @@ export async function getTableauDeBordData(): Promise<TableauDeBordData> {
   const debut24Mois = new Date(Date.UTC(aujourdHui.getUTCFullYear(), aujourdHui.getUTCMonth() - 24, aujourdHui.getUTCDate()))
 
   const [opportunites, marches, cautions, lots, factures, marchesReception] = await Promise.all([
-    capturerOperation(async () => {
+    // Passation : aucune requête sur les opportunités ni les lots sans le droit (EXPLOITATION).
+    !droits.passation ? null : capturerOperation(async () => {
       const rows = await prisma.opportunite.findMany({
         where: { statut: { in: PHASE_STATUTS['en-cours'] } },
         select: {
@@ -112,7 +117,7 @@ export async function getTableauDeBordData(): Promise<TableauDeBordData> {
       })
       return rows.map((c) => ({ ...c, montant: Number(c.montant) }))
     }),
-    capturerOperation(async (): Promise<LotPilotage[]> => {
+    !droits.passation ? null : capturerOperation(async (): Promise<LotPilotage[]> => {
       // Même lecture que getPilotageData (lib/actions/pilotage.ts), limitée aux 24 derniers mois.
       const rows = await prisma.lot.findMany({
         where: { opportunite: { dateLimite: { gte: debut24Mois } } },
@@ -156,30 +161,35 @@ export async function getTableauDeBordData(): Promise<TableauDeBordData> {
       : null,
   ])
 
-  const lecturesATraiter = factures ? [opportunites, marches, cautions, factures] : [opportunites, marches, cautions]
+  const lecturesATraiter = [opportunites, marches, cautions, factures].filter((l) => l !== null)
   const [aTraiter, pipeline, vCautions, vTaux, vDepots, vEncaissements, vReste] = await Promise.all([
     depuis(lecturesATraiter, () => construireATraiter({
-      opportunites: valeur(opportunites).map((o) => o.echeances),
+      opportunites: opportunites ? valeur(opportunites).map((o) => o.echeances) : [],
       marches: valeur(marches),
       cautions: valeur(cautions),
       factures: factures ? valeur(factures) : null,
     }, aujourdHui)),
-    depuis([opportunites], () => calculerPipeline(valeur(opportunites).map((o) => o.echeances))),
+    opportunites ? depuis([opportunites], () => calculerPipeline(valeur(opportunites).map((o) => o.echeances))) : null,
     depuis([cautions], () => voyantCautions(valeur(cautions), aujourdHui)),
-    depuis([lots], () => voyantTauxSucces(valeur(lots), aujourdHui)),
-    depuis([opportunites], () => voyantDepots(valeur(opportunites).map((o) => o.depot), aujourdHui)),
+    lots ? depuis([lots], () => voyantTauxSucces(valeur(lots), aujourdHui)) : null,
+    opportunites ? depuis([opportunites], () => voyantDepots(valeur(opportunites).map((o) => o.depot), aujourdHui)) : null,
     factures ? depuis([factures], () => voyantEncaissements(valeur(factures), aujourdHui)) : null,
     marchesReception ? depuis([marchesReception], () => voyantResteAFacturer(valeur(marchesReception), aujourdHui)) : null,
   ])
 
+  // Montants masqués aux rôles sans finances (VISITEUR, EXPLOITATION).
+  const aTraiterPublie = publierBloc('à traiter', aTraiter)
+  const pipelinePublie = pipeline ? publierBloc('pipeline', pipeline) : null
   return {
-    aTraiter: publierBloc('à traiter', aTraiter),
-    pipeline: publierBloc('pipeline', pipeline),
+    aTraiter: aTraiterPublie.status === 'success' && !droits.finances
+      ? { status: 'success', value: masquerMontantsATraiter(aTraiterPublie.value) } : aTraiterPublie,
+    pipeline: pipelinePublie?.status === 'success' && !droits.finances
+      ? { status: 'success', value: masquerMontantsPipeline(pipelinePublie.value) } : pipelinePublie,
     voyants: {
       encaissements: vEncaissements ? publierBloc('encaissements', vEncaissements) : null,
       cautions: publierBloc('cautions', vCautions),
-      tauxSucces: publierBloc('taux de succès', vTaux),
-      depots: publierBloc('dépôts', vDepots),
+      tauxSucces: vTaux ? publierBloc('taux de succès', vTaux) : null,
+      depots: vDepots ? publierBloc('dépôts', vDepots) : null,
       resteAFacturer: vReste ? publierBloc('reste à facturer', vReste) : null,
     },
   }

@@ -14,7 +14,13 @@ export const PHASES_PIPELINE: { statut: StatutOpportunite; libelle: string; incl
   { statut: 'ATTRIBUE_PROVISOIREMENT', libelle: 'Attribuée provisoirement', inclut: ['ATTRIBUE_PROVISOIREMENT'] },
 ]
 
-export function calculerPipeline(opps: { statut: StatutOpportunite; montantEstime: number | null }[]) {
+/** `montant` vaut null quand le rôle n'a pas accès aux montants. */
+export interface ResultatPipeline {
+  phases: { statut: StatutOpportunite; libelle: string; nombre: number; montant: number | null; href: string }[]
+  total: { nombre: number; montant: number | null }
+}
+
+export function calculerPipeline(opps: { statut: StatutOpportunite; montantEstime: number | null }[]): ResultatPipeline {
   const phases = PHASES_PIPELINE.map(({ statut, libelle, inclut }) => {
     const dans = opps.filter((o) => inclut.includes(o.statut))
     return {
@@ -26,6 +32,6 @@ export function calculerPipeline(opps: { statut: StatutOpportunite; montantEstim
   })
   return {
     phases,
-    total: { nombre: phases.reduce((s, p) => s + p.nombre, 0), montant: phases.reduce((s, p) => s + p.montant, 0) },
+    total: { nombre: phases.reduce((s, p) => s + p.nombre, 0), montant: phases.reduce((s, p) => s + (p.montant ?? 0), 0) },
   }
 }
