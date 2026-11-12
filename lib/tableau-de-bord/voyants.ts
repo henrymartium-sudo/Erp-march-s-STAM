@@ -3,9 +3,13 @@
  * Règles et seuils : Journal de décisions, 2026-11-12, « règles des cinq voyants du tableau de bord ».
  */
 
-import type { StatutMarche } from '@prisma/client'
-import { montantFacture, TOLERANCE_FACTURE, type ElementLie, type StatutFactureLite } from '@/lib/pilotage/calculs'
-import { DELAI_PAIEMENT_DEFAUT, type FactureEcheances } from './a-traiter'
+import type { StatutMarche, StatutOpportunite, StatutPiece } from '@prisma/client'
+import {
+  calculerIssueOffres, montantFacture, TOLERANCE_FACTURE,
+  type ElementLie, type LotPilotage, type StatutFactureLite,
+} from '@/lib/pilotage/calculs'
+import { STATUTS_AVANT_SOUMISSION } from '@/lib/utils/opportunite-filters'
+import { cautionEncoreNecessaire, DELAI_PAIEMENT_DEFAUT, type CautionEcheances, type FactureEcheances } from './a-traiter'
 import { joursDepuis } from './dates'
 
 export type EtatVoyant = 'vert' | 'ambre' | 'rouge' | 'gris'
@@ -70,4 +74,88 @@ export function voyantResteAFacturer(marches: MarcheReception[], aujourdHui: Dat
   const plusAncien = Math.max(-Infinity, ...detail.marches.map((m) => m.joursDepuisReception))
   const etat: EtatVoyant = plusAncien > JOURS_RESTE_ROUGE ? 'rouge' : plusAncien > JOURS_RESTE_AMBRE ? 'ambre' : 'vert'
   return { etat, detail }
+}
+
+// ── 2. Cautions encore nécessaires ──────────────────────────────────────────
+
+const JOURS_CAUTION_ROUGE = 7
+const JOURS_CAUTION_AMBRE = 30
+
+export function voyantCautions(
+  cautions: CautionEcheances[], aujourdHui: Date,
+): Voyant<{ sous30: number; plusProcheDansJours: number | null; elements: ElementLie[] }> {
+  const suivies = cautions
+    .filter((c) => (c.statut === 'ACTIVE' || c.statut === 'EXPIREE') && cautionEncoreNecessaire(c))
+    .map((c) => ({ c, dansJours: -joursDepuis(c.dateEcheance, aujourdHui) }))
+    .sort((a, b) => a.dansJours - b.dansJours)
+  const sous30 = suivies.filter((s) => s.dansJours <= JOURS_CAUTION_AMBRE)
+  const plusProche = sous30[0]?.dansJours ?? null
+  const etat: EtatVoyant = plusProche === null ? 'vert' : plusProche <= JOURS_CAUTION_ROUGE ? 'rouge' : 'ambre'
+  return {
+    etat,
+    detail: {
+      sous30: sous30.length,
+      plusProcheDansJours: plusProche,
+      elements: sous30.map(({ c }) => ({ libelle: c.reference, href: `/cautions/${c.id}` })),
+    },
+  }
+}
+
+// ── 3. Dépôts sous 14 jours ─────────────────────────────────────────────────
+
+/** `piecesObligatoires` : pièces obligatoires communes et propres à chaque lot, seules transmises. */
+export interface OpportuniteDepot { id: string; reference: string | null; objet: string; statut: StatutOpportunite; dateLimite: Date | null; aUnDossier: boolean; piecesObligatoires: { statut: StatutPiece }[] }
+
+const JOURS_DEPOTS = 14
+const JOURS_DEPOT_ROUGE = 3
+
+export function voyantDepots(
+  opps: OpportuniteDepot[], aujourdHui: Date,
+): Voyant<{ nonPrets: number; depotsSous14: number; elements: ElementLie[] }> {
+  let rouge = false
+  const proches = opps
+    .filter((o) => STATUTS_AVANT_SOUMISSION.includes(o.statut) && o.dateLimite)
+    .map((o) => ({ o, dansJours: -joursDepuis(o.dateLimite!, aujourdHui) }))
+    .filter((p) => p.dansJours >= 0 && p.dansJours <= JOURS_DEPOTS)
+  const nonPrets = proches.filter(({ o, dansJours }) => {
+    const prete = o.aUnDossier && o.piecesObligatoires.length > 0
+      && o.piecesObligatoires.every((p) => p.statut === 'COMPLET' || p.statut === 'VALIDE')
+    if (!prete && (!o.aUnDossier || dansJours <= JOURS_DEPOT_ROUGE)) rouge = true
+    return !prete
+  })
+  return {
+    etat: rouge ? 'rouge' : nonPrets.length > 0 ? 'ambre' : 'vert',
+    detail: {
+      nonPrets: nonPrets.length,
+      depotsSous14: proches.length,
+      elements: nonPrets.map(({ o }) => ({ libelle: o.reference ?? o.objet, href: `/opportunites/${o.id}` })),
+    },
+  }
+}
+
+// ── 4. Taux de succès sur 6 mois ────────────────────────────────────────────
+
+export const MIN_RESULTATS_TAUX = 5
+const ECART_TAUX_AMBRE = 10
+const ECART_TAUX_ROUGE = 20
+
+function moisAvant(d: Date, mois: number): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - mois, d.getUTCDate()))
+}
+
+export function voyantTauxSucces(
+  lots: LotPilotage[], aujourdHui: Date,
+): Voyant<{ taux6Mois: number | null; taux24Mois: number | null; resultats6Mois: number; ecartPoints: number | null }> {
+  const finJour = new Date(Date.UTC(aujourdHui.getUTCFullYear(), aujourdHui.getUTCMonth(), aujourdHui.getUTCDate(), 23, 59, 59, 999))
+  const sur6 = calculerIssueOffres(lots, { dateDebut: moisAvant(aujourdHui, 6), dateFin: finJour })
+  const sur24 = calculerIssueOffres(lots, { dateDebut: moisAvant(aujourdHui, 24), dateFin: finJour })
+  const resultats6Mois = sur6.gagnes.nombre + sur6.perdus.nombre
+  const taux6Mois = sur6.tauxSucces
+  const taux24Mois = sur24.tauxSucces
+  if (resultats6Mois < MIN_RESULTATS_TAUX || taux6Mois === null || taux24Mois === null) {
+    return { etat: 'gris', detail: { taux6Mois, taux24Mois, resultats6Mois, ecartPoints: null } }
+  }
+  const ecartPoints = taux24Mois - taux6Mois
+  const etat: EtatVoyant = ecartPoints >= ECART_TAUX_ROUGE ? 'rouge' : ecartPoints >= ECART_TAUX_AMBRE ? 'ambre' : 'vert'
+  return { etat, detail: { taux6Mois, taux24Mois, resultats6Mois, ecartPoints } }
 }

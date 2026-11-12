@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test'
-import { voyantEncaissements, voyantResteAFacturer, type MarcheReception } from '../../lib/tableau-de-bord/voyants'
-import type { FactureEcheances } from '../../lib/tableau-de-bord/a-traiter'
+import {
+  voyantEncaissements, voyantResteAFacturer, voyantCautions, voyantDepots, voyantTauxSucces,
+  type MarcheReception, type OpportuniteDepot,
+} from '../../lib/tableau-de-bord/voyants'
+import type { FactureEcheances, CautionEcheances } from '../../lib/tableau-de-bord/a-traiter'
+import type { LotPilotage } from '../../lib/pilotage/calculs'
 
 const AUJ = new Date('2026-11-12T10:00:00Z')
 /** Date à J+n (n négatif = passé). */
@@ -100,4 +104,118 @@ test('marché RESILIE réceptionné : ignoré', () => {
 
 test('marché sans date de réception : ignoré', () => {
   expect(voyantResteAFacturer([marche({ dateReception: null })], AUJ).detail.marches).toEqual([])
+})
+
+// ── Voyants 2, 3, 4 ─────────────────────────────────────────────────────────
+
+function caution(p: Partial<CautionEcheances>): CautionEcheances {
+  return {
+    id: p.id ?? 'c1', reference: p.reference ?? 'C-1', type: p.type ?? 'BONNE_EXECUTION', statut: p.statut ?? 'ACTIVE',
+    montant: 300, dateEcheance: p.dateEcheance ?? J(60),
+    opportunite: p.opportunite === undefined ? null : p.opportunite,
+    marche: p.marche === undefined ? { id: 'm1', numero: 'M-1', statut: 'EN_EXECUTION', garantiesLiberees: null } : p.marche,
+  }
+}
+
+test('caution nécessaire à J+6 : rouge', () => {
+  const v = voyantCautions([caution({ dateEcheance: J(6) }), caution({ id: 'c2', dateEcheance: J(60) })], AUJ)
+  expect(v.etat).toBe('rouge')
+  expect(v.detail).toEqual({ sous30: 1, plusProcheDansJours: 6, elements: [{ libelle: 'C-1', href: '/cautions/c1' }] })
+})
+
+test('à J+18 : ambre', () => {
+  expect(voyantCautions([caution({ dateEcheance: J(18) })], AUJ).etat).toBe('ambre')
+})
+
+test('expirée hier : rouge', () => {
+  const v = voyantCautions([caution({ statut: 'EXPIREE', dateEcheance: J(-1) })], AUJ)
+  expect(v.etat).toBe('rouge')
+  expect(v.detail.plusProcheDansJours).toBe(-1)
+})
+
+test('caution de soumission sur opportunité PERDUE à J+2 : ignorée', () => {
+  const v = voyantCautions([caution({ type: 'SOUMISSION', dateEcheance: J(2), opportunite: { id: 'o1', statut: 'PERDUE' }, marche: null })], AUJ)
+  expect(v.etat).toBe('vert')
+  expect(v.detail).toEqual({ sous30: 0, plusProcheDansJours: null, elements: [] })
+})
+
+function depot(p: Partial<OpportuniteDepot>): OpportuniteDepot {
+  return {
+    id: p.id ?? 'o1', reference: p.reference ?? 'AO-1', objet: 'Véhicules', statut: p.statut ?? 'DOSSIER_EN_PREPARATION',
+    dateLimite: p.dateLimite === undefined ? J(10) : p.dateLimite, aUnDossier: p.aUnDossier ?? true,
+    piecesObligatoires: p.piecesObligatoires ?? [{ statut: 'COMPLET' }, { statut: 'VALIDE' }],
+  }
+}
+
+test('dépôt à J+4 avec une pièce obligatoire ABSENT : ambre', () => {
+  const v = voyantDepots([depot({ dateLimite: J(4), piecesObligatoires: [{ statut: 'COMPLET' }, { statut: 'ABSENT' }] })], AUJ)
+  expect(v.etat).toBe('ambre')
+  expect(v.detail).toEqual({ nonPrets: 1, depotsSous14: 1, elements: [{ libelle: 'AO-1', href: '/opportunites/o1' }] })
+})
+
+test('à J+3 : rouge', () => {
+  expect(voyantDepots([depot({ dateLimite: J(3), piecesObligatoires: [{ statut: 'INCOMPLET' }] })], AUJ).etat).toBe('rouge')
+})
+
+test('à J+10 sans dossier : rouge', () => {
+  expect(voyantDepots([depot({ dateLimite: J(10), aUnDossier: false, piecesObligatoires: [] })], AUJ).etat).toBe('rouge')
+})
+
+test('pièce facultative ABSENT : prête', () => {
+  // seules les pièces obligatoires sont transmises : une facultative absente ne compte pas
+  const v = voyantDepots([depot({ dateLimite: J(2) })], AUJ)
+  expect(v.etat).toBe('vert')
+  expect(v.detail).toEqual({ nonPrets: 0, depotsSous14: 1, elements: [] })
+})
+
+test('dossier sans aucune pièce obligatoire : non prêt', () => {
+  expect(voyantDepots([depot({ dateLimite: J(10), piecesObligatoires: [] })], AUJ).etat).toBe('ambre')
+})
+
+test('dépôt à J+15 : ignoré', () => {
+  const v = voyantDepots([depot({ dateLimite: J(15), aUnDossier: false })], AUJ)
+  expect(v.etat).toBe('vert')
+  expect(v.detail.depotsSous14).toBe(0)
+})
+
+let nl = 0
+/** `g` lots gagnés et `p` perdus déposés il y a `jours` jours. */
+function lots(g: number, p: number, jours: number): LotPilotage[] {
+  const un = (resultat: LotPilotage['resultat']): LotPilotage => ({
+    id: `l${++nl}`, opportuniteId: 'o1', libelle: 'AO — Lot', resultat, montantPropose: 100, montantOffreConcurrent: null,
+    dateDepot: J(-jours), soumis: true, motifRenseigne: true, autorite: 'X', concurrentGagnant: null, motif: null,
+  })
+  return [...Array.from({ length: g }, () => un('GAGNE')), ...Array.from({ length: p }, () => un('PERDU'))]
+}
+
+test('4 résultats sur 6 mois : gris', () => {
+  const v = voyantTauxSucces([...lots(2, 2, 30), ...lots(10, 10, 400)], AUJ)
+  expect(v.etat).toBe('gris')
+  expect(v.detail.resultats6Mois).toBe(4)
+})
+
+test('6 mois 33 %, 24 mois 45 % : ambre, écart 12', () => {
+  const v = voyantTauxSucces([...lots(2, 4, 30), ...lots(7, 7, 400)], AUJ)
+  expect(v.etat).toBe('ambre')
+  expect(v.detail).toEqual({ taux6Mois: 33, taux24Mois: 45, resultats6Mois: 6, ecartPoints: 12 })
+})
+
+test('écart 20 : rouge', () => {
+  const v = voyantTauxSucces([...lots(2, 8, 30), ...lots(6, 4, 400)], AUJ)
+  expect(v.detail.ecartPoints).toBe(20)
+  expect(v.etat).toBe('rouge')
+})
+
+test('écart 9 : vert', () => {
+  const v = voyantTauxSucces([...lots(2, 3, 30), ...lots(47, 48, 400)], AUJ)
+  expect(v.detail.ecartPoints).toBe(9)
+  expect(v.etat).toBe('vert')
+})
+
+test('aucun lot : gris, sans NaN', () => {
+  expect(voyantTauxSucces([], AUJ)).toEqual({ etat: 'gris', detail: { taux6Mois: null, taux24Mois: null, resultats6Mois: 0, ecartPoints: null } })
+})
+
+test('lot déposé il y a plus de 24 mois : hors calcul', () => {
+  expect(voyantTauxSucces([...lots(5, 0, 30), ...lots(0, 50, 800)], AUJ).detail.taux24Mois).toBe(100)
 })
