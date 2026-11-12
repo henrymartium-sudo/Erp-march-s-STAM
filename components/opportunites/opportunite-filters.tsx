@@ -137,6 +137,7 @@ export function OpportuniteFilters({ phaseCounts, filteredCount, children }: Opp
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="tous">Tous les statuts</SelectItem>
+                {statut.includes(',') && <SelectItem value={statut}>Plusieurs statuts</SelectItem>}
                 {statutsProposes.map((s) => (
                   <SelectItem key={s} value={s}>
                     {STATUT_OPPORTUNITE_LABELS[s]}

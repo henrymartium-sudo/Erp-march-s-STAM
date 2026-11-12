@@ -14,7 +14,7 @@ import {
   requireDelete,
 } from '@/lib/utils/permissions'
 import type { ActionResult } from '@/types'
-import type { Vehicule, StatutVehicule } from '@prisma/client'
+import type { Vehicule } from '@prisma/client'
 import { Prisma } from '@prisma/client'
 import { ZodError } from 'zod'
 import type { PaginatedResponse } from '@/types/pagination'
@@ -447,62 +447,6 @@ export async function getVehiculesArray(
 ): Promise<VehiculeWithRelations[]> {
   const result = await getVehicules({ ...filters, limit: 10000 })
   return result.success ? result.data.data : []
-}
-
-// ============================================================================
-// STATISTIQUES
-// ============================================================================
-
-export interface VehiculesStats {
-  total: number
-  parStatut: Record<StatutVehicule, number>
-  livres: number
-  enAttenteLivraison: number
-  enService: number
-}
-
-export async function getVehiculesStats(): Promise<ActionResult<VehiculesStats>> {
-  try {
-    await requireAuth()
-
-    // Récupérer tous les véhicules pour calculer les stats
-    const vehicules = await prisma.vehicule.findMany({
-      select: {
-        statut: true,
-      },
-    })
-
-    // Initialiser les compteurs par statut
-    const parStatut: Record<StatutVehicule, number> = {
-      EN_ATTENTE_LIVRAISON: 0,
-      LIVRE: 0,
-      RECEPTION_PROVISOIRE: 0,
-      RECEPTION_DEFINITIVE: 0,
-      GARANTIE: 0,
-      HORS_SERVICE: 0,
-    }
-
-    // Calculer les stats
-    vehicules.forEach((vehicule) => {
-      parStatut[vehicule.statut]++
-    })
-
-    const stats: VehiculesStats = {
-      total: vehicules.length,
-      parStatut,
-      livres: parStatut.LIVRE,
-      enAttenteLivraison: parStatut.EN_ATTENTE_LIVRAISON,
-      enService: parStatut.RECEPTION_DEFINITIVE + parStatut.GARANTIE,
-    }
-
-    return { success: true, data: stats }
-  } catch (error) {
-    console.error('Erreur lors de la récupération des statistiques de véhicules:', error)
-    return {
-      success: false,
-      error: 'Erreur lors de la récupération des statistiques',
-    }
-  }
 }
 
 // ============================================================================

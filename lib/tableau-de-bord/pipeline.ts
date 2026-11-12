@@ -27,7 +27,8 @@ export function calculerPipeline(opps: { statut: StatutOpportunite; montantEstim
       statut, libelle,
       nombre: dans.length,
       montant: dans.reduce((s, o) => s + (o.montantEstime ?? 0), 0),
-      href: `/opportunites?statut=${statut}`,
+      // Le lien liste tous les statuts comptés : le clic ouvre exactement les lignes du chiffre.
+      href: `/opportunites?statut=${inclut.join(',')}`,
     }
   })
   return {

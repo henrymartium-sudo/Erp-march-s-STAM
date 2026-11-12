@@ -67,6 +67,8 @@ export const TRI_LABELS: Record<OpportuniteTri, string> = {
 export interface OpportuniteFilters {
   phase?: OpportunitePhase
   statut?: StatutOpportunite
+  /** Au moins deux statuts (paramètre `statut` séparé par des virgules) ; exclusif avec `statut`. */
+  statuts?: StatutOpportunite[]
   search?: string
   echeance?: OpportuniteEcheance
   tri?: OpportuniteTri
@@ -83,9 +85,13 @@ export function parseOpportuniteFilters(params: Record<string, string | undefine
   const phase = params.phase && params.phase in PHASE_LABELS
     ? (params.phase as OpportunitePhase)
     : DEFAULT_PHASE
-  const statut = params.statut && ALL_STATUTS.has(params.statut)
-    ? (params.statut as StatutOpportunite)
-    : undefined
+  // `statut` accepte plusieurs valeurs séparées par des virgules (liens du pipeline) ; les inconnues sont ignorées.
+  // Next fournit un tableau quand `?statut=` est répété (malgré le type `string`) : on le fusionne.
+  const brut = params.statut as string | string[] | undefined
+  const statutBrut = Array.isArray(brut) ? brut.join(',') : brut ?? ''
+  const valides = [...new Set(statutBrut.split(',').filter((s) => ALL_STATUTS.has(s)))] as StatutOpportunite[]
+  const statut = valides.length === 1 ? valides[0] : undefined
+  const statuts = valides.length > 1 ? valides : undefined
   const echeance = params.echeance && params.echeance in ECHEANCE_LABELS
     ? (params.echeance as OpportuniteEcheance)
     : undefined
@@ -94,17 +100,25 @@ export function parseOpportuniteFilters(params: Record<string, string | undefine
     : 'echeance'
   const search = params.search?.trim() || undefined
 
-  return { phase, statut, echeance, tri, search }
+  return { phase, statut, statuts, echeance, tri, search }
 }
 
-/** Clause `where` Prisma. Un statut précis prime sur la phase. */
+/** Valeur du paramètre `statut` (statuts joints par des virgules) ; undefined si aucun statut précis. */
+export function serialiserStatuts(f: Pick<OpportuniteFilters, 'statut' | 'statuts'>): string | undefined {
+  if (f.statuts?.length) return f.statuts.join(',')
+  return f.statut
+}
+
+/** Clause `where` Prisma. Un ou plusieurs statuts précis priment sur la phase. */
 export function buildOpportuniteWhere(
   filters: OpportuniteFilters,
   now: Date = new Date()
 ): Prisma.OpportuniteWhereInput {
   const and: Prisma.OpportuniteWhereInput[] = []
 
-  if (filters.statut) {
+  if (filters.statuts?.length) {
+    and.push({ statut: { in: filters.statuts } })
+  } else if (filters.statut) {
     and.push({ statut: filters.statut })
   } else if (filters.phase && filters.phase !== 'toutes') {
     and.push({ statut: { in: PHASE_STATUTS[filters.phase] } })

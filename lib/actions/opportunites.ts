@@ -167,31 +167,6 @@ export async function getOpportunite(
   }
 }
 
-export async function getOpportunitesStats(): Promise<
-  ActionResult<{ total: number; parStatut: Record<string, number> }>
-> {
-  try {
-    await requireAuth()
-
-    const grouped = await prisma.opportunite.groupBy({
-      by: ['statut'],
-      _count: { _all: true },
-    })
-
-    const parStatut: Record<string, number> = {}
-    for (const g of grouped) {
-      parStatut[g.statut] = g._count._all
-    }
-
-    const total = grouped.reduce((sum, g) => sum + g._count._all, 0)
-
-    return { success: true, data: { total, parStatut } }
-  } catch (error) {
-    console.error('Erreur getOpportunitesStats:', error)
-    return { success: false, error: 'Impossible de charger les statistiques' }
-  }
-}
-
 // ============================================================================
 // CREATE
 // ============================================================================
