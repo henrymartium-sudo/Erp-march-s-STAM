@@ -171,7 +171,7 @@ Aperçu en direct (skill `apercu`) : toujours sur la base de test locale, jamais
 
 ## Clôture automatique
 
-Plan concerné : `docs/plans/2026-11-11-alertes-et-emails-plan.md` (activée par accord d'Abel, 2026-11-11).
+Plan concerné : `docs/plans/2026-11-12-donnees-tableau-de-bord-plan.md` (activée par accord d'Abel, 2026-11-11 ; repointée le 2026-11-12).
 
 - À la reprise d'un handoff portant `Suite automatique` et à chaque fin de tâche : lire en entier `~/.claude/skills/disciplined-execution/references/auto-closure.md`.
 - Trois arrêts seulement (dernière ligne `ARRÊT : <raison>`) : vérification ratée ou budget de diagnostic épuisé ; geste distant ; fin de ticket.
