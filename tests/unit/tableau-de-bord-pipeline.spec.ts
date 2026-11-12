@@ -6,8 +6,9 @@ test('IDENTIFIEE compte dans En analyse, SOUMISE dans Offre soumise', () => {
     { statut: 'IDENTIFIEE', montantEstime: 100 }, { statut: 'EN_ANALYSE', montantEstime: 50 },
     { statut: 'SOUMISE', montantEstime: 200 }, { statut: 'OFFRE_SOUMISE', montantEstime: 300 },
   ])
-  expect(r.phases[0]).toEqual({ statut: 'EN_ANALYSE', libelle: 'En analyse', nombre: 2, montant: 150, href: '/opportunites?statut=EN_ANALYSE' })
-  expect(r.phases[3]).toMatchObject({ statut: 'OFFRE_SOUMISE', nombre: 2, montant: 500 })
+  expect(r.phases[0]).toEqual({ statut: 'EN_ANALYSE', libelle: 'En analyse', nombre: 2, montant: 150, href: '/opportunites?statut=EN_ANALYSE,IDENTIFIEE' })
+  expect(r.phases[1]?.href).toBe('/opportunites?statut=GO')
+  expect(r.phases[3]).toMatchObject({ statut: 'OFFRE_SOUMISE', nombre: 2, montant: 500, href: '/opportunites?statut=OFFRE_SOUMISE,SOUMISE' })
   expect(r.total).toEqual({ nombre: 4, montant: 650 })
 })
 

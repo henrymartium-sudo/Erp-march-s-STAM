@@ -10,7 +10,7 @@ import { ExportMenu } from '@/components/exports/export-menu'
 import { getOpportunites, getOpportunitesPhaseCounts } from '@/lib/actions/opportunites'
 import { requireAuth, canWrite, canExport } from '@/lib/utils/permissions'
 import { shouldShowPagination } from '@/lib/utils/pagination'
-import { parseOpportuniteFilters } from '@/lib/utils/opportunite-filters'
+import { parseOpportuniteFilters, serialiserStatuts } from '@/lib/utils/opportunite-filters'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,7 +55,7 @@ export default async function OpportunitesPage({ searchParams }: OpportunitesPag
   }
 
   const { data: opportunites, pagination } = result.data
-  const hasFilters = Boolean(filters.search || filters.statut || filters.echeance)
+  const hasFilters = Boolean(filters.search || filters.statut || filters.statuts || filters.echeance)
 
   return (
     <div className="space-y-6">
@@ -70,7 +70,7 @@ export default async function OpportunitesPage({ searchParams }: OpportunitesPag
                 type="opportunites"
                 filters={{
                   phase: filters.phase,
-                  statut: filters.statut,
+                  statut: serialiserStatuts(filters),
                   search: filters.search,
                   echeance: filters.echeance,
                   tri: filters.tri,
