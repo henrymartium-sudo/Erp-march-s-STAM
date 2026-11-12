@@ -86,7 +86,10 @@ export function parseOpportuniteFilters(params: Record<string, string | undefine
     ? (params.phase as OpportunitePhase)
     : DEFAULT_PHASE
   // `statut` accepte plusieurs valeurs séparées par des virgules (liens du pipeline) ; les inconnues sont ignorées.
-  const valides = [...new Set((params.statut ?? '').split(',').filter((s) => ALL_STATUTS.has(s)))] as StatutOpportunite[]
+  // Next fournit un tableau quand `?statut=` est répété (malgré le type `string`) : on le fusionne.
+  const brut = params.statut as string | string[] | undefined
+  const statutBrut = Array.isArray(brut) ? brut.join(',') : brut ?? ''
+  const valides = [...new Set(statutBrut.split(',').filter((s) => ALL_STATUTS.has(s)))] as StatutOpportunite[]
   const statut = valides.length === 1 ? valides[0] : undefined
   const statuts = valides.length > 1 ? valides : undefined
   const echeance = params.echeance && params.echeance in ECHEANCE_LABELS

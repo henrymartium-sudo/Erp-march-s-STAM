@@ -28,6 +28,13 @@ test('statut : les doublons sont retirés', () => {
   expect(f.statuts).toBeUndefined()
 })
 
+test('statut répété dans l’URL (tableau côté Next) : fusionné, sans exception', () => {
+  // Next 15 fournit un tableau quand `?statut=` est répété, malgré le type `string`.
+  const f = parseOpportuniteFilters({ statut: ['GO', 'EN_ANALYSE'] as unknown as string })
+  expect(f.statuts).toEqual(['GO', 'EN_ANALYSE'])
+  expect(f.statut).toBeUndefined()
+})
+
 test('where : statuts prime sur la phase, sans clause de phase', () => {
   const where = buildOpportuniteWhere({ phase: 'en-cours', statuts: ['EN_ANALYSE', 'IDENTIFIEE'] })
   expect(where).toEqual({ AND: [{ statut: { in: ['EN_ANALYSE', 'IDENTIFIEE'] } }] })

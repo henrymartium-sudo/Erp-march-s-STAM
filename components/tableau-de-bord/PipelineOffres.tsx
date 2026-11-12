@@ -50,7 +50,7 @@ export function PipelineOffres({ pipeline, vue }: { pipeline: TableauDeBordData[
               ))}
             </ol>
             <p className="mt-3 flex flex-wrap justify-between gap-x-4 border-t pt-3 text-sm text-muted-foreground">
-              <span><b className="text-foreground">{total.nombre}</b> opportunités actives</span>
+              <span><b className="text-foreground">{total.nombre}</b> {total.nombre > 1 ? 'opportunités actives' : 'opportunité active'}</span>
               {total.montant !== null && <span>Montant estimé total <b className="text-foreground">{formatMontant(total.montant)}</b></span>}
             </p>
           </>
