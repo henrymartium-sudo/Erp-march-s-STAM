@@ -84,9 +84,10 @@ export function construireATraiter(s: SourcesATraiter, aujourdHui: Date): Result
 
   for (const c of s.cautions) {
     const l = { domaine: c.opportunite ? 'passation' as const : 'exec' as const, reference: c.reference, href: `/cautions/${c.id}`, montant: c.montant }
-    const marcheEnAttenteGaranties = c.marche?.statut === 'EXECUTE_ATTENTE_GARANTIES'
-    if (marcheEnAttenteGaranties) {
-      if (c.statut === 'ACTIVE' && c.marche?.garantiesLiberees !== true) ajouter('GARANTIES_A_LIBERER', c.id, c.dateEcheance, l)
+    // Marché en attente de garanties non encore libérées : la caution relève de GARANTIES_A_LIBERER.
+    // Garanties cochées libérées : la règle CAUTION_A_LIBERER s'applique (la fiche caution reste à clore).
+    if (c.marche?.statut === 'EXECUTE_ATTENTE_GARANTIES' && c.marche.garantiesLiberees !== true) {
+      if (c.statut === 'ACTIVE') ajouter('GARANTIES_A_LIBERER', c.id, c.dateEcheance, l)
       continue
     }
     const necessaire = cautionEncoreNecessaire(c)

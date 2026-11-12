@@ -83,6 +83,11 @@ test('GARANTIES_A_LIBERER : une ligne par caution active d’un marché exécut�
   expect(natures(sources({ cautions: [caution({ marche: { ...m, garantiesLiberees: true } })] }))).not.toContain('GARANTIES_A_LIBERER')
 })
 
+test('marché en attente de garanties, garanties cochées libérées : la caution encore active est à libérer', () => {
+  const m = { id: 'm2', numero: 'M-2', statut: 'EXECUTE_ATTENTE_GARANTIES' as const, garantiesLiberees: true }
+  expect(natures(sources({ cautions: [caution({ marche: m })] }))).toEqual(['CAUTION_A_LIBERER'])
+})
+
 test('CAUTION_A_RENOUVELER : caution encore nécessaire, active ou expirée', () => {
   expect(natures(sources({ cautions: [caution({ statut: 'EXPIREE', dateEcheance: J(-1) })] }))).toEqual(['CAUTION_A_RENOUVELER'])
   expect(natures(sources({ cautions: [caution({ statut: 'LIBEREE' })] }))).toEqual([])
