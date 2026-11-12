@@ -26,7 +26,7 @@ export function EnTete({ role, aujourdHui }: { role: string | null | undefined; 
       </div>
       {canWrite(role) && (
         <div className="flex gap-2">
-          <Button asChild className="min-h-11 flex-1 sm:flex-none">
+          <Button asChild className="min-h-11 flex-1 focus-visible:ring-ring focus-visible:ring-offset-2 sm:flex-none">
             <Link href="/opportunites/nouvelle">
               <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
               Nouvelle opportunité
@@ -34,7 +34,7 @@ export function EnTete({ role, aujourdHui }: { role: string | null | undefined; 
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="min-h-11">
+              <Button variant="outline" className="min-h-11 focus-visible:ring-ring focus-visible:ring-offset-2">
                 Créer…
                 <ChevronDown className="ml-2 h-4 w-4" aria-hidden="true" />
               </Button>

@@ -49,17 +49,20 @@ export function LigneATraiterItem({ ligne, aujourdHui }: { ligne: LigneATraiter;
               </span>
             )}
           </span>
+          <span className="sr-only">. </span>
           <span className="block text-sm text-muted-foreground">
-            <span className="font-mono text-xs">{ligne.reference}</span>
+            <span className="break-words font-mono text-xs">{ligne.reference}</span>
             {ligne.montant !== null && <> · {formatMontant(ligne.montant)}</>}
           </span>
         </span>
+        <span className="sr-only">. </span>
         <span className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
-          <Badge variant={VARIANTE_HORIZON[ligne.horizon]} className="whitespace-nowrap">
+          <Badge variant={VARIANTE_HORIZON[ligne.horizon]} className="whitespace-nowrap text-foreground">
             {libelleDelai(ligne.echeance, aujourdHui)}
           </Badge>
           <span>{dateCourte(ligne.echeance)}</span>
         </span>
+        <span className="sr-only">. </span>
         <span className="col-start-2 col-end-4 text-sm font-semibold text-primary">{VERBES_ACTION[ligne.nature]}</span>
       </Link>
     </li>

@@ -24,20 +24,38 @@ const DONNEES_MANQUANTES: { cle: keyof ResultatATraiter['manquants']; texte: (n:
   { cle: 'facturesSansDate', texte: (n) => `${pluriel(n, 'facture', 'factures')} sans date d'émission ni d'échéance` },
 ]
 
+/** Texte des pastilles en couleur de texte courante : le texte d'état des variantes `warning`, `danger` et `muted` ne passe pas 4,5:1. */
+const TEXTE_LISIBLE = 'text-foreground'
+/** Au-delà, les lignes d'un groupe passent dans un repli, pour que les voyants restent proches du haut de la page. */
+const LIGNES_VISIBLES = 8
+
 function GroupeLignes({ titre, icone, variante, lignes, aujourdHui }: {
   titre: string; icone: React.ReactNode; variante: 'danger' | 'warning'; lignes: LigneATraiter[]; aujourdHui: Date
 }) {
   if (lignes.length === 0) return null
   const sans = lignes.filter((l) => l.sansRattrapage).length
+  const visibles = lignes.slice(0, LIGNES_VISIBLES)
+  const autres = lignes.slice(LIGNES_VISIBLES)
   return (
-    <section aria-label={titre} className="border-t">
-      <h3 className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 pb-1 pt-3 sm:px-5">
-        <Badge variant={variante} className="gap-1.5">{icone}{titre}</Badge>
+    <section aria-labelledby={`groupe-${variante}`} className="border-t">
+      <h3 id={`groupe-${variante}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 pb-1 pt-3 text-base sm:px-5">
+        <Badge variant={variante} className={`gap-1.5 ${TEXTE_LISIBLE}`}>{icone}{titre}</Badge>
         <span className="text-xs font-normal text-muted-foreground">{annonce(lignes.length, sans)}</span>
       </h3>
-      <ul className="divide-y divide-transparent">
-        {lignes.map((l) => <LigneATraiterItem key={l.id} ligne={l} aujourdHui={aujourdHui} />)}
+      <ul className="divide-y divide-border">
+        {visibles.map((l) => <LigneATraiterItem key={l.id} ligne={l} aujourdHui={aujourdHui} />)}
       </ul>
+      {autres.length > 0 && (
+        <details className="group border-t">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 text-sm font-semibold text-primary hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5 [&::-webkit-details-marker]:hidden">
+            Voir les {autres.length} autres
+            <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden="true" />
+          </summary>
+          <ul className="divide-y divide-border">
+            {autres.map((l) => <LigneATraiterItem key={l.id} ligne={l} aujourdHui={aujourdHui} />)}
+          </ul>
+        </details>
+      )}
     </section>
   )
 }
@@ -62,9 +80,9 @@ export function BlocATraiter({ bloc, vue, aujourdHui }: {
           <CardDescription>Le retard et les 30 prochains jours. Ce qui ne se rattrape pas passe en tête de son groupe.</CardDescription>
         </div>
         <div className="flex flex-wrap gap-1.5">
-          <Badge variant="danger" className="gap-1.5"><AlertOctagon className="h-3 w-3" aria-hidden="true" />{c.retard} en retard</Badge>
-          <Badge variant="warning" className="gap-1.5"><Clock className="h-3 w-3" aria-hidden="true" />{c.semaine} cette semaine</Badge>
-          <Badge variant="muted" className="gap-1.5"><Calendar className="h-3 w-3" aria-hidden="true" />{c.mois} ce mois-ci</Badge>
+          <Badge variant={c.retard > 0 ? 'danger' : 'muted'} className={`gap-1.5 ${TEXTE_LISIBLE}`}><AlertOctagon className="h-3 w-3" aria-hidden="true" />{c.retard} en retard</Badge>
+          <Badge variant={c.semaine > 0 ? 'warning' : 'muted'} className={`gap-1.5 ${TEXTE_LISIBLE}`}><Clock className="h-3 w-3" aria-hidden="true" />{c.semaine} cette semaine</Badge>
+          <Badge variant="muted" className={`gap-1.5 ${TEXTE_LISIBLE}`}><Calendar className="h-3 w-3" aria-hidden="true" />{c.mois} ce mois-ci</Badge>
         </div>
       </CardHeader>
       <CardContent className="p-0">
@@ -81,21 +99,21 @@ export function BlocATraiter({ bloc, vue, aujourdHui }: {
         />
         {mois.length > 0 && (
           <details className="group border-t">
-            <summary className="flex min-h-11 cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-sm font-semibold marker:hidden sm:px-5 [&::-webkit-details-marker]:hidden">
-              <Badge variant="muted" className="gap-1.5"><Calendar className="h-3 w-3" aria-hidden="true" />Ce mois-ci</Badge>
+            <summary className="flex min-h-11 cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-sm font-semibold marker:hidden hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5 [&::-webkit-details-marker]:hidden">
+              <Badge variant="muted" className={`gap-1.5 ${TEXTE_LISIBLE}`}><Calendar className="h-3 w-3" aria-hidden="true" />Ce mois-ci</Badge>
               <span className="text-xs font-normal text-muted-foreground">{annonce(mois.length, c.sansRattrapage.mois)}</span>
               <ChevronDown className="ml-auto h-4 w-4 transition-transform group-open:rotate-180" aria-hidden="true" />
             </summary>
-            <ul>
+            <ul className="divide-y divide-border">
               {mois.map((l) => <LigneATraiterItem key={l.id} ligne={l} aujourdHui={aujourdHui} />)}
             </ul>
           </details>
         )}
         {manquants.length > 0 && (
-          <section aria-label="Données manquantes" className="m-4 flex gap-3 rounded-lg bg-stam-warning-bg p-3 text-sm text-stam-warning sm:mx-5">
-            <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <section aria-labelledby="titre-manquants" className="m-4 flex gap-3 rounded-lg bg-stam-warning-bg p-3 text-sm text-foreground sm:mx-5">
+            <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-stam-warning" aria-hidden="true" />
             <div className="min-w-0">
-              <h3 className="font-semibold">Données manquantes</h3>
+              <h3 id="titre-manquants" className="text-sm font-semibold">Données manquantes</h3>
               <p className="mb-1">Ces éléments ne peuvent pas apparaître plus haut tant qu'il manque une date.</p>
               <ul className="space-y-1">
                 {manquants.map((d) => (

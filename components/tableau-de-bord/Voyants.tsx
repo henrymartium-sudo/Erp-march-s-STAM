@@ -26,15 +26,18 @@ function CarteVoyant({ titre, etat, valeur, detail, seuil, href }: {
   const { Icone, variante } = ETATS[etat]
   const contenu = (
     <>
-      <span className="flex items-start justify-between gap-2">
+      <span className="flex flex-col items-start gap-1 sm:flex-row sm:justify-between sm:gap-2">
         <span className="text-sm font-medium text-muted-foreground">{titre}</span>
-        <Badge variant={variante} className="shrink-0 gap-1">
+        <Badge variant={variante} className="shrink-0 gap-1 text-foreground">
           <Icone className="h-3 w-3" aria-hidden="true" />
           {ETATS_VOYANT[etat]}
         </Badge>
       </span>
-      <span className="mt-1 block text-lg font-bold">{valeur}</span>
+      <span className="sr-only">. </span>
+      <span className="mt-1 block text-xl font-bold tabular-nums">{valeur}</span>
+      <span className="sr-only">. </span>
       {detail && <span className="block text-sm text-muted-foreground">{detail}</span>}
+      <span className="sr-only">. </span>
       <span className="mt-2 block text-xs text-muted-foreground">{seuil}</span>
     </>
   )
