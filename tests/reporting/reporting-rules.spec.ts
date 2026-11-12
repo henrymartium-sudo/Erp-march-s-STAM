@@ -3,15 +3,15 @@ import type { Browser, Cookie, Page } from '@playwright/test';
 import { TEST_USERS } from '../helpers/auth';
 
 /**
- * Tests E2E — Module Reporting Email (Règles de reporting)
+ * Tests E2E — Onglet « Rapports » de /admin/alertes (ex-page Reporting Email)
  *
  * Couverture complète :
- * ─ T1  Accès ADMIN → page /admin/reporting accessible
+ * ─ T1  Accès ADMIN → onglet Rapports accessible
  * ─ T2  Accès non-ADMIN (AVANCE) → redirigé (pas accès)
  * ─ T3  Non authentifié → redirigé vers /login
  * ─ T4  Page listing : titre + description + bouton "Nouvelle règle" visible
  * ─ T5  Page listing : colonnes du tableau présentes
- * ─ T6  Lien Reporting visible dans la sidebar (ADMIN)
+ * ─ T6  Onglet Rapports visible dans la barre d'onglets (ADMIN)
  * ─ T7  Ouverture dialog "Nouvelle règle"
  * ─ T8  Validation email invalide → message d'erreur
  * ─ T9  Validation email doublon → message d'erreur
@@ -60,7 +60,7 @@ async function loginAsAdmin(browser: Browser) {
 
 /** Ouvre le dialog "Nouvelle règle" et attend qu'il soit visible */
 async function openNewRuleDialog(page: Page) {
-  await page.goto('/admin/reporting');
+  await page.goto('/admin/alertes?onglet=rapports');
   await page.waitForLoadState('networkidle');
   const btn = page.getByRole('button', { name: 'Nouvelle règle', exact: true }).first();
   await btn.waitFor({ state: 'visible', timeout: 15000 });
@@ -70,7 +70,7 @@ async function openNewRuleDialog(page: Page) {
 
 /** Supprime toutes les règles de test ([E2E]) si elles existent */
 async function cleanupTestRules(page: Page) {
-  await page.goto('/admin/reporting');
+  await page.goto('/admin/alertes?onglet=rapports');
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(1000);
 
@@ -113,12 +113,12 @@ test.describe('Reporting — Accès & Page', () => {
     }
   });
 
-  // ── T1 : ADMIN accède à /admin/reporting ────────────────────────────────────
-  test('T1 — ADMIN peut accéder à /admin/reporting', async ({ page }) => {
-    await page.goto('/admin/reporting');
+  // ── T1 : ADMIN accède à l'onglet Rapports ───────────────────────────────────
+  test('T1 — ADMIN peut accéder à l\'onglet Rapports de /admin/alertes', async ({ page }) => {
+    await page.goto('/admin/alertes?onglet=rapports');
     await page.waitForLoadState('networkidle');
     // Ni redirection vers /login ni vers /
-    expect(page.url()).toContain('/admin/reporting');
+    expect(page.url()).toContain('/admin/alertes?onglet=rapports');
   });
 
   // ── T3 : Non authentifié redirigé ───────────────────────────────────────────
@@ -126,7 +126,7 @@ test.describe('Reporting — Accès & Page', () => {
     const ctx = await browser.newContext(); // contexte vierge sans cookies
     const p = await ctx.newPage();
     p.setDefaultNavigationTimeout(30000);
-    await p.goto('/admin/reporting');
+    await p.goto('/admin/alertes?onglet=rapports');
     await p.waitForURL((url) => url.toString().includes('/login'), { timeout: 15000 });
     expect(p.url()).toContain('/login');
     await ctx.close();
@@ -134,7 +134,7 @@ test.describe('Reporting — Accès & Page', () => {
 
   // ── T4 : Titre, description, bouton visible ──────────────────────────────────
   test('T4 — page listing : titre + description + bouton "Nouvelle règle"', async ({ page }) => {
-    await page.goto('/admin/reporting');
+    await page.goto('/admin/alertes?onglet=rapports');
     await page.waitForLoadState('networkidle');
 
     await expect(page.getByRole('main').getByRole('heading', { name: 'Reporting Email', exact: true })).toBeVisible({ timeout: 10000 });
@@ -144,7 +144,7 @@ test.describe('Reporting — Accès & Page', () => {
 
   // ── T5 : Colonnes du tableau ─────────────────────────────────────────────────
   test('T5 — tableau contient les colonnes attendues', async ({ page }) => {
-    await page.goto('/admin/reporting');
+    await page.goto('/admin/alertes?onglet=rapports');
     await page.waitForLoadState('networkidle');
 
     // Si des règles existent, le tableau est présent
@@ -163,13 +163,15 @@ test.describe('Reporting — Accès & Page', () => {
     }
   });
 
-  // ── T6 : Lien Reporting dans sidebar ────────────────────────────────────────
-  test('T6 — lien "Reporting" visible dans la sidebar pour ADMIN', async ({ page }) => {
-    await page.goto('/admin/reporting');
+  // ── T6 : Onglet Rapports dans la barre d'onglets ────────────────────────────
+  test('T6 — onglet "Rapports" visible dans la barre d\'onglets pour ADMIN', async ({ page }) => {
+    await page.goto('/admin/alertes?onglet=rapports');
     await page.waitForLoadState('networkidle');
-    // Le lien sidebar pointe vers /admin/reporting
-    const sidebarLink = page.locator('nav a[href="/admin/reporting"]');
-    await expect(sidebarLink).toBeVisible({ timeout: 10000 });
+    const lienOnglet = page.getByRole('link', { name: 'Rapports', exact: true });
+    await expect(lienOnglet).toBeVisible({ timeout: 10000 });
+    await expect(lienOnglet).toHaveAttribute('aria-current', 'page');
+    // L'entrée « Reporting » a disparu du menu latéral
+    await expect(page.locator('nav a[href="/admin/reporting"]')).toHaveCount(0);
   });
 });
 
@@ -179,7 +181,7 @@ test.describe('Reporting — Permissions non-ADMIN', () => {
   test.setTimeout(120000);
 
   // ── T2 : AVANCE est redirigé ─────────────────────────────────────────────────
-  test('T2 — rôle AVANCE est redirigé depuis /admin/reporting', async ({ browser }) => {
+  test('T2 — rôle AVANCE est redirigé depuis l\'onglet Rapports', async ({ browser }) => {
     const ctx = await browser.newContext();
     const p = await ctx.newPage();
     p.setDefaultNavigationTimeout(60000);
@@ -191,12 +193,12 @@ test.describe('Reporting — Permissions non-ADMIN', () => {
     await p.click('button[type="submit"]');
     await p.waitForURL((url) => !url.toString().includes('/login'), { timeout: 60000 });
 
-    await p.goto('/admin/reporting');
+    await p.goto('/admin/alertes?onglet=rapports');
     await p.waitForLoadState('networkidle');
 
-    // Doit être redirigé (pas sur /admin/reporting) ou afficher une erreur
+    // Doit être redirigé (pas sur l'onglet Rapports) ou afficher une erreur
     const url = p.url();
-    const isRedirected = !url.includes('/admin/reporting') || await p.locator('text=Accès refusé').count() > 0;
+    const isRedirected = !url.includes('onglet=rapports') || await p.locator('text=Accès refusé').count() > 0;
     expect(isRedirected).toBeTruthy();
 
     await ctx.close();
@@ -403,7 +405,7 @@ test.describe('Reporting — CRUD', () => {
 
     // Sélectionner Lun et Mer
     await page.locator('[role="dialog"]').getByRole('button', { name: 'Lun' }).click();
-    await page.locator('[role="dialog"]').getByRole('button', { name: 'Mer' }).click();
+    await page.locator('[role="dialog"]').getByRole('button', { name: 'Mer', exact: true }).click();
 
     // Soumettre
     await page.locator('[role="dialog"] button[type="submit"]').click();
@@ -416,12 +418,12 @@ test.describe('Reporting — CRUD', () => {
     const row = page.locator('tbody tr').filter({ hasText: RULE_WEEKLY_NAME });
     await expect(row).toBeVisible({ timeout: 10000 });
     // La planification doit mentionner Lun et Mer
-    await expect(row.getByText(/Lun.*Mer|Mer.*Lun/, { exact: false })).toBeVisible({ timeout: 5000 });
+    await expect(row.getByText(/Lun.*Mer|Mer.*Lun/, { exact: false }).locator('visible=true').first()).toBeVisible({ timeout: 5000 });
   });
 
   // ── T16 : Modification règle ──────────────────────────────────────────────────
   test('T16 — modifier une règle → dialog pré-rempli → toast "Règle mise à jour"', async ({ page }) => {
-    await page.goto('/admin/reporting');
+    await page.goto('/admin/alertes?onglet=rapports');
     await page.waitForLoadState('networkidle');
 
     // Trouver la règle E2E Daily
@@ -450,7 +452,7 @@ test.describe('Reporting — CRUD', () => {
 
   // ── T17 : Toggle → change l'état ─────────────────────────────────────────────
   test('T17 — toggle règle → état Active/Inactive change + toast', async ({ page }) => {
-    await page.goto('/admin/reporting');
+    await page.goto('/admin/alertes?onglet=rapports');
     await page.waitForLoadState('networkidle');
 
     // Trouver une règle E2E
@@ -483,7 +485,7 @@ test.describe('Reporting — CRUD', () => {
 
   // ── T18 : Re-toggle → Active ──────────────────────────────────────────────────
   test('T18 — re-toggle → badge revient "Active" ou "Inactive" (toggle inverse)', async ({ page }) => {
-    await page.goto('/admin/reporting');
+    await page.goto('/admin/alertes?onglet=rapports');
     await page.waitForLoadState('networkidle');
 
     const row = page.locator('tbody tr').filter({ hasText: '[E2E]' }).first();
@@ -512,7 +514,7 @@ test.describe('Reporting — CRUD', () => {
 
   // ── T19 : Envoi manuel (Send Now) ─────────────────────────────────────────────
   test('T19 — clic "Envoyer maintenant" → toast succès ou erreur métier', async ({ page }) => {
-    await page.goto('/admin/reporting');
+    await page.goto('/admin/alertes?onglet=rapports');
     await page.waitForLoadState('networkidle');
 
     const row = page.locator('tbody tr').filter({ hasText: '[E2E]' }).first();
@@ -534,7 +536,7 @@ test.describe('Reporting — CRUD', () => {
 
   // ── T20 : Suppression avec confirmation ───────────────────────────────────────
   test('T20 — supprimer règle → AlertDialog → toast "Règle supprimée" → disparaît', async ({ page }) => {
-    await page.goto('/admin/reporting');
+    await page.goto('/admin/alertes?onglet=rapports');
     await page.waitForLoadState('networkidle');
 
     // Compter les lignes [E2E] avant
@@ -571,7 +573,7 @@ test.describe('Reporting — CRUD', () => {
   test('T21 — nettoyage : toutes les règles [E2E] supprimées', async ({ page }) => {
     await cleanupTestRules(page as never);
 
-    await page.goto('/admin/reporting');
+    await page.goto('/admin/alertes?onglet=rapports');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
 
@@ -600,7 +602,7 @@ test.describe('Reporting — Responsive', () => {
 
   test('T22 — desktop 1920×1080 : page s\'affiche correctement', async ({ page }) => {
     await page.setViewportSize({ width: 1920, height: 1080 });
-    await page.goto('/admin/reporting');
+    await page.goto('/admin/alertes?onglet=rapports');
     await page.waitForLoadState('networkidle');
     await expect(page.getByRole('main').getByRole('heading', { name: 'Reporting Email', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Nouvelle règle', exact: true }).first()).toBeVisible();
@@ -608,14 +610,14 @@ test.describe('Reporting — Responsive', () => {
 
   test('T23 — tablette 768×1024 : page s\'affiche correctement', async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
-    await page.goto('/admin/reporting');
+    await page.goto('/admin/alertes?onglet=rapports');
     await page.waitForLoadState('networkidle');
     await expect(page.getByRole('main').getByRole('heading', { name: 'Reporting Email', exact: true })).toBeVisible();
   });
 
   test('T24 — mobile 375×667 : page s\'affiche correctement', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto('/admin/reporting');
+    await page.goto('/admin/alertes?onglet=rapports');
     await page.waitForLoadState('networkidle');
     await expect(page.getByRole('main').getByRole('heading', { name: 'Reporting Email', exact: true })).toBeVisible();
   });

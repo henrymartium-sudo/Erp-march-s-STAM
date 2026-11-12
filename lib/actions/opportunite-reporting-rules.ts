@@ -60,7 +60,7 @@ export async function createOpportuniteReportingRule(
       metadata: { ruleName: rule.name, type: "opportunite-reporting" },
     })
 
-    revalidatePath("/admin/reporting")
+    revalidatePath("/admin/alertes")
     return { success: true, data: { id: rule.id } }
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -103,7 +103,7 @@ export async function updateOpportuniteReportingRule(
       metadata: { type: "opportunite-reporting" },
     })
 
-    revalidatePath("/admin/reporting")
+    revalidatePath("/admin/alertes")
     return { success: true, data: undefined }
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -132,7 +132,7 @@ export async function deleteOpportuniteReportingRule(id: string): Promise<Action
       metadata: { type: "opportunite-reporting" },
     })
 
-    revalidatePath("/admin/reporting")
+    revalidatePath("/admin/alertes")
     return { success: true, data: undefined }
   } catch (error) {
     console.error("deleteOpportuniteReportingRule:", error)
@@ -154,7 +154,7 @@ export async function toggleOpportuniteReportingRule(
       where: { id },
       data: { isActive },
     })
-    revalidatePath("/admin/reporting")
+    revalidatePath("/admin/alertes")
     return { success: true, data: undefined }
   } catch (error) {
     console.error("toggleOpportuniteReportingRule:", error)

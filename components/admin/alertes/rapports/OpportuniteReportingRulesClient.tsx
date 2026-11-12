@@ -1,22 +1,20 @@
 "use client"
 
 /**
- * app/(dashboard)/admin/reporting/ReportingRulesClient.tsx
- * Interface de gestion des règles de reporting email.
+ * components/admin/alertes/rapports/OpportuniteReportingRulesClient.tsx
+ * Interface de gestion des règles de reporting email Opportunités.
  */
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import {
-  createReportingRule,
-  updateReportingRule,
-  deleteReportingRule,
-  toggleReportingRule,
-  sendReportingRuleNow,
-} from "@/lib/actions/reporting-rules"
+  createOpportuniteReportingRule,
+  updateOpportuniteReportingRule,
+  deleteOpportuniteReportingRule,
+  toggleOpportuniteReportingRule,
+  sendOpportuniteReportingRuleNow,
+} from "@/lib/actions/opportunite-reporting-rules"
 import type { ReportingScheduleConfig } from "@/lib/cron/reporting-processor"
-import { STATUT_LABELS } from "@/lib/constants/marche"
-import type { StatutMarche } from "@prisma/client"
 import { toast } from "@/lib/utils/toast"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -47,18 +45,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Plus, Send, Pencil, Trash2, Power } from "lucide-react"
+import { Plus, Send, Pencil, Trash2, Power, Download } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
 
 // ============================================================
 // TYPES
 // ============================================================
 
-interface SerializedReportingRule {
+type ReportType = "SUIVI" | "ECHEANCES_MATIN"
+
+interface SerializedOpportuniteReportingRule {
   id: string
   name: string
   description: string | null
-  statutGroups: string[]
+  reportType: ReportType
   recipientEmails: string[]
   scheduleConfig: ReportingScheduleConfig | null
   isActive: boolean
@@ -69,34 +69,6 @@ interface SerializedReportingRule {
 // ============================================================
 // CONSTANTES
 // ============================================================
-
-const STATUT_GROUPS_UI = [
-  {
-    label: "Pré-commercial",
-    statuts: ["OPPORTUNITE_IDENTIFIEE", "DOSSIER_EN_PREPARATION"] as StatutMarche[],
-  },
-  {
-    label: "En attente",
-    statuts: [
-      "OFFRE_DEPOSEE",
-      "EN_ATTENTE_ATTRIBUTION",
-      "ATTRIBUE_PROVISOIREMENT",
-      "ATTRIBUE_DEFINITIVEMENT",
-    ] as StatutMarche[],
-  },
-  {
-    label: "Exécution",
-    statuts: [
-      "EN_ATTENTE_LIVRAISON_OS",
-      "EN_EXECUTION",
-      "EXECUTE_ATTENTE_GARANTIES",
-    ] as StatutMarche[],
-  },
-  {
-    label: "Terminaux",
-    statuts: ["CLOTURE", "RESILIE", "ANNULE", "INFRUCTUEUX"] as StatutMarche[],
-  },
-]
 
 const SCHEDULE_TYPE_LABELS = {
   DAILY: "Quotidien",
@@ -137,7 +109,7 @@ function formatSchedule(config: ReportingScheduleConfig | null): string {
 interface FormState {
   name: string
   description: string
-  statutGroups: string[]
+  reportType: ReportType
   recipientEmails: string[]
   scheduleType: "DAILY" | "WEEKLY" | "MONTHLY" | "MANUAL"
   hour: number
@@ -149,7 +121,7 @@ function emptyForm(): FormState {
   return {
     name: "",
     description: "",
-    statutGroups: [],
+    reportType: "SUIVI",
     recipientEmails: [],
     scheduleType: "DAILY",
     hour: 8,
@@ -158,12 +130,12 @@ function emptyForm(): FormState {
   }
 }
 
-function ruleToForm(rule: SerializedReportingRule): FormState {
+function ruleToForm(rule: SerializedOpportuniteReportingRule): FormState {
   const config = rule.scheduleConfig
   return {
     name: rule.name,
     description: rule.description ?? "",
-    statutGroups: rule.statutGroups,
+    reportType: rule.reportType,
     recipientEmails: rule.recipientEmails,
     scheduleType: config?.type ?? "MANUAL",
     hour: config?.hour ?? 8,
@@ -186,7 +158,7 @@ function formToPayload(form: FormState) {
   return {
     name: form.name,
     description: form.description || undefined,
-    statutGroups: form.statutGroups,
+    reportType: form.reportType,
     recipientEmails: form.recipientEmails,
     scheduleConfig,
     isActive: form.isActive,
@@ -194,7 +166,7 @@ function formToPayload(form: FormState) {
 }
 
 // ============================================================
-// SOUS-COMPOSANT : EmailTagInput
+// EmailTagInput
 // ============================================================
 
 function EmailTagInput({
@@ -255,7 +227,7 @@ function EmailTagInput({
 }
 
 // ============================================================
-// SOUS-COMPOSANT : ScheduleConfig
+// ScheduleConfigSection
 // ============================================================
 
 function ScheduleConfigSection({
@@ -354,10 +326,10 @@ function ScheduleConfigSection({
 }
 
 // ============================================================
-// SOUS-COMPOSANT : Dialog Formulaire
+// Dialog Formulaire
 // ============================================================
 
-function ReportingRuleDialog({
+function OpportuniteReportingRuleDialog({
   open,
   onClose,
   rule,
@@ -365,7 +337,7 @@ function ReportingRuleDialog({
 }: {
   open: boolean
   onClose: () => void
-  rule: SerializedReportingRule | null
+  rule: SerializedOpportuniteReportingRule | null
   onSaved: () => void
 }) {
   const [form, setForm] = useState<FormState>(rule ? ruleToForm(rule) : emptyForm())
@@ -375,20 +347,13 @@ function ReportingRuleDialog({
     setForm((f) => ({ ...f, ...p }))
   }
 
-  function toggleStatut(statut: string) {
-    const next = form.statutGroups.includes(statut)
-      ? form.statutGroups.filter((s) => s !== statut)
-      : [...form.statutGroups, statut]
-    patch({ statutGroups: next })
-  }
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const payload = formToPayload(form)
     startTransition(async () => {
       const result = rule
-        ? await updateReportingRule(rule.id, payload)
-        : await createReportingRule(payload)
+        ? await updateOpportuniteReportingRule(rule.id, payload)
+        : await createOpportuniteReportingRule(payload)
 
       if (result.success) {
         toast.success(rule ? "Règle mise à jour" : "Règle créée")
@@ -402,26 +367,26 @@ function ReportingRuleDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{rule ? "Modifier la règle" : "Nouvelle règle de reporting"}</DialogTitle>
+          <DialogTitle>
+            {rule ? "Modifier la règle" : "Nouvelle règle — Suivi Opportunités"}
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Nom */}
           <div>
             <Label htmlFor="name">Nom de la règle *</Label>
             <Input
               id="name"
               value={form.name}
               onChange={(e) => patch({ name: e.target.value })}
-              placeholder="ex: Suivi Exécution"
+              placeholder="ex: Suivi hebdo opportunités"
               required
               className="mt-1"
             />
           </div>
 
-          {/* Description */}
           <div>
             <Label htmlFor="desc">Description (optionnel)</Label>
             <Input
@@ -432,45 +397,39 @@ function ReportingRuleDialog({
             />
           </div>
 
-          {/* Statuts */}
           <div>
-            <Label className="mb-2 block">Statuts inclus *</Label>
-            <div className="space-y-3">
-              {STATUT_GROUPS_UI.map((group) => (
-                <div key={group.label}>
-                  <p className="text-xs font-medium text-muted-foreground mb-1">{group.label}</p>
-                  <div className="grid grid-cols-2 gap-1">
-                    {group.statuts.map((statut) => (
-                      <label key={statut} className="flex items-center gap-2 text-sm cursor-pointer">
-                        <Checkbox
-                          checked={form.statutGroups.includes(statut)}
-                          onCheckedChange={() => toggleStatut(statut)}
-                        />
-                        {STATUT_LABELS[statut]}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <Label className="mb-1 block">Type de rapport</Label>
+            <Select value={form.reportType} onValueChange={(v) => patch({ reportType: v as ReportType })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="SUIVI">Suivi complet des opportunités</SelectItem>
+                <SelectItem value="ECHEANCES_MATIN">Échéances du matin (offres à rendre sous 7 jours)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Destinataires */}
+          <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+            <p className="text-xs text-blue-700 font-medium">
+              {form.reportType === "ECHEANCES_MATIN"
+                ? "ℹ️ Ce rapport liste les offres à rendre (en analyse, GO, dossier en préparation) dont l'échéance est dépassée ou tombe dans les 7 jours. Il est envoyé même s'il n'y a rien à rendre."
+                : "ℹ️ Ce rapport inclut toutes les opportunités sans filtre. Chaque email contiendra le tableau synthétique complet avec décomptes des échéances."}
+            </p>
+          </div>
+
           <div>
             <Label className="mb-1 block">Destinataires *</Label>
             <EmailTagInput
               emails={form.recipientEmails}
               onChange={(emails) => patch({ recipientEmails: emails })}
             />
+            <p className="mt-1 text-xs text-muted-foreground">Jusqu'à 20 destinataires ; chacun reçoit son propre message.</p>
           </div>
 
-          {/* Planification */}
           <div>
             <Label className="mb-2 block">Planification</Label>
             <ScheduleConfigSection form={form} onChange={patch} />
           </div>
 
-          {/* Actif */}
           <div className="flex items-center gap-2">
             <Checkbox
               id="isActive"
@@ -496,17 +455,18 @@ function ReportingRuleDialog({
 // COMPOSANT PRINCIPAL
 // ============================================================
 
-export function ReportingRulesClient({
+export function OpportuniteReportingRulesClient({
   initialRules,
 }: {
-  initialRules: SerializedReportingRule[]
+  initialRules: SerializedOpportuniteReportingRule[]
 }) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingRule, setEditingRule] = useState<SerializedReportingRule | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<SerializedReportingRule | null>(null)
+  const [editingRule, setEditingRule] = useState<SerializedOpportuniteReportingRule | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<SerializedOpportuniteReportingRule | null>(null)
   const [sendingId, setSendingId] = useState<string | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
 
   function refresh() {
     startTransition(() => router.refresh())
@@ -517,13 +477,13 @@ export function ReportingRulesClient({
     setDialogOpen(true)
   }
 
-  function openEdit(rule: SerializedReportingRule) {
+  function openEdit(rule: SerializedOpportuniteReportingRule) {
     setEditingRule(rule)
     setDialogOpen(true)
   }
 
-  async function handleDelete(rule: SerializedReportingRule) {
-    const result = await deleteReportingRule(rule.id)
+  async function handleDelete(rule: SerializedOpportuniteReportingRule) {
+    const result = await deleteOpportuniteReportingRule(rule.id)
     if (result.success) {
       toast.success("Règle supprimée")
       refresh()
@@ -533,8 +493,8 @@ export function ReportingRulesClient({
     setDeleteTarget(null)
   }
 
-  async function handleToggle(rule: SerializedReportingRule) {
-    const result = await toggleReportingRule(rule.id, !rule.isActive)
+  async function handleToggle(rule: SerializedOpportuniteReportingRule) {
+    const result = await toggleOpportuniteReportingRule(rule.id, !rule.isActive)
     if (result.success) {
       toast.success(rule.isActive ? "Règle désactivée" : "Règle activée")
       refresh()
@@ -543,9 +503,28 @@ export function ReportingRulesClient({
     }
   }
 
-  async function handleSendNow(rule: SerializedReportingRule) {
+  async function handleExportExcel() {
+    setIsExporting(true)
+    try {
+      const res = await fetch('/api/exports/opportunites')
+      if (!res.ok) throw new Error("Erreur lors de l'export")
+      const blob = await res.blob()
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href     = url
+      a.download = `opportunites_${new Date().toISOString().split('T')[0]}.xlsx`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error("Erreur lors de l'export Excel")
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  async function handleSendNow(rule: SerializedOpportuniteReportingRule) {
     setSendingId(rule.id)
-    const result = await sendReportingRuleNow(rule.id)
+    const result = await sendOpportuniteReportingRuleNow(rule.id)
     setSendingId(null)
     if (result.success) {
       toast.success(`Email envoyé à ${result.data!.sent} destinataire(s)`)
@@ -557,20 +536,28 @@ export function ReportingRulesClient({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Reporting Email"
-        description="Configurez vos règles d'envoi de synthèses marchés par statut"
+        title="Suivi Opportunités"
+        description="Configurez vos règles d'envoi de tableaux synthétiques des opportunités"
         action={
-          <Button onClick={openCreate}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nouvelle règle
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleExportExcel} disabled={isExporting}>
+              <Download className="w-4 h-4 mr-2" />
+              {isExporting ? "Export..." : "Exporter Excel"}
+            </Button>
+            <Button onClick={openCreate}>
+              <Plus className="w-4 h-4 mr-2" />
+              Nouvelle règle
+            </Button>
+          </div>
         }
       />
 
       {initialRules.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
-          <p className="text-lg font-medium">Aucune règle de reporting</p>
-          <p className="text-sm mt-1">Créez votre première règle pour commencer</p>
+          <p className="text-lg font-medium">Aucune règle de suivi opportunités</p>
+          <p className="text-sm mt-1">
+            Créez une règle pour recevoir automatiquement le tableau synthétique de toutes vos opportunités
+          </p>
           <Button className="mt-4" onClick={openCreate}>
             <Plus className="w-4 h-4 mr-2" />
             Créer une règle
@@ -582,7 +569,7 @@ export function ReportingRulesClient({
             <thead className="bg-muted/50">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Nom</th>
-                <th className="hidden md:table-cell px-4 py-3 text-left font-medium">Statuts</th>
+                <th className="hidden md:table-cell px-4 py-3 text-left font-medium">Contenu</th>
                 <th className="hidden md:table-cell px-4 py-3 text-left font-medium">Planification</th>
                 <th className="hidden md:table-cell px-4 py-3 text-left font-medium">Destinataires</th>
                 <th className="hidden md:table-cell px-4 py-3 text-left font-medium">Statut</th>
@@ -598,7 +585,7 @@ export function ReportingRulesClient({
                       <p className="text-xs text-muted-foreground">{rule.description}</p>
                     )}
                     <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground md:hidden">
-                      <Badge variant="secondary">{rule.statutGroups.length} statut{rule.statutGroups.length > 1 ? "s" : ""}</Badge>
+                      <Badge variant="secondary">{rule.reportType === "ECHEANCES_MATIN" ? "Échéances du matin" : "Suivi complet"}</Badge>
                       <Badge variant={rule.isActive ? "success" : "muted"}>
                         {rule.isActive ? "Active" : "Inactive"}
                       </Badge>
@@ -608,7 +595,7 @@ export function ReportingRulesClient({
                     </div>
                   </td>
                   <td className="hidden md:table-cell px-4 py-3">
-                    <Badge variant="secondary">{rule.statutGroups.length} statut{rule.statutGroups.length > 1 ? "s" : ""}</Badge>
+                    <Badge variant="secondary">{rule.reportType === "ECHEANCES_MATIN" ? "Échéances du matin" : "Suivi complet"}</Badge>
                   </td>
                   <td className="hidden md:table-cell px-4 py-3 text-muted-foreground">
                     {formatSchedule(rule.scheduleConfig as ReportingScheduleConfig | null)}
@@ -666,16 +653,14 @@ export function ReportingRulesClient({
         </div>
       )}
 
-      {/* Dialog création/édition — key force le re-mount lors du switch create↔edit */}
-      <ReportingRuleDialog
-        key={editingRule?.id ?? 'new'}
+      <OpportuniteReportingRuleDialog
+        key={editingRule?.id ?? "new"}
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         rule={editingRule}
         onSaved={refresh}
       />
 
-      {/* Dialog confirmation suppression */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

@@ -254,7 +254,7 @@ test.describe('Rule Builder — Planification & Emails Externes', () => {
 
     // Soumettre
     await page.click('button[type="submit"]');
-    await page.waitForURL('/admin/alertes/rules', { timeout: 20000 });
+    await page.waitForURL((url) => url.pathname === '/admin/alertes' && url.searchParams.get('onglet') === 'regles', { timeout: 20000 });
     await page.waitForLoadState('networkidle');
 
     // La règle doit apparaître dans la liste
@@ -287,7 +287,7 @@ test.describe('Rule Builder — Planification & Emails Externes', () => {
   // ─── Test 7 : Nettoyage — supprimer la règle de test ─────────────────────
 
   test('T7 — nettoyer les regles de test creees', async ({ page }) => {
-    await page.goto('/admin/alertes/rules');
+    await page.goto('/admin/alertes?onglet=regles');
     await page.waitForLoadState('networkidle');
 
     // Trouver toutes les lignes "Test Schedule ..."

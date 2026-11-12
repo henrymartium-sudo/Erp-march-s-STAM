@@ -1,27 +1,58 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { requireRole } from "@/lib/utils/permissions";
+import { redirect } from "next/navigation";
+import { requireAuth } from "@/lib/utils/permissions";
 import {
   getAlertesActuelles,
   getDestinataires,
 } from "@/lib/actions/alertes-manuelles";
 import { getAlertRules } from "@/lib/actions/alert-rules";
+import { getNotificationHistory } from "@/lib/actions/alert-history";
+import { getReportingRules } from "@/lib/actions/reporting-rules";
+import { getOpportuniteReportingRules } from "@/lib/actions/opportunite-reporting-rules";
+import type { ReportingScheduleConfig } from "@/lib/cron/reporting-processor";
+import { lireOngletAlertes, ongletAutorise } from "@/lib/alertes/onglets";
+import { AlertesOnglets } from "@/components/admin/alertes/alertes-onglets";
 import { AlertesDashboard } from "@/components/admin/alertes/alertes-dashboard";
 import { AlertesTimeline } from "@/components/admin/alertes/alertes-timeline";
+import { RulesListClient } from "@/components/admin/alertes/rule-builder/rules-list-client";
+import { HistoryTable } from "@/components/admin/alertes/history-table";
+import { ReportingRulesClient } from "@/components/admin/alertes/rapports/ReportingRulesClient";
+import { OpportuniteReportingRulesClient } from "@/components/admin/alertes/rapports/OpportuniteReportingRulesClient";
 import { PageHeader } from "@/components/shared/page-header";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RetryButton } from "@/components/shared/retry-button";
-import { AlertCircle, Settings2, History } from "lucide-react";
+import { AlertCircle, Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export default async function AlertesPage() {
-  await requireRole(['ADMIN', 'AVANCE', 'EXPLOITATION']);
+interface AlertesPageProps {
+  searchParams: Promise<{ onglet?: string | string[] }>;
+}
 
-  const [alertesResult, destinatairesResult, rules] = await Promise.all([
+function ErreurChargement({ message }: { message: string }) {
+  return (
+    <Card className="border-destructive">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-destructive">
+          <AlertCircle className="h-5 w-5" />
+          Erreur
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p>{message}</p>
+        <RetryButton />
+      </CardContent>
+    </Card>
+  );
+}
+
+async function OngletEnvoi() {
+  const [alertesResult, destinatairesResult] = await Promise.all([
     getAlertesActuelles(),
     getDestinataires(),
-    getAlertRules(),
   ]);
 
   const alertes = alertesResult.success ? alertesResult.data : null;
@@ -30,72 +61,11 @@ export default async function AlertesPage() {
     : [];
 
   if (!alertes) {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Gestion des Alertes"
-          description="Envoyez manuellement les alertes aux destinataires sélectionnés"
-        />
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertCircle className="h-5 w-5" />
-              Erreur
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p>Impossible de charger les alertes.</p>
-            <RetryButton />
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <ErreurChargement message="Impossible de charger les alertes." />;
   }
-
-  const totalAlertes = alertes.cautions.length + alertes.marches.length;
 
   return (
     <div className="space-y-6">
-      {/* En-tête STAM */}
-      <PageHeader
-        title="Gestion des Alertes"
-        description="Surveillance en temps réel — marchés et cautions proches échéance"
-        count={totalAlertes > 0 ? totalAlertes : undefined}
-      />
-
-      {/* Navigation rapide vers les sous-sections */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Link
-          href="/admin/alertes/rules"
-          className="flex items-center gap-3 rounded-lg border bg-white px-4 py-3 hover:bg-gray-50 transition-colors"
-        >
-          <div className="rounded-md bg-primary/10 p-2">
-            <Settings2 className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <div className="font-medium text-sm">Règles d'alerte</div>
-            <div className="text-xs text-muted-foreground">
-              {rules.length} règle(s) configurée(s)
-            </div>
-          </div>
-        </Link>
-
-        <Link
-          href="/admin/alertes/history"
-          className="flex items-center gap-3 rounded-lg border bg-white px-4 py-3 hover:bg-gray-50 transition-colors"
-        >
-          <div className="rounded-md bg-primary/10 p-2">
-            <History className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <div className="font-medium text-sm">Historique</div>
-            <div className="text-xs text-muted-foreground">
-              Consulter toutes les notifications envoyées
-            </div>
-          </div>
-        </Link>
-      </div>
-
       {/* Timeline visuelle rouge / ambre / vert */}
       <section>
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
@@ -104,7 +74,6 @@ export default async function AlertesPage() {
         <AlertesTimeline alertes={alertes} />
       </section>
 
-      {/* Séparateur visuel */}
       <div className="border-t border-dashed border-gray-200" />
 
       {/* Dashboard email (destinataires + envoi) */}
@@ -129,6 +98,117 @@ export default async function AlertesPage() {
           />
         </Suspense>
       </section>
+    </div>
+  );
+}
+
+async function OngletRegles() {
+  const rules = await getAlertRules().catch(() => null);
+  if (!rules) {
+    return <ErreurChargement message="Impossible de charger les règles." />;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          {rules.length} règle(s) configurée(s)
+        </p>
+        <Button asChild>
+          <Link href="/admin/alertes/rules/new">
+            <Plus className="h-4 w-4 mr-2" />
+            Nouvelle règle
+          </Link>
+        </Button>
+      </div>
+      <RulesListClient rules={rules} />
+    </div>
+  );
+}
+
+function serialiserRegle<
+  T extends { scheduleConfig: unknown; createdAt: Date; updatedAt: Date },
+>(r: T) {
+  return {
+    ...r,
+    scheduleConfig: r.scheduleConfig as ReportingScheduleConfig | null,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+  };
+}
+
+async function OngletRapports() {
+  const [rules, opportuniteRules] = await Promise.all([
+    getReportingRules(),
+    getOpportuniteReportingRules(),
+  ]).catch(() => [null, null] as const);
+
+  if (!rules || !opportuniteRules) {
+    return (
+      <ErreurChargement message="Impossible de charger les rapports programmés." />
+    );
+  }
+
+  const serializedRules = rules.map(serialiserRegle);
+  const serializedOpportuniteRules = opportuniteRules.map(serialiserRegle);
+
+  return (
+    <Tabs defaultValue="reporting">
+      <TabsList>
+        <TabsTrigger value="reporting">Règles email</TabsTrigger>
+        <TabsTrigger value="opportunites">Suivi Opportunités</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="reporting" className="mt-4">
+        <ReportingRulesClient initialRules={serializedRules} />
+      </TabsContent>
+
+      <TabsContent value="opportunites" className="mt-4">
+        <OpportuniteReportingRulesClient
+          initialRules={serializedOpportuniteRules}
+        />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+async function OngletHistorique() {
+  const historique = await getNotificationHistory().catch(() => null);
+  if (!historique) {
+    return <ErreurChargement message="Impossible de charger l'historique." />;
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        {historique.total} notification(s) au total
+      </p>
+      <HistoryTable notifications={historique.notifications} />
+    </div>
+  );
+}
+
+export default async function AlertesPage({ searchParams }: AlertesPageProps) {
+  const session = await requireAuth().catch(() => null);
+  if (!session) redirect("/");
+
+  const role = session.user.role;
+  const onglet = lireOngletAlertes((await searchParams).onglet);
+  if (!ongletAutorise(onglet, role)) redirect("/");
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Alertes et e-mails"
+        description="Envois manuels, règles d'alerte, rapports programmés et historique"
+      />
+
+      <AlertesOnglets onglet={onglet} role={role} />
+
+      {onglet === "envoi" && <OngletEnvoi />}
+      {onglet === "regles" && <OngletRegles />}
+      {onglet === "rapports" && <OngletRapports />}
+      {onglet === "historique" && <OngletHistorique />}
     </div>
   );
 }

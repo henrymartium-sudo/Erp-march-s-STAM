@@ -25,6 +25,7 @@ import type { RecipePayload } from './help-panel'
 import { createAlertRule, updateAlertRule } from '@/lib/actions/alert-rules'
 import { toast } from '@/lib/utils/toast'
 import { EVENT_TYPE_LABELS } from '@/lib/alertes/types'
+import { urlOngletAlertes } from '@/lib/alertes/onglets'
 import type { AlertRule } from '@prisma/client'
 import type { RuleCondition, AlertEventType, RuleConditions, ScheduleConfig } from '@/lib/alertes/types'
 
@@ -95,7 +96,7 @@ export function RuleForm({ rule }: Props) {
 
     if (result.success) {
       toast.success(rule ? 'Règle mise à jour' : 'Règle créée')
-      router.push('/admin/alertes/rules')
+      router.push(urlOngletAlertes('regles'))
     } else {
       toast.error(result.error ?? 'Erreur')
     }

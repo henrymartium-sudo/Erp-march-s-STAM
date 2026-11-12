@@ -79,7 +79,7 @@ export async function createReportingRule(
       metadata: { ruleName: rule.name, type: "reporting" },
     })
 
-    revalidatePath("/admin/reporting")
+    revalidatePath("/admin/alertes")
     return { success: true, data: { id: rule.id } }
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -122,7 +122,7 @@ export async function updateReportingRule(
       metadata: { type: "reporting" },
     })
 
-    revalidatePath("/admin/reporting")
+    revalidatePath("/admin/alertes")
     return { success: true, data: undefined }
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -151,7 +151,7 @@ export async function deleteReportingRule(id: string): Promise<ActionResult<void
       metadata: { type: "reporting" },
     })
 
-    revalidatePath("/admin/reporting")
+    revalidatePath("/admin/alertes")
     return { success: true, data: undefined }
   } catch (error) {
     console.error("deleteReportingRule:", error)
@@ -173,7 +173,7 @@ export async function toggleReportingRule(
       where: { id },
       data: { isActive },
     })
-    revalidatePath("/admin/reporting")
+    revalidatePath("/admin/alertes")
     return { success: true, data: undefined }
   } catch (error) {
     console.error("toggleReportingRule:", error)

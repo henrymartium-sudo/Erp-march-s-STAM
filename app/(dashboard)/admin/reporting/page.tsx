@@ -1,63 +1,9 @@
-// app/(dashboard)/admin/reporting/page.tsx
+import { permanentRedirect } from 'next/navigation'
+import { requireAuth } from '@/lib/utils/permissions'
+import { urlOngletAlertes } from '@/lib/alertes/onglets'
 
-import { requireRole } from "@/lib/utils/permissions"
-import { getReportingRules } from "@/lib/actions/reporting-rules"
-import { getOpportuniteReportingRules } from "@/lib/actions/opportunite-reporting-rules"
-import { ReportingRulesClient } from "./ReportingRulesClient"
-import { OpportuniteReportingRulesClient } from "./OpportuniteReportingRulesClient"
-import { redirect } from "next/navigation"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-
-export const dynamic = "force-dynamic"
-
+// Le reporting est devenu l'onglet « Rapports programmés » de /admin/alertes.
 export default async function ReportingPage() {
-  const session = await requireRole(["ADMIN"]).catch(() => null)
-  if (!session) redirect("/")
-
-  const [rules, opportuniteRules] = await Promise.all([
-    getReportingRules(),
-    getOpportuniteReportingRules(),
-  ])
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const serializedRules = rules.map((r) => ({
-    ...r,
-    scheduleConfig: r.scheduleConfig as any,
-    createdAt: r.createdAt.toISOString(),
-    updatedAt: r.updatedAt.toISOString(),
-  }))
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const serializedOpportuniteRules = opportuniteRules.map((r) => ({
-    ...r,
-    scheduleConfig: r.scheduleConfig as any,
-    createdAt: r.createdAt.toISOString(),
-    updatedAt: r.updatedAt.toISOString(),
-  }))
-
-  return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[#1E3A5F]">Reporting</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Gestion des règles de reporting email
-        </p>
-      </div>
-
-      <Tabs defaultValue="reporting">
-        <TabsList>
-          <TabsTrigger value="reporting">Règles email</TabsTrigger>
-          <TabsTrigger value="opportunites">Suivi Opportunités</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="reporting" className="mt-4">
-          <ReportingRulesClient initialRules={serializedRules} />
-        </TabsContent>
-
-        <TabsContent value="opportunites" className="mt-4">
-          <OpportuniteReportingRulesClient initialRules={serializedOpportuniteRules} />
-        </TabsContent>
-      </Tabs>
-    </div>
-  )
+  await requireAuth()
+  permanentRedirect(urlOngletAlertes('rapports'))
 }

@@ -199,9 +199,10 @@ test.describe('Suite 2 — Dashboard Alertes (UI)', () => {
     await page.goto('/admin/alertes');
     await page.waitForLoadState('networkidle');
 
-    await expect(page.getByText('Gestion des Alertes')).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText("Règles d'alerte")).toBeVisible();
-    await expect(page.getByText('Historique')).toBeVisible();
+    await expect(page.getByRole('main').getByRole('heading', { name: 'Alertes et e-mails', exact: true })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('link', { name: 'Envoi manuel', exact: true })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByRole('link', { name: 'Règles', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Historique', exact: true })).toBeVisible();
     await expect(page.getByText("Tableau de bord des échéances")).toBeVisible();
     await expect(page.getByText("Envoi manuel des alertes")).toBeVisible();
 
@@ -225,9 +226,9 @@ test.describe('Suite 2 — Dashboard Alertes (UI)', () => {
     await page.goto('/admin/alertes');
     await page.waitForLoadState('networkidle');
 
-    await page.getByRole('link', { name: /Règles d'alerte/i }).first().click();
-    await page.waitForURL('**/admin/alertes/rules', { timeout: 15_000 });
-    await expect(page.getByText("Règles d'alerte")).toBeVisible();
+    await page.getByRole('link', { name: 'Règles', exact: true }).click();
+    await page.waitForURL((url) => url.pathname === '/admin/alertes' && url.searchParams.get('onglet') === 'regles', { timeout: 15_000 });
+    await expect(page.getByRole('link', { name: 'Règles', exact: true })).toHaveAttribute('aria-current', 'page');
 
     console.log('\n✅ Navigation dashboard → règles OK');
   });
@@ -236,9 +237,9 @@ test.describe('Suite 2 — Dashboard Alertes (UI)', () => {
     await page.goto('/admin/alertes');
     await page.waitForLoadState('networkidle');
 
-    await page.getByRole('link', { name: /Historique/i }).first().click();
-    await page.waitForURL('**/admin/alertes/history', { timeout: 15_000 });
-    await expect(page.getByText('Historique des notifications')).toBeVisible();
+    await page.getByRole('link', { name: 'Historique', exact: true }).click();
+    await page.waitForURL((url) => url.pathname === '/admin/alertes' && url.searchParams.get('onglet') === 'historique', { timeout: 15_000 });
+    await expect(page.getByRole('link', { name: 'Historique', exact: true })).toHaveAttribute('aria-current', 'page');
 
     console.log('\n✅ Navigation dashboard → historique OK');
   });
@@ -325,7 +326,7 @@ test.describe('Suite 3 — Combinaisons de règles (Rule Builder)', () => {
   // ── Helper : soumettre et vérifier dans la liste ─────────────────────────
   async function submitAndVerify(page: import('@playwright/test').Page, ruleName: string) {
     await page.click('button[type="submit"]');
-    await page.waitForURL('**/admin/alertes/rules', { timeout: 20_000 });
+    await page.waitForURL((url) => url.pathname === '/admin/alertes' && url.searchParams.get('onglet') === 'regles', { timeout: 20_000 });
     await page.waitForLoadState('networkidle');
     await expect(page.getByText(ruleName)).toBeVisible({ timeout: 10_000 });
   }
@@ -494,7 +495,7 @@ test.describe('Suite 3 — Combinaisons de règles (Rule Builder)', () => {
 
   // ── Test 3.6 : Toggle actif/inactif ─────────────────────────────────────
   test('3.6 — Toggle actif/inactif sur une règle de la liste', async ({ page }) => {
-    await page.goto('/admin/alertes/rules');
+    await page.goto('/admin/alertes?onglet=regles');
     await page.waitForLoadState('networkidle');
 
     // Le bouton toggle a data-testid="rule-toggle" et l'état actif
@@ -583,11 +584,11 @@ test.describe('Suite 3 — Combinaisons de règles (Rule Builder)', () => {
 
 test.describe('Suite 4 — Historique des notifications', () => {
 
-  test('4.1 — Page /admin/alertes/history accessible et chargée', async ({ page }) => {
-    await page.goto('/admin/alertes/history');
+  test('4.1 — Onglet Historique de /admin/alertes accessible et chargé', async ({ page }) => {
+    await page.goto('/admin/alertes?onglet=historique');
     await page.waitForLoadState('networkidle');
 
-    await expect(page.getByText('Historique des notifications')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('link', { name: 'Historique', exact: true })).toHaveAttribute('aria-current', 'page', { timeout: 15_000 });
 
     const hasCount = await page.getByText(/notification\(s\) au total/i).isVisible({ timeout: 3000 }).catch(() => false);
     const hasEmpty = await page.getByText(/Aucune notification/i).isVisible({ timeout: 3000 }).catch(() => false);
@@ -598,7 +599,7 @@ test.describe('Suite 4 — Historique des notifications', () => {
   });
 
   test('4.2 — Table historique : présente ou message vide', async ({ page }) => {
-    await page.goto('/admin/alertes/history');
+    await page.goto('/admin/alertes?onglet=historique');
     await page.waitForLoadState('networkidle');
 
     const hasTable = await page.locator('table').isVisible({ timeout: 3000 }).catch(() => false);

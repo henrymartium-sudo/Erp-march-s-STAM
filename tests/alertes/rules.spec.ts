@@ -64,11 +64,11 @@ test.describe('Module Alertes — Rule Builder', () => {
   // ─── Test 1 : Liste des règles ─────────────────────────────────────────────
 
   test('devrait afficher la liste des regles avec les regles par defaut', async ({ page }) => {
-    await page.goto('/admin/alertes/rules');
+    await page.goto('/admin/alertes?onglet=regles');
     await page.waitForLoadState('networkidle');
 
     // Titre de page
-    await expect(page.getByText("Règles d'alerte")).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Règles', exact: true })).toHaveAttribute('aria-current', 'page');
 
     // Au moins une règle par défaut (seedée en P1)
     await expect(page.getByText('Caution critique')).toBeVisible();
@@ -142,7 +142,7 @@ test.describe('Module Alertes — Rule Builder', () => {
     await page.click('button[type="submit"]');
 
     // Attendre redirection vers la liste
-    await page.waitForURL('/admin/alertes/rules', { timeout: 15000 });
+    await page.waitForURL((url) => url.pathname === '/admin/alertes' && url.searchParams.get('onglet') === 'regles', { timeout: 15000 });
     await page.waitForLoadState('networkidle');
 
     // La règle doit apparaître
@@ -182,11 +182,11 @@ test.describe('Module Alertes — Rule Builder', () => {
   // ─── Test 5 : Historique des notifications ────────────────────────────────
 
   test('devrait afficher la page historique des notifications', async ({ page }) => {
-    await page.goto('/admin/alertes/history');
+    await page.goto('/admin/alertes?onglet=historique');
     await page.waitForLoadState('networkidle');
 
     // Le titre est toujours présent
-    await expect(page.getByText('Historique des notifications')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Historique', exact: true })).toHaveAttribute('aria-current', 'page');
 
     // Soit un tableau (avec des notifications), soit le message vide
     const hasTable = await page.locator('table').isVisible({ timeout: 2000 }).catch(() => false);
@@ -199,16 +199,16 @@ test.describe('Module Alertes — Rule Builder', () => {
 
   test('devrait naviguer entre regles et historique', async ({ page }) => {
     // Naviguer directement vers les règles (évite /admin/alertes qui est lourd)
-    await page.goto('/admin/alertes/rules');
+    await page.goto('/admin/alertes?onglet=regles');
     await page.waitForLoadState('networkidle');
 
-    await expect(page.getByText("Règles d'alerte")).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Règles', exact: true })).toHaveAttribute('aria-current', 'page');
 
     // Naviguer vers l'historique
-    await page.goto('/admin/alertes/history');
+    await page.goto('/admin/alertes?onglet=historique');
     await page.waitForLoadState('networkidle');
 
-    await expect(page.getByText('Historique des notifications')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Historique', exact: true })).toHaveAttribute('aria-current', 'page');
   });
 
   // ─── Test 7 : ConditionEditor — select enum pour nouveauStatut ───────────
