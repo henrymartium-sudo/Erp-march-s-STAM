@@ -71,9 +71,30 @@ test('LIVRAISON_EN_RETARD : marché en attente de livraison dont la date prévue
   expect(natures(sources({ marches: [marche({ statut: 'EN_ATTENTE_LIVRAISON_OS', dateLivraisonPrevue: J(0) })] }))).toEqual([])
 })
 
-test('A_CLOTURER : marché en exécution dont la fin prévue est passée', () => {
-  expect(une(sources({ marches: [marche({ statut: 'EN_EXECUTION', dateFinPrevue: J(-3) })] }), 'A_CLOTURER')).toHaveLength(1)
-  expect(natures(sources({ marches: [marche({ statut: 'EN_EXECUTION', dateFinPrevue: J(5) })] }))).toEqual([])
+test('RECEPTION_DEFINITIVE : marché en exécution dont la fin prévue est dépassée, en retard', () => {
+  const [l] = une(sources({ marches: [marche({ statut: 'EN_EXECUTION', dateFinPrevue: J(-3) })] }), 'RECEPTION_DEFINITIVE')
+  expect(l).toMatchObject({ domaine: 'exec', horizon: 'retard', libelle: 'Réception définitive à obtenir', sansRattrapage: false, href: '/marches/m1' })
+})
+
+test('FIN_EXECUTION_PROCHE : marché en exécution, fin prévue aujourd’hui ou dans les 30 jours', () => {
+  const [auj] = une(sources({ marches: [marche({ dateFinPrevue: J(0) })] }), 'FIN_EXECUTION_PROCHE')
+  expect(auj).toMatchObject({ horizon: 'semaine', libelle: "Fin d'exécution proche" })
+  expect(natures(sources({ marches: [marche({ dateFinPrevue: J(0) })] }))).not.toContain('RECEPTION_DEFINITIVE')
+  expect(une(sources({ marches: [marche({ dateFinPrevue: J(30) })] }), 'FIN_EXECUTION_PROCHE')[0]).toMatchObject({ horizon: 'mois' })
+  expect(natures(sources({ marches: [marche({ dateFinPrevue: J(31) })] }))).toEqual([])
+})
+
+test('marché EN_EXECUTION sans fin prévue : aucune ligne, listé dans les données manquantes', () => {
+  const s = sources({ marches: [marche({ id: 'm9', numero: 'M-9', statut: 'EN_EXECUTION', dateFinPrevue: null })] })
+  const r = construireATraiter(s, AUJ)
+  expect(r.lignes).toEqual([])
+  expect(r.manquants.marchesEnExecutionSansFin).toEqual([{ libelle: 'M-9', href: '/marches/m9' }])
+})
+
+test('marché hors exécution avec fin prévue dépassée : ni réception ni fin proche ni manquant', () => {
+  const s = sources({ marches: [marche({ statut: 'EN_ATTENTE_LIVRAISON_OS', dateFinPrevue: J(-10), dateLivraisonPrevue: J(5) })] })
+  expect(natures(s)).toEqual([])
+  expect(construireATraiter(s, AUJ).manquants.marchesEnExecutionSansFin).toEqual([])
 })
 
 test('GARANTIES_A_LIBERER : une ligne par caution active d’un marché exécuté en attente de garanties', () => {
@@ -112,8 +133,8 @@ test('ordonne par échéance, sans rattrapage en tête à horizon égal', () => 
     marches: [marche({ id: 'm1', statut: 'EN_EXECUTION', dateFinPrevue: J(-5) })],
     cautions: [caution({ id: 'c1', dateEcheance: J(2) }), caution({ id: 'c2', dateEcheance: J(20) })],
   })
-  expect(natures(s)).toEqual(['A_CLOTURER', 'DEPOT_OFFRE', 'CAUTION_A_RENOUVELER', 'CAUTION_A_RENOUVELER'])
-  expect(construireATraiter(s, AUJ).lignes.map((l) => l.id)).toEqual(['A_CLOTURER:m1', 'DEPOT_OFFRE:o1', 'CAUTION_A_RENOUVELER:c1', 'CAUTION_A_RENOUVELER:c2'])
+  expect(natures(s)).toEqual(['RECEPTION_DEFINITIVE', 'DEPOT_OFFRE', 'CAUTION_A_RENOUVELER', 'CAUTION_A_RENOUVELER'])
+  expect(construireATraiter(s, AUJ).lignes.map((l) => l.id)).toEqual(['RECEPTION_DEFINITIVE:m1','DEPOT_OFFRE:o1', 'CAUTION_A_RENOUVELER:c1', 'CAUTION_A_RENOUVELER:c2'])
 })
 
 test('caution de soumission sur opportunité PERDUE : à libérer, pas à renouveler', () => {

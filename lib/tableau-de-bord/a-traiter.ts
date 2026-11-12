@@ -14,7 +14,7 @@ export const DELAI_PAIEMENT_DEFAUT = 45
 
 export type NatureEcheance =
   | 'DEPOT_OFFRE' | 'FIN_VALIDITE_OFFRE' | 'ATTRIBUTION_PROVISOIRE'
-  | 'LIVRAISON_EN_RETARD' | 'A_CLOTURER' | 'GARANTIES_A_LIBERER'
+  | 'LIVRAISON_EN_RETARD' | 'FIN_EXECUTION_PROCHE' | 'RECEPTION_DEFINITIVE' | 'GARANTIES_A_LIBERER'
   | 'CAUTION_A_RENOUVELER' | 'CAUTION_A_LIBERER' | 'FACTURE_ECHUE'
 
 export interface LigneATraiter {
@@ -30,14 +30,15 @@ export interface CautionEcheances { id: string; reference: string; type: TypeCau
 export interface FactureEcheances { id: string; numero: string; marcheId: string; statut: StatutFacture; montantTTC: number; dateEmission: Date | null; dateEcheance: Date | null; datePaiement: Date | null }
 /** `factures: null` = rôle sans accès aux finances. */
 export interface SourcesATraiter { opportunites: OpportuniteEcheances[]; marches: MarcheEcheances[]; cautions: CautionEcheances[]; factures: FactureEcheances[] | null }
-export interface ResultatATraiter { lignes: LigneATraiter[]; manquants: { opportunitesSansDateDepot: ElementLie[]; marchesSansDateLivraison: ElementLie[]; facturesSansDate: ElementLie[] } }
+export interface ResultatATraiter { lignes: LigneATraiter[]; manquants: { opportunitesSansDateDepot: ElementLie[]; marchesSansDateLivraison: ElementLie[]; marchesEnExecutionSansFin: ElementLie[]; facturesSansDate: ElementLie[] } }
 
 const LIBELLES: Record<NatureEcheance, string> = {
   DEPOT_OFFRE: "Dépôt de l'offre",
   FIN_VALIDITE_OFFRE: "Fin de validité de l'offre",
   ATTRIBUTION_PROVISOIRE: 'Attribution provisoire attendue',
   LIVRAISON_EN_RETARD: 'Livraison en retard',
-  A_CLOTURER: 'Marché à clôturer',
+  FIN_EXECUTION_PROCHE: "Fin d'exécution proche",
+  RECEPTION_DEFINITIVE: 'Réception définitive à obtenir',
   GARANTIES_A_LIBERER: 'Garantie à faire libérer',
   CAUTION_A_RENOUVELER: 'Caution à renouveler',
   CAUTION_A_LIBERER: 'Caution à libérer',
@@ -86,7 +87,11 @@ export function construireATraiter(s: SourcesATraiter, aujourdHui: Date): Result
   for (const m of s.marches) {
     const l = { domaine: 'exec' as const, reference: m.numero, href: `/marches/${m.id}`, montant: m.montant }
     if (m.statut === 'EN_ATTENTE_LIVRAISON_OS' && passee(m.dateLivraisonPrevue)) ajouter('LIVRAISON_EN_RETARD', m.id, m.dateLivraisonPrevue, l)
-    if (m.statut === 'EN_EXECUTION' && passee(m.dateFinPrevue)) ajouter('A_CLOTURER', m.id, m.dateFinPrevue, l)
+    // Un marché en exécution reste à traiter jusqu'à sa réception définitive (décision d'Abel, 2026-11-12) :
+    // fin proche (horizon ≤ 30 j), puis réception à obtenir une fois la fin prévue dépassée.
+    if (m.statut === 'EN_EXECUTION' && m.dateFinPrevue) {
+      ajouter(passee(m.dateFinPrevue) ? 'RECEPTION_DEFINITIVE' : 'FIN_EXECUTION_PROCHE', m.id, m.dateFinPrevue, l)
+    }
   }
 
   for (const c of s.cautions) {
@@ -121,6 +126,9 @@ export function construireATraiter(s: SourcesATraiter, aujourdHui: Date): Result
         .map((o) => ({ libelle: o.reference ?? o.objet, href: `/opportunites/${o.id}` })),
       marchesSansDateLivraison: s.marches
         .filter((m) => m.statut === 'EN_ATTENTE_LIVRAISON_OS' && !m.dateLivraisonPrevue)
+        .map((m) => ({ libelle: m.numero, href: `/marches/${m.id}` })),
+      marchesEnExecutionSansFin: s.marches
+        .filter((m) => m.statut === 'EN_EXECUTION' && !m.dateFinPrevue)
         .map((m) => ({ libelle: m.numero, href: `/marches/${m.id}` })),
       facturesSansDate: (s.factures ?? [])
         .filter((f) => STATUTS_FACTURE_DUE.includes(f.statut) && !f.datePaiement && !echeanceFacture(f))
