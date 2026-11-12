@@ -1,51 +1,25 @@
 import { test, expect } from '@playwright/test';
-import { login, logout, TEST_USERS } from '../helpers/auth';
+import { login, TEST_USERS } from '../helpers/auth';
 import { waitForDashboardLoaded } from '../helpers/dashboard';
 
 /**
- * Tests E2E - Dashboard - Authentification & Redirection
- * Vérifie que l'accès au dashboard nécessite une authentification
+ * Tests E2E - Page d'accueil - Authentification & accès par rôle
+ * L'accès exige une connexion ; les quatre rôles voient le tableau de bord.
  */
-test.describe('Dashboard - Authentification', () => {
-  test('devrait rediriger vers /login si non authentifié', async ({ page }) => {
-    // Tenter d'accéder au dashboard sans être connecté
-    await page.goto('/');
+test.describe('Tableau de bord - Authentification', () => {
+  test.describe.configure({ timeout: 120000 });
 
-    // Vérifier la redirection vers /login (avec callbackUrl possible)
+  test('devrait rediriger vers /login si non authentifié', async ({ page }) => {
+    await page.goto('/');
     await expect(page).toHaveURL(/\/login/);
   });
 
-  test('devrait afficher le dashboard après login ADMIN', async ({ page }) => {
-    // Se connecter en tant qu'ADMIN
-    await login(page, TEST_USERS.admin);
-
-    // Attendre le chargement du dashboard
-    await waitForDashboardLoaded(page);
-
-    // Vérifier la présence d'éléments du dashboard
-    await expect(page.locator('text=Marchés actifs')).toBeVisible();
-    await expect(page.locator('text=Actions rapides')).toBeVisible();
-  });
-
-  test('devrait afficher le dashboard après login AVANCE', async ({ page }) => {
-    await login(page, TEST_USERS.avance);
-    await waitForDashboardLoaded(page);
-
-    await expect(page.locator('text=Marchés actifs')).toBeVisible();
-  });
-
-  test('devrait afficher le dashboard après login EXPLOITATION', async ({ page }) => {
-    await login(page, TEST_USERS.exploitation);
-    await waitForDashboardLoaded(page);
-
-    await expect(page.locator('text=Marchés actifs')).toBeVisible();
-  });
-
-  test('devrait afficher le dashboard après login VISITEUR', async ({ page }) => {
-    await login(page, TEST_USERS.visiteur);
-    await waitForDashboardLoaded(page);
-
-    // Les visiteurs peuvent voir le dashboard (read-only)
-    await expect(page.locator('text=Marchés actifs')).toBeVisible();
-  });
+  for (const role of ['admin', 'avance', 'exploitation', 'visiteur'] as const) {
+    test(`devrait afficher le tableau de bord après login ${role.toUpperCase()}`, async ({ page }) => {
+      await login(page, TEST_USERS[role]);
+      await waitForDashboardLoaded(page);
+      await expect(page.locator('h1')).toHaveCount(1);
+      await expect(page.getByRole('region', { name: 'À traiter' })).toBeVisible();
+    });
+  }
 });

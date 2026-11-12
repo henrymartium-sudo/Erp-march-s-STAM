@@ -3,310 +3,59 @@ import { login, TEST_USERS } from '../helpers/auth';
 import { waitForDashboardLoaded } from '../helpers/dashboard';
 
 /**
- * Tests E2E - Dashboard - Responsive Design
- * Vérifie l'affichage sur 3 viewports: Desktop, Tablette, Mobile
+ * Tests E2E - Page d'accueil - Responsive
+ * Trois tailles (desktop, tablette, mobile) : contenu présent et aucun débordement horizontal.
+ * Une seule connexion ; la taille de la fenêtre change entre les cas.
  */
+const TAILLES = [
+  { nom: 'Desktop (1920x1080)', width: 1920, height: 1080 },
+  { nom: 'Tablette (768x1024)', width: 768, height: 1024 },
+  { nom: 'Mobile (375x667)', width: 375, height: 667 },
+] as const;
 
-test.describe('Dashboard - Responsive Desktop (1920x1080)', () => {
-  test.use({ viewport: { width: 1920, height: 1080 } });
+test.describe('Tableau de bord - Responsive', () => {
+  test.describe.configure({ mode: 'serial', timeout: 240000 });
 
-  test.beforeEach(async ({ page }) => {
+  test('les trois blocs tiennent dans la largeur à chaque taille', async ({ page }) => {
     await login(page, TEST_USERS.admin);
-    await waitForDashboardLoaded(page);
-  });
 
-  test('devrait afficher les KPI en 3 colonnes', async ({ page }) => {
-    const kpiContainer = page.locator('text=Marchés actifs')
-      .locator('..')
-      .locator('..')
-      .locator('..');
+    for (const taille of TAILLES) {
+      await page.setViewportSize({ width: taille.width, height: taille.height });
+      await page.goto('/');
+      await waitForDashboardLoaded(page);
 
-    const className = await kpiContainer.getAttribute('class');
+      await expect(page.getByRole('region', { name: 'À traiter' }), taille.nom).toBeVisible();
+      await expect(page.getByRole('region', { name: 'Est-ce que ça va ?' }), taille.nom).toBeVisible();
+      await expect(page.getByRole('region', { name: 'Pipeline des offres' }), taille.nom).toBeVisible();
 
-    // Desktop devrait avoir lg:grid-cols-3
-    if (className) {
-      expect(className).toContain('grid');
-
-      // Vérifier breakpoint large
-      const hasLgCols = className.includes('lg:grid-cols');
-      console.log('Desktop - KPI grid classes:', className);
-      expect(hasLgCols || className.includes('grid-cols')).toBe(true);
-    } else {
-      // OK si pas de classe spécifique
-      expect(true).toBe(true);
+      // À 375 px, `innerWidth` s'élargit si quelque chose déborde : comparer à la largeur du document.
+      const debordement = await page.evaluate(() => ({
+        document: document.documentElement.scrollWidth,
+        fenetre: document.documentElement.clientWidth,
+        elements: Array.from(document.querySelectorAll('main *'))
+          .filter((el) => el.getBoundingClientRect().right > document.documentElement.clientWidth + 1)
+          .slice(0, 5)
+          .map((el) => `${el.tagName.toLowerCase()}.${(el as HTMLElement).className?.toString().slice(0, 40)}`),
+      }));
+      expect(debordement.document, `${taille.nom} : ${debordement.elements.join(' | ')}`).toBeLessThanOrEqual(debordement.fenetre);
     }
   });
 
-  test('devrait afficher Quick Actions en 4 colonnes', async ({ page }) => {
-    const quickActionsSection = page.locator('text=Actions rapides');
-
-    const isVisible = await quickActionsSection.isVisible({ timeout: 2000 }).catch(() => false);
-
-    if (isVisible) {
-      const container = quickActionsSection.locator('..').locator('div[class*="grid"]').first();
-
-      const className = await container.getAttribute('class');
-
-      console.log('Desktop - Quick Actions classes:', className);
-
-      // Vérifier grille 2 ou 4 colonnes
-      if (className) {
-        expect(className).toContain('grid');
-      } else {
-        expect(true).toBe(true);
-      }
-    } else {
-      expect(true).toBe(true);
-    }
-  });
-
-  test('devrait afficher Recent Activity en 3 colonnes', async ({ page }) => {
-    const recentSection = page.locator('text=Activité récente').or(
-      page.locator('text=Récemment')
-    );
-
-    const isVisible = await recentSection.isVisible({ timeout: 2000 }).catch(() => false);
-
-    if (isVisible) {
-      const container = recentSection.locator('..').locator('..');
-
-      const className = await container.getAttribute('class');
-
-      console.log('Desktop - Recent Activity classes:', className);
-
-      if (className) {
-        expect(className.includes('grid') || className.includes('flex')).toBe(true);
-      } else {
-        expect(true).toBe(true);
-      }
-    } else {
-      expect(true).toBe(true);
-    }
-  });
-
-  test('devrait afficher les graphiques Recharts côte à côte', async ({ page }) => {
-    const statusChart = page.locator('text=Répartition des marchés').or(
-      page.locator('text=Statut des marchés')
-    );
-
-    const isVisible = await statusChart.isVisible({ timeout: 2000 }).catch(() => false);
-
-    if (isVisible) {
-      // Vérifier que les graphiques sont visibles simultanément
-      const montantsChart = page.locator('text=Évolution des montants').or(
-        page.locator('text=Montants mensuels')
-      );
-
-      const montantsVisible = await montantsChart.isVisible({ timeout: 2000 }).catch(() => false);
-
-      console.log('Desktop - Charts visibles:', { statusChart: true, montantsChart: montantsVisible });
-
-      // Les deux peuvent être visibles sur desktop
-      expect(true).toBe(true);
-    } else {
-      expect(true).toBe(true);
-    }
-  });
-});
-
-test.describe('Dashboard - Responsive Tablette (768x1024)', () => {
-  test.use({ viewport: { width: 768, height: 1024 } });
-
-  test.beforeEach(async ({ page }) => {
+  test('mobile : les cibles tactiles du filtre et de la création font au moins 44 px', async ({ page }) => {
     await login(page, TEST_USERS.admin);
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto('/');
     await waitForDashboardLoaded(page);
-  });
 
-  test('devrait afficher les KPI en 2 colonnes', async ({ page }) => {
-    const kpiContainer = page.locator('text=Marchés actifs')
-      .locator('..')
-      .locator('..')
-      .locator('..');
-
-    const className = await kpiContainer.getAttribute('class');
-
-    console.log('Tablette - KPI grid classes:', className);
-
-    if (className) {
-      expect(className).toContain('grid');
-
-      // Tablette devrait avoir md:grid-cols-2
-      const hasMdCols = className.includes('md:grid-cols');
-      console.log('Tablette - Breakpoint md présent:', hasMdCols);
-    } else {
-      expect(true).toBe(true);
-    }
-  });
-
-  test('devrait rester scrollable verticalement', async ({ page }) => {
-    // Vérifier que le contenu est accessible avec scroll
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-
-    // Attendre le scroll
-    await page.waitForTimeout(500);
-
-    // Vérifier qu'on peut scroller vers le bas
-    const scrollY = await page.evaluate(() => window.scrollY);
-
-    console.log('Tablette - Scroll Y:', scrollY);
-
-    // Si scrollY > 0, le scroll fonctionne
-    expect(scrollY).toBeGreaterThanOrEqual(0);
-  });
-
-  test('devrait adapter les graphiques Recharts', async ({ page }) => {
-    const statusChart = page.locator('text=Répartition des marchés').or(
-      page.locator('text=Statut des marchés')
-    );
-
-    const isVisible = await statusChart.isVisible({ timeout: 2000 }).catch(() => false);
-
-    if (isVisible) {
-      const chartContainer = statusChart.locator('..').locator('..');
-      const svg = chartContainer.locator('svg').first();
-
-      await svg.waitFor({ state: 'visible', timeout: 5000 });
-
-      // Vérifier que le SVG est visible
-      await expect(svg).toBeVisible();
-
-      console.log('Tablette - Graphique Recharts visible');
-    } else {
-      expect(true).toBe(true);
-    }
-  });
-
-  test('devrait afficher Quick Actions en grille adaptée', async ({ page }) => {
-    const quickActionsSection = page.locator('text=Actions rapides');
-
-    const isVisible = await quickActionsSection.isVisible({ timeout: 2000 }).catch(() => false);
-
-    if (isVisible) {
-      const container = quickActionsSection.locator('..').locator('div[class*="grid"]').first();
-
-      // Vérifier que les boutons sont toujours accessibles
-      const buttons = container.locator('button').or(
-        container.locator('a')
-      );
-
-      const count = await buttons.count();
-
-      expect(count).toBeGreaterThanOrEqual(4);
-      console.log('Tablette - Nombre de Quick Actions:', count);
-    } else {
-      expect(true).toBe(true);
-    }
-  });
-});
-
-test.describe('Dashboard - Responsive Mobile (375x667)', () => {
-  test.use({ viewport: { width: 375, height: 667 } });
-
-  test.beforeEach(async ({ page }) => {
-    await login(page, TEST_USERS.admin);
-    await waitForDashboardLoaded(page);
-  });
-
-  test('devrait afficher les KPI en 1 colonne', async ({ page }) => {
-    const kpiContainer = page.locator('text=Marchés actifs')
-      .locator('..')
-      .locator('..')
-      .locator('..');
-
-    const className = await kpiContainer.getAttribute('class');
-
-    console.log('Mobile - KPI grid classes:', className);
-
-    if (className) {
-      expect(className).toContain('grid');
-
-      // Mobile devrait avoir grid-cols-1 par défaut
-      // Ou flex-col pour empilage vertical
-      const hasColLayout = className.includes('grid-cols-1') ||
-                          className.includes('flex-col') ||
-                          className.includes('grid');
-
-      expect(hasColLayout).toBe(true);
-    } else {
-      expect(true).toBe(true);
-    }
-  });
-
-  test('devrait afficher Quick Actions en 2 colonnes', async ({ page }) => {
-    const quickActionsSection = page.locator('text=Actions rapides');
-
-    const isVisible = await quickActionsSection.isVisible({ timeout: 2000 }).catch(() => false);
-
-    if (isVisible) {
-      const container = quickActionsSection.locator('..').locator('div[class*="grid"]').first();
-
-      const className = await container.getAttribute('class');
-
-      console.log('Mobile - Quick Actions classes:', className);
-
-      // Mobile généralement 2 colonnes pour Quick Actions
-      if (className) {
-        expect(className.includes('grid') || className.includes('flex')).toBe(true);
-      } else {
-        expect(true).toBe(true);
-      }
-    } else {
-      expect(true).toBe(true);
-    }
-  });
-
-  test('devrait permettre le scroll vertical', async ({ page }) => {
-    // Scroller vers le bas de la page
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-
-    await page.waitForTimeout(500);
-
-    const scrollY = await page.evaluate(() => window.scrollY);
-
-    console.log('Mobile - Scroll Y:', scrollY);
-
-    // Le scroll doit fonctionner sur mobile
-    expect(scrollY).toBeGreaterThan(0);
-  });
-
-  test('devrait afficher tous les éléments empilés verticalement', async ({ page }) => {
-    // Vérifier que les sections principales sont toutes visibles avec scroll
-
-    const sections = [
-      'Marchés actifs',
-      'Actions rapides',
+    const cibles = [
+      page.getByRole('link', { name: 'Tout', exact: true }),
+      page.getByRole('link', { name: 'Passation', exact: true }),
+      page.getByRole('link', { name: 'Nouvelle opportunité' }),
+      page.getByRole('button', { name: /Créer/ }),
     ];
-
-    for (const sectionText of sections) {
-      const section = page.locator(`text=${sectionText}`);
-
-      const isVisible = await section.isVisible({ timeout: 2000 }).catch(() => false);
-
-      if (!isVisible) {
-        // Scroller pour trouver la section
-        await page.evaluate((text) => {
-          const element = document.evaluate(
-            `//*[contains(text(), '${text}')]`,
-            document,
-            null,
-            XPathResult.FIRST_ORDERED_NODE_TYPE,
-            null
-          ).singleNodeValue as HTMLElement;
-
-          if (element) {
-            element.scrollIntoView({ behavior: 'smooth' });
-          }
-        }, sectionText);
-
-        await page.waitForTimeout(500);
-      }
-
-      const finalVisible = await section.isVisible({ timeout: 2000 }).catch(() => false);
-
-      console.log(`Mobile - Section "${sectionText}" visible:`, finalVisible);
+    for (const cible of cibles) {
+      const boite = await cible.boundingBox();
+      expect(boite?.height ?? 0).toBeGreaterThanOrEqual(43.5);
     }
-
-    // Au moins une section devrait être visible
-    expect(true).toBe(true);
   });
 });
