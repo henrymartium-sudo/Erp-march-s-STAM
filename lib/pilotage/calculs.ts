@@ -78,7 +78,7 @@ function pourcentage(num: number, den: number): number | null {
   return den > 0 ? Math.round((num / den) * 100) : null
 }
 
-export function montantFacture(m: MarchePilotage): number {
+export function montantFacture(m: Pick<MarchePilotage, 'factures'>): number {
   return m.factures
     .filter((f) => STATUTS_FACTURES_COMPTEES.includes(f.statut))
     .reduce((s, f) => s + f.montantTTC, 0)
