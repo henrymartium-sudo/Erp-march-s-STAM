@@ -61,7 +61,7 @@ Le serveur renvoie `null` pour un bloc auquel le rôle n'a pas droit, et `montan
 
 - Composants : shadcn/ui et les jetons de style existants (`globals.css`, `tailwind.config.ts`) ; la maquette donne la mise en page, pas une palette nouvelle. Pas de nouvelle bibliothèque.
 - Découpage serveur/client : le filtre et le repli « Ce mois-ci » sont interactifs ; le reste peut être rendu côté serveur.
-- Verbe d'action par nature (`NatureEcheance`), inspiré de la maquette : Relancer (facture échue), Mettre à jour la livraison, Passer en exécuté (à clôturer), Demander la mainlevée (garanties et caution à libérer), Finaliser le dossier (dépôt), Proroger ou classer (fin de validité), Renouveler (caution), Suivre (attribution provisoire).
+- Verbe d'action par nature (`NatureEcheance`), inspiré de la maquette : Relancer (facture échue), Mettre à jour la livraison, Préparer la réception et Relancer l'autorité (fin d'exécution, voir §5 ter), Demander la mainlevée (garanties et caution à libérer), Finaliser le dossier (dépôt), Proroger ou classer (fin de validité), Renouveler (caution), Suivre (attribution provisoire).
 - Lien de chaque voyant vers sa liste : utiliser les filtres d'URL existants des listes (factures, cautions, opportunités, marchés). Si une liste n'a pas le filtre voulu, viser la liste la plus proche et le noter, sans ajouter de filtre dans cette livraison.
 - États de chargement (squelette) et d'erreur par bloc, sur le modèle de `/pilotage`.
 - Suppression des composants de `components/dashboard/` devenus orphelins, et des fonctions de statistiques qui ne servent plus qu'à l'ancienne page, après vérification qu'aucun autre appelant n'existe.
@@ -78,7 +78,16 @@ Choix de Claude, à vérifier par Abel à la lecture :
    - voyants : Encaissements, Cautions et Reste à facturer côté exécution (comme sur la maquette) ; Taux de succès et Dépôts côté passation ; le pipeline côté passation.
 3. **Le verbe d'action est un simple libellé** : toute la ligne est un lien vers la fiche, où l'action se fait. Aucune action serveur nouvelle, aucune mutation depuis la page d'accueil.
 4. **Cohérence avec `/pilotage`** : la seule notion commune est le taux de succès (`calculerIssueOffres`, déjà partagé). Le test E2E vérifie que le taux affiché à `/` est celui de `/pilotage` sur la même période ; en cas d'écart, `/pilotage` fait foi et c'est un défaut.
-5. **Ce qui disparaît sans reprise** : le cadrage §3 liste déjà ce qui est retiré (camemberts, montants mensuels, CA effectif, activité récente, actions rapides). L'ancien bloc « Alertes et échéances » (cautions qui expirent sous 30 jours, marchés dont la fin prévue tombe dans les 60 jours) est remplacé par « À traiter » et le voyant Cautions. Les marchés en fin d'exécution *proche*, mais pas encore dépassée, ne sont plus signalés : c'est conforme à la règle validée le 2026-11-12 (« à clôturer » = fin prévue dépassée).
+5. **Ce qui disparaît sans reprise** : le cadrage §3 liste déjà ce qui est retiré (camemberts, montants mensuels, CA effectif, activité récente, actions rapides). L'ancien bloc « Alertes et échéances » (cautions qui expirent sous 30 jours, marchés dont la fin prévue tombe dans les 60 jours) est remplacé par « À traiter » et le voyant Cautions. Les marchés en fin d'exécution restent signalés, selon la règle du §5 ter.
+
+## 5 ter. Marchés en fin d'exécution : règle corrigée (décision d'Abel, 2026-11-12)
+
+Seul un marché clôturé, résilié, annulé ou infructueux n'a plus d'importance. Un marché **en exécution** (`EN_EXECUTION`) avec une fin prévue apparaît dans « À traiter » :
+
+- **dès 30 jours avant sa fin prévue** (horizons « Cette semaine » et « Ce mois-ci ») : nature « Fin d'exécution proche », verbe d'action « Préparer la réception » ;
+- **une fois la fin prévue dépassée** (horizon « En retard ») : nature « Réception définitive à obtenir », verbe d'action « Relancer l'autorité », pour que l'autorité contractante programme la réception définitive et que le dossier se clôture. La ligne reste tant que le marché est en exécution.
+
+Cela remplace la nature `A_CLOTURER` (fin prévue dépassée seulement, action « Passer en exécuté ») dans `lib/tableau-de-bord/a-traiter.ts`. La règle change côté données, dans cette livraison, avec ses tests unitaires. Il faut aussi un marché `EN_EXECUTION` sans fin prévue dans les « Données manquantes », sinon il ne peut jamais apparaître ; c'est le choix de Claude, à confirmer.
 
 ## 6. Vérification attendue
 
