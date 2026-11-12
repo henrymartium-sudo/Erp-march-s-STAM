@@ -11,7 +11,7 @@ import { requireAuth, requireMarcheWrite, requireDelete } from '@/lib/utils/perm
 import { logAction } from '@/lib/audit/logAction'
 import { AUDIT_ACTION, AUDIT_ENTITY } from '@/lib/audit/constants'
 import type { ActionResult } from '@/types'
-import type { Caution, TypeCaution, StatutCaution } from '@prisma/client'
+import type { Caution, StatutCaution } from '@prisma/client'
 import { Prisma } from '@prisma/client'
 import { ZodError } from 'zod'
 import { addDays } from 'date-fns'
@@ -1104,102 +1104,5 @@ export async function detacherCautionMarche(cautionId: string): Promise<ActionRe
     return { success: true, data: detachee }
   } catch (error) {
     return erreurRattachement(error, 'Une erreur inattendue est survenue lors du détachement de la caution')
-  }
-}
-
-// ============================================================================
-// STATISTICS
-// ============================================================================
-
-export interface CautionsStats {
-  total: number
-  actives: number
-  expirees: number
-  aVenir: number
-  montantTotal: number
-  montantActif: number
-  parType: Record<TypeCaution, number>
-  prochesEcheance: number // Cautions expirant dans moins de 30 jours
-}
-
-export async function getCautionsStats(): Promise<ActionResult<CautionsStats>> {
-  try {
-    // Vérification d'authentification
-    await requireAuth()
-
-    // Récupérer toutes les cautions
-    const cautions = await prisma.caution.findMany({
-      select: {
-        type: true,
-        statut: true,
-        montant: true,
-        dateEmission: true,
-        dateEcheance: true,
-      },
-    })
-
-    const now = new Date()
-    const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
-
-    // Initialiser les compteurs par type
-    const parType: Record<TypeCaution, number> = {
-      SOUMISSION: 0,
-      CAPACITE_FINANCIERE: 0,
-      BONNE_EXECUTION: 0,
-      AVANCE_DEMARRAGE: 0,
-      RETENUE_GARANTIE: 0,
-    }
-
-    let actives = 0
-    let expirees = 0
-    let aVenir = 0
-    let montantTotal = 0
-    let montantActif = 0
-    let prochesEcheance = 0
-
-    // Calculer les stats
-    cautions.forEach((caution) => {
-      parType[caution.type]++
-      montantTotal += Number(caution.montant)
-
-      const echeance = caution.dateEcheance
-
-      // Caution active = statut ACTIVE
-      if (caution.statut === 'ACTIVE') {
-        actives++
-        montantActif += Number(caution.montant)
-
-        // Proche échéance = expire dans moins de 30 jours
-        if (echeance <= in30Days && echeance > now) {
-          prochesEcheance++
-        }
-      } else if (caution.statut === 'EXPIREE') {
-        expirees++
-      }
-
-      // À venir = date d'émission future
-      if (caution.dateEmission > now) {
-        aVenir++
-      }
-    })
-
-    const stats: CautionsStats = {
-      total: cautions.length,
-      actives,
-      expirees,
-      aVenir,
-      montantTotal,
-      montantActif,
-      parType,
-      prochesEcheance,
-    }
-
-    return { success: true, data: stats }
-  } catch (error) {
-    console.error('Erreur lors de la récupération des statistiques de cautions:', error)
-    return {
-      success: false,
-      error: 'Erreur lors de la récupération des statistiques',
-    }
   }
 }
