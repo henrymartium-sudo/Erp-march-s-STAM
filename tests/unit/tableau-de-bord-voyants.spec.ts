@@ -252,3 +252,15 @@ test('échéance saisie sans date d’émission : datée, pas dans facturesSansD
   expect(v.detail.facturesSansDate).toEqual([])
   expect(v.detail.enRetard).toBe(100)
 })
+
+test('aucun marché réceptionné : reste à facturer vert, total 0', () => {
+  expect(voyantResteAFacturer([], AUJ)).toEqual({ etat: 'vert', detail: { marches: [], total: 0 } })
+})
+
+test('aucune caution : vert, aucune échéance', () => {
+  expect(voyantCautions([], AUJ)).toEqual({ etat: 'vert', detail: { sous30: 0, plusProcheDansJours: null, elements: [] } })
+})
+
+test('aucune opportunité : dépôts vert, 0 dépôt', () => {
+  expect(voyantDepots([], AUJ)).toEqual({ etat: 'vert', detail: { nonPrets: 0, depotsSous14: 0, elements: [] } })
+})
