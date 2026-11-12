@@ -46,12 +46,19 @@ test('une facture à 91 j suffit pour le rouge, même à 5 %', () => {
   expect(v.detail.anciennete).toEqual({ dansDelai: 95, retard1a45: 0, retardPlusDe45: 5 })
 })
 
-test('facture sans dateEmission : dans le total, dans facturesSansDate, ni en retard ni dans le délai', () => {
+test('facture sans date : hors du total, dans facturesSansDate, ni en retard ni dans le délai', () => {
   const v = voyantEncaissements([facture({ id: 'fx', numero: 'F-X', montantTTC: 50, dateEmission: null }), facture({ montantTTC: 50 })], AUJ)
-  expect(v.detail.totalNonEncaisse).toBe(100)
+  expect(v.detail.totalNonEncaisse).toBe(50)
   expect(v.detail.enRetard).toBe(0)
   expect(v.detail.anciennete).toEqual({ dansDelai: 50, retard1a45: 0, retardPlusDe45: 0 })
   expect(v.detail.facturesSansDate).toEqual([{ libelle: 'F-X', href: '/factures/fx' }])
+})
+
+test('une facture sans date ne dilue pas le pourcentage de retard', () => {
+  // 40 en retard sur 100 de factures datées = 40 % (rouge), quel que soit le montant non daté.
+  const v = voyantEncaissements([...repartition(40), facture({ montantTTC: 900, dateEmission: null })], AUJ)
+  expect(v.detail.pourcentageEnRetard).toBe(40)
+  expect(v.etat).toBe('rouge')
 })
 
 test('aucune facture : vert, 0 %', () => {

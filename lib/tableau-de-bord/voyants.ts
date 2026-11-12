@@ -19,6 +19,7 @@ export interface Voyant<D> { etat: EtatVoyant; detail: D }
 
 export interface DetailEncaissements {
   pourcentageEnRetard: number
+  /** Montant TTC non encaissé des factures datées ; les factures sans date sont dans `facturesSansDate`. */
   totalNonEncaisse: number
   enRetard: number
   /** Montants TTC non encaissés selon le retard sur l'échéance (factures datées seulement). */
@@ -39,9 +40,10 @@ export function voyantEncaissements(factures: FactureEcheances[], aujourdHui: Da
   let uneTresAncienne = false
   for (const f of factures) {
     if ((f.statut !== 'EMISE' && f.statut !== 'EN_ATTENTE') || f.datePaiement) continue
-    detail.totalNonEncaisse += f.montantTTC
     const echeance = echeanceFacture(f)
+    // Non datable : signalée à part et hors du total, pour ne pas diluer le pourcentage de retard.
     if (!echeance) { detail.facturesSansDate.push({ libelle: f.numero, href: `/factures/${f.id}` }); continue }
+    detail.totalNonEncaisse += f.montantTTC
     const retard = joursDepuis(echeance, aujourdHui)
     if (retard <= 0) detail.anciennete.dansDelai += f.montantTTC
     else if (retard <= JOURS_RETARD_ROUGE) detail.anciennete.retard1a45 += f.montantTTC

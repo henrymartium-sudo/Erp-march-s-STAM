@@ -30,7 +30,7 @@ export interface CautionEcheances { id: string; reference: string; type: TypeCau
 export interface FactureEcheances { id: string; numero: string; marcheId: string; statut: StatutFacture; montantTTC: number; dateEmission: Date | null; dateEcheance: Date | null; datePaiement: Date | null }
 /** `factures: null` = rôle sans accès aux finances. */
 export interface SourcesATraiter { opportunites: OpportuniteEcheances[]; marches: MarcheEcheances[]; cautions: CautionEcheances[]; factures: FactureEcheances[] | null }
-export interface ResultatATraiter { lignes: LigneATraiter[]; manquants: { opportunitesSansDateDepot: ElementLie[]; marchesSansDateLivraison: ElementLie[] } }
+export interface ResultatATraiter { lignes: LigneATraiter[]; manquants: { opportunitesSansDateDepot: ElementLie[]; marchesSansDateLivraison: ElementLie[]; facturesSansDate: ElementLie[] } }
 
 const LIBELLES: Record<NatureEcheance, string> = {
   DEPOT_OFFRE: "Dépôt de l'offre",
@@ -122,6 +122,9 @@ export function construireATraiter(s: SourcesATraiter, aujourdHui: Date): Result
       marchesSansDateLivraison: s.marches
         .filter((m) => m.statut === 'EN_ATTENTE_LIVRAISON_OS' && !m.dateLivraisonPrevue)
         .map((m) => ({ libelle: m.numero, href: `/marches/${m.id}` })),
+      facturesSansDate: (s.factures ?? [])
+        .filter((f) => STATUTS_FACTURE_DUE.includes(f.statut) && !f.datePaiement && !echeanceFacture(f))
+        .map((f) => ({ libelle: f.numero, href: `/factures/${f.id}` })),
     },
   }
 }

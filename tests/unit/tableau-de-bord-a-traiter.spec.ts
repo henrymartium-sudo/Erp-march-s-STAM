@@ -147,6 +147,18 @@ test('manquants : opportunité GO sans dateLimite, marché EN_ATTENTE_LIVRAISON_
   expect(r.manquants.marchesSansDateLivraison.map((e) => e.href)).toEqual(['/marches/m1'])
 })
 
+test('manquants : facture due sans échéance ni émission ; payée ou rôle sans finances exclus', () => {
+  const r = construireATraiter(sources({
+    factures: [
+      facture({ id: 'f1', numero: 'F-1', dateEmission: null }),
+      facture({ id: 'f2', numero: 'F-2', dateEmission: null, datePaiement: J(-1) }),
+      facture({ id: 'f3', numero: 'F-3', dateEmission: null, dateEcheance: J(5) }),
+    ],
+  }), AUJ)
+  expect(r.manquants.facturesSansDate).toEqual([{ libelle: 'F-1', href: '/factures/f1' }])
+  expect(construireATraiter(sources({ factures: null }), AUJ).manquants.facturesSansDate).toEqual([])
+})
+
 test('FACTURE_ECHUE : l’échéance saisie remplace émission + 45 j', () => {
   const [l] = construireATraiter(sources({ factures: [facture({ dateEmission: J(-60), dateEcheance: J(5) })] }), AUJ).lignes
   expect(l).toMatchObject({ nature: 'FACTURE_ECHUE', horizon: 'semaine' })

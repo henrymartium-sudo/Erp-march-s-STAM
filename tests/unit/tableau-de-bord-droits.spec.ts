@@ -24,7 +24,7 @@ test('masquer les montants de la liste À traiter : montant null, le reste intac
       id: 'A_CLOTURER:m1', nature: 'A_CLOTURER', domaine: 'exec', libelle: 'Marché à clôturer', reference: 'M-1',
       href: '/marches/m1', montant: 5000, echeance: new Date('2026-11-01'), horizon: 'retard', sansRattrapage: false,
     }],
-    manquants: { opportunitesSansDateDepot: [], marchesSansDateLivraison: [] },
+    manquants: { opportunitesSansDateDepot: [], marchesSansDateLivraison: [], facturesSansDate: [] },
   }
   const m = masquerMontantsATraiter(r)
   expect(m.lignes[0]).toEqual({ ...r.lignes[0], montant: null })
