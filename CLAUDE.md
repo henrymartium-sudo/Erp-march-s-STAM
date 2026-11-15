@@ -163,6 +163,7 @@ Les 5 contrôles du skill global `disciplines-actives` (`~/.claude/skills/discip
 Aperçu en direct (skill `apercu`) : toujours sur la base de test locale, jamais sur la production.
 
 - **Base** : PostgreSQL de test locale `127.0.0.1:5433`, démarrée par le skill `base-test`.
+- **Format par défaut** : ordinateur (`--appareil ordinateur`) ; téléphone ou les deux sur demande.
 - **Serveur** : configuration `dev-test` de `.claude/launch.json` (port 3000), qui refuse de démarrer si `.env.test` ne vise pas la base locale.
 - **Compte** : compte administrateur de test défini dans `tests/helpers/auth.ts` (valable sur la base locale seulement).
 - **Données** : lignes préfixées `[E2E…]` semées puis supprimées par le script de préparation (garde `localhost` obligatoire).
